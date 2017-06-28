@@ -111,13 +111,13 @@ public class CloudControllerClientFactory {
             return infoCache.get(cloudControllerUrl);
         }
 
-        String s = restTemplate.getForObject(cloudControllerUrl + "/info", String.class);
+        String s = restTemplate.getForObject(cloudControllerUrl + "/v2/info", String.class);
 
         try {
             return objectMapper.readValue(s, new TypeReference<Map<String, Object>>() {
             });
         } catch (IOException e) {
-            throw new RuntimeException("Error getting /info from Cloud Controller", e);
+            throw new RuntimeException("Error getting /v2/info from Cloud Controller", e);
         }
     }
 }

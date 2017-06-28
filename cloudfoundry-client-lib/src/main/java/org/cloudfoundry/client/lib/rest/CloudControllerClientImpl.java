@@ -16,6 +16,30 @@
 
 package org.cloudfoundry.client.lib.rest;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
+import java.net.Socket;
+import java.net.SocketException;
+import java.net.URI;
+import java.net.URL;
+import java.net.URLDecoder;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+import java.util.zip.ZipFile;
+
+import javax.websocket.ClientEndpointConfig;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.cloudfoundry.client.lib.ApplicationLogListener;
@@ -86,29 +110,6 @@ import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.ResponseExtractor;
 import org.springframework.web.client.RestTemplate;
-
-import javax.websocket.ClientEndpointConfig;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
-import java.net.Socket;
-import java.net.SocketException;
-import java.net.URI;
-import java.net.URL;
-import java.net.URLDecoder;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
-import java.util.zip.ZipFile;
 
 /**
  * Abstract implementation of the CloudControllerClient intended to serve as the base.
@@ -638,20 +639,12 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         return doGetFile(urlPath, appId, instanceIndex, filePath, startPosition, endPosition);
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public CloudInfo getInfo() {
-        // info comes from two end points: /info and /v2/info
-
         String infoV2Json = getRestTemplate().getForObject(getUrl("/v2/info"), String.class);
         Map<String, Object> infoV2Map = JsonUtil.convertJsonToMap(infoV2Json);
 
         Map<String, Object> userMap = getUserInfo((String) infoV2Map.get("user"));
-
-        String infoJson = getRestTemplate().getForObject(getUrl("/info"), String.class);
-        Map<String, Object> infoMap = JsonUtil.convertJsonToMap(infoJson);
-        Map<String, Object> limitMap = (Map<String, Object>) infoMap.get("limits");
-        Map<String, Object> usageMap = (Map<String, Object>) infoMap.get("usage");
 
         String name = CloudUtil.parse(String.class, infoV2Map.get("name"));
         String support = CloudUtil.parse(String.class, infoV2Map.get("support"));
@@ -663,11 +656,6 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         CloudInfo.Limits limits = null;
         CloudInfo.Usage usage = null;
         boolean debug = false;
-        if (oauthClient.getToken() != null) {
-            limits = new CloudInfo.Limits(limitMap);
-            usage = new CloudInfo.Usage(usageMap);
-            debug = CloudUtil.parse(Boolean.class, infoMap.get("allow_debug"));
-        }
 
         String loggregatorEndpoint = CloudUtil.parse(String.class, infoV2Map.get("logging_endpoint"));
 
