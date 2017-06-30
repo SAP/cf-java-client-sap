@@ -1,10 +1,5 @@
 package org.cloudfoundry.client.lib;
 
-import org.eclipse.jetty.server.handler.ConnectHandler;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-
-import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -12,9 +7,14 @@ import java.net.Socket;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import javax.servlet.http.HttpServletRequest;
+
+import org.eclipse.jetty.server.handler.ConnectHandler;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+
 /**
- * Hacky connect handler which is able to open a chained proxy. Useful when starting an InJvm proxy chained to another
- * corporate proxy.
+ * Hacky connect handler which is able to open a chained proxy. Useful when starting an InJvm proxy chained to another corporate proxy.
  */
 class ChainedProxyConnectHandler extends ConnectHandler {
 
@@ -35,8 +35,7 @@ class ChainedProxyConnectHandler extends ConnectHandler {
         if (httpProxyConfiguration == null) {
             return super.connect(request, host, port);
         } else {
-            SocketChannel channel = super.connect(request, httpProxyConfiguration.getProxyHost(),
-                    httpProxyConfiguration.getProxyPort());
+            SocketChannel channel = super.connect(request, httpProxyConfiguration.getProxyHost(), httpProxyConfiguration.getProxyPort());
 
             Socket socket = channel.socket();
             establishConnectHandshake(host, port, socket.getOutputStream(), socket.getInputStream());
@@ -59,9 +58,8 @@ class ChainedProxyConnectHandler extends ConnectHandler {
     }
 
     private void establishConnectHandshake(String host, int port, OutputStream out, InputStream in) throws IOException {
-        String connectMessage = "CONNECT " + host + ":" + port + " HTTP/1.0\r\n"
-                + "Proxy-Connection: Keep-Alive\r\n"
-                + "User-Agent: Mozilla/4.0\r\n";
+        String connectMessage = "CONNECT " + host + ":" + port + " HTTP/1.0\r\n" + "Proxy-Connection: Keep-Alive\r\n"
+            + "User-Agent: Mozilla/4.0\r\n";
 
         logger.debug(">>> {}", connectMessage);
 
@@ -101,8 +99,7 @@ class ChainedProxyConnectHandler extends ConnectHandler {
         } catch (Exception e) {
         }
         if (code != 200) {
-            logger.warn("Unable to handshake with upstream proxy to CONNECT to host=" + host + " port=" + port + " " +
-                    "reason:" + reason);
+            logger.warn("Unable to handshake with upstream proxy to CONNECT to host=" + host + " port=" + port + " " + "reason:" + reason);
             throw new IOException("proxy error: " + reason);
         }
 
@@ -124,7 +121,8 @@ class ChainedProxyConnectHandler extends ConnectHandler {
             if (foo < 0) {
                 throw new IOException();
             }
-            if (count == 0) break;
+            if (count == 0)
+                break;
         }
     }
 }

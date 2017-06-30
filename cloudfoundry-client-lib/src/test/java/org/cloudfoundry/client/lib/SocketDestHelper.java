@@ -10,10 +10,9 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-
 /**
- * Byteman helper which rejects Sockets on non jetty threads that do not target the local http proxy. Calls to this
- * class are dynamically injected into JDK java.net.Socket bytecode by byteman.
+ * Byteman helper which rejects Sockets on non jetty threads that do not target the local http proxy. Calls to this class are dynamically
+ * injected into JDK java.net.Socket bytecode by byteman.
  */
 public class SocketDestHelper {
 
@@ -23,8 +22,7 @@ public class SocketDestHelper {
 
     private static final ThreadLocal<Boolean> isSocketRestrictingOnlyLocalHost = new ThreadLocal<Boolean>();
 
-
-    //Byteman API
+    // Byteman API
 
     public static void activated() {
         logDebugTrace("SocketDestHelper activated");
@@ -62,7 +60,7 @@ public class SocketDestHelper {
     }
 
     private static void logDebugTrace(String msg) {
-        //until cloud-foundry-client-lib embed a logging library (slf4j ?), for debugging tests just change this flag
+        // until cloud-foundry-client-lib embed a logging library (slf4j ?), for debugging tests just change this flag
         if (false) {
             System.out.println(msg);
             System.out.flush();
@@ -75,7 +73,7 @@ public class SocketDestHelper {
         }
     }
 
-    //helper methods for byteman rules
+    // helper methods for byteman rules
 
     public void alwaysThrowException() throws IOException {
         IOException ioe = new IOException("always throws IOE");
@@ -92,23 +90,23 @@ public class SocketDestHelper {
     }
 
     public void throwExceptionIfForbidden(String host, int port) throws IOException {
-        logDebugTrace("throwExceptionIfForbidden(host=" + host + " port=" + port + ") with " +
-                "isSocketRestrictingOnlyLocalHost=" + isSocketRestrictingOnlyLocalHost.get());
+        logDebugTrace("throwExceptionIfForbidden(host=" + host + " port=" + port + ") with " + "isSocketRestrictingOnlyLocalHost="
+            + isSocketRestrictingOnlyLocalHost.get());
         Boolean flag = isSocketRestrictingOnlyLocalHost.get();
         if (flag != null && flag.booleanValue()) {
             InetAddress inetAddress;
-            //Trying to resolve host to check if this resolves to loopback where is started
-            InetAddress loopBack = InetAddress.getByAddress(new byte[]{127, 0, 0, 1});
+            // Trying to resolve host to check if this resolves to loopback where is started
+            InetAddress loopBack = InetAddress.getByAddress(new byte[] { 127, 0, 0, 1 });
             try {
                 inetAddress = InetAddress.getByName(host);
             } catch (UnknownHostException e) {
-                //Unable to resolve host, unlikely to be loopback
+                // Unable to resolve host, unlikely to be loopback
                 inetAddress = null;
             }
             if (inetAddress == null || !inetAddress.equals(loopBack)) {
-                IOException ioe = new IOException("detected direct socket connect while tests expect them to go " +
-                        "through proxy instead: Only jetty proxy threads should go through external hosts, got:host="
-                        + host + " port=" + port);
+                IOException ioe = new IOException("detected direct socket connect while tests expect them to go "
+                    + "through proxy instead: Only jetty proxy threads should go through external hosts, got:host=" + host + " port="
+                    + port);
                 printStackTrace(ioe);
                 throw ioe;
             }
@@ -133,6 +131,5 @@ public class SocketDestHelper {
     public void throwExceptionIfForbidden(InetSocketAddress inetAddress, int port) throws IOException {
         throwExceptionIfForbidden(inetAddress.getHostName(), port);
     }
-
 
 }

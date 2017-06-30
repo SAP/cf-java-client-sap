@@ -17,8 +17,8 @@
 package org.cloudfoundry.client.lib;
 
 /**
- * Starting info contains values from response headers when an application is first started. One of the possible header
- * values may be the location of the staging log when starting an application.
+ * Starting info contains values from response headers when an application is first started. One of the possible header values may be the
+ * location of the staging log when starting an application.
  *
  * @author Nieraj Singh.
  */

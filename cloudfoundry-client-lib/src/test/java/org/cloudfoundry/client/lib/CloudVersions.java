@@ -14,5 +14,5 @@ import java.lang.annotation.Target;
 @Target(ElementType.TYPE)
 public @interface CloudVersions {
 
-    String[] value();
+    String[]value();
 }

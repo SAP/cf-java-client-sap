@@ -18,7 +18,6 @@ package org.cloudfoundry.client.lib;
 
 import org.springframework.http.HttpStatus;
 
-
 @SuppressWarnings("serial")
 public class StagingErrorException extends CloudFoundryException {
 

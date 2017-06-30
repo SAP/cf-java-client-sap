@@ -22,7 +22,6 @@ import org.springframework.web.client.HttpClientErrorException;
 @SuppressWarnings("serial")
 public class CloudFoundryException extends HttpClientErrorException {
 
-
     private int cloudFoundryErrorCode = -1;
 
     private String description;
@@ -41,11 +40,10 @@ public class CloudFoundryException extends HttpClientErrorException {
     }
 
     /**
-     * Construct a new instance of {@code CloudFoundryException} based on a {@link HttpStatus}, status text and
-     * description.
+     * Construct a new instance of {@code CloudFoundryException} based on a {@link HttpStatus}, status text and description.
      *
-     * @param statusCode  the status code
-     * @param statusText  the status text
+     * @param statusCode the status code
+     * @param statusText the status text
      * @param description the description
      */
     public CloudFoundryException(HttpStatus statusCode, String statusText, String description) {

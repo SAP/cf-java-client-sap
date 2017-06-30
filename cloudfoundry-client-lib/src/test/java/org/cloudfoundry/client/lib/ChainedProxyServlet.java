@@ -1,18 +1,19 @@
 package org.cloudfoundry.client.lib;
 
-import org.eclipse.jetty.client.Address;
-import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.servlets.ProxyServlet;
+import java.io.IOException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
-import java.io.IOException;
-import java.util.concurrent.atomic.AtomicInteger;
+
+import org.eclipse.jetty.client.Address;
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.servlets.ProxyServlet;
 
 /**
- * An http proxy implementation that is able to chain request to another proxy. Usefull when starting an InJvm proxy
- * chained to another corporate proxy.
+ * An http proxy implementation that is able to chain request to another proxy. Usefull when starting an InJvm proxy chained to another
+ * corporate proxy.
  */
 public class ChainedProxyServlet extends ProxyServlet {
 
@@ -38,23 +39,18 @@ public class ChainedProxyServlet extends ProxyServlet {
     protected HttpClient createHttpClientInstance() {
         HttpClient httpClient = super.createHttpClientInstance();
         if (httpProxyConfiguration != null) {
-            httpClient.setProxy(new Address(httpProxyConfiguration.getProxyHost(), httpProxyConfiguration
-                    .getProxyPort()));
+            httpClient.setProxy(new Address(httpProxyConfiguration.getProxyHost(), httpProxyConfiguration.getProxyPort()));
         }
         return httpClient;
     }
 
-    /** jetty 9 impl variant which imposes upgrade to java 7
-
-
-     @Override protected HttpClient createHttpClient() throws ServletException {
-     HttpClient httpClient = super.createHttpClient();
-     if (httpProxyConfiguration != null) {
-     ProxyConfiguration proxyConfiguration = new ProxyConfiguration(httpProxyConfiguration.getProxyHost(),
-     httpProxyConfiguration.getProxyPort());
-     httpClient.setProxyConfiguration(proxyConfiguration);
-     }
-     return httpClient;
-     }
+    /**
+     * jetty 9 impl variant which imposes upgrade to java 7
+     * 
+     * 
+     * @Override protected HttpClient createHttpClient() throws ServletException { HttpClient httpClient = super.createHttpClient(); if
+     *           (httpProxyConfiguration != null) { ProxyConfiguration proxyConfiguration = new
+     *           ProxyConfiguration(httpProxyConfiguration.getProxyHost(), httpProxyConfiguration.getProxyPort());
+     *           httpClient.setProxyConfiguration(proxyConfiguration); } return httpClient; }
      */
 }

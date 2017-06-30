@@ -1,5 +1,40 @@
 package org.cloudfoundry.client.lib;
 
+import static java.util.Arrays.asList;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.hasProperty;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.InetSocketAddress;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.apache.commons.io.IOUtils;
 import org.cloudfoundry.client.lib.domain.ApplicationLog;
 import org.cloudfoundry.client.lib.domain.ApplicationStats;
@@ -69,45 +104,9 @@ import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.ResponseExtractor;
 import org.springframework.web.client.RestTemplate;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.InetSocketAddress;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import static java.util.Arrays.asList;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.hasProperty;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeTrue;
-
 /**
- * Note that this integration tests rely on other methods working correctly, so these tests aren't independent unit
- * tests for all methods, they are intended to test the completeness of the functionality of each API version
- * implementation.
+ * Note that this integration tests rely on other methods working correctly, so these tests aren't independent unit tests for all methods,
+ * they are intended to test the completeness of the functionality of each API version implementation.
  *
  * @author Ramnivas Laddad
  * @author A.B.Srinivasan
@@ -135,11 +134,9 @@ public class CloudFoundryClientTest {
 
     private static final String CCNG_QUOTA_NAME_TEST = System.getProperty("ccng.quota", "test_quota");
 
-    private static final String CCNG_SECURITY_GROUP_NAME_TEST = System.getProperty("ccng.securityGroup",
-            "test_security_group");
+    private static final String CCNG_SECURITY_GROUP_NAME_TEST = System.getProperty("ccng.securityGroup", "test_security_group");
 
-    private static final String CCNG_USER_EMAIL = System.getProperty("ccng.email",
-            "java-authenticatedClient-test-user@vmware.com");
+    private static final String CCNG_USER_EMAIL = System.getProperty("ccng.email", "java-authenticatedClient-test-user@vmware.com");
 
     private static final boolean CCNG_USER_IS_ADMIN = Boolean.getBoolean("ccng.admin");
 
@@ -165,11 +162,9 @@ public class CloudFoundryClientTest {
 
     private static final boolean SKIP_INJVM_PROXY = Boolean.getBoolean("http.skipInJvmProxy");
 
-    private static final String TEST_DOMAIN = System.getProperty("vcap.test.domain", defaultNamespace
-            (CCNG_USER_EMAIL) + ".com");
+    private static final String TEST_DOMAIN = System.getProperty("vcap.test.domain", defaultNamespace(CCNG_USER_EMAIL) + ".com");
 
-    private static final String TEST_NAMESPACE = System.getProperty("vcap.test.namespace", defaultNamespace
-            (CCNG_USER_EMAIL));
+    private static final String TEST_NAMESPACE = System.getProperty("vcap.test.namespace", defaultNamespace(CCNG_USER_EMAIL));
 
     private static String defaultDomainName = null;
 
@@ -196,8 +191,7 @@ public class CloudFoundryClientTest {
         @Override
         protected void finished(Description description) {
             if (!SILENT_TEST_TIMINGS) {
-                System.out.println("Test " + description.getMethodName() + " took " + (System.currentTimeMillis() -
-                        startTime) + " ms");
+                System.out.println("Test " + description.getMethodName() + " took " + (System.currentTimeMillis() - startTime) + " ms");
             }
         }
 
@@ -230,8 +224,8 @@ public class CloudFoundryClientTest {
 
         if (CCNG_API_PROXY_HOST != null) {
             if (CCNG_API_PROXY_USER != null) {
-                httpProxyConfiguration = new HttpProxyConfiguration(CCNG_API_PROXY_HOST, CCNG_API_PROXY_PORT, true,
-                        CCNG_API_PROXY_USER, CCNG_API_PROXY_PASSWD);
+                httpProxyConfiguration = new HttpProxyConfiguration(CCNG_API_PROXY_HOST, CCNG_API_PROXY_PORT, true, CCNG_API_PROXY_USER,
+                    CCNG_API_PROXY_PASSWD);
             } else {
                 httpProxyConfiguration = new HttpProxyConfiguration(CCNG_API_PROXY_HOST, CCNG_API_PROXY_PORT);
             }
@@ -264,14 +258,14 @@ public class CloudFoundryClientTest {
     }
 
     /**
-     * To test that the CF client is able to go through a proxy, we point the CC client to a broken url that can only be
-     * resolved by going through an inJVM proxy which rewrites the URI. This method starts this inJvm proxy.
+     * To test that the CF client is able to go through a proxy, we point the CC client to a broken url that can only be resolved by going
+     * through an inJVM proxy which rewrites the URI. This method starts this inJvm proxy.
      *
      * @throws Exception
      */
     private static void startInJvmProxy() throws Exception {
         inJvmProxyPort = getNextAvailablePort(8080);
-        inJvmProxyServer = new Server(new InetSocketAddress("127.0.0.1", inJvmProxyPort)); //forcing use of loopback
+        inJvmProxyServer = new Server(new InetSocketAddress("127.0.0.1", inJvmProxyPort)); // forcing use of loopback
         // that will be used both for Httpclient proxy and SocketDestHelper
         QueuedThreadPool threadPool = new QueuedThreadPool();
         threadPool.setMinThreads(1);
@@ -476,12 +470,11 @@ public class CloudFoundryClientTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void attemptingToUpdateANonExistentSecurityGroupThrowsAnIllegalArgumentException() throws
-            FileNotFoundException {
+    public void attemptingToUpdateANonExistentSecurityGroupThrowsAnIllegalArgumentException() throws FileNotFoundException {
         assumeTrue(CCNG_USER_IS_ADMIN);
 
-        connectedClient.updateSecurityGroup(randomSecurityGroupName(), new FileInputStream(new File
-                ("src/test/resources/security-groups/test-rules-2.json")));
+        connectedClient.updateSecurityGroup(randomSecurityGroupName(),
+            new FileInputStream(new File("src/test/resources/security-groups/test-rules-2.json")));
     }
 
     //
@@ -518,24 +511,21 @@ public class CloudFoundryClientTest {
         assumeTrue(CCNG_USER_IS_ADMIN);
 
         // Given
-        assertFalse(containsSecurityGroupNamed(connectedClient.getRunningSecurityGroups(),
-                CCNG_SECURITY_GROUP_NAME_TEST));
-        connectedClient.createSecurityGroup(CCNG_SECURITY_GROUP_NAME_TEST, new FileInputStream(new File
-                ("src/test/resources/security-groups/test-rules-2.json")));
+        assertFalse(containsSecurityGroupNamed(connectedClient.getRunningSecurityGroups(), CCNG_SECURITY_GROUP_NAME_TEST));
+        connectedClient.createSecurityGroup(CCNG_SECURITY_GROUP_NAME_TEST,
+            new FileInputStream(new File("src/test/resources/security-groups/test-rules-2.json")));
 
         // When
         connectedClient.bindRunningSecurityGroup(CCNG_SECURITY_GROUP_NAME_TEST);
 
         // Then
-        assertTrue(containsSecurityGroupNamed(connectedClient.getRunningSecurityGroups(),
-                CCNG_SECURITY_GROUP_NAME_TEST));
+        assertTrue(containsSecurityGroupNamed(connectedClient.getRunningSecurityGroups(), CCNG_SECURITY_GROUP_NAME_TEST));
 
         // When
         connectedClient.unbindRunningSecurityGroup(CCNG_SECURITY_GROUP_NAME_TEST);
 
         // Then
-        assertFalse(containsSecurityGroupNamed(connectedClient.getRunningSecurityGroups(),
-                CCNG_SECURITY_GROUP_NAME_TEST));
+        assertFalse(containsSecurityGroupNamed(connectedClient.getRunningSecurityGroups(), CCNG_SECURITY_GROUP_NAME_TEST));
 
         // Cleanup
         connectedClient.deleteSecurityGroup(CCNG_SECURITY_GROUP_NAME_TEST);
@@ -546,24 +536,21 @@ public class CloudFoundryClientTest {
         assumeTrue(CCNG_USER_IS_ADMIN);
 
         // Given
-        assertFalse(containsSecurityGroupNamed(connectedClient.getStagingSecurityGroups(),
-                CCNG_SECURITY_GROUP_NAME_TEST));
-        connectedClient.createSecurityGroup(CCNG_SECURITY_GROUP_NAME_TEST, new FileInputStream(new File
-                ("src/test/resources/security-groups/test-rules-2.json")));
+        assertFalse(containsSecurityGroupNamed(connectedClient.getStagingSecurityGroups(), CCNG_SECURITY_GROUP_NAME_TEST));
+        connectedClient.createSecurityGroup(CCNG_SECURITY_GROUP_NAME_TEST,
+            new FileInputStream(new File("src/test/resources/security-groups/test-rules-2.json")));
 
         // When
         connectedClient.bindStagingSecurityGroup(CCNG_SECURITY_GROUP_NAME_TEST);
 
         // Then
-        assertTrue(containsSecurityGroupNamed(connectedClient.getStagingSecurityGroups(),
-                CCNG_SECURITY_GROUP_NAME_TEST));
+        assertTrue(containsSecurityGroupNamed(connectedClient.getStagingSecurityGroups(), CCNG_SECURITY_GROUP_NAME_TEST));
 
         // When
         connectedClient.unbindStagingSecurityGroup(CCNG_SECURITY_GROUP_NAME_TEST);
 
         // Then
-        assertFalse(containsSecurityGroupNamed(connectedClient.getStagingSecurityGroups(),
-                CCNG_SECURITY_GROUP_NAME_TEST));
+        assertFalse(containsSecurityGroupNamed(connectedClient.getStagingSecurityGroups(), CCNG_SECURITY_GROUP_NAME_TEST));
 
         // Cleanup
         connectedClient.deleteSecurityGroup(CCNG_SECURITY_GROUP_NAME_TEST);
@@ -574,8 +561,8 @@ public class CloudFoundryClientTest {
         assumeTrue(CCNG_USER_IS_ADMIN);
 
         // Given
-        connectedClient.createSecurityGroup(CCNG_SECURITY_GROUP_NAME_TEST, new FileInputStream(new File
-                ("src/test/resources/security-groups/test-rules-2.json")));
+        connectedClient.createSecurityGroup(CCNG_SECURITY_GROUP_NAME_TEST,
+            new FileInputStream(new File("src/test/resources/security-groups/test-rules-2.json")));
 
         // When
         connectedClient.bindSecurityGroup(CCNG_USER_ORG, CCNG_USER_SPACE, CCNG_SECURITY_GROUP_NAME_TEST);
@@ -584,7 +571,7 @@ public class CloudFoundryClientTest {
 
         // When
         connectedClient.unbindSecurityGroup(CCNG_USER_ORG, CCNG_USER_SPACE, CCNG_SECURITY_GROUP_NAME_TEST);
-        //Then
+        // Then
         assertFalse(isSpaceBoundToSecurityGroup(CCNG_USER_SPACE, CCNG_SECURITY_GROUP_NAME_TEST));
 
         // Cleanup
@@ -592,17 +579,16 @@ public class CloudFoundryClientTest {
     }
 
     /**
-     * Self tests that the assert mechanisms with jetty and byteman are properly working. If debugging is needed
-     * consider enabling one or more of the following system properties -Dorg.jboss.byteman.verbose=true
-     * -Dorg.jboss.byteman.debug=true -Dorg.jboss.byteman.rule.debug=true -Dorg.eclipse.jetty.util.log.class=org
-     * .eclipse.jetty.util.log.StdErrLog -Dorg.eclipse.jetty.LEVEL=INFO -Dorg.eclipse.jetty.server.LEVEL=INFO
-     * -Dorg.eclipse.jetty.server.handler .ConnectHandler=DEBUG Documentation on byteman at
-     * http://downloads.jboss.org/byteman/2.1.3/ProgrammersGuideSinglePage.2.1.3.1.html
+     * Self tests that the assert mechanisms with jetty and byteman are properly working. If debugging is needed consider enabling one or
+     * more of the following system properties -Dorg.jboss.byteman.verbose=true -Dorg.jboss.byteman.debug=true
+     * -Dorg.jboss.byteman.rule.debug=true -Dorg.eclipse.jetty.util.log.class=org .eclipse.jetty.util.log.StdErrLog
+     * -Dorg.eclipse.jetty.LEVEL=INFO -Dorg.eclipse.jetty.server.LEVEL=INFO -Dorg.eclipse.jetty.server.handler .ConnectHandler=DEBUG
+     * Documentation on byteman at http://downloads.jboss.org/byteman/2.1.3/ProgrammersGuideSinglePage.2.1.3.1.html
      */
     @Test
     public void checkByteManrulesAndInJvmProxyAssertMechanisms() {
         if (SKIP_INJVM_PROXY) {
-            return; //inJvm Proxy test skipped.
+            return; // inJvm Proxy test skipped.
         }
         assertTrue(SocketDestHelper.isSocketRestrictionFlagActive());
 
@@ -624,11 +610,11 @@ public class CloudFoundryClientTest {
 
         // then executes fine, and the jetty proxy indeed received one request
         assertEquals("expected network calls to make it through the inJvmProxy.", 1, nbInJvmProxyRcvReqs.get());
-        nbInJvmProxyRcvReqs.set(0); //reset for next test
+        nbInJvmProxyRcvReqs.set(0); // reset for next test
 
         assertTrue(SocketDestHelper.isActivated());
-        assertFalse("expected some installed rules, got:" + SocketDestHelper.getInstalledRules(), SocketDestHelper
-                .getInstalledRules().isEmpty());
+        assertFalse("expected some installed rules, got:" + SocketDestHelper.getInstalledRules(),
+            SocketDestHelper.getInstalledRules().isEmpty());
     }
 
     @Test
@@ -980,7 +966,6 @@ public class CloudFoundryClientTest {
         }
     }
 
-
     //
     // Advanced Application tests
     //
@@ -1078,8 +1063,7 @@ public class CloudFoundryClientTest {
         CloudService service = connectedClient.getService(serviceName);
         assertNotNull(service);
         assertEquals(serviceName, service.getName());
-        assertTimeWithinRange("Creation time should be very recent",
-                service.getMeta().getCreated().getTime(), FIVE_MINUTES);
+        assertTimeWithinRange("Creation time should be very recent", service.getMeta().getCreated().getTime(), FIVE_MINUTES);
 
         connectedClient.deleteService(serviceName);
 
@@ -1262,11 +1246,8 @@ public class CloudFoundryClientTest {
 
     @Test
     public void getServices() {
-        List<CloudService> expectedServices = Arrays.asList(
-                createMySqlService("mysql-test"),
-                createUserProvidedService("user-provided-test"),
-                createMySqlService("mysql-child")
-        );
+        List<CloudService> expectedServices = Arrays.asList(createMySqlService("mysql-test"),
+            createUserProvidedService("user-provided-test"), createMySqlService("mysql-child"));
 
         List<CloudService> services = connectedClient.getServices();
         assertNotNull(services);
@@ -1288,7 +1269,7 @@ public class CloudFoundryClientTest {
     @Test
     public void getStacks() throws Exception {
         List<CloudStack> stacks = connectedClient.getStacks();
-        assert (stacks.size() >= 1);
+        assert(stacks.size() >= 1);
 
         CloudStack stack = null;
         for (CloudStack s : stacks) {
@@ -1317,12 +1298,10 @@ public class CloudFoundryClientTest {
 
             if (startingInfo != null && startingInfo.getStagingFile() != null) {
                 int offset = 0;
-                firstLine = connectedClient
-                        .getStagingLogs(startingInfo, offset);
+                firstLine = connectedClient.getStagingLogs(startingInfo, offset);
             }
 
-            if (startingInfo != null && startingInfo.getStagingFile() != null
-                    && firstLine != null) {
+            if (startingInfo != null && startingInfo.getStagingFile() != null && firstLine != null) {
                 break;
             } else {
                 connectedClient.stopApplication(appName);
@@ -1361,8 +1340,7 @@ public class CloudFoundryClientTest {
 
     @Test
     public void infoAvailableWithoutLoggingIn() throws Exception {
-        CloudFoundryClient infoClient = new CloudFoundryClient(new URL(CCNG_API_URL), httpProxyConfiguration,
-                CCNG_API_SSL);
+        CloudFoundryClient infoClient = new CloudFoundryClient(new URL(CCNG_API_URL), httpProxyConfiguration, CCNG_API_SSL);
         CloudInfo info = infoClient.getCloudInfo();
         assertNotNull(info.getName());
         assertNotNull(info.getSupport());
@@ -1444,10 +1422,8 @@ public class CloudFoundryClientTest {
         URL cloudControllerUrl = new URL(CCNG_API_URL);
         CloudCredentials credentials = new CloudCredentials(CCNG_USER_EMAIL, CCNG_USER_PASS);
 
-        CloudControllerClientFactory factory =
-                new CloudControllerClientFactory(httpProxyConfiguration, CCNG_API_SSL);
-        CloudControllerClient client = factory.newCloudController(cloudControllerUrl, credentials, CCNG_USER_ORG,
-                CCNG_USER_SPACE);
+        CloudControllerClientFactory factory = new CloudControllerClientFactory(httpProxyConfiguration, CCNG_API_SSL);
+        CloudControllerClient client = factory.newCloudController(cloudControllerUrl, credentials, CCNG_USER_ORG, CCNG_USER_SPACE);
 
         client.login();
 
@@ -1482,8 +1458,8 @@ public class CloudFoundryClientTest {
         assumeTrue(CCNG_USER_IS_ADMIN);
 
         // Create
-        connectedClient.createSecurityGroup(CCNG_SECURITY_GROUP_NAME_TEST, new FileInputStream(new File
-                ("src/test/resources/security-groups/test-rules-1.json")));
+        connectedClient.createSecurityGroup(CCNG_SECURITY_GROUP_NAME_TEST,
+            new FileInputStream(new File("src/test/resources/security-groups/test-rules-1.json")));
 
         // Verify created
         CloudSecurityGroup securityGroup = connectedClient.getSecurityGroup(CCNG_SECURITY_GROUP_NAME_TEST);
@@ -1492,8 +1468,8 @@ public class CloudFoundryClientTest {
         assertRulesMatchThoseInJsonFile1(securityGroup);
 
         // Update group
-        connectedClient.updateSecurityGroup(CCNG_SECURITY_GROUP_NAME_TEST, new FileInputStream(new File
-                ("src/test/resources/security-groups/test-rules-2.json")));
+        connectedClient.updateSecurityGroup(CCNG_SECURITY_GROUP_NAME_TEST,
+            new FileInputStream(new File("src/test/resources/security-groups/test-rules-2.json")));
 
         // Verify update
         securityGroup = connectedClient.getSecurityGroup(CCNG_SECURITY_GROUP_NAME_TEST);
@@ -1513,7 +1489,7 @@ public class CloudFoundryClientTest {
         assertTrue("haash-broker failed to start", pass);
 
         CloudServiceBroker newBroker = new CloudServiceBroker(CloudEntity.Meta.defaultMeta(), "haash-broker",
-                "http://haash-broker.cf.deepsouthcloud.com", "warreng", "snoopdogg");
+            "http://haash-broker.cf.deepsouthcloud.com", "warreng", "snoopdogg");
         connectedClient.createServiceBroker(newBroker);
 
         CloudServiceBroker broker = connectedClient.getServiceBroker("haash-broker");
@@ -1524,8 +1500,8 @@ public class CloudFoundryClientTest {
         assertEquals("warreng", broker.getUsername());
         assertNull(broker.getPassword());
 
-        newBroker = new CloudServiceBroker(CloudEntity.Meta.defaultMeta(), "haash-broker", "http://haash-broker.cf" +
-                ".deepsouthcloud.com", "warreng", "snoopdogg");
+        newBroker = new CloudServiceBroker(CloudEntity.Meta.defaultMeta(), "haash-broker", "http://haash-broker.cf" + ".deepsouthcloud.com",
+            "warreng", "snoopdogg");
         connectedClient.updateServiceBroker(newBroker);
 
         connectedClient.updateServicePlanVisibilityForBroker("haash-broker", true);
@@ -1534,36 +1510,23 @@ public class CloudFoundryClientTest {
         connectedClient.deleteServiceBroker("haash-broker");
     }
 
-	/*@Test
-    public void getServiceBroker() {
-		assumeTrue(CCNG_USER_IS_ADMIN);
-
-		CloudServiceBroker broker = connectedClient.getServiceBroker("haash-broker");
-		assertNotNull(broker);
-		assertNotNull(broker.getMeta());
-		assertEquals("haash-broker", broker.getName());
-		assertEquals("http://haash-broker.cf.deepsouthcloud.com", broker.getUrl());
-		assertEquals("warreng", broker.getUsername());
-		assertNull(broker.getPassword());
-	}
-
-	@Test
-	public void createServiceBroker() {
-		assumeTrue(CCNG_USER_IS_ADMIN);
-
-		CloudServiceBroker newBroker = new CloudServiceBroker(CloudEntity.Meta.defaultMeta(), "haash-broker",
-		"http://haash-broker.cf.deepsouthcloud.com", "warreng", "natedogg");
-		connectedClient.createServiceBroker(newBroker);
-	}
-
-	@Test
-	public void updateServiceBroker() {
-		assumeTrue(CCNG_USER_IS_ADMIN);
-
-		CloudServiceBroker newBroker = new CloudServiceBroker(CloudEntity.Meta.defaultMeta(), "haash-broker",
-		"http://haash-broker.cf.deepsouthcloud.com", "warreng", "snoopdogg");
-		connectedClient.updateServiceBroker(newBroker);
-	}*/
+    /*
+     * @Test public void getServiceBroker() { assumeTrue(CCNG_USER_IS_ADMIN);
+     * 
+     * CloudServiceBroker broker = connectedClient.getServiceBroker("haash-broker"); assertNotNull(broker); assertNotNull(broker.getMeta());
+     * assertEquals("haash-broker", broker.getName()); assertEquals("http://haash-broker.cf.deepsouthcloud.com", broker.getUrl());
+     * assertEquals("warreng", broker.getUsername()); assertNull(broker.getPassword()); }
+     * 
+     * @Test public void createServiceBroker() { assumeTrue(CCNG_USER_IS_ADMIN);
+     * 
+     * CloudServiceBroker newBroker = new CloudServiceBroker(CloudEntity.Meta.defaultMeta(), "haash-broker",
+     * "http://haash-broker.cf.deepsouthcloud.com", "warreng", "natedogg"); connectedClient.createServiceBroker(newBroker); }
+     * 
+     * @Test public void updateServiceBroker() { assumeTrue(CCNG_USER_IS_ADMIN);
+     * 
+     * CloudServiceBroker newBroker = new CloudServiceBroker(CloudEntity.Meta.defaultMeta(), "haash-broker",
+     * "http://haash-broker.cf.deepsouthcloud.com", "warreng", "snoopdogg"); connectedClient.updateServiceBroker(newBroker); }
+     */
 
     @Test
     public void setEnvironmentThroughList() throws IOException {
@@ -1676,8 +1639,8 @@ public class CloudFoundryClientTest {
         URL cloudControllerUrl;
 
         cloudControllerUrl = new URL(CCNG_API_URL);
-        connectedClient = new CloudFoundryClient(new CloudCredentials(CCNG_USER_EMAIL, CCNG_USER_PASS),
-                cloudControllerUrl, CCNG_USER_ORG, CCNG_USER_SPACE, httpProxyConfiguration, CCNG_API_SSL);
+        connectedClient = new CloudFoundryClient(new CloudCredentials(CCNG_USER_EMAIL, CCNG_USER_PASS), cloudControllerUrl, CCNG_USER_ORG,
+            CCNG_USER_SPACE, httpProxyConfiguration, CCNG_API_SSL);
         connectedClient.login();
         defaultDomainName = connectedClient.getDefaultDomain().getName();
 
@@ -1690,7 +1653,7 @@ public class CloudFoundryClientTest {
 
         // connectedClient.registerRestLogListener(new RestLogger("CF_REST"));
         if (nbInJvmProxyRcvReqs != null) {
-            nbInJvmProxyRcvReqs.set(0); //reset calls made in setup to leave a clean state for tests to assert
+            nbInJvmProxyRcvReqs.set(0); // reset calls made in setup to leave a clean state for tests to assert
         }
 
         if (!SKIP_INJVM_PROXY) {
@@ -1780,7 +1743,7 @@ public class CloudFoundryClientTest {
     @After
     public void tearDown() throws Exception {
         // Clean after ourselves so that there are no leftover apps, services, domains, and routes
-        if (connectedClient != null) { //may happen if setUp() fails
+        if (connectedClient != null) { // may happen if setUp() fails
             connectedClient.deleteAllApplications();
             connectedClient.deleteAllServices();
             clearTestDomainAndRoutes();
@@ -1870,9 +1833,8 @@ public class CloudFoundryClientTest {
 
         String newPassword = "newPass123";
         connectedClient.updatePassword(newPassword);
-        CloudFoundryClient clientWithChangedPassword =
-                new CloudFoundryClient(new CloudCredentials(CCNG_USER_EMAIL, newPassword), new URL(CCNG_API_URL),
-                        httpProxyConfiguration);
+        CloudFoundryClient clientWithChangedPassword = new CloudFoundryClient(new CloudCredentials(CCNG_USER_EMAIL, newPassword),
+            new URL(CCNG_API_URL), httpProxyConfiguration);
         clientWithChangedPassword.login();
 
         // Revert
@@ -1894,8 +1856,7 @@ public class CloudFoundryClientTest {
         assertEquals("ruby simple.rb", app.getStaging().getCommand());
         connectedClient.stopApplication(appName);
 
-        Staging newStaging = new Staging("ruby simple.rb test", "https://github" +
-                ".com/cloudfoundry/heroku-buildpack-ruby");
+        Staging newStaging = new Staging("ruby simple.rb test", "https://github" + ".com/cloudfoundry/heroku-buildpack-ruby");
         connectedClient.updateApplicationStaging(appName, newStaging);
         app = connectedClient.getApplication(appName);
         assertNotNull(app);
@@ -1925,8 +1886,7 @@ public class CloudFoundryClientTest {
         File war = SampleProjects.nonAsciFileName();
         List<String> serviceNames = new ArrayList<String>();
 
-        connectedClient.createApplication(appName, new Staging(),
-                DEFAULT_MEMORY, uris, serviceNames);
+        connectedClient.createApplication(appName, new Staging(), DEFAULT_MEMORY, uris, serviceNames);
         connectedClient.uploadApplication(appName, war.getCanonicalPath());
 
         CloudApplication app = connectedClient.getApplication(appName);
@@ -2079,19 +2039,17 @@ public class CloudFoundryClientTest {
     private void assertNetworkCallFails(RestTemplate restTemplate, ClientHttpRequestFactory requestFactory) {
         restTemplate.setRequestFactory(requestFactory);
         try {
-            HttpStatus status = restTemplate.execute(CCNG_API_URL + "/info", HttpMethod.GET, null, new
-                    ResponseExtractor<HttpStatus>() {
-                        public HttpStatus extractData(ClientHttpResponse response) throws IOException {
-                            return response.getStatusCode();
-                        }
-                    });
+            HttpStatus status = restTemplate.execute(CCNG_API_URL + "/info", HttpMethod.GET, null, new ResponseExtractor<HttpStatus>() {
+                public HttpStatus extractData(ClientHttpResponse response) throws IOException {
+                    return response.getStatusCode();
+                }
+            });
             Assert.fail("Expected byteman rules to detect direct socket connections, status is:" + status);
         } catch (Exception e) {
-            //good, byteman rejected it as expected
-            //e.printStackTrace();
+            // good, byteman rejected it as expected
+            // e.printStackTrace();
         }
-        assertEquals("Not expecting Jetty to receive requests since we asked direct connections", 0,
-                nbInJvmProxyRcvReqs.get());
+        assertEquals("Not expecting Jetty to receive requests since we asked direct connections", 0, nbInJvmProxyRcvReqs.get());
     }
 
     private void assertRulesMatchTestData(CloudSecurityGroup securityGroup) {
@@ -2177,8 +2135,7 @@ public class CloudFoundryClientTest {
 
     private void assertTimeWithinRange(String message, long actual, int timeTolerance) {
         // Allow more time deviations due to local clock being out of sync with cloud
-        assertTrue(message,
-                Math.abs(System.currentTimeMillis() - actual) < timeTolerance);
+        assertTrue(message, Math.abs(System.currentTimeMillis() - actual) < timeTolerance);
     }
 
     private void clearTestDomainAndRoutes() {
@@ -2223,8 +2180,7 @@ public class CloudFoundryClientTest {
         return connectedClient.getApplication(appName);
     }
 
-    private CloudApplication createAndUploadExplodedSpringTestApp(String appName)
-            throws IOException {
+    private CloudApplication createAndUploadExplodedSpringTestApp(String appName) throws IOException {
         File explodedDir = SampleProjects.springTravelUnpacked(temporaryFolder);
         assertTrue("Expected exploded test app at " + explodedDir.getCanonicalPath(), explodedDir.exists());
         createTestApp(appName, null, new Staging());
@@ -2236,8 +2192,7 @@ public class CloudFoundryClientTest {
     // Shared test methods
     //
 
-    private CloudApplication createAndUploadExplodedTestApp(String appName, File explodedDir, Staging staging)
-            throws IOException {
+    private CloudApplication createAndUploadExplodedTestApp(String appName, File explodedDir, Staging staging) throws IOException {
         assertTrue("Expected exploded test app at " + explodedDir.getCanonicalPath(), explodedDir.exists());
         createTestApp(appName, null, staging);
         connectedClient.uploadApplication(appName, explodedDir.getCanonicalPath());
@@ -2314,8 +2269,7 @@ public class CloudFoundryClientTest {
         return appName;
     }
 
-    private void createStandaloneRubyTestApp(String appName, List<String> uris, List<String> services) throws
-            IOException {
+    private void createStandaloneRubyTestApp(String appName, List<String> uris, List<String> services) throws IOException {
         Staging staging = new Staging("ruby simple.rb", null);
         File file = SampleProjects.standaloneRuby();
         connectedClient.createApplication(appName, staging, 128, uris, services);
@@ -2330,9 +2284,7 @@ public class CloudFoundryClientTest {
                 createMySqlService(serviceName);
             }
         }
-        connectedClient.createApplication(appName, staging,
-                DEFAULT_MEMORY,
-                uris, serviceNames);
+        connectedClient.createApplication(appName, staging, DEFAULT_MEMORY, uris, serviceNames);
     }
 
     private CloudService createUserProvidedService(String serviceName) {
@@ -2349,8 +2301,8 @@ public class CloudFoundryClientTest {
     }
 
     /**
-     * Try to clean up any security group test data left behind in the case of assertions failing and test security
-     * groups not being deleted as part of test logic.
+     * Try to clean up any security group test data left behind in the case of assertions failing and test security groups not being deleted
+     * as part of test logic.
      */
     private void deleteAnyOrphanedTestSecurityGroups() {
         try {
@@ -2579,13 +2531,11 @@ public class CloudFoundryClientTest {
                 int passCount = 0;
                 for (InstanceInfo info : infos) {
                     if (shouldBeRunning) {
-                        if (InstanceState.RUNNING.equals(info.getState()) ||
-                                InstanceState.STARTING.equals(info.getState())) {
+                        if (InstanceState.RUNNING.equals(info.getState()) || InstanceState.STARTING.equals(info.getState())) {
                             passCount++;
                         }
                     } else {
-                        if (InstanceState.CRASHED.equals(info.getState()) ||
-                                InstanceState.FLAPPING.equals(info.getState())) {
+                        if (InstanceState.CRASHED.equals(info.getState()) || InstanceState.FLAPPING.equals(info.getState())) {
                             passCount++;
                         }
                     }

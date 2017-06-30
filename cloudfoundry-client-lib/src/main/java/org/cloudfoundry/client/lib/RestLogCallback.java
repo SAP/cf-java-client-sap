@@ -16,7 +16,6 @@
 
 package org.cloudfoundry.client.lib;
 
-
 /**
  * Callback to support reporting of log information for any REST calls.
  *

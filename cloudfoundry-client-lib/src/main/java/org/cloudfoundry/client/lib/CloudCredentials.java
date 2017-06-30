@@ -42,7 +42,7 @@ public class CloudCredentials {
     /**
      * Create credentials using email and password.
      *
-     * @param email    email to authenticate with
+     * @param email email to authenticate with
      * @param password the password
      */
     public CloudCredentials(String email, String password) {
@@ -53,7 +53,7 @@ public class CloudCredentials {
     /**
      * Create credentials using email, password, and client ID.
      *
-     * @param email    email to authenticate with
+     * @param email email to authenticate with
      * @param password the password
      * @param clientId the client ID to use for authorization
      */
@@ -66,9 +66,9 @@ public class CloudCredentials {
     /**
      * Create credentials using email, password and client ID.
      *
-     * @param email        email to authenticate with
-     * @param password     the password
-     * @param clientId     the client ID to use for authorization
+     * @param email email to authenticate with
+     * @param password the password
+     * @param clientId the client ID to use for authorization
      * @param clientSecret the secret for the given client
      */
     public CloudCredentials(String email, String password, String clientId, String clientSecret) {
@@ -90,7 +90,7 @@ public class CloudCredentials {
     /**
      * Create credentials using a token and indicates if the token is refreshable or not.
      *
-     * @param token       token to use for authorization
+     * @param token token to use for authorization
      * @param refreshable indicates if the token can be refreshed or not
      */
     public CloudCredentials(OAuth2AccessToken token, boolean refreshable) {
@@ -101,7 +101,7 @@ public class CloudCredentials {
     /**
      * Create credentials using a token.
      *
-     * @param token    token to use for authorization
+     * @param token token to use for authorization
      * @param clientId the client ID to use for authorization
      */
     public CloudCredentials(OAuth2AccessToken token, String clientId) {
@@ -112,8 +112,8 @@ public class CloudCredentials {
     /**
      * Create credentials using a token.
      *
-     * @param token        token to use for authorization
-     * @param clientId     the client ID to use for authorization
+     * @param token token to use for authorization
+     * @param clientId the client ID to use for authorization
      * @param clientSecret the password for the specified client
      */
     public CloudCredentials(OAuth2AccessToken token, String clientId, String clientSecret) {
@@ -126,7 +126,7 @@ public class CloudCredentials {
      * Create proxy credentials.
      *
      * @param cloudCredentials credentials to use
-     * @param proxyForUser     user to be proxied
+     * @param proxyForUser user to be proxied
      */
     public CloudCredentials(CloudCredentials cloudCredentials, String proxyForUser) {
         this.email = cloudCredentials.getEmail();
@@ -200,8 +200,8 @@ public class CloudCredentials {
     }
 
     /**
-     * Indicates weather the token stored in the cloud credentials can be refreshed or not. This is useful when the
-     * token stored in this object was obtained via implicit OAuth2 authentication and therefore can not be refreshed.
+     * Indicates weather the token stored in the cloud credentials can be refreshed or not. This is useful when the token stored in this
+     * object was obtained via implicit OAuth2 authentication and therefore can not be refreshed.
      *
      * @return weather the token can be refreshed
      */
@@ -210,7 +210,7 @@ public class CloudCredentials {
     }
 
     /**
-     * Run commands as a different user.  The authenticated user must be privileged to run as this user.
+     * Run commands as a different user. The authenticated user must be privileged to run as this user.
      *
      * @param user the user to proxy for
      * @return credentials for the proxied user

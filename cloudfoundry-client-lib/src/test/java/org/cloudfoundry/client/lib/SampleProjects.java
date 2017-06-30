@@ -16,11 +16,7 @@
 
 package org.cloudfoundry.client.lib;
 
-import org.apache.commons.io.FileUtils;
-import org.junit.Rule;
-import org.junit.rules.TemporaryFolder;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.util.FileCopyUtils;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -29,7 +25,11 @@ import java.util.Enumeration;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-import static org.junit.Assert.assertTrue;
+import org.apache.commons.io.FileUtils;
+import org.junit.Rule;
+import org.junit.rules.TemporaryFolder;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.util.FileCopyUtils;
 
 /**
  * Provides access to sample projects.
@@ -174,8 +174,7 @@ public class SampleProjects {
         new File(repo, "refs").mkdir();
     }
 
-    private static File copyAppToTempDir(TemporaryFolder temporaryFolder,
-                                         File file) throws IOException {
+    private static File copyAppToTempDir(TemporaryFolder temporaryFolder, File file) throws IOException {
         File tmpDir = temporaryFolder.newFolder(file.getName());
         if (tmpDir.exists()) {
             FileUtils.forceDelete(tmpDir);

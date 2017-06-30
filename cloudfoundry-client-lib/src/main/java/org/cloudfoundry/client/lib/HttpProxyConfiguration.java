@@ -16,7 +16,6 @@
 
 package org.cloudfoundry.client.lib;
 
-
 /**
  * Class that encapsulates http proxy information
  *
@@ -38,8 +37,7 @@ public class HttpProxyConfiguration {
         this(proxyHost, proxyPort, false, null, null);
     }
 
-    public HttpProxyConfiguration(String proxyHost, int proxyPort,
-                                  boolean authRequired, String username, String password) {
+    public HttpProxyConfiguration(String proxyHost, int proxyPort, boolean authRequired, String username, String password) {
         this.proxyHost = proxyHost;
         this.proxyPort = proxyPort;
         this.authRequired = authRequired;

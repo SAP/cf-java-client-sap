@@ -16,10 +16,10 @@
 
 package org.cloudfoundry.client.lib;
 
+import java.net.URI;
+
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
-
-import java.net.URI;
 
 /**
  * RestLogEntry containing the values logged for each REST call

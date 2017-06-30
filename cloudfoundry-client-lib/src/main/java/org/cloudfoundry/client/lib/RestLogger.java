@@ -39,10 +39,8 @@ public class RestLogger implements RestLogCallback {
     }
 
     private String formatLogMessage(RestLogEntry restLogEntry) {
-        return restLogEntry.getStatus() +
-                " :: HTTP STATUS: " + restLogEntry.getHttpStatus() +
-                " :: REQUEST: " + restLogEntry.getMethod() + " " + restLogEntry.getUri() +
-                " :: " + restLogEntry.getMessage();
+        return restLogEntry.getStatus() + " :: HTTP STATUS: " + restLogEntry.getHttpStatus() + " :: REQUEST: " + restLogEntry.getMethod()
+            + " " + restLogEntry.getUri() + " :: " + restLogEntry.getMessage();
     }
 
 }

@@ -16,14 +16,9 @@
 
 package org.cloudfoundry.client.lib;
 
-import org.cloudfoundry.client.lib.archive.ApplicationArchive;
-import org.cloudfoundry.client.lib.archive.ZipApplicationArchive;
-import org.cloudfoundry.client.lib.domain.CloudResource;
-import org.cloudfoundry.client.lib.domain.CloudResources;
-import org.codehaus.jackson.JsonParseException;
-import org.codehaus.jackson.map.JsonMappingException;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.junit.Test;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -35,9 +30,14 @@ import java.util.List;
 import java.util.Set;
 import java.util.zip.ZipFile;
 
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import org.cloudfoundry.client.lib.archive.ApplicationArchive;
+import org.cloudfoundry.client.lib.archive.ZipApplicationArchive;
+import org.cloudfoundry.client.lib.domain.CloudResource;
+import org.cloudfoundry.client.lib.domain.CloudResources;
+import org.codehaus.jackson.JsonParseException;
+import org.codehaus.jackson.map.JsonMappingException;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.junit.Test;
 
 /**
  * Tests for {@link org.cloudfoundry.client.lib.domain.CloudResources}.
@@ -54,8 +54,7 @@ public class CloudResourcesTest {
 
     @Test
     public void shouldCreateFromIterator() throws Exception {
-        Iterator<? extends CloudResource> i = Collections.singleton(new CloudResource("index.html", 93L, SHA))
-                .iterator();
+        Iterator<? extends CloudResource> i = Collections.singleton(new CloudResource("index.html", 93L, SHA)).iterator();
         CloudResources o = new CloudResources(i);
         List<CloudResource> l = o.asList();
         assertThat(l.size(), is(1));

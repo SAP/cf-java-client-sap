@@ -1,12 +1,10 @@
 package org.cloudfoundry.client.lib;
 
-
 import java.io.IOException;
 import java.net.DatagramSocket;
 import java.net.ServerSocket;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
 
 /**
  * Utility class used within the InJvm http proxy tests copied from https://github.com/TheLadders/embedded-test-jetty
@@ -15,7 +13,6 @@ public final class PortAvailability {
 
     private static final Logger LOGGER = Logger.getLogger(PortAvailability.class.getName());
 
-
     /**
      * Checks to see if a specific port is available.
      *
@@ -23,7 +20,7 @@ public final class PortAvailability {
      */
     /*
      * Slightly adapted from Apache MINA (took out min/max port check)
-	 */
+     */
     public static boolean available(int port) {
         ServerSocket ss = null;
         DatagramSocket ds = null;
@@ -43,13 +40,11 @@ public final class PortAvailability {
         return false;
     }
 
-
     private static void close(DatagramSocket ds) {
         if (ds != null) {
             ds.close();
         }
     }
-
 
     private static void close(ServerSocket ss) {
         if (ss != null) {

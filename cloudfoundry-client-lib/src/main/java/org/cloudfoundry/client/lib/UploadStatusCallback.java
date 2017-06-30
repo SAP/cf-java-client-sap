@@ -63,9 +63,9 @@ public interface UploadStatusCallback {
     /**
      * Called during asynchronous upload process.
      *
-     * Implementation can return true to unsubscribe from progress update reports. This is useful if the caller want to
-     * unblock the thread that initiated the upload. Note, however, that the upload job that has been asynchronously
-     * started will continue to execute on the server.
+     * Implementation can return true to unsubscribe from progress update reports. This is useful if the caller want to unblock the thread
+     * that initiated the upload. Note, however, that the upload job that has been asynchronously started will continue to execute on the
+     * server.
      *
      * @param status string such as "queued", "finished"
      * @return true to unsubscribe from update report

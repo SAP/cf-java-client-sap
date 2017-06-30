@@ -16,6 +16,14 @@
 
 package org.cloudfoundry.client.lib;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
 import org.cloudfoundry.client.lib.archive.ApplicationArchive;
 import org.cloudfoundry.client.lib.domain.ApplicationLog;
 import org.cloudfoundry.client.lib.domain.ApplicationStats;
@@ -43,14 +51,6 @@ import org.cloudfoundry.client.lib.rest.CloudControllerClientFactory;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.util.Assert;
 import org.springframework.web.client.ResponseErrorHandler;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 
 /**
  * A Java client to exercise the Cloud Foundry API.
@@ -84,8 +84,7 @@ public class CloudFoundryClient implements CloudFoundryOperations {
         this(null, cloudControllerUrl, null, httpProxyConfiguration, false);
     }
 
-    public CloudFoundryClient(URL cloudControllerUrl, HttpProxyConfiguration httpProxyConfiguration,
-                              boolean trustSelfSignedCerts) {
+    public CloudFoundryClient(URL cloudControllerUrl, HttpProxyConfiguration httpProxyConfiguration, boolean trustSelfSignedCerts) {
         this(null, cloudControllerUrl, null, httpProxyConfiguration, trustSelfSignedCerts);
     }
 
@@ -97,18 +96,16 @@ public class CloudFoundryClient implements CloudFoundryOperations {
         this(credentials, cloudControllerUrl, null, (HttpProxyConfiguration) null, false);
     }
 
-    public CloudFoundryClient(CloudCredentials credentials, URL cloudControllerUrl,
-                              boolean trustSelfSignedCerts) {
+    public CloudFoundryClient(CloudCredentials credentials, URL cloudControllerUrl, boolean trustSelfSignedCerts) {
         this(credentials, cloudControllerUrl, null, (HttpProxyConfiguration) null, trustSelfSignedCerts);
     }
 
-    public CloudFoundryClient(CloudCredentials credentials, URL cloudControllerUrl,
-                              HttpProxyConfiguration httpProxyConfiguration) {
+    public CloudFoundryClient(CloudCredentials credentials, URL cloudControllerUrl, HttpProxyConfiguration httpProxyConfiguration) {
         this(credentials, cloudControllerUrl, null, httpProxyConfiguration, false);
     }
 
-    public CloudFoundryClient(CloudCredentials credentials, URL cloudControllerUrl,
-                              HttpProxyConfiguration httpProxyConfiguration, boolean trustSelfSignedCerts) {
+    public CloudFoundryClient(CloudCredentials credentials, URL cloudControllerUrl, HttpProxyConfiguration httpProxyConfiguration,
+        boolean trustSelfSignedCerts) {
         this(credentials, cloudControllerUrl, null, httpProxyConfiguration, trustSelfSignedCerts);
     }
 
@@ -120,21 +117,20 @@ public class CloudFoundryClient implements CloudFoundryOperations {
         this(credentials, cloudControllerUrl, sessionSpace, null, false);
     }
 
-    public CloudFoundryClient(CloudCredentials credentials, URL cloudControllerUrl, CloudSpace sessionSpace,
-                              boolean trustSelfSignedCerts) {
+    public CloudFoundryClient(CloudCredentials credentials, URL cloudControllerUrl, CloudSpace sessionSpace, boolean trustSelfSignedCerts) {
         this(credentials, cloudControllerUrl, sessionSpace, null, trustSelfSignedCerts);
     }
 
     public CloudFoundryClient(CloudCredentials credentials, URL cloudControllerUrl, CloudSpace sessionSpace,
-                              HttpProxyConfiguration httpProxyConfiguration) {
+        HttpProxyConfiguration httpProxyConfiguration) {
         this(credentials, cloudControllerUrl, sessionSpace, httpProxyConfiguration, false);
     }
 
     public CloudFoundryClient(CloudCredentials credentials, URL cloudControllerUrl, CloudSpace sessionSpace,
-                              HttpProxyConfiguration httpProxyConfiguration, boolean trustSelfSignedCerts) {
+        HttpProxyConfiguration httpProxyConfiguration, boolean trustSelfSignedCerts) {
         Assert.notNull(cloudControllerUrl, "URL for cloud controller cannot be null");
-        CloudControllerClientFactory cloudControllerClientFactory =
-                new CloudControllerClientFactory(httpProxyConfiguration, trustSelfSignedCerts);
+        CloudControllerClientFactory cloudControllerClientFactory = new CloudControllerClientFactory(httpProxyConfiguration,
+            trustSelfSignedCerts);
         this.cc = cloudControllerClientFactory.newCloudController(cloudControllerUrl, credentials, sessionSpace);
     }
 
@@ -147,20 +143,20 @@ public class CloudFoundryClient implements CloudFoundryOperations {
     }
 
     public CloudFoundryClient(CloudCredentials credentials, URL cloudControllerUrl, String orgName, String spaceName,
-                              boolean trustSelfSignedCerts) {
+        boolean trustSelfSignedCerts) {
         this(credentials, cloudControllerUrl, orgName, spaceName, null, trustSelfSignedCerts);
     }
 
     public CloudFoundryClient(CloudCredentials credentials, URL cloudControllerUrl, String orgName, String spaceName,
-                              HttpProxyConfiguration httpProxyConfiguration) {
+        HttpProxyConfiguration httpProxyConfiguration) {
         this(credentials, cloudControllerUrl, orgName, spaceName, httpProxyConfiguration, false);
     }
 
     public CloudFoundryClient(CloudCredentials credentials, URL cloudControllerUrl, String orgName, String spaceName,
-                              HttpProxyConfiguration httpProxyConfiguration, boolean trustSelfSignedCerts) {
+        HttpProxyConfiguration httpProxyConfiguration, boolean trustSelfSignedCerts) {
         Assert.notNull(cloudControllerUrl, "URL for cloud controller cannot be null");
-        CloudControllerClientFactory cloudControllerClientFactory =
-                new CloudControllerClientFactory(httpProxyConfiguration, trustSelfSignedCerts);
+        CloudControllerClientFactory cloudControllerClientFactory = new CloudControllerClientFactory(httpProxyConfiguration,
+            trustSelfSignedCerts);
         this.cc = cloudControllerClientFactory.newCloudController(cloudControllerUrl, credentials, orgName, spaceName);
     }
 
@@ -243,13 +239,12 @@ public class CloudFoundryClient implements CloudFoundryOperations {
         cc.bindStagingSecurityGroup(securityGroupName);
     }
 
-    public void createApplication(String appName, Staging staging, Integer memory, List<String> uris,
-                                  List<String> serviceNames) {
+    public void createApplication(String appName, Staging staging, Integer memory, List<String> uris, List<String> serviceNames) {
         cc.createApplication(appName, staging, memory, uris, serviceNames);
     }
 
     public void createApplication(String appName, Staging staging, Integer disk, Integer memory, List<String> uris,
-                                  List<String> serviceNames) {
+        List<String> serviceNames) {
         cc.createApplication(appName, staging, disk, memory, uris, serviceNames);
     }
 
@@ -284,8 +279,7 @@ public class CloudFoundryClient implements CloudFoundryOperations {
         cc.createUserProvidedService(service, credentials);
     }
 
-    public void createUserProvidedService(CloudService service, Map<String, Object> credentials, String
-            syslogDrainUrl) {
+    public void createUserProvidedService(CloudService service, Map<String, Object> credentials, String syslogDrainUrl) {
         cc.createUserProvidedService(service, credentials, syslogDrainUrl);
     }
 
@@ -420,17 +414,14 @@ public class CloudFoundryClient implements CloudFoundryOperations {
     }
 
     public String getFile(String appName, int instanceIndex, String filePath, int startPosition) {
-        Assert.isTrue(startPosition >= 0,
-                startPosition + " is not a valid value for start position, it should be 0 or greater.");
+        Assert.isTrue(startPosition >= 0, startPosition + " is not a valid value for start position, it should be 0 or greater.");
         return cc.getFile(appName, instanceIndex, filePath, startPosition, -1);
     }
 
     public String getFile(String appName, int instanceIndex, String filePath, int startPosition, int endPosition) {
-        Assert.isTrue(startPosition >= 0,
-                startPosition + " is not a valid value for start position, it should be 0 or greater.");
-        Assert.isTrue(endPosition > startPosition,
-                endPosition + " is not a valid value for end position, it should be greater than startPosition " +
-                        "which is " + startPosition + ".");
+        Assert.isTrue(startPosition >= 0, startPosition + " is not a valid value for start position, it should be 0 or greater.");
+        Assert.isTrue(endPosition > startPosition, endPosition
+            + " is not a valid value for end position, it should be greater than startPosition " + "which is " + startPosition + ".");
         return cc.getFile(appName, instanceIndex, filePath, startPosition, endPosition - 1);
     }
 
@@ -743,8 +734,8 @@ public class CloudFoundryClient implements CloudFoundryOperations {
         cc.uploadApplication(appName, fileName, inputStream, null);
     }
 
-    public void uploadApplication(String appName, String fileName, InputStream inputStream, UploadStatusCallback
-            callback) throws IOException {
+    public void uploadApplication(String appName, String fileName, InputStream inputStream, UploadStatusCallback callback)
+        throws IOException {
         cc.uploadApplication(appName, fileName, inputStream, callback);
     }
 
@@ -752,8 +743,7 @@ public class CloudFoundryClient implements CloudFoundryOperations {
         cc.uploadApplication(appName, archive, null);
     }
 
-    public void uploadApplication(String appName, ApplicationArchive archive, UploadStatusCallback callback) throws
-            IOException {
+    public void uploadApplication(String appName, ApplicationArchive archive, UploadStatusCallback callback) throws IOException {
         cc.uploadApplication(appName, archive, callback);
     }
 }
