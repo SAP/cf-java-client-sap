@@ -17,42 +17,57 @@
 package org.cloudfoundry.client.lib;
 
 import org.springframework.http.HttpStatus;
-import org.springframework.web.client.HttpClientErrorException;
 
 @SuppressWarnings("serial")
-public class CloudFoundryException extends HttpClientErrorException {
+public class CloudFoundryException extends RuntimeException {
 
-    private int cloudFoundryErrorCode = -1;
+    private static final int DEFAULT_CF_ERROR_CODE = -1;
 
-    private String description;
+    private HttpStatus statusCode;
+    private final String statusText;
+    private final int cloudFoundryErrorCode;
+    private final String cloudFoundryErrorName;
+    private final String description;
 
     public CloudFoundryException(HttpStatus statusCode) {
-        super(statusCode);
+        this(statusCode, statusCode.getReasonPhrase());
     }
 
     public CloudFoundryException(HttpStatus statusCode, String statusText) {
-        super(statusCode, statusText);
+        this(statusCode, statusText, null);
     }
 
-    public CloudFoundryException(HttpStatus statusCode, String statusText, int cloudFoundryErrorCode) {
-        super(statusCode, statusText);
-        this.cloudFoundryErrorCode = cloudFoundryErrorCode;
-    }
-
-    /**
-     * Construct a new instance of {@code CloudFoundryException} based on a {@link HttpStatus}, status text and description.
-     *
-     * @param statusCode the status code
-     * @param statusText the status text
-     * @param description the description
-     */
     public CloudFoundryException(HttpStatus statusCode, String statusText, String description) {
-        super(statusCode, statusText);
+        this(statusCode, statusText, description, DEFAULT_CF_ERROR_CODE, null);
+    }
+
+    public CloudFoundryException(HttpStatus statusCode, String statusText, String description, int cloudFoundryErrorCode,
+        String cloudFoundryErrorName) {
+        super(getExceptionMessage(statusCode, statusText, description));
+        this.statusCode = statusCode;
+        this.statusText = statusText;
+        this.cloudFoundryErrorCode = cloudFoundryErrorCode;
+        this.cloudFoundryErrorName = cloudFoundryErrorName;
         this.description = description;
     }
 
+    private static String getExceptionMessage(HttpStatus statusCode, String statusText, String description) {
+        if (description != null) {
+            return String.format("%d %s: %s", statusCode.value(), statusText, description);
+        }
+        return String.format("%d %s", statusCode.value(), statusText);
+    }
+
+    public HttpStatus getStatusCode() {
+        return statusCode;
+    }
+
+    public String getStatusText() {
+        return statusText;
+    }
+
     /**
-     * Returns an additional error code that is specific to failures in Cloud Foundry requests or behaviour.
+     * Returns an additional error code that is specific to failures in Cloud Foundry requests or behavior.
      *
      * @return Cloud Foundry error code, if available, or -1 if unknown.
      */
@@ -60,19 +75,17 @@ public class CloudFoundryException extends HttpClientErrorException {
         return cloudFoundryErrorCode;
     }
 
+    /**
+     * Returns the name of the CF error code returned by {@link #getCloudFoundryErrorCode()}.
+     *
+     * @return Cloud Foundry error name.
+     */
+    public String getCloudFoundryErrorName() {
+        return cloudFoundryErrorName;
+    }
+
     public String getDescription() {
         return description;
     }
 
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    @Override
-    public String toString() {
-        if (description != null) {
-            return super.toString() + " (" + description + ")";
-        }
-        return super.toString();
-    }
 }

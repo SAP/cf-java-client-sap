@@ -46,124 +46,122 @@ import org.springframework.web.client.RestTemplate;
  */
 public class OauthClient {
 
-	private static final String AUTHORIZATION_HEADER_KEY = "Authorization";
+    private static final String AUTHORIZATION_HEADER_KEY = "Authorization";
 
-	private URL authorizationUrl;
+    private URL authorizationUrl;
 
-	private RestTemplate restTemplate;
+    private RestTemplate restTemplate;
 
-	private OAuth2AccessToken token;
-	private CloudCredentials credentials;
+    private OAuth2AccessToken token;
+    private CloudCredentials credentials;
 
-	public OauthClient(URL authorizationUrl, RestTemplate restTemplate) {
-		this.authorizationUrl = authorizationUrl;
-		this.restTemplate = restTemplate;
-	}
+    public OauthClient(URL authorizationUrl, RestTemplate restTemplate) {
+        this.authorizationUrl = authorizationUrl;
+        this.restTemplate = restTemplate;
+    }
 
-	public void init(CloudCredentials credentials) {
-		if (credentials != null) {
-			this.credentials = credentials;
+    public void init(CloudCredentials credentials) {
+        if (credentials != null) {
+            this.credentials = credentials;
 
-			if (credentials.getToken() != null) {
-				this.token = credentials.getToken();
-			} else {
-				this.token = createToken(credentials.getEmail(), credentials.getPassword(),
-						credentials.getClientId(), credentials.getClientSecret());
-			}
-		}
-	}
+            if (credentials.getToken() != null) {
+                this.token = credentials.getToken();
+            } else {
+                this.token = createToken(credentials.getEmail(), credentials.getPassword(), credentials.getClientId(),
+                    credentials.getClientSecret());
+            }
+        }
+    }
 
-	public void clear() {
-		this.token = null;
-		this.credentials = null;
-	}
+    public void clear() {
+        this.token = null;
+        this.credentials = null;
+    }
 
-	public OAuth2AccessToken getToken() {
-		if (token == null) {
-			return null;
-		}
+    public OAuth2AccessToken getToken() {
+        if (token == null) {
+            return null;
+        }
 
-		if(this.credentials.isRefreshable()) {
-			if (token.getExpiresIn() < 50) { // 50 seconds before expiration? Then refresh it.
-				token = refreshToken(token, credentials.getEmail(), credentials.getPassword(),
-						credentials.getClientId(), credentials.getClientSecret());
-			}
-		}
+        if (this.credentials.isRefreshable()) {
+            if (token.getExpiresIn() < 50) { // 50 seconds before expiration? Then refresh it.
+                token = refreshToken(token, credentials.getEmail(), credentials.getPassword(), credentials.getClientId(),
+                    credentials.getClientSecret());
+            }
+        }
 
-		return token;
-	}
+        return token;
+    }
 
-	public String getAuthorizationHeader() {
-		OAuth2AccessToken accessToken = getToken();
-		if (accessToken != null) {
-			return accessToken.getTokenType() + " " + accessToken.getValue();
-		}
-		return null;
-	}
+    public String getAuthorizationHeader() {
+        OAuth2AccessToken accessToken = getToken();
+        if (accessToken != null) {
+            return accessToken.getTokenType() + " " + accessToken.getValue();
+        }
+        return null;
+    }
 
-	private OAuth2AccessToken createToken(String username, String password, String clientId, String clientSecret) {
-		OAuth2ProtectedResourceDetails resource = getResourceDetails(username, password, clientId, clientSecret);
-		AccessTokenRequest request = createAccessTokenRequest(username, password);
+    private OAuth2AccessToken createToken(String username, String password, String clientId, String clientSecret) {
+        OAuth2ProtectedResourceDetails resource = getResourceDetails(username, password, clientId, clientSecret);
+        AccessTokenRequest request = createAccessTokenRequest(username, password);
 
-		ResourceOwnerPasswordAccessTokenProvider provider = createResourceOwnerPasswordAccessTokenProvider();
-		try {
-			return provider.obtainAccessToken(resource, request);
-		}
-		catch (OAuth2AccessDeniedException oauthEx) {
-			HttpStatus status = HttpStatus.valueOf(oauthEx.getHttpErrorCode());
-			CloudFoundryException cfEx = new CloudFoundryException(status, oauthEx.getMessage());
-			cfEx.setDescription(oauthEx.getSummary());
-			throw cfEx;
-		}
-	}
+        ResourceOwnerPasswordAccessTokenProvider provider = createResourceOwnerPasswordAccessTokenProvider();
+        try {
+            return provider.obtainAccessToken(resource, request);
+        } catch (OAuth2AccessDeniedException oauthEx) {
+            HttpStatus status = HttpStatus.valueOf(oauthEx.getHttpErrorCode());
+            throw new CloudFoundryException(status, oauthEx.getMessage(), oauthEx.getSummary());
+        }
+    }
 
-	private OAuth2AccessToken refreshToken(OAuth2AccessToken currentToken, String username, String password, String clientId, String clientSecret) {
-		OAuth2ProtectedResourceDetails resource = getResourceDetails(username, password, clientId, clientSecret);
-		AccessTokenRequest request = createAccessTokenRequest(username, password);
+    private OAuth2AccessToken refreshToken(OAuth2AccessToken currentToken, String username, String password, String clientId,
+        String clientSecret) {
+        OAuth2ProtectedResourceDetails resource = getResourceDetails(username, password, clientId, clientSecret);
+        AccessTokenRequest request = createAccessTokenRequest(username, password);
 
-		ResourceOwnerPasswordAccessTokenProvider provider = createResourceOwnerPasswordAccessTokenProvider();
+        ResourceOwnerPasswordAccessTokenProvider provider = createResourceOwnerPasswordAccessTokenProvider();
 
-		return provider.refreshAccessToken(resource, currentToken.getRefreshToken(), request);
-	}
+        return provider.refreshAccessToken(resource, currentToken.getRefreshToken(), request);
+    }
 
-	@SuppressWarnings({ "rawtypes", "unchecked" })
-	public void changePassword(String oldPassword, String newPassword) {
-		HttpHeaders headers = new HttpHeaders();
-		headers.add(AUTHORIZATION_HEADER_KEY, token.getTokenType() + " " + token.getValue());
-		HttpEntity info = new HttpEntity(headers);
-		ResponseEntity<String> response = restTemplate.exchange(authorizationUrl + "/userinfo", HttpMethod.GET, info, String.class);
-		Map<String, Object> responseMap = JsonUtil.convertJsonToMap(response.getBody());
-		String userId = (String) responseMap.get("user_id");
-		Map<String, Object> body = new HashMap<String, Object>();
-		body.put("schemas", new String[] {"urn:scim:schemas:core:1.0"});
-		body.put("password", newPassword);
-		body.put("oldPassword", oldPassword);
-		HttpEntity<Map> httpEntity = new HttpEntity<Map>(body, headers);
-		restTemplate.put(authorizationUrl + "/User/{id}/password", httpEntity, userId);
-	}
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    public void changePassword(String oldPassword, String newPassword) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.add(AUTHORIZATION_HEADER_KEY, token.getTokenType() + " " + token.getValue());
+        HttpEntity info = new HttpEntity(headers);
+        ResponseEntity<String> response = restTemplate.exchange(authorizationUrl + "/userinfo", HttpMethod.GET, info, String.class);
+        Map<String, Object> responseMap = JsonUtil.convertJsonToMap(response.getBody());
+        String userId = (String) responseMap.get("user_id");
+        Map<String, Object> body = new HashMap<String, Object>();
+        body.put("schemas", new String[] { "urn:scim:schemas:core:1.0" });
+        body.put("password", newPassword);
+        body.put("oldPassword", oldPassword);
+        HttpEntity<Map> httpEntity = new HttpEntity<Map>(body, headers);
+        restTemplate.put(authorizationUrl + "/User/{id}/password", httpEntity, userId);
+    }
 
-	protected ResourceOwnerPasswordAccessTokenProvider createResourceOwnerPasswordAccessTokenProvider() {
-		ResourceOwnerPasswordAccessTokenProvider resourceOwnerPasswordAccessTokenProvider = new ResourceOwnerPasswordAccessTokenProvider();
-		resourceOwnerPasswordAccessTokenProvider.setRequestFactory(restTemplate.getRequestFactory()); //copy the http proxy along
-		return resourceOwnerPasswordAccessTokenProvider;
-	}
+    protected ResourceOwnerPasswordAccessTokenProvider createResourceOwnerPasswordAccessTokenProvider() {
+        ResourceOwnerPasswordAccessTokenProvider resourceOwnerPasswordAccessTokenProvider = new ResourceOwnerPasswordAccessTokenProvider();
+        resourceOwnerPasswordAccessTokenProvider.setRequestFactory(restTemplate.getRequestFactory()); // copy the http proxy along
+        return resourceOwnerPasswordAccessTokenProvider;
+    }
 
-	private AccessTokenRequest createAccessTokenRequest(String username, String password) {
-		AccessTokenRequest request = new DefaultAccessTokenRequest();
-		return request;
-	}
+    private AccessTokenRequest createAccessTokenRequest(String username, String password) {
+        AccessTokenRequest request = new DefaultAccessTokenRequest();
+        return request;
+    }
 
-	private OAuth2ProtectedResourceDetails getResourceDetails(String username, String password, String clientId, String clientSecret) {
-		ResourceOwnerPasswordResourceDetails resource = new ResourceOwnerPasswordResourceDetails();
-		resource.setUsername(username);
-		resource.setPassword(password);
+    private OAuth2ProtectedResourceDetails getResourceDetails(String username, String password, String clientId, String clientSecret) {
+        ResourceOwnerPasswordResourceDetails resource = new ResourceOwnerPasswordResourceDetails();
+        resource.setUsername(username);
+        resource.setPassword(password);
 
-		resource.setClientId(clientId);
-		resource.setClientSecret(clientSecret);
-		resource.setId(clientId);
-		resource.setClientAuthenticationScheme(AuthenticationScheme.header);
-		resource.setAccessTokenUri(authorizationUrl + "/oauth/token");
+        resource.setClientId(clientId);
+        resource.setClientSecret(clientSecret);
+        resource.setId(clientId);
+        resource.setClientAuthenticationScheme(AuthenticationScheme.header);
+        resource.setAccessTokenUri(authorizationUrl + "/oauth/token");
 
-		return resource;
-	}
+        return resource;
+    }
 }
