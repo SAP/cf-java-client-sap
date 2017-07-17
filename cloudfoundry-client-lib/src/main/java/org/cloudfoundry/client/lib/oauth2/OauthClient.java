@@ -52,7 +52,7 @@ public class OauthClient {
 
     private RestTemplate restTemplate;
 
-    private OAuth2AccessToken token;
+    protected OAuth2AccessToken token;
     private CloudCredentials credentials;
 
     public OauthClient(URL authorizationUrl, RestTemplate restTemplate) {
