@@ -26,7 +26,10 @@ public class CloudControllerResponseErrorHandler extends DefaultResponseErrorHan
             try {
                 @SuppressWarnings("unchecked")
                 Map<String, Object> map = mapper.readValue(response.getBody(), Map.class);
-                String description = CloudUtil.parse(String.class, map.get("description")).trim();
+                String description = CloudUtil.parse(String.class, map.get("description"));
+                if (description != null) {
+                    description = description.trim();
+                }
 
                 int cloudFoundryErrorCode = CloudUtil.parse(Integer.class, map.get("code"));
                 String cloudFoundryErrorName = CloudUtil.parse(String.class, map.get("error_code"));
