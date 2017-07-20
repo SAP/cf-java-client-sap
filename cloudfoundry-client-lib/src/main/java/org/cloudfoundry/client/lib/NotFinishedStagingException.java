@@ -23,7 +23,9 @@ public class NotFinishedStagingException extends CloudFoundryException {
 
     public static final int ERROR_CODE = 170002;
 
-    public NotFinishedStagingException(HttpStatus statusCode, String statusText) {
-        super(statusCode, statusText, ERROR_CODE);
+    public NotFinishedStagingException(HttpStatus statusCode, String statusText, String description, int cloudFoundryErrorCode,
+        String cloudFoundryErrorName) {
+        super(statusCode, statusText, description, cloudFoundryErrorCode, cloudFoundryErrorName);
     }
+
 }

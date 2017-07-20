@@ -1,5 +1,8 @@
 package org.cloudfoundry.client.lib.rest;
 
+import java.io.IOException;
+import java.util.Map;
+
 import org.cloudfoundry.client.lib.CloudFoundryException;
 import org.cloudfoundry.client.lib.NotFinishedStagingException;
 import org.cloudfoundry.client.lib.StagingErrorException;
@@ -9,19 +12,12 @@ import org.codehaus.jackson.map.ObjectMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.web.client.DefaultResponseErrorHandler;
-import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestClientException;
-
-import java.io.IOException;
-import java.util.Map;
 
 public class CloudControllerResponseErrorHandler extends DefaultResponseErrorHandler {
 
     private static CloudFoundryException getException(ClientHttpResponse response) throws IOException {
         HttpStatus statusCode = response.getStatusCode();
-        CloudFoundryException cloudFoundryException = null;
-
-        String description = "Client error";
         String statusText = response.getStatusText();
 
         ObjectMapper mapper = new ObjectMapper(); // can reuse, share globally
@@ -30,36 +26,35 @@ public class CloudControllerResponseErrorHandler extends DefaultResponseErrorHan
             try {
                 @SuppressWarnings("unchecked")
                 Map<String, Object> map = mapper.readValue(response.getBody(), Map.class);
-                description = CloudUtil.parse(String.class, map.get("description"));
+                String description = CloudUtil.parse(String.class, map.get("description"));
+                if (description != null) {
+                    description = description.trim();
+                }
 
                 int cloudFoundryErrorCode = CloudUtil.parse(Integer.class, map.get("code"));
+                String cloudFoundryErrorName = CloudUtil.parse(String.class, map.get("error_code"));
 
-                if (cloudFoundryErrorCode >= 0) {
+                if (cloudFoundryErrorCode >= 0 && cloudFoundryErrorName != null) {
                     switch (cloudFoundryErrorCode) {
                         case StagingErrorException.ERROR_CODE:
-                            cloudFoundryException = new StagingErrorException(
-                                    statusCode, statusText);
-                            break;
+                            return new StagingErrorException(statusCode, statusText, description, cloudFoundryErrorCode,
+                                cloudFoundryErrorName);
                         case NotFinishedStagingException.ERROR_CODE:
-                            cloudFoundryException = new NotFinishedStagingException(
-                                    statusCode, statusText);
-                            break;
+                            return new NotFinishedStagingException(statusCode, statusText, description, cloudFoundryErrorCode,
+                                cloudFoundryErrorName);
+                        default:
+                            return new CloudFoundryException(statusCode, statusText, description, cloudFoundryErrorCode,
+                                cloudFoundryErrorName);
                     }
                 }
+                return new CloudFoundryException(statusCode, statusText, description);
             } catch (JsonParseException e) {
                 // Fall through. Handled below.
             } catch (IOException e) {
                 // Fall through. Handled below.
             }
         }
-
-        if (cloudFoundryException == null) {
-            cloudFoundryException = new CloudFoundryException(statusCode,
-                    statusText);
-        }
-        cloudFoundryException.setDescription(description);
-
-        return cloudFoundryException;
+        return new CloudFoundryException(statusCode, statusText);
     }
 
     @Override
@@ -67,9 +62,8 @@ public class CloudControllerResponseErrorHandler extends DefaultResponseErrorHan
         HttpStatus statusCode = response.getStatusCode();
         switch (statusCode.series()) {
             case CLIENT_ERROR:
-                throw getException(response);
             case SERVER_ERROR:
-                throw new HttpServerErrorException(statusCode, response.getStatusText());
+                throw getException(response);
             default:
                 throw new RestClientException("Unknown status code [" + statusCode + "]");
         }

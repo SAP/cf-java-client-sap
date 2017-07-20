@@ -23,8 +23,9 @@ public class StagingErrorException extends CloudFoundryException {
 
     public static final int ERROR_CODE = 170001;
 
-    public StagingErrorException(HttpStatus statusCode, String statusText) {
-        super(statusCode, statusText, ERROR_CODE);
+    public StagingErrorException(HttpStatus statusCode, String statusText, String description, int cloudFoundryErrorCode,
+        String cloudFoundryErrorName) {
+        super(statusCode, statusText, description, cloudFoundryErrorCode, cloudFoundryErrorName);
     }
 
 }

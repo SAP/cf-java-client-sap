@@ -150,9 +150,8 @@ public class CloudControllerClientImpl implements CloudControllerClient {
 
     private CloudSpace sessionSpace;
 
-    public CloudControllerClientImpl(URL cloudControllerUrl, RestTemplate restTemplate,
-                                     OauthClient oauthClient, LoggregatorClient loggregatorClient,
-                                     CloudCredentials cloudCredentials, CloudSpace sessionSpace) {
+    public CloudControllerClientImpl(URL cloudControllerUrl, RestTemplate restTemplate, OauthClient oauthClient,
+        LoggregatorClient loggregatorClient, CloudCredentials cloudCredentials, CloudSpace sessionSpace) {
         logger = LogFactory.getLog(getClass().getName());
 
         initialize(cloudControllerUrl, restTemplate, oauthClient, loggregatorClient, cloudCredentials);
@@ -160,13 +159,11 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         this.sessionSpace = sessionSpace;
     }
 
-    public CloudControllerClientImpl(URL cloudControllerUrl, RestTemplate restTemplate,
-                                     OauthClient oauthClient, LoggregatorClient loggregatorClient,
-                                     CloudCredentials cloudCredentials, String orgName, String spaceName) {
+    public CloudControllerClientImpl(URL cloudControllerUrl, RestTemplate restTemplate, OauthClient oauthClient,
+        LoggregatorClient loggregatorClient, CloudCredentials cloudCredentials, String orgName, String spaceName) {
         logger = LogFactory.getLog(getClass().getName());
-        CloudControllerClientImpl tempClient =
-                new CloudControllerClientImpl(cloudControllerUrl, restTemplate,
-                        oauthClient, loggregatorClient, cloudCredentials, null);
+        CloudControllerClientImpl tempClient = new CloudControllerClientImpl(cloudControllerUrl, restTemplate, oauthClient,
+            loggregatorClient, cloudCredentials, null);
 
         initialize(cloudControllerUrl, restTemplate, oauthClient, loggregatorClient, cloudCredentials);
 
@@ -174,8 +171,8 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     /**
-     * Only for unit tests. This works around the fact that the initialize method is called within the constructor and
-     * hence can not be overloaded, making it impossible to write unit tests that don't trigger network calls.
+     * Only for unit tests. This works around the fact that the initialize method is called within the constructor and hence can not be
+     * overloaded, making it impossible to write unit tests that don't trigger network calls.
      */
     protected CloudControllerClientImpl() {
         logger = LogFactory.getLog(getClass().getName());
@@ -244,6 +241,9 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     @Override
     public void bindService(String appName, String serviceName) {
         CloudService cloudService = getService(serviceName);
+        if (cloudService == null) {
+            throw new CloudFoundryException(HttpStatus.NOT_FOUND, "Not Found", "Service '" + serviceName + "' not found");
+        }
         UUID appId = getAppId(appName);
         doBindService(appId, cloudService.getMeta().getGuid());
     }
@@ -261,14 +261,13 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public void createApplication(String appName, Staging staging, Integer memory, List<String> uris,
-                                  List<String> serviceNames) {
+    public void createApplication(String appName, Staging staging, Integer memory, List<String> uris, List<String> serviceNames) {
         createApplication(appName, staging, null, memory, uris, serviceNames);
     }
 
     @Override
-    public void createApplication(String appName, Staging staging, Integer disk, Integer memory,
-                                  List<String> uris, List<String> serviceNames) {
+    public void createApplication(String appName, Staging staging, Integer disk, Integer memory, List<String> uris,
+        List<String> serviceNames) {
         HashMap<String, Object> appRequest = new HashMap<String, Object>();
         appRequest.put("space_guid", sessionSpace.getMeta().getGuid());
         appRequest.put("name", appName);
@@ -311,8 +310,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
 
     @Override
     public void createSecurityGroup(CloudSecurityGroup securityGroup) {
-        doCreateSecurityGroup(securityGroup.getName(),
-                convertToList(securityGroup.getRules()));
+        doCreateSecurityGroup(securityGroup.getName(), convertToList(securityGroup.getRules()));
     }
 
     @Override
@@ -369,8 +367,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public void createUserProvidedService(CloudService service, Map<String, Object> credentials, String
-            syslogDrainUrl) {
+    public void createUserProvidedService(CloudService service, Map<String, Object> credentials, String syslogDrainUrl) {
         createUserProvidedServiceDelegate(service, credentials, syslogDrainUrl);
     }
 
@@ -407,8 +404,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         UUID domainGuid = getDomainGuid(domainName, true);
         List<CloudRoute> routes = getRoutes(domainName);
         if (routes.size() > 0) {
-            throw new IllegalStateException("Unable to remove domain that is in use --" +
-                    " it has " + routes.size() + " routes.");
+            throw new IllegalStateException("Unable to remove domain that is in use --" + " it has " + routes.size() + " routes.");
         }
         doDeleteDomain(domainGuid);
     }
@@ -659,8 +655,8 @@ public class CloudControllerClientImpl implements CloudControllerClient {
 
         String loggregatorEndpoint = CloudUtil.parse(String.class, infoV2Map.get("logging_endpoint"));
 
-        return new CloudInfo(name, support, authorizationEndpoint, build, version, (String) userMap.get("user_name"),
-                description, limits, usage, debug, loggregatorEndpoint);
+        return new CloudInfo(name, support, authorizationEndpoint, build, version, (String) userMap.get("user_name"), description, limits,
+            usage, debug, loggregatorEndpoint);
     }
 
     @Override
@@ -682,16 +678,14 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         String urlPath = "/v2/organizations?inline-relations-depth=1&q=name:{name}";
         urlVars.put("name", orgName);
         CloudOrganization org = null;
-        List<Map<String, Object>> resourceList = getAllResources(urlPath,
-                urlVars);
+        List<Map<String, Object>> resourceList = getAllResources(urlPath, urlVars);
         if (resourceList.size() > 0) {
             Map<String, Object> resource = resourceList.get(0);
             org = resourceMapper.mapResource(resource, CloudOrganization.class);
         }
 
         if (org == null && required) {
-            throw new IllegalArgumentException("Organization '" + orgName
-                    + "' not found.");
+            throw new IllegalArgumentException("Organization '" + orgName + "' not found.");
         }
 
         return org;
@@ -750,8 +744,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         }
 
         if (quota == null && required) {
-            throw new IllegalArgumentException("Quota '" + quotaName
-                    + "' not found.");
+            throw new IllegalArgumentException("Quota '" + quotaName + "' not found.");
         }
 
         return quota;
@@ -794,8 +787,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         List<Map<String, Object>> resourceList = getAllResources(urlPath, null);
         List<CloudSecurityGroup> groups = new ArrayList<CloudSecurityGroup>();
         for (Map<String, Object> resource : resourceList) {
-            groups.add(resourceMapper.mapResource(resource,
-                    CloudSecurityGroup.class));
+            groups.add(resourceMapper.mapResource(resource, CloudSecurityGroup.class));
         }
         return groups;
     }
@@ -811,8 +803,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         List<Map<String, Object>> resourceList = getAllResources(urlPath, null);
         List<CloudSecurityGroup> groups = new ArrayList<CloudSecurityGroup>();
         for (Map<String, Object> resource : resourceList) {
-            groups.add(resourceMapper.mapResource(resource,
-                    CloudSecurityGroup.class));
+            groups.add(resourceMapper.mapResource(resource, CloudSecurityGroup.class));
         }
         return groups;
     }
@@ -951,21 +942,18 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         // Need to go a few levels out to get the Organization that Spaces needs
         String urlPath = "/v2/security_groups?q=name:{name}&inline-relations-depth=2";
         urlVars.put("name", securityGroupName);
-        List<Map<String, Object>> resourceList = getAllResources(urlPath,
-                urlVars);
+        List<Map<String, Object>> resourceList = getAllResources(urlPath, urlVars);
         List<CloudSpace> spaces = new ArrayList<CloudSpace>();
         if (resourceList.size() > 0) {
             Map<String, Object> resource = resourceList.get(0);
 
             Map<String, Object> securityGroupResource = CloudEntityResourceMapper.getEntity(resource);
-            List<Map<String, Object>> spaceResources = CloudEntityResourceMapper.getEmbeddedResourceList
-                    (securityGroupResource, "spaces");
+            List<Map<String, Object>> spaceResources = CloudEntityResourceMapper.getEmbeddedResourceList(securityGroupResource, "spaces");
             for (Map<String, Object> spaceResource : spaceResources) {
                 spaces.add(resourceMapper.mapResource(spaceResource, CloudSpace.class));
             }
         } else {
-            throw new IllegalArgumentException("Security group named '" + securityGroupName
-                    + "' not found.");
+            throw new IllegalArgumentException("Security group named '" + securityGroupName + "' not found.");
         }
         return spaces;
     }
@@ -995,11 +983,11 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     /**
-     * Returns null if no further content is available. Two errors that will lead to a null value are 404 Bad Request
-     * errors, which are handled in the implementation, meaning that no further log file contents are available, or
-     * ResourceAccessException, also handled in the implementation, indicating a possible timeout in the server serving
-     * the content. Note that any other CloudFoundryException or RestClientException exception not related to the two
-     * errors mentioned above may still be thrown (e.g. 500 level errors, Unauthorized or Forbidden exceptions, etc..)
+     * Returns null if no further content is available. Two errors that will lead to a null value are 404 Bad Request errors, which are
+     * handled in the implementation, meaning that no further log file contents are available, or ResourceAccessException, also handled in
+     * the implementation, indicating a possible timeout in the server serving the content. Note that any other CloudFoundryException or
+     * RestClientException exception not related to the two errors mentioned above may still be thrown (e.g. 500 level errors, Unauthorized
+     * or Forbidden exceptions, etc..)
      *
      * @return content if available, which may contain multiple lines, or null if no further content is available.
      */
@@ -1012,16 +1000,12 @@ public class CloudControllerClientImpl implements CloudControllerClient {
                 HashMap<String, Object> logsRequest = new HashMap<String, Object>();
                 logsRequest.put("offset", offset);
 
-                cfRequestFactory = getRestTemplate().getRequestFactory() instanceof
-                        CloudFoundryClientHttpRequestFactory ? (CloudFoundryClientHttpRequestFactory) getRestTemplate()
-                        .getRequestFactory() : null;
+                cfRequestFactory = getRestTemplate().getRequestFactory() instanceof CloudFoundryClientHttpRequestFactory
+                    ? (CloudFoundryClientHttpRequestFactory) getRestTemplate().getRequestFactory() : null;
                 if (cfRequestFactory != null) {
-                    cfRequestFactory
-                            .increaseReadTimeoutForStreamedTailedLogs(5 * 60 * 1000);
+                    cfRequestFactory.increaseReadTimeoutForStreamedTailedLogs(5 * 60 * 1000);
                 }
-                return getRestTemplate().getForObject(
-                        stagingFile + "&tail&tail_offset={offset}",
-                        String.class, logsRequest);
+                return getRestTemplate().getForObject(stagingFile + "&tail&tail_offset={offset}", String.class, logsRequest);
             } catch (CloudFoundryException e) {
                 if (e.getStatusCode().equals(HttpStatus.NOT_FOUND)) {
                     // Content is no longer available
@@ -1032,12 +1016,10 @@ public class CloudControllerClientImpl implements CloudControllerClient {
             } catch (ResourceAccessException e) {
                 // Likely read timeout, the directory server won't serve
                 // the content again
-                logger.debug("Caught exception while fetching staging logs. Aborting. Caught:" + e,
-                        e);
+                logger.debug("Caught exception while fetching staging logs. Aborting. Caught:" + e, e);
             } finally {
                 if (cfRequestFactory != null) {
-                    cfRequestFactory
-                            .increaseReadTimeoutForStreamedTailedLogs(-1);
+                    cfRequestFactory.increaseReadTimeoutForStreamedTailedLogs(-1);
                 }
             }
         }
@@ -1050,8 +1032,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         List<Map<String, Object>> resourceList = getAllResources(urlPath, null);
         List<CloudSecurityGroup> groups = new ArrayList<CloudSecurityGroup>();
         for (Map<String, Object> resource : resourceList) {
-            groups.add(resourceMapper.mapResource(resource,
-                    CloudSecurityGroup.class));
+            groups.add(resourceMapper.mapResource(resource, CloudSecurityGroup.class));
         }
         return groups;
     }
@@ -1130,11 +1111,9 @@ public class CloudControllerClientImpl implements CloudControllerClient {
             HashMap<String, Object> appRequest = new HashMap<String, Object>();
             appRequest.put("state", CloudApplication.AppState.STARTED);
 
-            HttpEntity<Object> requestEntity = new HttpEntity<Object>(
-                    appRequest);
-            ResponseEntity<String> entity = getRestTemplate().exchange(
-                    getUrl("/v2/apps/{guid}?stage_async=true"), HttpMethod.PUT, requestEntity,
-                    String.class, app.getMeta().getGuid());
+            HttpEntity<Object> requestEntity = new HttpEntity<Object>(appRequest);
+            ResponseEntity<String> entity = getRestTemplate().exchange(getUrl("/v2/apps/{guid}?stage_async=true"), HttpMethod.PUT,
+                requestEntity, String.class, app.getMeta().getGuid());
 
             HttpHeaders headers = entity.getHeaders();
 
@@ -1207,6 +1186,9 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     @Override
     public void unbindService(String appName, String serviceName) {
         CloudService cloudService = getService(serviceName);
+        if (cloudService == null) {
+            throw new CloudFoundryException(HttpStatus.NOT_FOUND, "Not Found", "Service '" + serviceName + "' not found");
+        }
         UUID appId = getAppId(appName);
         doUnbindService(appId, cloudService.getMeta().getGuid());
     }
@@ -1284,8 +1266,8 @@ public class CloudControllerClientImpl implements CloudControllerClient {
                 if (cloudService != null) {
                     addServices.add(cloudService.getMeta().getGuid());
                 } else {
-                    throw new CloudFoundryException(HttpStatus.NOT_FOUND, "Service with name " + serviceName +
-                            " not found in current space " + sessionSpace.getName());
+                    throw new CloudFoundryException(HttpStatus.NOT_FOUND,
+                        "Service with name " + serviceName + " not found in current space " + sessionSpace.getName());
                 }
             }
         }
@@ -1393,6 +1375,9 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     @Override
     public void updateServicePlanVisibilityForBroker(String name, boolean visibility) {
         CloudServiceBroker broker = getServiceBroker(name);
+        if (broker == null) {
+            throw new CloudFoundryException(HttpStatus.NOT_FOUND, "Not Found", "Service broker '" + name + "' not found.");
+        }
 
         String urlPath = "/v2/services?q={q}";
         Map<String, Object> urlVars = new HashMap<>();
@@ -1433,8 +1418,8 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public void uploadApplication(String appName, String fileName, InputStream inputStream, UploadStatusCallback
-            callback) throws IOException {
+    public void uploadApplication(String appName, String fileName, InputStream inputStream, UploadStatusCallback callback)
+        throws IOException {
         Assert.notNull(fileName, "FileName must not be null");
         Assert.notNull(inputStream, "InputStream must not be null");
 
@@ -1449,8 +1434,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public void uploadApplication(String appName, ApplicationArchive archive, UploadStatusCallback callback)
-            throws IOException {
+    public void uploadApplication(String appName, ApplicationArchive archive, UploadStatusCallback callback) throws IOException {
         Assert.notNull(appName, "AppName must not be null");
         Assert.notNull(archive, "Archive must not be null");
         UUID appId = getAppId(appName);
@@ -1464,33 +1448,28 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         UploadApplicationPayload payload = new UploadApplicationPayload(archive, knownRemoteResources);
         callback.onProcessMatchedResources(payload.getTotalUncompressedSize());
         HttpEntity<?> entity = generatePartialResourceRequest(payload, knownRemoteResources);
-        ResponseEntity<Map<String, Object>> responseEntity =
-                getRestTemplate().exchange(getUrl("/v2/apps/{guid}/bits?async=true"),
-                        HttpMethod.PUT, entity,
-                        new ParameterizedTypeReference<Map<String, Object>>() {
-                        }, appId);
+        ResponseEntity<Map<String, Object>> responseEntity = getRestTemplate().exchange(getUrl("/v2/apps/{guid}/bits?async=true"),
+            HttpMethod.PUT, entity, new ParameterizedTypeReference<Map<String, Object>>() {
+            }, appId);
         processAsyncJob(responseEntity.getBody(), callback);
     }
 
     protected void configureCloudFoundryRequestFactory(RestTemplate restTemplate) {
         ClientHttpRequestFactory requestFactory = restTemplate.getRequestFactory();
         if (!(requestFactory instanceof CloudFoundryClientHttpRequestFactory)) {
-            restTemplate.setRequestFactory(
-                    new CloudFoundryClientHttpRequestFactory(requestFactory));
+            restTemplate.setRequestFactory(new CloudFoundryClientHttpRequestFactory(requestFactory));
         }
     }
 
-    protected String doGetFile(String urlPath, Object app, int instanceIndex, String filePath, int startPosition, int
-            endPosition) {
+    protected String doGetFile(String urlPath, Object app, int instanceIndex, String filePath, int startPosition, int endPosition) {
         return doGetFile(urlPath, app, String.valueOf(instanceIndex), filePath, startPosition, endPosition);
     }
 
-    protected String doGetFile(String urlPath, Object app, String instance, String filePath, int startPosition, int
-            endPosition) {
+    protected String doGetFile(String urlPath, Object app, String instance, String filePath, int startPosition, int endPosition) {
         Assert.isTrue(startPosition >= -1, "Invalid start position value: " + startPosition);
         Assert.isTrue(endPosition >= -1, "Invalid end position value: " + endPosition);
         Assert.isTrue(startPosition < 0 || endPosition < 0 || endPosition >= startPosition,
-                "The end position (" + endPosition + ") can't be less than the start position (" + startPosition + ")");
+            "The end position (" + endPosition + ") can't be less than the start position (" + startPosition + ")");
 
         int start, end;
         if (startPosition == -1 && endPosition == -1) {
@@ -1501,8 +1480,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
             end = endPosition;
         }
 
-        final String range =
-                "bytes=" + (start == -1 ? "" : start) + "-" + (end == -1 ? "" : end);
+        final String range = "bytes=" + (start == -1 ? "" : start) + "-" + (end == -1 ? "" : end);
 
         return doGetFileByRange(urlPath, app, instance, filePath, start, end, range);
     }
@@ -1527,10 +1505,9 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @SuppressWarnings("unchecked")
-    protected void doOpenFile(String urlPath, Object app, int instanceIndex, String filePath,
-                              ClientHttpResponseCallback callback) {
+    protected void doOpenFile(String urlPath, Object app, int instanceIndex, String filePath, ClientHttpResponseCallback callback) {
         getRestTemplate().execute(getUrl(urlPath), HttpMethod.GET, null, new ResponseExtractorWrapper(callback), app,
-                String.valueOf(instanceIndex), filePath);
+            String.valueOf(instanceIndex), filePath);
     }
 
     protected void extractUriInfo(Map<String, UUID> domains, String uri, Map<String, String> uriInfo) {
@@ -1540,7 +1517,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
             if (host != null && host.endsWith(domain)) {
                 String previousDomain = uriInfo.get("domainName");
                 if (previousDomain == null || domain.length() > previousDomain.length()) {
-                    //Favor most specific subdomains
+                    // Favor most specific subdomains
                     uriInfo.put("domainName", domain);
                     if (domain.length() < host.length()) {
                         uriInfo.put("host", host.substring(0, host.indexOf(domain) - 1));
@@ -1554,8 +1531,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
             throw new IllegalArgumentException("Domain not found for URI " + uri);
         }
         if (uriInfo.get("host") == null) {
-            throw new IllegalArgumentException("Invalid URI " + uri +
-                    " -- host not specified for domain " + uriInfo.get("domainName"));
+            throw new IllegalArgumentException("Invalid URI " + uri + " -- host not specified for domain " + uriInfo.get("domainName"));
         }
     }
 
@@ -1618,8 +1594,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     private void associateRoleWithSpace(String orgName, String spaceName, String userGuid, String urlPath) {
         assertSpaceProvided("associate roles");
 
-        CloudOrganization organization = (orgName == null ? sessionSpace.getOrganization() : getOrgByName(orgName,
-                true));
+        CloudOrganization organization = (orgName == null ? sessionSpace.getOrganization() : getOrgByName(orgName, true));
         UUID orgGuid = organization.getMeta().getGuid();
 
         UUID spaceGuid = getSpaceGuid(spaceName, orgGuid);
@@ -1644,8 +1619,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         getRestTemplate().put(getUrl(bindPath), bindRequest, bindVars);
     }
 
-    private List<Map<String, Object>> convertToList(
-            List<SecurityGroupRule> rules) {
+    private List<Map<String, Object>> convertToList(List<SecurityGroupRule> rules) {
         List<Map<String, Object>> ruleList = new ArrayList<Map<String, Object>>();
         for (SecurityGroupRule rule : rules) {
             Map<String, Object> ruleMap = new HashMap<String, Object>();
@@ -1676,8 +1650,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         return file;
     }
 
-    private void createUserProvidedServiceDelegate(CloudService service, Map<String, Object> credentials, String
-            syslogDrainUrl) {
+    private void createUserProvidedServiceDelegate(CloudService service, Map<String, Object> credentials, String syslogDrainUrl) {
         assertSpaceProvided("create service");
         Assert.notNull(credentials, "Service credentials must not be null");
         Assert.notNull(service, "Service must not be null");
@@ -1771,12 +1744,9 @@ public class CloudControllerClientImpl implements CloudControllerClient {
                 doUnbindService(appId, cloudService.getMeta().getGuid());
             }
         }
-        ResponseEntity<Map<String, Object>> response =
-                getRestTemplate().exchange(getUrl("/v2/service_instances/{guid}?async=true"),
-                        HttpMethod.DELETE, HttpEntity.EMPTY,
-                        new ParameterizedTypeReference<Map<String, Object>>() {
-                        },
-                        cloudService.getMeta().getGuid());
+        ResponseEntity<Map<String, Object>> response = getRestTemplate().exchange(getUrl("/v2/service_instances/{guid}?async=true"),
+            HttpMethod.DELETE, HttpEntity.EMPTY, new ParameterizedTypeReference<Map<String, Object>>() {
+            }, cloudService.getMeta().getGuid());
         waitForAsyncJobCompletion(response.getBody());
     }
 
@@ -1819,8 +1789,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         if (appState.equals(CloudApplication.AppState.STARTED)) {
             Map<String, Object> respMap = getInstanceInfoForApp(appId, "stats");
             for (String instanceId : respMap.keySet()) {
-                InstanceStats instanceStats =
-                        new InstanceStats(instanceId, (Map<String, Object>) respMap.get(instanceId));
+                InstanceStats instanceStats = new InstanceStats(instanceId, (Map<String, Object>) respMap.get(instanceId));
                 instanceList.add(instanceStats);
             }
         }
@@ -1862,24 +1831,19 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         return events;
     }
 
-    private String doGetFileByRange(String urlPath, Object app, String instance, String filePath, int start, int end,
-                                    String range) {
+    private String doGetFileByRange(String urlPath, Object app, String instance, String filePath, int start, int end, String range) {
 
         boolean supportsRanges;
         try {
-            supportsRanges = getRestTemplate().execute(getUrl(urlPath),
-                    HttpMethod.HEAD,
-                    new RequestCallback() {
-                        public void doWithRequest(ClientHttpRequest request) throws IOException {
-                            request.getHeaders().set("Range", "bytes=0-");
-                        }
-                    },
-                    new ResponseExtractor<Boolean>() {
-                        public Boolean extractData(ClientHttpResponse response) throws IOException {
-                            return response.getStatusCode().equals(HttpStatus.PARTIAL_CONTENT);
-                        }
-                    },
-                    app, instance, filePath);
+            supportsRanges = getRestTemplate().execute(getUrl(urlPath), HttpMethod.HEAD, new RequestCallback() {
+                public void doWithRequest(ClientHttpRequest request) throws IOException {
+                    request.getHeaders().set("Range", "bytes=0-");
+                }
+            }, new ResponseExtractor<Boolean>() {
+                public Boolean extractData(ClientHttpResponse response) throws IOException {
+                    return response.getStatusCode().equals(HttpStatus.PARTIAL_CONTENT);
+                }
+            }, app, instance, filePath);
         } catch (CloudFoundryException e) {
             if (e.getStatusCode().equals(HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE)) {
                 // must be a 0 byte file
@@ -1893,8 +1857,8 @@ public class CloudControllerClientImpl implements CloudControllerClient {
             headers.set("Range", range);
         }
         HttpEntity<Object> requestEntity = new HttpEntity<Object>(headers);
-        ResponseEntity<String> responseEntity = getRestTemplate().exchange(getUrl(urlPath),
-                HttpMethod.GET, requestEntity, String.class, app, instance, filePath);
+        ResponseEntity<String> responseEntity = getRestTemplate().exchange(getUrl(urlPath), HttpMethod.GET, requestEntity, String.class,
+            app, instance, filePath);
         String response = responseEntity.getBody();
         boolean partialFile = false;
         if (responseEntity.getStatusCode().equals(HttpStatus.PARTIAL_CONTENT)) {
@@ -1909,7 +1873,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
                         return "";
                     }
                     throw new CloudFoundryException(HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE,
-                            "The starting position " + start + " is past the end of the file content.");
+                        "The starting position " + start + " is past the end of the file content.");
                 }
                 if (end != -1) {
                     if (end >= response.length()) {
@@ -1927,20 +1891,20 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     private List<CloudRoute> doGetRoutes(UUID domainGuid) {
         Map<String, Object> urlVars = new HashMap<String, Object>();
         String urlPath = "/v2";
-//		TODO: NOT implemented ATM:
-//		if (sessionSpace != null) {
-//			urlVars.put("space", sessionSpace.getMeta().getGuid());
-//			urlPath = urlPath + "/spaces/{space}";
-//		}
+        // TODO: NOT implemented ATM:
+        // if (sessionSpace != null) {
+        // urlVars.put("space", sessionSpace.getMeta().getGuid());
+        // urlPath = urlPath + "/spaces/{space}";
+        // }
         urlPath = urlPath + "/routes?inline-relations-depth=1";
         List<Map<String, Object>> allRoutes = getAllResources(urlPath, urlVars);
         List<CloudRoute> routes = new ArrayList<CloudRoute>();
         for (Map<String, Object> route : allRoutes) {
-//			TODO: move space_guid to path once implemented (see above):
+            // TODO: move space_guid to path once implemented (see above):
             UUID space = CloudEntityResourceMapper.getEntityAttribute(route, "space_guid", UUID.class);
             UUID domain = CloudEntityResourceMapper.getEntityAttribute(route, "domain_guid", UUID.class);
             if (sessionSpace.getMeta().getGuid().equals(space) && domainGuid.equals(domain)) {
-                //routes.add(CloudEntityResourceMapper.getEntityAttribute(route, "host", String.class));
+                // routes.add(CloudEntityResourceMapper.getEntityAttribute(route, "host", String.class));
                 routes.add(resourceMapper.mapResource(route, CloudRoute.class));
             }
         }
@@ -1952,15 +1916,12 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         String urlPath = "/v2/security_groups?q=name:{name}";
         urlVars.put("name", securityGroupName);
         CloudSecurityGroup securityGroup = null;
-        List<Map<String, Object>> resourceList = getAllResources(urlPath,
-                urlVars);
+        List<Map<String, Object>> resourceList = getAllResources(urlPath, urlVars);
         if (resourceList.size() > 0) {
             Map<String, Object> resource = resourceList.get(0);
-            securityGroup = resourceMapper.mapResource(resource,
-                    CloudSecurityGroup.class);
+            securityGroup = resourceMapper.mapResource(resource, CloudSecurityGroup.class);
         } else if (required && resourceList.size() == 0) {
-            throw new IllegalArgumentException("Security group named '" + securityGroupName
-                    + "' not found.");
+            throw new IllegalArgumentException("Security group named '" + securityGroupName + "' not found.");
         }
 
         return securityGroup;
@@ -2057,7 +2018,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
 
         if (embeddedResource instanceof Map) {
             Map<String, Object> embeddedResourceMap = (Map<String, Object>) embeddedResource;
-            //entity = (Map<String, Object>) embeddedResourceMap.get("entity");
+            // entity = (Map<String, Object>) embeddedResourceMap.get("entity");
             fillInEmbeddedResource(embeddedResourceMap, tailPath);
         } else if (embeddedResource instanceof List) {
             List<Object> embeddedResourcesList = (List<Object>) embeddedResource;
@@ -2129,8 +2090,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     private HttpEntity<MultiValueMap<String, ?>> generatePartialResourceRequest(UploadApplicationPayload application,
-                                                                                CloudResources knownRemoteResources)
-            throws IOException {
+        CloudResources knownRemoteResources) throws IOException {
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<String, Object>(2);
         body.add("application", application);
         ObjectMapper mapper = new ObjectMapper();
@@ -2187,8 +2147,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         List<Map<String, Object>> resourceList = getAllResources(urlPath, urlVars);
         for (Map<String, Object> resource : resourceList) {
             fillInEmbeddedResource(resource, "service_bindings");
-            List<Map<String, Object>> bindings =
-                    CloudEntityResourceMapper.getEntityAttribute(resource, "service_bindings", List.class);
+            List<Map<String, Object>> bindings = CloudEntityResourceMapper.getEntityAttribute(resource, "service_bindings", List.class);
             for (Map<String, Object> binding : bindings) {
                 String appId = CloudEntityResourceMapper.getEntityAttribute(binding, "app_guid", String.class);
                 if (appId != null) {
@@ -2233,9 +2192,8 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         List<Map<String, Object>> resourceList = getAllResources(domainPath, urlVars);
         Map<String, UUID> domains = new HashMap<String, UUID>(resourceList.size());
         for (Map<String, Object> d : resourceList) {
-            domains.put(
-                    CloudEntityResourceMapper.getEntityAttribute(d, "name", String.class),
-                    CloudEntityResourceMapper.getMeta(d).getGuid());
+            domains.put(CloudEntityResourceMapper.getEntityAttribute(d, "name", String.class),
+                CloudEntityResourceMapper.getMeta(d).getGuid());
         }
         return domains;
     }
@@ -2254,8 +2212,8 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(JsonUtil.JSON_MEDIA_TYPE);
         HttpEntity<String> requestEntity = new HttpEntity<String>(json, headers);
-        ResponseEntity<String> responseEntity =
-                getRestTemplate().exchange(getUrl("/v2/resource_match"), HttpMethod.PUT, requestEntity, String.class);
+        ResponseEntity<String> responseEntity = getRestTemplate().exchange(getUrl("/v2/resource_match"), HttpMethod.PUT, requestEntity,
+            String.class);
         List<CloudResource> cloudResources = JsonUtil.convertJsonToCloudResourceList(responseEntity.getBody());
         return new CloudResources(cloudResources);
     }
@@ -2270,8 +2228,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         for (Map<String, Object> route : allRoutes) {
             UUID routeSpace = CloudEntityResourceMapper.getEntityAttribute(route, "space_guid", UUID.class);
             UUID routeDomain = CloudEntityResourceMapper.getEntityAttribute(route, "domain_guid", UUID.class);
-            if (sessionSpace.getMeta().getGuid().equals(routeSpace) &&
-                    domainGuid.equals(routeDomain)) {
+            if (sessionSpace.getMeta().getGuid().equals(routeSpace) && domainGuid.equals(routeDomain)) {
                 routeGuid = CloudEntityResourceMapper.getMeta(route).getGuid();
             }
         }
@@ -2319,8 +2276,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         List<Map<String, Object>> resourceList = getAllResources("/v2/services?inline-relations-depth=1", null);
         List<CloudServiceOffering> results = new ArrayList<CloudServiceOffering>();
         for (Map<String, Object> resource : resourceList) {
-            CloudServiceOffering cloudServiceOffering =
-                    resourceMapper.mapResource(resource, CloudServiceOffering.class);
+            CloudServiceOffering cloudServiceOffering = resourceMapper.mapResource(resource, CloudServiceOffering.class);
             if (cloudServiceOffering.getLabel() != null && label.equals(cloudServiceOffering.getLabel())) {
                 results.add(cloudServiceOffering);
             }
@@ -2355,8 +2311,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         if (spaceName == null) {
             spaceGuid = sessionSpace.getMeta().getGuid();
         } else {
-            CloudOrganization organization = (orgName == null ? sessionSpace.getOrganization() : getOrgByName
-                    (orgName, true));
+            CloudOrganization organization = (orgName == null ? sessionSpace.getOrganization() : getOrgByName(orgName, true));
             spaceGuid = getSpaceGuid(spaceName, organization.getMeta().getGuid());
         }
 
@@ -2374,10 +2329,10 @@ public class CloudControllerClientImpl implements CloudControllerClient {
 
     @SuppressWarnings("restriction")
     private Map<String, Object> getUserInfo(String user) {
-//		String userJson = getRestTemplate().getForObject(getUrl("/v2/users/{guid}"), String.class, user);
-//		Map<String, Object> userInfo = (Map<String, Object>) JsonUtil.convertJsonToMap(userJson);
-//		return userInfo();
-        //TODO: remove this temporary hack once the /v2/users/ uri can be accessed by mere mortals
+        // String userJson = getRestTemplate().getForObject(getUrl("/v2/users/{guid}"), String.class, user);
+        // Map<String, Object> userInfo = (Map<String, Object>) JsonUtil.convertJsonToMap(userJson);
+        // return userInfo();
+        // TODO: remove this temporary hack once the /v2/users/ uri can be accessed by mere mortals
         String userJson = "{}";
         OAuth2AccessToken accessToken = oauthClient.getToken();
         if (accessToken != null) {
@@ -2400,8 +2355,8 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         return entity.containsKey(resourceKey) || entity.containsKey(resourceKey + "_url");
     }
 
-    private void initialize(URL cloudControllerUrl, RestTemplate restTemplate, OauthClient oauthClient,
-                            LoggregatorClient loggregatorClient, CloudCredentials cloudCredentials) {
+    private void initialize(URL cloudControllerUrl, RestTemplate restTemplate, OauthClient oauthClient, LoggregatorClient loggregatorClient,
+        CloudCredentials cloudCredentials) {
         Assert.notNull(cloudControllerUrl, "CloudControllerUrl cannot be null");
         Assert.notNull(restTemplate, "RestTemplate cannot be null");
         Assert.notNull(oauthClient, "OauthClient cannot be null");
@@ -2430,8 +2385,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         CloudApplication cloudApp = null;
         if (resource != null) {
             int running = getRunningInstances(appId,
-                    CloudApplication.AppState.valueOf(
-                            CloudEntityResourceMapper.getEntityAttribute(resource, "state", String.class)));
+                CloudApplication.AppState.valueOf(CloudEntityResourceMapper.getEntityAttribute(resource, "state", String.class)));
             ((Map<String, Object>) resource.get("entity")).put("running_instances", running);
             cloudApp = resourceMapper.mapResource(resource, CloudApplication.class);
             cloudApp.setUris(findApplicationUris(cloudApp.getMeta().getGuid()));
@@ -2464,11 +2418,9 @@ public class CloudControllerClientImpl implements CloudControllerClient {
                 return;
             }
 
-            ResponseEntity<Map<String, Object>> jobProgressEntity =
-                    getRestTemplate().exchange(getUrl(job.getMeta().getUrl()),
-                            HttpMethod.GET, HttpEntity.EMPTY,
-                            new ParameterizedTypeReference<Map<String, Object>>() {
-                            });
+            ResponseEntity<Map<String, Object>> jobProgressEntity = getRestTemplate().exchange(getUrl(job.getMeta().getUrl()),
+                HttpMethod.GET, HttpEntity.EMPTY, new ParameterizedTypeReference<Map<String, Object>>() {
+                });
             job = resourceMapper.mapResource(jobProgressEntity.getBody(), CloudJob.class);
         } while (job.getStatus() != CloudJob.Status.FINISHED);
     }
@@ -2522,8 +2474,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
             }
         }
 
-        throw new IllegalArgumentException("No matching organization and space found for org: " + orgName + " space: " +
-                "" + spaceName);
+        throw new IllegalArgumentException("No matching organization and space found for org: " + orgName + " space: " + "" + spaceName);
     }
 
     private void waitForAsyncJobCompletion(Map<String, Object> jobResponse) {
@@ -2545,10 +2496,9 @@ public class CloudControllerClientImpl implements CloudControllerClient {
                 return;
             }
 
-            jobResponse = getRestTemplate().exchange(getUrl(job.getMeta().getUrl()),
-                    HttpMethod.GET, HttpEntity.EMPTY,
-                    new ParameterizedTypeReference<Map<String, Object>>() {
-                    }).getBody();
+            jobResponse = getRestTemplate().exchange(getUrl(job.getMeta().getUrl()), HttpMethod.GET, HttpEntity.EMPTY,
+                new ParameterizedTypeReference<Map<String, Object>>() {
+                }).getBody();
         }
     }
 
@@ -2629,14 +2579,12 @@ public class CloudControllerClientImpl implements CloudControllerClient {
             // threads, but per-request read timeout don't seem easily
             // accessible
             if (delegate instanceof HttpComponentsClientHttpRequestFactory) {
-                HttpComponentsClientHttpRequestFactory httpRequestFactory =
-                        (HttpComponentsClientHttpRequestFactory) delegate;
+                HttpComponentsClientHttpRequestFactory httpRequestFactory = (HttpComponentsClientHttpRequestFactory) delegate;
 
                 if (timeout > 0) {
                     httpRequestFactory.setReadTimeout(timeout);
                 } else {
-                    httpRequestFactory
-                            .setReadTimeout(defaultSocketTimeout);
+                    httpRequestFactory.setReadTimeout(defaultSocketTimeout);
                 }
             }
         }
@@ -2654,6 +2602,5 @@ public class CloudControllerClientImpl implements CloudControllerClient {
             }
         }
     }
-
 
 }
