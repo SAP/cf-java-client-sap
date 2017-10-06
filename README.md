@@ -82,3 +82,7 @@ The project is built using [Apache Maven](http://maven.apache.org/) and you can 
 ```shell
 mvn clean install
 ```
+
+# License
+Copyright (c) 2017 SAP SE or an SAP affiliate company. All rights reserved.
+This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the [LICENSE](https://github.com/SAP/cf-java-client-sap/blob/master/LICENSE) file.
