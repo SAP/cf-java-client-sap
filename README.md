@@ -1,6 +1,4 @@
-# cf-java-client
-
-[![Build Status](https://travis-ci.org/SAP/cf-java-client-sap.svg?branch=master)](https://travis-ci.org/SAP/cf-java-client-sap)
+# cf-java-client [![Build Status](https://travis-ci.org/SAP/cf-java-client-sap.svg?branch=master)](https://travis-ci.org/SAP/cf-java-client-sap)
 
 This is a fork of the 1.1.4.RELEASE version of the official Cloud Foundry Java client (https://github.com/cloudfoundry/cf-java-client/tree/v1.1.4.RELEASE). It has been modified to include several bugfixes and improvements.
 
