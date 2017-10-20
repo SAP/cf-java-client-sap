@@ -241,9 +241,6 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     @Override
     public void bindService(String appName, String serviceName) {
         CloudService cloudService = getService(serviceName);
-        if (cloudService == null) {
-            throw new CloudFoundryException(HttpStatus.NOT_FOUND, "Not Found", "Service '" + serviceName + "' not found");
-        }
         UUID appId = getAppId(appName);
         doBindService(appId, cloudService.getMeta().getGuid());
     }
@@ -444,7 +441,8 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         UUID domainGuid = getDomainGuid(domainName, true);
         UUID routeGuid = getRouteGuid(host, domainGuid);
         if (routeGuid == null) {
-            throw new IllegalArgumentException("Host '" + host + "' not found for domain '" + domainName + "'.");
+            throw new CloudFoundryException(HttpStatus.NOT_FOUND, "Not Found",
+                "Host '" + host + "' not found for domain '" + domainName + "'.");
         }
         doDeleteRoute(routeGuid);
     }
@@ -463,16 +461,12 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     @Override
     public void deleteService(String serviceName) {
         CloudService cloudService = getService(serviceName);
-        if (cloudService != null) {
-            doDeleteService(cloudService);
-        }
+        doDeleteService(cloudService);
     }
 
     @Override
     public void deleteServiceBroker(String name) {
         CloudServiceBroker existingBroker = getServiceBroker(name);
-        Assert.notNull(existingBroker, "Cannot update broker if it does not first exist");
-
         getRestTemplate().delete(getUrl("/v2/service_brokers/{guid}"), existingBroker.getMeta().getGuid());
     }
 
@@ -490,7 +484,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     public CloudApplication getApplication(String appName) {
         Map<String, Object> resource = findApplicationResource(appName, true);
         if (resource == null) {
-            throw new CloudFoundryException(HttpStatus.NOT_FOUND, "Not Found", "Application not found");
+            throw new CloudFoundryException(HttpStatus.NOT_FOUND, "Not Found", "Application '" + appName + "' not found.");
         }
         return mapCloudApplication(resource);
     }
@@ -499,7 +493,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     public CloudApplication getApplication(UUID appGuid) {
         Map<String, Object> resource = findApplicationResource(appGuid, true);
         if (resource == null) {
-            throw new CloudFoundryException(HttpStatus.NOT_FOUND, "Not Found", "Application not found");
+            throw new CloudFoundryException(HttpStatus.NOT_FOUND, "Not Found", "Application '" + appGuid + "' not found.");
         }
         return mapCloudApplication(resource);
     }
@@ -591,7 +585,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     public CrashesInfo getCrashes(String appName) {
         UUID appId = getAppId(appName);
         if (appId == null) {
-            throw new IllegalArgumentException("Application '" + appName + "' not found.");
+            throw new CloudFoundryException(HttpStatus.NOT_FOUND, "Not Found", "Application '" + appName + "' not found.");
         }
         Map<String, Object> urlVars = new HashMap<String, Object>();
         urlVars.put("guid", appId);
@@ -685,7 +679,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         }
 
         if (org == null && required) {
-            throw new IllegalArgumentException("Organization '" + orgName + "' not found.");
+            throw new CloudFoundryException(HttpStatus.NOT_FOUND, "Not Found", "Organization '" + orgName + "' not found.");
         }
 
         return org;
@@ -744,7 +738,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         }
 
         if (quota == null && required) {
-            throw new IllegalArgumentException("Quota '" + quotaName + "' not found.");
+            throw new CloudFoundryException(HttpStatus.NOT_FOUND, "Not Found", "Quota '" + quotaName + "' not found.");
         }
 
         return quota;
@@ -794,7 +788,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
 
     @Override
     public CloudSecurityGroup getSecurityGroup(String securityGroupName) {
-        return doGetSecurityGroup(securityGroupName, false);
+        return doGetSecurityGroup(securityGroupName, true);
     }
 
     @Override
@@ -810,27 +804,28 @@ public class CloudControllerClientImpl implements CloudControllerClient {
 
     @Override
     public CloudService getService(String serviceName) {
+        return getService(serviceName, true);
+    }
+
+    private CloudService getService(String serviceName, boolean required) {
         Map<String, Object> resource = doGetServiceInstance(serviceName, 0);
-
-        if (resource == null) {
-            return null;
+        CloudService service = null;
+        if (resource != null) {
+            service = resourceMapper.mapResource(resource, CloudService.class);
         }
-
-        return resourceMapper.mapResource(resource, CloudService.class);
+        if (service == null && required) {
+            throw new CloudFoundryException(HttpStatus.NOT_FOUND, "Not Found", "Service '" + serviceName + "' not found.");
+        }
+        return service;
     }
 
     @Override
     public CloudServiceBroker getServiceBroker(String name) {
-        String urlPath = "/v2/service_brokers?q={q}";
-        Map<String, Object> urlVars = new HashMap<>();
-        urlVars.put("q", "name:" + name);
-        List<Map<String, Object>> resourceList = getAllResources(urlPath, urlVars);
-        CloudServiceBroker serviceBroker = null;
-        if (resourceList.size() > 0) {
-            final Map<String, Object> resource = resourceList.get(0);
-            serviceBroker = resourceMapper.mapResource(resource, CloudServiceBroker.class);
+        Map<String, Object> resource = findServiceBrokerResource(name);
+        if (resource == null) {
+            throw new CloudFoundryException(HttpStatus.NOT_FOUND, "Not Found", "Service broker '" + name + "' not found.");
         }
-        return serviceBroker;
+        return resourceMapper.mapResource(resource, CloudServiceBroker.class);
     }
 
     @Override
@@ -848,11 +843,9 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     @Override
     public CloudServiceInstance getServiceInstance(String serviceName) {
         Map<String, Object> resource = doGetServiceInstance(serviceName, 1);
-
         if (resource == null) {
-            return null;
+            throw new CloudFoundryException(HttpStatus.NOT_FOUND, "Not Found", "Service instance '" + serviceName + "' not found.");
         }
-
         return resourceMapper.mapResource(resource, CloudServiceInstance.class);
     }
 
@@ -895,16 +888,11 @@ public class CloudControllerClientImpl implements CloudControllerClient {
 
     @Override
     public CloudSpace getSpace(String spaceName) {
-        String urlPath = "/v2/spaces?inline-relations-depth=1&q=name:{name}";
-        HashMap<String, Object> spaceRequest = new HashMap<String, Object>();
-        spaceRequest.put("name", spaceName);
-        List<Map<String, Object>> resourceList = getAllResources(urlPath, spaceRequest);
-        CloudSpace space = null;
-        if (resourceList.size() > 0) {
-            Map<String, Object> resource = resourceList.get(0);
-            space = resourceMapper.mapResource(resource, CloudSpace.class);
+        Map<String, Object> resource = findSpaceResource(spaceName);
+        if (resource == null) {
+            throw new CloudFoundryException(HttpStatus.NOT_FOUND, "Not Found", "Space '" + spaceName + "' not found.");
         }
-        return space;
+        return resourceMapper.mapResource(resource, CloudSpace.class);
     }
 
     @Override
@@ -953,22 +941,18 @@ public class CloudControllerClientImpl implements CloudControllerClient {
                 spaces.add(resourceMapper.mapResource(spaceResource, CloudSpace.class));
             }
         } else {
-            throw new IllegalArgumentException("Security group named '" + securityGroupName + "' not found.");
+            throw new CloudFoundryException(HttpStatus.NOT_FOUND, "Not Found", "Security group '" + securityGroupName + "' not found.");
         }
         return spaces;
     }
 
     @Override
     public CloudStack getStack(String name) {
-        String urlPath = "/v2/stacks?q={q}";
-        Map<String, Object> urlVars = new HashMap<String, Object>();
-        urlVars.put("q", "name:" + name);
-        List<Map<String, Object>> resources = getAllResources(urlPath, urlVars);
-        if (resources.size() > 0) {
-            Map<String, Object> resource = resources.get(0);
-            return resourceMapper.mapResource(resource, CloudStack.class);
+        Map<String, Object> resource = findStackResource(name);
+        if (resource == null) {
+            throw new CloudFoundryException(HttpStatus.NOT_FOUND, "Not Found", "Stack '" + name + "' not found.");
         }
-        return null;
+        return resourceMapper.mapResource(resource, CloudStack.class);
     }
 
     @Override
@@ -1001,7 +985,8 @@ public class CloudControllerClientImpl implements CloudControllerClient {
                 logsRequest.put("offset", offset);
 
                 cfRequestFactory = getRestTemplate().getRequestFactory() instanceof CloudFoundryClientHttpRequestFactory
-                    ? (CloudFoundryClientHttpRequestFactory) getRestTemplate().getRequestFactory() : null;
+                    ? (CloudFoundryClientHttpRequestFactory) getRestTemplate().getRequestFactory()
+                    : null;
                 if (cfRequestFactory != null) {
                     cfRequestFactory.increaseReadTimeoutForStreamedTailedLogs(5 * 60 * 1000);
                 }
@@ -1186,9 +1171,6 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     @Override
     public void unbindService(String appName, String serviceName) {
         CloudService cloudService = getService(serviceName);
-        if (cloudService == null) {
-            throw new CloudFoundryException(HttpStatus.NOT_FOUND, "Not Found", "Service '" + serviceName + "' not found");
-        }
         UUID appId = getAppId(appName);
         doUnbindService(appId, cloudService.getMeta().getGuid());
     }
@@ -1263,18 +1245,13 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         for (String serviceName : services) {
             if (!app.getServices().contains(serviceName)) {
                 CloudService cloudService = getService(serviceName);
-                if (cloudService != null) {
-                    addServices.add(cloudService.getMeta().getGuid());
-                } else {
-                    throw new CloudFoundryException(HttpStatus.NOT_FOUND,
-                        "Service with name " + serviceName + " not found in current space " + sessionSpace.getName());
-                }
+                addServices.add(cloudService.getMeta().getGuid());
             }
         }
         // services to delete
         for (String serviceName : app.getServices()) {
             if (!services.contains(serviceName)) {
-                CloudService cloudService = getService(serviceName);
+                CloudService cloudService = getService(serviceName, false);
                 if (cloudService != null) {
                     deleteServices.add(cloudService.getMeta().getGuid());
                 }
@@ -1362,7 +1339,6 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         Assert.notNull(serviceBroker.getPassword(), "Service Broker password must not be null");
 
         CloudServiceBroker existingBroker = getServiceBroker(serviceBroker.getName());
-        Assert.notNull(existingBroker, "Cannot update broker if it does not first exist");
 
         HashMap<String, Object> serviceRequest = new HashMap<>();
         serviceRequest.put("name", serviceBroker.getName());
@@ -1375,9 +1351,6 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     @Override
     public void updateServicePlanVisibilityForBroker(String name, boolean visibility) {
         CloudServiceBroker broker = getServiceBroker(name);
-        if (broker == null) {
-            throw new CloudFoundryException(HttpStatus.NOT_FOUND, "Not Found", "Service broker '" + name + "' not found.");
-        }
 
         String urlPath = "/v2/services?q={q}";
         Map<String, Object> urlVars = new HashMap<>();
@@ -1921,7 +1894,8 @@ public class CloudControllerClientImpl implements CloudControllerClient {
             Map<String, Object> resource = resourceList.get(0);
             securityGroup = resourceMapper.mapResource(resource, CloudSecurityGroup.class);
         } else if (required && resourceList.size() == 0) {
-            throw new IllegalArgumentException("Security group named '" + securityGroupName + "' not found.");
+            throw new CloudFoundryException(HttpStatus.NOT_FOUND, "Not Found",
+                "Security group named '" + securityGroupName + "' not found.");
         }
 
         return securityGroup;
@@ -2075,6 +2049,39 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         return uris;
     }
 
+    private Map<String, Object> findServiceBrokerResource(String name) {
+        String urlPath = "/v2/service_brokers?q={q}";
+        Map<String, Object> urlVars = new HashMap<>();
+        urlVars.put("q", "name:" + name);
+        List<Map<String, Object>> resourceList = getAllResources(urlPath, urlVars);
+        if (resourceList.size() > 0) {
+            return resourceList.get(0);
+        }
+        return null;
+    }
+
+    private Map<String, Object> findSpaceResource(String spaceName) {
+        String urlPath = "/v2/spaces?inline-relations-depth=1&q=name:{name}";
+        HashMap<String, Object> spaceRequest = new HashMap<String, Object>();
+        spaceRequest.put("name", spaceName);
+        List<Map<String, Object>> resourceList = getAllResources(urlPath, spaceRequest);
+        if (resourceList.size() > 0) {
+            return resourceList.get(0);
+        }
+        return null;
+    }
+
+    private Map<String, Object> findStackResource(String name) {
+        String urlPath = "/v2/stacks?q={q}";
+        Map<String, Object> urlVars = new HashMap<String, Object>();
+        urlVars.put("q", "name:" + name);
+        List<Map<String, Object>> resources = getAllResources(urlPath, urlVars);
+        if (resources.size() > 0) {
+            return resources.get(0);
+        }
+        return null;
+    }
+
     private CloudServicePlan findPlanForService(CloudService service) {
         List<CloudServiceOffering> offerings = getServiceOfferings(service.getLabel());
         for (CloudServiceOffering offering : offerings) {
@@ -2086,7 +2093,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
                 }
             }
         }
-        throw new IllegalArgumentException("Service plan " + service.getPlan() + " not found");
+        throw new CloudFoundryException(HttpStatus.NOT_FOUND, "Not Found", "Service plan " + service.getPlan() + " not found.");
     }
 
     private HttpEntity<MultiValueMap<String, ?>> generatePartialResourceRequest(UploadApplicationPayload application,
@@ -2176,7 +2183,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
             domainGuid = resourceMapper.getGuidOfResource(resource);
         }
         if (domainGuid == null && required) {
-            throw new IllegalArgumentException("Domain '" + domainName + "' not found.");
+            throw new CloudFoundryException(HttpStatus.NOT_FOUND, "Not Found", "Domain '" + domainName + "' not found.");
         }
         return domainGuid;
     }

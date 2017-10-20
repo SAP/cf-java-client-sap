@@ -165,7 +165,7 @@ public interface CloudFoundryOperations {
      * @param orgName The name of the organization that the space is in.
      * @param spaceName The name of the space
      * @param securityGroupName The name of the security group to bind to the space
-     * @throws IllegalArgumentException if the org, space, or security group do not exist
+     * @throws CloudFoundryException if the org, space, or security group do not exist
      */
     void bindSecurityGroup(String orgName, String spaceName, String securityGroupName);
 
@@ -352,7 +352,7 @@ public interface CloudFoundryOperations {
      * This method requires the logged in user to have admin permissions in the cloud controller.
      *
      * @param securityGroupName
-     * @throws IllegalArgumentException if a security group does not exist with the given name
+     * @throws CloudFoundryException if a security group does not exist with the given name
      */
     void deleteSecurityGroup(String securityGroupName);
 
@@ -579,7 +579,7 @@ public interface CloudFoundryOperations {
      *
      * @param orgName organization name
      * @return a Map CloudUser with username as key
-     * @throws IllegalArgumentException if the org do not exist
+     * @throws CloudFoundryException if the org do not exist
      */
     Map<String, CloudUser> getOrganizationUsers(String orgName);
 
@@ -644,7 +644,7 @@ public interface CloudFoundryOperations {
      * This method requires the logged in user to have admin permissions in the cloud controller.
      *
      * @param securityGroupName The name of the security group
-     * @return the CloudSecurityGroup or <code>null</code> if no security groups exist with the given name
+     * @return the CloudSecurityGroup
      */
     CloudSecurityGroup getSecurityGroup(String securityGroupName);
 
@@ -786,7 +786,7 @@ public interface CloudFoundryOperations {
      * Get a stack by name.
      *
      * @param name the name of the stack to get
-     * @return the stack, or null if not found
+     * @return the stack
      */
     CloudStack getStack(String name);
 
@@ -939,7 +939,7 @@ public interface CloudFoundryOperations {
      * @param orgName The name of the organization that the space is in.
      * @param spaceName The name of the space
      * @param securityGroupName The name of the security group to bind to the space
-     * @throws IllegalArgumentException if the org, space, or security group do not exist
+     * @throws CloudFoundryException if the org, space, or security group do not exist
      */
     void unbindSecurityGroup(String orgName, String spaceName, String securityGroupName);
 
@@ -1057,7 +1057,7 @@ public interface CloudFoundryOperations {
      * This method requires the logged in user to have admin permissions in the cloud controller.
      *
      * @param securityGroup
-     * @throws IllegalArgumentException if a security group does not exist with the name of the given CloudSecurityGroup
+     * @throws CloudFoundryException if a security group does not exist with the name of the given CloudSecurityGroup
      */
     void updateSecurityGroup(CloudSecurityGroup securityGroup);
 
@@ -1088,7 +1088,7 @@ public interface CloudFoundryOperations {
      * This method requires the logged in user to have admin permissions in the cloud controller.
      *
      * @param jsonRulesFile An input stream that has a single array with JSON objects inside describing the rules
-     * @throws IllegalArgumentException if a security group does not exist with the given name
+     * @throws CloudFoundryException if a security group does not exist with the given name
      * @see http://docs.cloudfoundry.org/adminguide/app-sec-groups.html
      */
     void updateSecurityGroup(String name, InputStream jsonRulesFile);
