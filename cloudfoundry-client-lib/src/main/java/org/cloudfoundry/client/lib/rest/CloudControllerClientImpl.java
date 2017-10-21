@@ -294,6 +294,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
      *
      * @param quota
      */
+    @Override
     public void createQuota(CloudQuota quota) {
         String setPath = "/v2/quota_definitions";
         HashMap<String, Object> setRequest = new HashMap<String, Object>();
@@ -427,6 +428,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         return deletedCloudRoutes;
     }
 
+    @Override
     public void deleteQuota(String quotaName) {
         CloudQuota quota = this.getQuota(quotaName);
         String setPath = "/v2/quota_definitions/{quotaGuid}";
@@ -519,7 +521,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     @Override
     public Map<String, Object> getApplicationEnvironment(UUID appGuid) {
         String url = getUrl("/v2/apps/{guid}/env");
-        Map<String, Object> urlVars = new HashMap();
+        Map<String, Object> urlVars = new HashMap<>();
         urlVars.put("guid", appGuid);
         String resp = restTemplate.getForObject(url, String.class, urlVars);
         return JsonUtil.convertJsonToMap(resp);
@@ -766,6 +768,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         return quota;
     }
 
+    @Override
     public List<CloudQuota> getQuotas() {
         String urlPath = "/v2/quota_definitions";
         List<Map<String, Object>> resourceList = getAllResources(urlPath, null);
@@ -1150,6 +1153,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
      * @param orgName
      * @param quotaName
      */
+    @Override
     public void setQuotaToOrg(String orgName, String quotaName) {
         CloudQuota quota = this.getQuota(quotaName);
         CloudOrganization org = this.getOrganization(orgName);
@@ -1373,6 +1377,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         }
     }
 
+    @Override
     public void updateQuota(CloudQuota quota, String name) {
         CloudQuota oldQuota = this.getQuota(name);
 
@@ -1882,10 +1887,12 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         boolean supportsRanges;
         try {
             supportsRanges = getRestTemplate().execute(getUrl(urlPath), HttpMethod.HEAD, new RequestCallback() {
+                @Override
                 public void doWithRequest(ClientHttpRequest request) throws IOException {
                     request.getHeaders().set("Range", "bytes=0-");
                 }
             }, new ResponseExtractor<Boolean>() {
+                @Override
                 public Boolean extractData(ClientHttpResponse response) throws IOException {
                     return response.getStatusCode().equals(HttpStatus.PARTIAL_CONTENT);
                 }
@@ -2511,6 +2518,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
 
     private StreamingLogToken streamLoggregatorLogs(String appName, ApplicationLogListener listener, boolean recent) {
         ClientEndpointConfig.Configurator configurator = new ClientEndpointConfig.Configurator() {
+            @Override
             public void beforeRequest(Map<String, List<String>> headers) {
                 String authorizationHeader = oauthClient.getAuthorizationHeader();
                 if (authorizationHeader != null) {
