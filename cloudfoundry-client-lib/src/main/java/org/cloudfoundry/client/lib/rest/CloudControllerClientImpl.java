@@ -428,7 +428,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     public void deleteQuota(String quotaName) {
-        CloudQuota quota = this.getQuotaByName(quotaName, true);
+        CloudQuota quota = this.getQuota(quotaName, true);
         String setPath = "/v2/quota_definitions/{quotaGuid}";
         Map<String, Object> setVars = new HashMap<String, Object>();
         setVars.put("quotaGuid", quota.getMeta().getGuid());
@@ -667,7 +667,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
      * @param required
      * @return CloudOrganization instance
      */
-    public CloudOrganization getOrgByName(String orgName, boolean required) {
+    public CloudOrganization getOrganization(String orgName, boolean required) {
         Map<String, Object> urlVars = new HashMap<String, Object>();
         String urlPath = "/v2/organizations?inline-relations-depth=1&q=name:{name}";
         urlVars.put("name", orgName);
@@ -688,7 +688,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     @Override
     public Map<String, CloudUser> getOrganizationUsers(String orgName) {
         String urlPath = "/v2/organizations/{guid}/users";
-        CloudOrganization organization = getOrgByName(orgName, true);
+        CloudOrganization organization = getOrganization(orgName, true);
 
         UUID orgGuid = organization.getMeta().getGuid();
         Map<String, Object> urlVars = new HashMap<String, Object>();
@@ -726,7 +726,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
      * @param required
      * @return CloudQuota instance
      */
-    public CloudQuota getQuotaByName(String quotaName, boolean required) {
+    public CloudQuota getQuota(String quotaName, boolean required) {
         Map<String, Object> urlVars = new HashMap<String, Object>();
         String urlPath = "/v2/quota_definitions?q=name:{name}";
         urlVars.put("name", quotaName);
@@ -1078,8 +1078,8 @@ public class CloudControllerClientImpl implements CloudControllerClient {
      * @param quotaName
      */
     public void setQuotaToOrg(String orgName, String quotaName) {
-        CloudQuota quota = this.getQuotaByName(quotaName, true);
-        CloudOrganization org = this.getOrgByName(orgName, true);
+        CloudQuota quota = this.getQuota(quotaName, true);
+        CloudOrganization org = this.getOrganization(orgName, true);
 
         doSetQuotaToOrg(org.getMeta().getGuid(), quota.getMeta().getGuid());
     }
@@ -1301,7 +1301,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     public void updateQuota(CloudQuota quota, String name) {
-        CloudQuota oldQuota = this.getQuotaByName(name, true);
+        CloudQuota oldQuota = this.getQuota(name, true);
 
         String setPath = "/v2/quota_definitions/{quotaGuid}";
 
@@ -1567,7 +1567,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     private void associateRoleWithSpace(String orgName, String spaceName, String userGuid, String urlPath) {
         assertSpaceProvided("associate roles");
 
-        CloudOrganization organization = (orgName == null ? sessionSpace.getOrganization() : getOrgByName(orgName, true));
+        CloudOrganization organization = (orgName == null ? sessionSpace.getOrganization() : getOrganization(orgName, true));
         UUID orgGuid = organization.getMeta().getGuid();
 
         UUID spaceGuid = getSpaceGuid(spaceName, orgGuid);
@@ -2305,7 +2305,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     private UUID getSpaceGuid(String orgName, String spaceName) {
-        CloudOrganization org = getOrgByName(orgName, true);
+        CloudOrganization org = getOrganization(orgName, true);
         return getSpaceGuid(spaceName, org.getMeta().getGuid());
     }
 
@@ -2318,7 +2318,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         if (spaceName == null) {
             spaceGuid = sessionSpace.getMeta().getGuid();
         } else {
-            CloudOrganization organization = (orgName == null ? sessionSpace.getOrganization() : getOrgByName(orgName, true));
+            CloudOrganization organization = (orgName == null ? sessionSpace.getOrganization() : getOrganization(orgName, true));
             spaceGuid = getSpaceGuid(spaceName, organization.getMeta().getGuid());
         }
 

@@ -82,11 +82,9 @@ public interface CloudControllerClient {
 
     void bindStagingSecurityGroup(String securityGroupName);
 
-    void createApplication(String appName, Staging staging, Integer memory, List<String> uris,
-                           List<String> serviceNames);
+    void createApplication(String appName, Staging staging, Integer memory, List<String> uris, List<String> serviceNames);
 
-    void createApplication(String appName, Staging staging, Integer disk, Integer memory,
-                           List<String> uris, List<String> serviceNames);
+    void createApplication(String appName, Staging staging, Integer disk, Integer memory, List<String> uris, List<String> serviceNames);
 
     // Service methods
 
@@ -170,8 +168,7 @@ public interface CloudControllerClient {
 
     Map<String, String> getLogs(String appName);
 
-    // Quota operations
-    CloudOrganization getOrgByName(String orgName, boolean required);
+    CloudOrganization getOrganization(String orgName, boolean required);
 
     Map<String, CloudUser> getOrganizationUsers(String orgName);
 
@@ -179,7 +176,7 @@ public interface CloudControllerClient {
 
     List<CloudDomain> getPrivateDomains();
 
-    CloudQuota getQuotaByName(String quotaName, boolean required);
+    CloudQuota getQuota(String quotaName, boolean required);
 
     List<CloudQuota> getQuotas();
 
@@ -305,9 +302,7 @@ public interface CloudControllerClient {
 
     void uploadApplication(String appName, File file, UploadStatusCallback callback) throws IOException;
 
-    void uploadApplication(String appName, String fileName, InputStream inputStream, UploadStatusCallback callback)
-            throws IOException;
+    void uploadApplication(String appName, String fileName, InputStream inputStream, UploadStatusCallback callback) throws IOException;
 
-    void uploadApplication(String appName, ApplicationArchive archive, UploadStatusCallback callback) throws
-            IOException;
+    void uploadApplication(String appName, ApplicationArchive archive, UploadStatusCallback callback) throws IOException;
 }
