@@ -132,7 +132,11 @@ public interface CloudControllerClient {
 
     CloudApplication getApplication(String appName);
 
+    CloudApplication getApplication(String appName, boolean required);
+
     CloudApplication getApplication(UUID appGuid);
+
+    CloudApplication getApplication(UUID appGuid, boolean required);
 
     Map<String, Object> getApplicationEnvironment(UUID appGuid);
 
@@ -168,6 +172,8 @@ public interface CloudControllerClient {
 
     Map<String, String> getLogs(String appName);
 
+    CloudOrganization getOrganization(String orgName);
+
     CloudOrganization getOrganization(String orgName, boolean required);
 
     Map<String, CloudUser> getOrganizationUsers(String orgName);
@@ -175,6 +181,8 @@ public interface CloudControllerClient {
     List<CloudOrganization> getOrganizations();
 
     List<CloudDomain> getPrivateDomains();
+
+    CloudQuota getQuota(String quotaName);
 
     CloudQuota getQuota(String quotaName, boolean required);
 
@@ -188,15 +196,23 @@ public interface CloudControllerClient {
 
     CloudSecurityGroup getSecurityGroup(String securityGroupName);
 
+    CloudSecurityGroup getSecurityGroup(String securityGroupName, boolean required);
+
     List<CloudSecurityGroup> getSecurityGroups();
 
     CloudService getService(String service);
 
+    CloudService getService(String service, boolean required);
+
     CloudServiceBroker getServiceBroker(String name);
+
+    CloudServiceBroker getServiceBroker(String name, boolean required);
 
     List<CloudServiceBroker> getServiceBrokers();
 
     CloudServiceInstance getServiceInstance(String serviceName);
+
+    CloudServiceInstance getServiceInstance(String serviceName, boolean required);
 
     List<CloudServiceOffering> getServiceOfferings();
 
@@ -207,6 +223,8 @@ public interface CloudControllerClient {
     // Space management
 
     CloudSpace getSpace(String spaceName);
+
+    CloudSpace getSpace(String spaceName, boolean required);
 
     List<UUID> getSpaceAuditors(String orgName, String spaceName);
 
@@ -221,6 +239,8 @@ public interface CloudControllerClient {
     List<CloudSpace> getSpacesBoundToSecurityGroup(String securityGroupName);
 
     CloudStack getStack(String name);
+
+    CloudStack getStack(String name, boolean required);
 
     List<CloudStack> getStacks();
 
