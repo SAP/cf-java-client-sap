@@ -214,7 +214,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
 
     @Override
     public void bindRunningSecurityGroup(String securityGroupName) {
-        CloudSecurityGroup group = doGetSecurityGroup(securityGroupName, true);
+        CloudSecurityGroup group = getSecurityGroup(securityGroupName);
 
         String path = "/v2/config/running_security_groups/{guid}";
 
@@ -227,7 +227,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     @Override
     public void bindSecurityGroup(String orgName, String spaceName, String securityGroupName) {
         UUID spaceGuid = getSpaceGuid(orgName, spaceName);
-        CloudSecurityGroup group = doGetSecurityGroup(securityGroupName, true);
+        CloudSecurityGroup group = getSecurityGroup(securityGroupName);
 
         String path = "/v2/security_groups/{group_guid}/spaces/{space_guid}";
 
@@ -247,7 +247,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
 
     @Override
     public void bindStagingSecurityGroup(String securityGroupName) {
-        CloudSecurityGroup group = doGetSecurityGroup(securityGroupName, true);
+        CloudSecurityGroup group = getSecurityGroup(securityGroupName);
 
         String path = "/v2/config/staging_security_groups/{guid}";
 
@@ -428,7 +428,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     public void deleteQuota(String quotaName) {
-        CloudQuota quota = this.getQuota(quotaName, true);
+        CloudQuota quota = this.getQuota(quotaName);
         String setPath = "/v2/quota_definitions/{quotaGuid}";
         Map<String, Object> setVars = new HashMap<String, Object>();
         setVars.put("quotaGuid", quota.getMeta().getGuid());
@@ -449,7 +449,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
 
     @Override
     public void deleteSecurityGroup(String securityGroupName) {
-        CloudSecurityGroup group = doGetSecurityGroup(securityGroupName, true);
+        CloudSecurityGroup group = getSecurityGroup(securityGroupName);
 
         String path = "/v2/security_groups/{guid}";
         Map<String, Object> pathVariables = new HashMap<String, Object>();
@@ -482,20 +482,38 @@ public class CloudControllerClientImpl implements CloudControllerClient {
 
     @Override
     public CloudApplication getApplication(String appName) {
+        return getApplication(appName, true);
+    }
+
+    @Override
+    public CloudApplication getApplication(String appName, boolean required) {
         Map<String, Object> resource = findApplicationResource(appName, true);
-        if (resource == null) {
+        CloudApplication application = null;
+        if (resource != null) {
+            application = mapCloudApplication(resource);
+        }
+        if (application == null && required) {
             throw new CloudFoundryException(HttpStatus.NOT_FOUND, "Not Found", "Application '" + appName + "' not found.");
         }
-        return mapCloudApplication(resource);
+        return application;
     }
 
     @Override
     public CloudApplication getApplication(UUID appGuid) {
+        return getApplication(appGuid, true);
+    }
+
+    @Override
+    public CloudApplication getApplication(UUID appGuid, boolean required) {
         Map<String, Object> resource = findApplicationResource(appGuid, true);
-        if (resource == null) {
+        CloudApplication application = null;
+        if (resource != null) {
+            application = mapCloudApplication(resource);
+        }
+        if (application == null && required) {
             throw new CloudFoundryException(HttpStatus.NOT_FOUND, "Not Found", "Application '" + appGuid + "' not found.");
         }
-        return mapCloudApplication(resource);
+        return application;
     }
 
     @Override
@@ -660,6 +678,11 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         return doGetLogs(urlPath, appName, instance);
     }
 
+    @Override
+    public CloudOrganization getOrganization(String orgName) {
+        return getOrganization(orgName, true);
+    }
+
     /**
      * Get organization by given name.
      *
@@ -688,7 +711,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     @Override
     public Map<String, CloudUser> getOrganizationUsers(String orgName) {
         String urlPath = "/v2/organizations/{guid}/users";
-        CloudOrganization organization = getOrganization(orgName, true);
+        CloudOrganization organization = getOrganization(orgName);
 
         UUID orgGuid = organization.getMeta().getGuid();
         Map<String, Object> urlVars = new HashMap<String, Object>();
@@ -719,13 +742,12 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         return doGetDomains("/v2/private_domains");
     }
 
-    /**
-     * Get quota by given name.
-     *
-     * @param quotaName
-     * @param required
-     * @return CloudQuota instance
-     */
+    @Override
+    public CloudQuota getQuota(String quotaName) {
+        return getQuota(quotaName, true);
+    }
+
+    @Override
     public CloudQuota getQuota(String quotaName, boolean required) {
         Map<String, Object> urlVars = new HashMap<String, Object>();
         String urlPath = "/v2/quota_definitions?q=name:{name}";
@@ -788,7 +810,21 @@ public class CloudControllerClientImpl implements CloudControllerClient {
 
     @Override
     public CloudSecurityGroup getSecurityGroup(String securityGroupName) {
-        return doGetSecurityGroup(securityGroupName, true);
+        return getSecurityGroup(securityGroupName, true);
+    }
+
+    @Override
+    public CloudSecurityGroup getSecurityGroup(String securityGroupName, boolean required) {
+        Map<String, Object> resource = findSecurityGroupResource(securityGroupName);
+        CloudSecurityGroup securityGroup = null;
+        if (resource != null) {
+            securityGroup = resourceMapper.mapResource(resource, CloudSecurityGroup.class);
+        }
+        if (securityGroup == null && required) {
+            throw new CloudFoundryException(HttpStatus.NOT_FOUND, "Not Found",
+                "Security group named '" + securityGroupName + "' not found.");
+        }
+        return securityGroup;
     }
 
     @Override
@@ -807,7 +843,8 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         return getService(serviceName, true);
     }
 
-    private CloudService getService(String serviceName, boolean required) {
+    @Override
+    public CloudService getService(String serviceName, boolean required) {
         Map<String, Object> resource = doGetServiceInstance(serviceName, 0);
         CloudService service = null;
         if (resource != null) {
@@ -821,11 +858,20 @@ public class CloudControllerClientImpl implements CloudControllerClient {
 
     @Override
     public CloudServiceBroker getServiceBroker(String name) {
+        return getServiceBroker(name, true);
+    }
+
+    @Override
+    public CloudServiceBroker getServiceBroker(String name, boolean required) {
         Map<String, Object> resource = findServiceBrokerResource(name);
-        if (resource == null) {
+        CloudServiceBroker serviceBroker = null;
+        if (resource != null) {
+            serviceBroker = resourceMapper.mapResource(resource, CloudServiceBroker.class);
+        }
+        if (serviceBroker == null && required) {
             throw new CloudFoundryException(HttpStatus.NOT_FOUND, "Not Found", "Service broker '" + name + "' not found.");
         }
-        return resourceMapper.mapResource(resource, CloudServiceBroker.class);
+        return serviceBroker;
     }
 
     @Override
@@ -842,11 +888,20 @@ public class CloudControllerClientImpl implements CloudControllerClient {
 
     @Override
     public CloudServiceInstance getServiceInstance(String serviceName) {
+        return getServiceInstance(serviceName, true);
+    }
+
+    @Override
+    public CloudServiceInstance getServiceInstance(String serviceName, boolean required) {
         Map<String, Object> resource = doGetServiceInstance(serviceName, 1);
-        if (resource == null) {
+        CloudServiceInstance serviceInstance = null;
+        if (resource != null) {
+            serviceInstance = resourceMapper.mapResource(resource, CloudServiceInstance.class);
+        }
+        if (serviceInstance == null && required) {
             throw new CloudFoundryException(HttpStatus.NOT_FOUND, "Not Found", "Service instance '" + serviceName + "' not found.");
         }
-        return resourceMapper.mapResource(resource, CloudServiceInstance.class);
+        return serviceInstance;
     }
 
     @Override
@@ -888,11 +943,20 @@ public class CloudControllerClientImpl implements CloudControllerClient {
 
     @Override
     public CloudSpace getSpace(String spaceName) {
+        return getSpace(spaceName, true);
+    }
+
+    @Override
+    public CloudSpace getSpace(String spaceName, boolean required) {
         Map<String, Object> resource = findSpaceResource(spaceName);
-        if (resource == null) {
+        CloudSpace space = null;
+        if (resource != null) {
+            space = resourceMapper.mapResource(resource, CloudSpace.class);
+        }
+        if (space == null && required) {
             throw new CloudFoundryException(HttpStatus.NOT_FOUND, "Not Found", "Space '" + spaceName + "' not found.");
         }
-        return resourceMapper.mapResource(resource, CloudSpace.class);
+        return space;
     }
 
     @Override
@@ -948,11 +1012,20 @@ public class CloudControllerClientImpl implements CloudControllerClient {
 
     @Override
     public CloudStack getStack(String name) {
+        return getStack(name, true);
+    }
+
+    @Override
+    public CloudStack getStack(String name, boolean required) {
         Map<String, Object> resource = findStackResource(name);
-        if (resource == null) {
+        CloudStack stack = null;
+        if (resource != null) {
+            stack = resourceMapper.mapResource(resource, CloudStack.class);
+        }
+        if (stack == null && required) {
             throw new CloudFoundryException(HttpStatus.NOT_FOUND, "Not Found", "Stack '" + name + "' not found.");
         }
-        return resourceMapper.mapResource(resource, CloudStack.class);
+        return stack;
     }
 
     @Override
@@ -1078,8 +1151,8 @@ public class CloudControllerClientImpl implements CloudControllerClient {
      * @param quotaName
      */
     public void setQuotaToOrg(String orgName, String quotaName) {
-        CloudQuota quota = this.getQuota(quotaName, true);
-        CloudOrganization org = this.getOrganization(orgName, true);
+        CloudQuota quota = this.getQuota(quotaName);
+        CloudOrganization org = this.getOrganization(orgName);
 
         doSetQuotaToOrg(org.getMeta().getGuid(), quota.getMeta().getGuid());
     }
@@ -1146,7 +1219,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
 
     @Override
     public void unbindRunningSecurityGroup(String securityGroupName) {
-        CloudSecurityGroup group = doGetSecurityGroup(securityGroupName, true);
+        CloudSecurityGroup group = getSecurityGroup(securityGroupName);
 
         Map<String, Object> urlVars = new HashMap<String, Object>();
         String urlPath = "/v2/config/running_security_groups/{guid}";
@@ -1157,7 +1230,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     @Override
     public void unbindSecurityGroup(String orgName, String spaceName, String securityGroupName) {
         UUID spaceGuid = getSpaceGuid(orgName, spaceName);
-        CloudSecurityGroup group = doGetSecurityGroup(securityGroupName, true);
+        CloudSecurityGroup group = getSecurityGroup(securityGroupName);
 
         String path = "/v2/security_groups/{group_guid}/spaces/{space_guid}";
 
@@ -1177,7 +1250,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
 
     @Override
     public void unbindStagingSecurityGroup(String securityGroupName) {
-        CloudSecurityGroup group = doGetSecurityGroup(securityGroupName, true);
+        CloudSecurityGroup group = getSecurityGroup(securityGroupName);
 
         Map<String, Object> urlVars = new HashMap<String, Object>();
         String urlPath = "/v2/config/staging_security_groups/{guid}";
@@ -1301,7 +1374,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     public void updateQuota(CloudQuota quota, String name) {
-        CloudQuota oldQuota = this.getQuota(name, true);
+        CloudQuota oldQuota = this.getQuota(name);
 
         String setPath = "/v2/quota_definitions/{quotaGuid}";
 
@@ -1320,13 +1393,13 @@ public class CloudControllerClientImpl implements CloudControllerClient {
 
     @Override
     public void updateSecurityGroup(CloudSecurityGroup securityGroup) {
-        CloudSecurityGroup oldGroup = doGetSecurityGroup(securityGroup.getName(), true);
+        CloudSecurityGroup oldGroup = getSecurityGroup(securityGroup.getName());
         doUpdateSecurityGroup(oldGroup, securityGroup.getName(), convertToList(securityGroup.getRules()));
     }
 
     @Override
     public void updateSecurityGroup(String name, InputStream jsonRulesFile) {
-        CloudSecurityGroup oldGroup = doGetSecurityGroup(name, true);
+        CloudSecurityGroup oldGroup = getSecurityGroup(name);
         doUpdateSecurityGroup(oldGroup, name, JsonUtil.convertToJsonList(jsonRulesFile));
     }
 
@@ -1567,7 +1640,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     private void associateRoleWithSpace(String orgName, String spaceName, String userGuid, String urlPath) {
         assertSpaceProvided("associate roles");
 
-        CloudOrganization organization = (orgName == null ? sessionSpace.getOrganization() : getOrganization(orgName, true));
+        CloudOrganization organization = (orgName == null ? sessionSpace.getOrganization() : getOrganization(orgName));
         UUID orgGuid = organization.getMeta().getGuid();
 
         UUID spaceGuid = getSpaceGuid(spaceName, orgGuid);
@@ -1884,21 +1957,15 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         return routes;
     }
 
-    private CloudSecurityGroup doGetSecurityGroup(String securityGroupName, boolean required) {
+    private Map<String, Object> findSecurityGroupResource(String securityGroupName) {
         Map<String, Object> urlVars = new HashMap<String, Object>();
         String urlPath = "/v2/security_groups?q=name:{name}";
         urlVars.put("name", securityGroupName);
-        CloudSecurityGroup securityGroup = null;
         List<Map<String, Object>> resourceList = getAllResources(urlPath, urlVars);
         if (resourceList.size() > 0) {
-            Map<String, Object> resource = resourceList.get(0);
-            securityGroup = resourceMapper.mapResource(resource, CloudSecurityGroup.class);
-        } else if (required && resourceList.size() == 0) {
-            throw new CloudFoundryException(HttpStatus.NOT_FOUND, "Not Found",
-                "Security group named '" + securityGroupName + "' not found.");
+            return resourceList.get(0);
         }
-
-        return securityGroup;
+        return null;
     }
 
     private Map<String, Object> doGetServiceInstance(String serviceName, int inlineDepth) {
@@ -2305,7 +2372,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     private UUID getSpaceGuid(String orgName, String spaceName) {
-        CloudOrganization org = getOrganization(orgName, true);
+        CloudOrganization org = getOrganization(orgName);
         return getSpaceGuid(spaceName, org.getMeta().getGuid());
     }
 
@@ -2318,7 +2385,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         if (spaceName == null) {
             spaceGuid = sessionSpace.getMeta().getGuid();
         } else {
-            CloudOrganization organization = (orgName == null ? sessionSpace.getOrganization() : getOrganization(orgName, true));
+            CloudOrganization organization = (orgName == null ? sessionSpace.getOrganization() : getOrganization(orgName));
             spaceGuid = getSpaceGuid(spaceName, organization.getMeta().getGuid());
         }
 

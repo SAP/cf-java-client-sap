@@ -339,8 +339,16 @@ public class CloudFoundryClient implements CloudFoundryOperations {
         return cc.getApplication(appName);
     }
 
+    public CloudApplication getApplication(String appName, boolean required) {
+        return cc.getApplication(appName, required);
+    }
+
     public CloudApplication getApplication(UUID appGuid) {
         return cc.getApplication(appGuid);
+    }
+
+    public CloudApplication getApplication(UUID appGuid, boolean required) {
+        return cc.getApplication(appGuid, required);
     }
 
     public Map<String, Object> getApplicationEnvironment(UUID appGuid) {
@@ -439,6 +447,10 @@ public class CloudFoundryClient implements CloudFoundryOperations {
         return cc.getLogs(appName);
     }
 
+    public CloudOrganization getOrganization(String orgName) {
+        return cc.getOrganization(orgName);
+    }
+
     public CloudOrganization getOrganization(String orgName, boolean required) {
         return cc.getOrganization(orgName, required);
     }
@@ -454,6 +466,10 @@ public class CloudFoundryClient implements CloudFoundryOperations {
 
     public List<CloudDomain> getPrivateDomains() {
         return cc.getPrivateDomains();
+    }
+
+    public CloudQuota getQuota(String quotaName) {
+        return cc.getQuota(quotaName);
     }
 
     public CloudQuota getQuota(String quotaName, boolean required) {
@@ -483,6 +499,11 @@ public class CloudFoundryClient implements CloudFoundryOperations {
     }
 
     @Override
+    public CloudSecurityGroup getSecurityGroup(String securityGroupName, boolean required) {
+        return cc.getSecurityGroup(securityGroupName, required);
+    }
+
+    @Override
     public List<CloudSecurityGroup> getSecurityGroups() {
         return cc.getSecurityGroups();
     }
@@ -491,8 +512,16 @@ public class CloudFoundryClient implements CloudFoundryOperations {
         return cc.getService(service);
     }
 
+    public CloudService getService(String service, boolean required) {
+        return cc.getService(service, required);
+    }
+
     public CloudServiceBroker getServiceBroker(String name) {
         return cc.getServiceBroker(name);
+    }
+
+    public CloudServiceBroker getServiceBroker(String name, boolean required) {
+        return cc.getServiceBroker(name, required);
     }
 
     public List<CloudServiceBroker> getServiceBrokers() {
@@ -501,6 +530,10 @@ public class CloudFoundryClient implements CloudFoundryOperations {
 
     public CloudServiceInstance getServiceInstance(String service) {
         return cc.getServiceInstance(service);
+    }
+
+    public CloudServiceInstance getServiceInstance(String service, boolean required) {
+        return cc.getServiceInstance(service, required);
     }
 
     public List<CloudServiceOffering> getServiceOfferings() {
@@ -518,6 +551,11 @@ public class CloudFoundryClient implements CloudFoundryOperations {
     @Override
     public CloudSpace getSpace(String spaceName) {
         return cc.getSpace(spaceName);
+    }
+
+    @Override
+    public CloudSpace getSpace(String spaceName, boolean required) {
+        return cc.getSpace(spaceName, required);
     }
 
     @Override
@@ -561,6 +599,10 @@ public class CloudFoundryClient implements CloudFoundryOperations {
 
     public CloudStack getStack(String name) {
         return cc.getStack(name);
+    }
+
+    public CloudStack getStack(String name, boolean required) {
+        return cc.getStack(name, required);
     }
 
     public List<CloudStack> getStacks() {
@@ -746,4 +788,5 @@ public class CloudFoundryClient implements CloudFoundryOperations {
     public void uploadApplication(String appName, ApplicationArchive archive, UploadStatusCallback callback) throws IOException {
         cc.uploadApplication(appName, archive, callback);
     }
+
 }

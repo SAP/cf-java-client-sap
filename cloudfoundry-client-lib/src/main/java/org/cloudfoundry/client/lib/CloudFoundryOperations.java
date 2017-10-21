@@ -386,12 +386,30 @@ public interface CloudFoundryOperations {
     CloudApplication getApplication(String appName);
 
     /**
+     * Get cloud application with the specified name.
+     *
+     * @param appName name of the app
+     * @param required if true, and organization is not found, throw an exception
+     * @return the cloud application
+     */
+    CloudApplication getApplication(String appName, boolean required);
+
+    /**
      * Get cloud application with the specified GUID.
      *
      * @param guid GUID of the app
      * @return the cloud application
      */
     CloudApplication getApplication(UUID guid);
+
+    /**
+     * Get cloud application with the specified GUID.
+     *
+     * @param guid GUID of the app
+     * @param required if true, and organization is not found, throw an exception
+     * @return the cloud application
+     */
+    CloudApplication getApplication(UUID guid, boolean required);
 
     /**
      * Get application environment variables for the app with the specified name.
@@ -569,6 +587,14 @@ public interface CloudFoundryOperations {
      * Get the organization with the specified name.
      *
      * @param orgName name of organization
+     * @return
+     */
+    CloudOrganization getOrganization(String orgName);
+
+    /**
+     * Get the organization with the specified name.
+     *
+     * @param orgName name of organization
      * @param required if true, and organization is not found, throw an exception
      * @return
      */
@@ -601,7 +627,15 @@ public interface CloudFoundryOperations {
      * Get quota by name
      *
      * @param quotaName
-     * @param required
+     * @return CloudQuota instance
+     */
+    CloudQuota getQuota(String quotaName);
+
+    /**
+     * Get quota by name
+     *
+     * @param quotaName
+     * @param required if true, and organization is not found, throw an exception
      * @return CloudQuota instance
      */
     CloudQuota getQuota(String quotaName, boolean required);
@@ -649,6 +683,17 @@ public interface CloudFoundryOperations {
     CloudSecurityGroup getSecurityGroup(String securityGroupName);
 
     /**
+     * Get a specific security group by name.
+     * <p/>
+     * This method requires the logged in user to have admin permissions in the cloud controller.
+     *
+     * @param securityGroupName The name of the security group
+     * @param required if true, and organization is not found, throw an exception
+     * @return the CloudSecurityGroup or <code>null</code> if no security groups exist with the given name
+     */
+    CloudSecurityGroup getSecurityGroup(String securityGroupName, boolean required);
+
+    /**
      * Get a List of all application security groups.
      * <p/>
      * This method requires the logged in user to have admin permissions in the cloud controller.
@@ -666,12 +711,30 @@ public interface CloudFoundryOperations {
     CloudService getService(String service);
 
     /**
+     * Get cloud service.
+     *
+     * @param service name of service
+     * @param required if true, and organization is not found, throw an exception
+     * @return the cloud service info
+     */
+    CloudService getService(String service, boolean required);
+
+    /**
      * Get a service broker.
      *
      * @param name the service broker name
      * @return the service broker
      */
     CloudServiceBroker getServiceBroker(String name);
+
+    /**
+     * Get a service broker.
+     *
+     * @param name the service broker name
+     * @param required if true, and organization is not found, throw an exception
+     * @return the service broker
+     */
+    CloudServiceBroker getServiceBroker(String name, boolean required);
 
     /**
      * Get all service brokers.
@@ -687,6 +750,15 @@ public interface CloudFoundryOperations {
      * @return the service instance info
      */
     CloudServiceInstance getServiceInstance(String service);
+
+    /**
+     * Get a service instance.
+     *
+     * @param service name of the service instance
+     * @param required if true, and organization is not found, throw an exception
+     * @return the service instance info
+     */
+    CloudServiceInstance getServiceInstance(String service, boolean required);
 
     /**
      * Get all service offerings.
@@ -716,6 +788,15 @@ public interface CloudFoundryOperations {
      * @return the cloud space
      */
     CloudSpace getSpace(String spaceName);
+
+    /**
+     * Get space name with the specified name.
+     *
+     * @param spaceName name of the space
+     * @param required if true, and organization is not found, throw an exception
+     * @return the cloud space
+     */
+    CloudSpace getSpace(String spaceName, boolean required);
 
     /**
      * Get list of space auditor UUID for the space.
@@ -789,6 +870,15 @@ public interface CloudFoundryOperations {
      * @return the stack
      */
     CloudStack getStack(String name);
+
+    /**
+     * Get a stack by name.
+     *
+     * @param name the name of the stack to get
+     * @param required if true, and organization is not found, throw an exception
+     * @return the stack, or null if not found
+     */
+    CloudStack getStack(String name, boolean required);
 
     /**
      * Get the list of stacks available for staging applications.
