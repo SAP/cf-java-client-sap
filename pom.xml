@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.sap.cloud.lm.sl</groupId>
     <artifactId>cf-java-client</artifactId>
@@ -8,6 +9,10 @@
     <version>1.1.4.RELEASE-sap-04-SNAPSHOT</version>
     <description>SAP fork of CF Java Client</description>
     <url>https://github.com/SAP/cf-java-client-sap</url>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
 
     <modules>
         <module>cloudfoundry-client-lib</module>
@@ -30,30 +35,72 @@
         <connection>scm:git:https://github.com/SAP/cf-java-client-sap.git</connection>
         <developerConnection>scm:git:https://github.com/SAP/cf-java-client-sap.git</developerConnection>
         <url>https://github.com/SAP/cf-java-client-sap.git</url>
-      <tag>HEAD</tag>
-  </scm>
+        <tag>HEAD</tag>
+    </scm>
 
     <developers>
         <developer>
             <id>nvvalchev</id>
             <name>Nikolay Valchev</name>
             <email>nikolay.valchev@sap.com</email>
-            <organization>${organization.name}</organization>
-            <organizationUrl>${organization.url}</organizationUrl>
+            <organization>${project.organization.name}</organization>
+            <organizationUrl>${project.organization.url}</organizationUrl>
         </developer>
         <developer>
             <id>nictas</id>
-            <name>Alexander Tsvetkovv</name>
+            <name>Alexander Tsvetkov</name>
             <email>aleksandar.tsvetkov@sap.com</email>
-            <organization>${organization.name}</organization>
-            <organizationUrl>${organization.url}</organizationUrl>
+            <organization>${project.organization.name}</organization>
+            <organizationUrl>${project.organization.url}</organizationUrl>
         </developer>
         <developer>
             <id>enchobelezirev</id>
             <name>Encho Belezirev</name>
             <email>encho.belezirev@sap.com</email>
-            <organization>${organization.name}</organization>
-            <organizationUrl>${organization.url}</organizationUrl>
+            <organization>${project.organization.name}</organization>
+            <organizationUrl>${project.organization.url}</organizationUrl>
+        </developer>
+        <developer>
+            <id>ddonchev</id>
+            <name>Dimitar Donchev</name>
+            <email>dimitar.donchev@sap.com</email>
+            <organization>${project.organization.name}</organization>
+            <organizationUrl>${project.organization.url}</organizationUrl>
+        </developer>
+        <developer>
+            <id>DenitsaKostova</id>
+            <name>Denitsa Petrova</name>
+            <email>denitsa.petrova@sap.com</email>
+            <organization>${project.organization.name}</organization>
+            <organizationUrl>${project.organization.url}</organizationUrl>
+        </developer>
+        <developer>
+            <id>ttsokov</id>
+            <name>Tsvetan Tsokov</name>
+            <email>tsvetan.tsokov@sap.com</email>
+            <organization>${project.organization.name}</organization>
+            <organizationUrl>${project.organization.url}</organizationUrl>
+        </developer>
+        <developer>
+            <id>monochronique</id>
+            <name>Mihail Tsonev</name>
+            <email>mihail.tsonev@sap.com</email>
+            <organization>${project.organization.name}</organization>
+            <organizationUrl>${project.organization.url}</organizationUrl>
+        </developer>
+        <developer>
+            <id>boyan-velinov</id>
+            <name>Boyan Velinov</name>
+            <email>boyan.velinov@sap.com</email>
+            <organization>${project.organization.name}</organization>
+            <organizationUrl>${project.organization.url}</organizationUrl>
+        </developer>
+        <developer>
+            <id>KristianShishoev</id>
+            <name>Kristian Shishoev</name>
+            <email>kristian.shishoev@sap.com</email>
+            <organization>${project.organization.name}</organization>
+            <organizationUrl>${project.organization.url}</organizationUrl>
         </developer>
     </developers>
 
@@ -153,6 +200,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-deploy-plugin</artifactId>
+                <version>2.8.2</version>
                 <configuration>
                     <skip>false</skip>
                 </configuration>
