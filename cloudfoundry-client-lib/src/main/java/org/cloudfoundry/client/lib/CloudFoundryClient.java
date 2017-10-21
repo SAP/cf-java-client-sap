@@ -439,8 +439,8 @@ public class CloudFoundryClient implements CloudFoundryOperations {
         return cc.getLogs(appName);
     }
 
-    public CloudOrganization getOrgByName(String orgName, boolean required) {
-        return cc.getOrgByName(orgName, required);
+    public CloudOrganization getOrganization(String orgName, boolean required) {
+        return cc.getOrganization(orgName, required);
     }
 
     @Override
@@ -456,8 +456,8 @@ public class CloudFoundryClient implements CloudFoundryOperations {
         return cc.getPrivateDomains();
     }
 
-    public CloudQuota getQuotaByName(String quotaName, boolean required) {
-        return cc.getQuotaByName(quotaName, required);
+    public CloudQuota getQuota(String quotaName, boolean required) {
+        return cc.getQuota(quotaName, required);
     }
 
     public List<CloudQuota> getQuotas() {

@@ -296,18 +296,18 @@ public class CloudFoundryClientTest {
         CloudQuota cloudQuota = new CloudQuota(null, CCNG_QUOTA_NAME_TEST);
         connectedClient.createQuota(cloudQuota);
 
-        CloudQuota afterCreate = connectedClient.getQuotaByName(CCNG_QUOTA_NAME_TEST, true);
+        CloudQuota afterCreate = connectedClient.getQuota(CCNG_QUOTA_NAME_TEST, true);
         assertNotNull(afterCreate);
 
         // change quota mem to 10240
         afterCreate.setMemoryLimit(10240);
         connectedClient.updateQuota(afterCreate, CCNG_QUOTA_NAME_TEST);
-        CloudQuota afterUpdate = connectedClient.getQuotaByName(CCNG_QUOTA_NAME_TEST, true);
+        CloudQuota afterUpdate = connectedClient.getQuota(CCNG_QUOTA_NAME_TEST, true);
         assertEquals(10240, afterUpdate.getMemoryLimit());
 
         // delete the quota
         connectedClient.deleteQuota(CCNG_QUOTA_NAME_TEST);
-        CloudQuota afterDelete = connectedClient.getQuotaByName(CCNG_QUOTA_NAME_TEST, false);
+        CloudQuota afterDelete = connectedClient.getQuota(CCNG_QUOTA_NAME_TEST, false);
         assertNull(afterDelete);
     }
 
@@ -1614,7 +1614,7 @@ public class CloudFoundryClientTest {
         assumeTrue(CCNG_USER_IS_ADMIN);
 
         // get old quota to restore after test
-        CloudOrganization org = connectedClient.getOrgByName(CCNG_USER_ORG, true);
+        CloudOrganization org = connectedClient.getOrganization(CCNG_USER_ORG, true);
         CloudQuota oldQuota = org.getQuota();
 
         // create and set test_quota to org
@@ -1623,7 +1623,7 @@ public class CloudFoundryClientTest {
         connectedClient.setQuotaToOrg(CCNG_USER_ORG, CCNG_QUOTA_NAME_TEST);
 
         // get the bound quota of org
-        org = connectedClient.getOrgByName(CCNG_USER_ORG, true);
+        org = connectedClient.getOrganization(CCNG_USER_ORG, true);
         CloudQuota newQuota = org.getQuota();
 
         // bound quota should be equals to test_quota

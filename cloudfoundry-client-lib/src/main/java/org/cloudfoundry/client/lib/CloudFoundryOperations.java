@@ -572,7 +572,7 @@ public interface CloudFoundryOperations {
      * @param required if true, and organization is not found, throw an exception
      * @return
      */
-    CloudOrganization getOrgByName(String orgName, boolean required);
+    CloudOrganization getOrganization(String orgName, boolean required);
 
     /**
      * Get all users in the specified organization
@@ -604,7 +604,7 @@ public interface CloudFoundryOperations {
      * @param required
      * @return CloudQuota instance
      */
-    CloudQuota getQuotaByName(String quotaName, boolean required);
+    CloudQuota getQuota(String quotaName, boolean required);
 
     /**
      * Get quota definitions
