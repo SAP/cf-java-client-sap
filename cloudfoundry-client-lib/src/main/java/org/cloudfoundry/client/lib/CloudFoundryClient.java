@@ -45,6 +45,7 @@ import org.cloudfoundry.client.lib.domain.CloudStack;
 import org.cloudfoundry.client.lib.domain.CloudUser;
 import org.cloudfoundry.client.lib.domain.CrashesInfo;
 import org.cloudfoundry.client.lib.domain.InstancesInfo;
+import org.cloudfoundry.client.lib.domain.ServiceKey;
 import org.cloudfoundry.client.lib.domain.Staging;
 import org.cloudfoundry.client.lib.rest.CloudControllerClient;
 import org.cloudfoundry.client.lib.rest.CloudControllerClientFactory;
@@ -594,6 +595,11 @@ public class CloudFoundryClient implements CloudFoundryOperations {
         return cc.getServiceInstance(service, required);
     }
 
+    @Override
+    public List<ServiceKey> getServiceKeys(String serviceName) {
+        return cc.getServiceKeys(serviceName);
+    }
+    
     @Override
     public List<CloudServiceOffering> getServiceOfferings() {
         return cc.getServiceOfferings();

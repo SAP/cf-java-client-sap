@@ -16,6 +16,13 @@
 
 package org.cloudfoundry.client.lib.util;
 
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
 import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.cloudfoundry.client.lib.domain.CloudDomain;
 import org.cloudfoundry.client.lib.domain.CloudEntity;
@@ -35,21 +42,15 @@ import org.cloudfoundry.client.lib.domain.CloudSpace;
 import org.cloudfoundry.client.lib.domain.CloudStack;
 import org.cloudfoundry.client.lib.domain.CloudUser;
 import org.cloudfoundry.client.lib.domain.SecurityGroupRule;
+import org.cloudfoundry.client.lib.domain.ServiceKey;
 import org.cloudfoundry.client.lib.domain.Staging;
-
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 
 /**
  * Class handling the mapping of the cloud domain objects
  *
  * @author Thomas Risberg
  */
-//TODO: use some more advanced JSON mapping framework?
+// TODO: use some more advanced JSON mapping framework?
 @SuppressWarnings("ConstantConditions")
 public class CloudEntityResourceMapper {
 
@@ -62,8 +63,7 @@ public class CloudEntityResourceMapper {
     }
 
     @SuppressWarnings("unchecked")
-    public static List<Map<String, Object>> getEmbeddedResourceList(Map<String, Object> resource, String
-            embeddedResourceName) {
+    public static List<Map<String, Object>> getEmbeddedResourceList(Map<String, Object> resource, String embeddedResourceName) {
         return (List<Map<String, Object>>) resource.get(embeddedResourceName);
     }
 
@@ -88,15 +88,13 @@ public class CloudEntityResourceMapper {
         if (targetClass == Long.class) {
             return (T) Long.valueOf(String.valueOf(attributeValue));
         }
-        if (targetClass == Integer.class || targetClass == Boolean.class || targetClass == Map.class || targetClass
-                == List.class) {
+        if (targetClass == Integer.class || targetClass == Boolean.class || targetClass == Map.class || targetClass == List.class) {
             return (T) attributeValue;
         }
         if (targetClass == UUID.class && attributeValue instanceof String) {
             return (T) UUID.fromString((String) attributeValue);
         }
-        throw new IllegalArgumentException(
-                "Error during mapping - unsupported class for attribute mapping " + targetClass.getName());
+        throw new IllegalArgumentException("Error during mapping - unsupported class for attribute mapping " + targetClass.getName());
     }
 
     @SuppressWarnings("unchecked")
@@ -164,6 +162,9 @@ public class CloudEntityResourceMapper {
         if (targetClass == CloudServiceOffering.class) {
             return (T) mapServiceOfferingResource(resource);
         }
+        if (targetClass == ServiceKey.class) {
+            return (T) mapServiceKeyResource(resource);
+        }
         if (targetClass == CloudServiceBroker.class) {
             return (T) mapServiceBrokerResource(resource);
         }
@@ -182,8 +183,7 @@ public class CloudEntityResourceMapper {
         if (targetClass == CloudUser.class) {
             return (T) mapUserResource(resource);
         }
-        throw new IllegalArgumentException(
-                "Error during mapping - unsupported class for entity mapping " + targetClass.getName());
+        throw new IllegalArgumentException("Error during mapping - unsupported class for entity mapping " + targetClass.getName());
     }
 
     @SuppressWarnings("unchecked")
@@ -191,26 +191,20 @@ public class CloudEntityResourceMapper {
         List<SecurityGroupRule> rules = new ArrayList<SecurityGroupRule>();
         List<Map<String, Object>> jsonRules = getEntityAttribute(resource, "rules", List.class);
         for (Map<String, Object> jsonRule : jsonRules) {
-            rules.add(new SecurityGroupRule(
-                    (String) jsonRule.get("protocol"),
-                    (String) jsonRule.get("ports"),
-                    (String) jsonRule.get("destination"),
-                    (Boolean) jsonRule.get("log"),
-                    (Integer) jsonRule.get("type"),
-                    (Integer) jsonRule.get("code")));
+            rules.add(new SecurityGroupRule((String) jsonRule.get("protocol"), (String) jsonRule.get("ports"),
+                (String) jsonRule.get("destination"), (Boolean) jsonRule.get("log"), (Integer) jsonRule.get("type"),
+                (Integer) jsonRule.get("code")));
         }
         return rules;
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     private CloudApplication mapApplicationResource(Map<String, Object> resource) {
-        CloudApplication app = new CloudApplication(
-                getMeta(resource),
-                getNameOfResource(resource));
+        CloudApplication app = new CloudApplication(getMeta(resource), getNameOfResource(resource));
         app.setInstances(getEntityAttribute(resource, "instances", Integer.class));
         app.setServices(new ArrayList<String>());
         app.setState(CloudApplication.AppState.valueOf(getEntityAttribute(resource, "state", String.class)));
-        //TODO: debug
+        // TODO: debug
         app.setDebug(null);
 
         Integer runningInstancesAttribute = getEntityAttribute(resource, "running_instances", Integer.class);
@@ -250,11 +244,8 @@ public class CloudEntityResourceMapper {
     }
 
     private CloudSecurityGroup mapApplicationSecurityGroupResource(Map<String, Object> resource) {
-        return new CloudSecurityGroup(getMeta(resource),
-                getNameOfResource(resource),
-                getSecurityGroupRules(resource),
-                getEntityAttribute(resource, "running_default", Boolean.class),
-                getEntityAttribute(resource, "staging_default", Boolean.class));
+        return new CloudSecurityGroup(getMeta(resource), getNameOfResource(resource), getSecurityGroupRules(resource),
+            getEntityAttribute(resource, "running_default", Boolean.class), getEntityAttribute(resource, "staging_default", Boolean.class));
     }
 
     private CloudDomain mapDomainResource(Map<String, Object> resource) {
@@ -270,9 +261,7 @@ public class CloudEntityResourceMapper {
     }
 
     private CloudEvent mapEventResource(Map<String, Object> resource) {
-        CloudEvent event = new CloudEvent(
-                getMeta(resource),
-                getNameOfResource(resource));
+        CloudEvent event = new CloudEvent(getMeta(resource), getNameOfResource(resource));
         event.setType(getEntityAttribute(resource, "type", String.class));
         event.setActor(getEntityAttribute(resource, "actor", String.class));
         event.setActorType(getEntityAttribute(resource, "actor_type", String.class));
@@ -316,9 +305,8 @@ public class CloudEntityResourceMapper {
         int totalRoutes = getEntityAttribute(resource, "total_routes", Integer.class);
         long memoryLimit = getEntityAttribute(resource, "memory_limit", Long.class);
 
-        return new CloudQuota(getMeta(resource), getNameOfResource(resource),
-                nonBasicServicesAllowed, totalServices, totalRoutes,
-                memoryLimit);
+        return new CloudQuota(getMeta(resource), getNameOfResource(resource), nonBasicServicesAllowed, totalServices, totalRoutes,
+            memoryLimit);
     }
 
     private CloudRoute mapRouteResource(Map<String, Object> resource) {
@@ -331,8 +319,7 @@ public class CloudEntityResourceMapper {
 
     @SuppressWarnings("unchecked")
     private CloudServiceBinding mapServiceBinding(Map<String, Object> resource) {
-        CloudServiceBinding binding = new CloudServiceBinding(getMeta(resource),
-                getNameOfResource(resource));
+        CloudServiceBinding binding = new CloudServiceBinding(getMeta(resource), getNameOfResource(resource));
 
         binding.setAppGuid(UUID.fromString(getEntityAttribute(resource, "app_guid", String.class)));
         binding.setSyslogDrainUrl(getEntityAttribute(resource, "syslog_drain_url", String.class));
@@ -343,10 +330,8 @@ public class CloudEntityResourceMapper {
     }
 
     private CloudServiceBroker mapServiceBrokerResource(Map<String, Object> resource) {
-        return new CloudServiceBroker(getMeta(resource),
-                getEntityAttribute(resource, "name", String.class),
-                getEntityAttribute(resource, "broker_url", String.class),
-                getEntityAttribute(resource, "auth_username", String.class));
+        return new CloudServiceBroker(getMeta(resource), getEntityAttribute(resource, "name", String.class),
+            getEntityAttribute(resource, "broker_url", String.class), getEntityAttribute(resource, "auth_username", String.class));
     }
 
     @SuppressWarnings("unchecked")
@@ -376,19 +361,13 @@ public class CloudEntityResourceMapper {
     }
 
     private CloudServiceOffering mapServiceOfferingResource(Map<String, Object> resource) {
-        CloudServiceOffering cloudServiceOffering = new CloudServiceOffering(
-                getMeta(resource),
-                getEntityAttribute(resource, "label", String.class),
-                getEntityAttribute(resource, "provider", String.class),
-                getEntityAttribute(resource, "version", String.class),
-                getEntityAttribute(resource, "description", String.class),
-                getEntityAttribute(resource, "active", Boolean.class),
-                getEntityAttribute(resource, "bindable", Boolean.class),
-                getEntityAttribute(resource, "url", String.class),
-                getEntityAttribute(resource, "info_url", String.class),
-                getEntityAttribute(resource, "unique_id", String.class),
-                getEntityAttribute(resource, "extra", String.class),
-                getEntityAttribute(resource, "documentation_url", String.class));
+        CloudServiceOffering cloudServiceOffering = new CloudServiceOffering(getMeta(resource),
+            getEntityAttribute(resource, "label", String.class), getEntityAttribute(resource, "provider", String.class),
+            getEntityAttribute(resource, "version", String.class), getEntityAttribute(resource, "description", String.class),
+            getEntityAttribute(resource, "active", Boolean.class), getEntityAttribute(resource, "bindable", Boolean.class),
+            getEntityAttribute(resource, "url", String.class), getEntityAttribute(resource, "info_url", String.class),
+            getEntityAttribute(resource, "unique_id", String.class), getEntityAttribute(resource, "extra", String.class),
+            getEntityAttribute(resource, "documentation_url", String.class));
         List<Map<String, Object>> servicePlanList = getEmbeddedResourceList(getEntity(resource), "service_plans");
         if (servicePlanList != null) {
             for (Map<String, Object> servicePlanResource : servicePlanList) {
@@ -400,17 +379,22 @@ public class CloudEntityResourceMapper {
         return cloudServiceOffering;
     }
 
+    @SuppressWarnings("unchecked")
+    private ServiceKey mapServiceKeyResource(Map<String, Object> resource) {
+        ServiceKey serviceKey = new ServiceKey(getMeta(resource), getEntityAttribute(resource, "name", String.class),
+            null, getEntityAttribute(resource, "credentials", Map.class), null);
+
+        return serviceKey;
+    }
+
     private CloudServicePlan mapServicePlanResource(Map<String, Object> servicePlanResource) {
         Boolean publicPlan = getEntityAttribute(servicePlanResource, "public", Boolean.class);
 
-        return new CloudServicePlan(
-                getMeta(servicePlanResource),
-                getEntityAttribute(servicePlanResource, "name", String.class),
-                getEntityAttribute(servicePlanResource, "description", String.class),
-                getEntityAttribute(servicePlanResource, "free", Boolean.class),
-                publicPlan == null ? true : publicPlan,
-                getEntityAttribute(servicePlanResource, "extra", String.class),
-                getEntityAttribute(servicePlanResource, "unique_id", String.class));
+        return new CloudServicePlan(getMeta(servicePlanResource), getEntityAttribute(servicePlanResource, "name", String.class),
+            getEntityAttribute(servicePlanResource, "description", String.class),
+            getEntityAttribute(servicePlanResource, "free", Boolean.class), publicPlan == null ? true : publicPlan,
+            getEntityAttribute(servicePlanResource, "extra", String.class),
+            getEntityAttribute(servicePlanResource, "unique_id", String.class));
     }
 
     private CloudService mapServiceResource(Map<String, Object> resource) {
@@ -439,9 +423,7 @@ public class CloudEntityResourceMapper {
     }
 
     private CloudStack mapStackResource(Map<String, Object> resource) {
-        return new CloudStack(getMeta(resource),
-                getNameOfResource(resource),
-                getEntityAttribute(resource, "description", String.class));
+        return new CloudStack(getMeta(resource), getNameOfResource(resource), getEntityAttribute(resource, "description", String.class));
     }
 
     private CloudUser mapUserResource(Map<String, Object> resource) {

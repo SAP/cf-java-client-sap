@@ -16,6 +16,14 @@
 
 package org.cloudfoundry.client.lib.rest;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
 import org.cloudfoundry.client.lib.ApplicationLogListener;
 import org.cloudfoundry.client.lib.ClientHttpResponseCallback;
 import org.cloudfoundry.client.lib.CloudCredentials;
@@ -43,17 +51,10 @@ import org.cloudfoundry.client.lib.domain.CloudStack;
 import org.cloudfoundry.client.lib.domain.CloudUser;
 import org.cloudfoundry.client.lib.domain.CrashesInfo;
 import org.cloudfoundry.client.lib.domain.InstancesInfo;
+import org.cloudfoundry.client.lib.domain.ServiceKey;
 import org.cloudfoundry.client.lib.domain.Staging;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.web.client.ResponseErrorHandler;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 
 /**
  * Interface defining operations available for the cloud controller REST client implementations
@@ -213,6 +214,8 @@ public interface CloudControllerClient {
     CloudServiceInstance getServiceInstance(String serviceName);
 
     CloudServiceInstance getServiceInstance(String serviceName, boolean required);
+
+    List<ServiceKey> getServiceKeys(String serviceName);
 
     List<CloudServiceOffering> getServiceOfferings();
 

@@ -82,6 +82,7 @@ import org.cloudfoundry.client.lib.domain.InstanceState;
 import org.cloudfoundry.client.lib.domain.InstanceStats;
 import org.cloudfoundry.client.lib.domain.InstancesInfo;
 import org.cloudfoundry.client.lib.domain.SecurityGroupRule;
+import org.cloudfoundry.client.lib.domain.ServiceKey;
 import org.cloudfoundry.client.lib.domain.Staging;
 import org.cloudfoundry.client.lib.domain.UploadApplicationPayload;
 import org.cloudfoundry.client.lib.oauth2.OauthClient;
@@ -905,6 +906,12 @@ public class CloudControllerClientImpl implements CloudControllerClient {
             throw new CloudFoundryException(HttpStatus.NOT_FOUND, "Not Found", "Service instance '" + serviceName + "' not found.");
         }
         return serviceInstance;
+    }
+    
+    @Override
+    public List<ServiceKey> getServiceKeys(String serviceName) {
+        CloudService cloudService = getService(serviceName, true);
+        return doGetServiceKeys(cloudService);
     }
 
     @Override
@@ -1998,6 +2005,20 @@ public class CloudControllerClientImpl implements CloudControllerClient {
             return serviceResource;
         }
         return null;
+    }
+    
+    private List<ServiceKey> doGetServiceKeys(CloudService cloudService) {
+        String urlPath = "/v2/service_instances/{serviceId}/service_keys";
+        Map<String, Object> pathVariables = new HashMap<String, Object>();
+        pathVariables.put("serviceId", cloudService.getMeta().getGuid());
+        List<Map<String, Object>> resourceList = getAllResources(urlPath, pathVariables);
+        List<ServiceKey> serviceKeys = new ArrayList<ServiceKey>();
+        for (Map<String, Object> resource : resourceList) {
+            ServiceKey serviceKey = resourceMapper.mapResource(resource, ServiceKey.class);
+            serviceKey.setService(cloudService);
+            serviceKeys.add(serviceKey);
+        }
+        return serviceKeys;
     }
 
     private void doSetQuotaToOrg(UUID orgGuid, UUID quotaGuid) {
