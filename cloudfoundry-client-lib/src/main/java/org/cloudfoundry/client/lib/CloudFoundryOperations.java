@@ -44,6 +44,7 @@ import org.cloudfoundry.client.lib.domain.CloudStack;
 import org.cloudfoundry.client.lib.domain.CloudUser;
 import org.cloudfoundry.client.lib.domain.CrashesInfo;
 import org.cloudfoundry.client.lib.domain.InstancesInfo;
+import org.cloudfoundry.client.lib.domain.ServiceKey;
 import org.cloudfoundry.client.lib.domain.Staging;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.web.client.ResponseErrorHandler;
@@ -760,6 +761,14 @@ public interface CloudFoundryOperations {
      */
     CloudServiceInstance getServiceInstance(String service, boolean required);
 
+    /**
+     * Get service keys for a service.
+     *
+     * @param service name containing service keys
+     * @return the service keys info
+     */
+    List<ServiceKey> getServiceKeys(String serviceName);
+    
     /**
      * Get all service offerings.
      *
