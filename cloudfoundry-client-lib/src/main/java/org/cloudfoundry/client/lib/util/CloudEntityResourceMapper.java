@@ -217,7 +217,20 @@ public class CloudEntityResourceMapper {
         Map<String, Object> stackResource = getEmbeddedResource(resource, "stack");
         CloudStack stack = mapStackResource(stackResource);
         Integer healthCheckTimeout = getEntityAttribute(resource, "health_check_timeout", Integer.class);
-        Staging staging = new Staging(command, buildpack, stack.getName(), healthCheckTimeout, detectedBuildpack);
+        String healthCheckType = getEntityAttribute(resource, "health_check_type", String.class);
+        String healthCheckHttpEndpoint = getEntityAttribute(resource, "health_check_http_endpoint", String.class);
+        Boolean sshEnabled = getEntityAttribute(resource, "enable_ssh", Boolean.class);
+
+        Staging staging = new Staging.StagingBuilder().command(command)
+            .buildpackUrl(buildpack)
+            .stack(stack.getName())
+            .healthCheckTimeout(healthCheckTimeout)
+            .detectedBuildpack(detectedBuildpack)
+            .healthCheckType(healthCheckType)
+            .healthCheckHttpEndpoint(healthCheckHttpEndpoint)
+            .sshEnabled(sshEnabled)
+            .build();
+
         app.setStaging(staging);
 
         Map<String, Object> spaceResource = getEmbeddedResource(resource, "space");
@@ -381,8 +394,8 @@ public class CloudEntityResourceMapper {
 
     @SuppressWarnings("unchecked")
     private ServiceKey mapServiceKeyResource(Map<String, Object> resource) {
-        ServiceKey serviceKey = new ServiceKey(getMeta(resource), getEntityAttribute(resource, "name", String.class),
-            null, getEntityAttribute(resource, "credentials", Map.class), null);
+        ServiceKey serviceKey = new ServiceKey(getMeta(resource), getEntityAttribute(resource, "name", String.class), null,
+            getEntityAttribute(resource, "credentials", Map.class), null);
 
         return serviceKey;
     }
