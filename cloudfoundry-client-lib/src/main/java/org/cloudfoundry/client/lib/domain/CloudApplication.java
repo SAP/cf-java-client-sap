@@ -16,8 +16,7 @@
 
 package org.cloudfoundry.client.lib.domain;
 
-import org.codehaus.jackson.annotate.JsonAutoDetect;
-import org.codehaus.jackson.annotate.JsonAutoDetect.Visibility;
+import static org.cloudfoundry.client.lib.util.CloudUtil.parse;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -25,10 +24,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.cloudfoundry.client.lib.util.CloudUtil.parse;
+import org.codehaus.jackson.annotate.JsonAutoDetect;
+import org.codehaus.jackson.annotate.JsonAutoDetect.Visibility;
 
-@JsonAutoDetect(fieldVisibility = Visibility.ANY, getterVisibility = Visibility.NONE, creatorVisibility = Visibility
-        .NONE)
+@JsonAutoDetect(fieldVisibility = Visibility.ANY, getterVisibility = Visibility.NONE, creatorVisibility = Visibility.NONE)
 public class CloudApplication extends CloudEntity {
 
     private static final String BUILDPACK_URL_KEY = "buildpack";
@@ -67,11 +66,10 @@ public class CloudApplication extends CloudEntity {
         super(meta, name);
     }
 
-    public CloudApplication(String name, String command, String buildpackUrl, int memory, int instances,
-                            List<String> uris, List<String> serviceNames,
-                            AppState state) {
+    public CloudApplication(String name, String command, String buildpackUrl, int memory, int instances, List<String> uris,
+        List<String> serviceNames, AppState state) {
         super(CloudEntity.Meta.defaultMeta(), name);
-        this.staging = new Staging(command, buildpackUrl);
+        this.staging = new Staging.StagingBuilder().command(command).buildpackUrl(buildpackUrl).build();
         this.memory = memory;
         this.instances = instances;
         this.uris = uris;
@@ -98,8 +96,7 @@ public class CloudApplication extends CloudEntity {
         }
         env = (List<String>) attributes.get("env");
 
-        Map<String, Object> metaValue = parse(Map.class,
-                attributes.get("meta"));
+        Map<String, Object> metaValue = parse(Map.class, attributes.get("meta"));
         if (metaValue != null) {
             String debugAttribute = (String) metaValue.get("debug");
             if (debugAttribute != null) {
@@ -122,7 +119,8 @@ public class CloudApplication extends CloudEntity {
                 detectedBuildpack = (String) metaValue.get(DETECTED_BUILDPACK_KEY);
             }
 
-            setStaging(new Staging(command, buildpackUrl, detectedBuildpack));
+            setStaging(
+                new Staging.StagingBuilder().command(command).buildpackUrl(buildpackUrl).detectedBuildpack(detectedBuildpack).build());
         }
     }
 
@@ -251,11 +249,9 @@ public class CloudApplication extends CloudEntity {
 
     @Override
     public String toString() {
-        return "CloudApplication [staging=" + staging + ", instances="
-                + instances + ", name=" + getName()
-                + ", memory=" + memory + ", diskQuota=" + diskQuota
-                + ", state=" + state + ", debug=" + debug + ", uris=" + uris + ", services=" + services
-                + ", env=" + env + ", space=" + space.getName() + "]";
+        return "CloudApplication [staging=" + staging + ", instances=" + instances + ", name=" + getName() + ", memory=" + memory
+            + ", diskQuota=" + diskQuota + ", state=" + state + ", debug=" + debug + ", uris=" + uris + ", services=" + services + ", env="
+            + env + ", space=" + space.getName() + "]";
     }
 
     public enum AppState {
@@ -263,7 +259,6 @@ public class CloudApplication extends CloudEntity {
     }
 
     public enum DebugMode {
-        run,
-        suspend
+        run, suspend
     }
 }

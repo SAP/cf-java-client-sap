@@ -1269,7 +1269,7 @@ public class CloudFoundryClientTest {
     @Test
     public void getStacks() throws Exception {
         List<CloudStack> stacks = connectedClient.getStacks();
-        assert(stacks.size() >= 1);
+        assert (stacks.size() >= 1);
 
         CloudStack stack = null;
         for (CloudStack s : stacks) {
@@ -1856,7 +1856,9 @@ public class CloudFoundryClientTest {
         assertEquals("ruby simple.rb", app.getStaging().getCommand());
         connectedClient.stopApplication(appName);
 
-        Staging newStaging = new Staging("ruby simple.rb test", "https://github" + ".com/cloudfoundry/heroku-buildpack-ruby");
+        Staging newStaging = new Staging.StagingBuilder().command("ruby simple.rb test")
+            .buildpackUrl("https://github" + ".com/cloudfoundry/heroku-buildpack-ruby")
+            .build();
         connectedClient.updateApplicationStaging(appName, newStaging);
         app = connectedClient.getApplication(appName);
         assertNotNull(app);
@@ -1961,7 +1963,7 @@ public class CloudFoundryClientTest {
         List<String> uris = new ArrayList<String>();
         uris.add(computeAppUrl(appName));
         List<String> services = new ArrayList<String>();
-        Staging staging = new Staging("node app.js", null);
+        Staging staging = new Staging.StagingBuilder().command("node app.js").build();
         File file = SampleProjects.standaloneNode();
         connectedClient.createApplication(appName, staging, 64, uris, services);
         connectedClient.uploadApplication(appName, file.getCanonicalPath());
@@ -2252,11 +2254,11 @@ public class CloudFoundryClientTest {
     }
 
     private void createSpringApplication(String appName, String buildpackUrl) {
-        createTestApp(appName, null, new Staging(null, buildpackUrl));
+        createTestApp(appName, null, new Staging.StagingBuilder().buildpackUrl(buildpackUrl).build());
     }
 
     private void createSpringApplication(String appName, String stack, Integer healthCheckTimeout) {
-        createTestApp(appName, null, new Staging(null, null, stack, healthCheckTimeout));
+        createTestApp(appName, null, new Staging.StagingBuilder().stack(stack).healthCheckTimeout(healthCheckTimeout).build());
     }
 
     private String createSpringTravelApp(String suffix) {
@@ -2270,7 +2272,7 @@ public class CloudFoundryClientTest {
     }
 
     private void createStandaloneRubyTestApp(String appName, List<String> uris, List<String> services) throws IOException {
-        Staging staging = new Staging("ruby simple.rb", null);
+        Staging staging = new Staging.StagingBuilder().command("ruby simple.rb").build();
         File file = SampleProjects.standaloneRuby();
         connectedClient.createApplication(appName, staging, 128, uris, services);
         connectedClient.uploadApplication(appName, file.getCanonicalPath());

@@ -31,9 +31,15 @@ public class Staging {
 
     private String detectedBuildpack;
 
+    private String stack;
+
     private Integer healthCheckTimeout;
 
-    private String stack;
+    private String healthCheckType;
+
+    private String healthCheckHttpEndpoint;
+
+    private Boolean sshEnabled;
 
     /**
      * Default staging: No command, default buildpack
@@ -42,56 +48,82 @@ public class Staging {
 
     }
 
-    /**
-     * @param command      the application command; may be null
-     * @param buildpackUrl a custom buildpack url (e.g. https://github.com/cloudfoundry/java-buildpack.git); may be
-     *                     null
-     */
-    public Staging(String command, String buildpackUrl) {
-        this.command = command;
-        this.buildpackUrl = buildpackUrl;
+    private Staging(StagingBuilder builder) {
+        this.command = builder.command;
+        this.buildpackUrl = builder.buildpackUrl;
+        this.stack = builder.stack;
+        this.detectedBuildpack = builder.detectedBuildpack;
+        this.healthCheckTimeout = builder.healthCheckTimeout;
+        this.healthCheckType = builder.healthCheckType;
+        this.healthCheckHttpEndpoint = builder.healthCheckHttpEndpoint;
+        this.sshEnabled = builder.sshEnabled;
     }
 
-    /**
-     * @param command           the application command; may be null
-     * @param buildpackUrl      a custom buildpack url (e.g. https://github.com/cloudfoundry/java-buildpack.git); may be
-     *                          null
-     * @param detectedBuildpack raw, free-form information regarding a detected buildpack. It is a read-only property,
-     *                          and should not be set except when parsing a response. May be null.
-     */
-    public Staging(String command, String buildpackUrl, String detectedBuildpack) {
-        this(command, buildpackUrl);
-        this.detectedBuildpack = detectedBuildpack;
-    }
+    public static class StagingBuilder {
+        private String command;
+        private String buildpackUrl;
+        private String stack;
+        private String detectedBuildpack;
+        private Integer healthCheckTimeout;
+        private String healthCheckType;
+        private String healthCheckHttpEndpoint;
+        private Boolean sshEnabled;
 
-    /**
-     * @param command            the application command; may be null
-     * @param buildpackUrl       a custom buildpack url (e.g. https://github.com/cloudfoundry/java-buildpack.git); may
-     *                           be null
-     * @param stack              the stack to use when staging the application; may be null
-     * @param healthCheckTimeout the amount of time the platform should wait when verifying that an app started; may be
-     *                           null
-     */
-    public Staging(String command, String buildpackUrl, String stack, Integer healthCheckTimeout) {
-        this(command, buildpackUrl);
-        this.stack = stack;
-        this.healthCheckTimeout = healthCheckTimeout;
-    }
+        // @param command the application command; may be null
+        public StagingBuilder command(String command) {
+            this.command = command;
+            return this;
+        }
 
-    /**
-     * @param command            the application command; may be null
-     * @param buildpackUrl       a custom buildpack url (e.g. https://github.com/cloudfoundry/java-buildpack.git); may
-     *                           be null
-     * @param stack              the stack to use when staging the application; may be null
-     * @param healthCheckTimeout the amount of time the platform should wait when verifying that an app started; may be
-     *                           null
-     * @param detectedBuildpack  raw, free-form information regarding a detected buildpack. It is a read-only property,
-     *                           and should not be set except when parsing a response. May be null.
-     */
-    public Staging(String command, String buildpackUrl, String stack, Integer healthCheckTimeout, String
-            detectedBuildpack) {
-        this(command, buildpackUrl, stack, healthCheckTimeout);
-        this.detectedBuildpack = detectedBuildpack;
+        // @param buildpackUrl a custom buildpack url (e.g. https://github.com/cloudfoundry/java-buildpack.git); may be null
+        public StagingBuilder buildpackUrl(String buildpackUrl) {
+            this.buildpackUrl = buildpackUrl;
+            return this;
+        }
+
+        /*
+         * @param detectedBuildpack raw, free-form information regarding a detected buildpack. It is a read-only property, and should not be
+         * set except when parsing a response. May be null.
+         */
+        public StagingBuilder detectedBuildpack(String detectedBuildpack) {
+            this.detectedBuildpack = detectedBuildpack;
+            return this;
+        }
+
+        // @param stack the stack to use when staging the application; may be null
+        public StagingBuilder stack(String stack) {
+            this.stack = stack;
+            return this;
+        }
+
+        // @param healthCheckTimeout the amount of time the platform should wait when verifying that an app started; may be null
+        public StagingBuilder healthCheckTimeout(Integer healthCheckTimeout) {
+            this.healthCheckTimeout = healthCheckTimeout;
+            return this;
+        }
+
+        // @param healthCheckType; may be null
+        public StagingBuilder healthCheckType(String healthCheckType) {
+            this.healthCheckType = healthCheckType;
+            return this;
+        }
+
+        // @param healthCheckHttpEndpoint; may be null
+        public StagingBuilder healthCheckHttpEndpoint(String healthCheckHttpEndpoint) {
+            this.healthCheckHttpEndpoint = healthCheckHttpEndpoint;
+            return this;
+        }
+
+        // @param sshEnabled boolean value which shows if the ssh for the app is enabled or disabled; may be null
+        public StagingBuilder sshEnabled(Boolean sshEnabled) {
+            this.sshEnabled = sshEnabled;
+            return this;
+        }
+
+        public Staging build() {
+            return new Staging(this);
+        }
+
     }
 
     /**
@@ -109,8 +141,8 @@ public class Staging {
     }
 
     /**
-     * @return Raw, free-form information regarding a detected buildpack, or null if no detected buildpack was resolved.
-     * For example, if the application is stopped, the detected buildpack may be null.
+     * @return Raw, free-form information regarding a detected buildpack, or null if no detected buildpack was resolved. For example, if the
+     *         application is stopped, the detected buildpack may be null.
      */
     public String getDetectedBuildpack() {
         return detectedBuildpack;
@@ -124,6 +156,27 @@ public class Staging {
     }
 
     /**
+     * @return health check type
+     */
+    public String getHealthCheckType() {
+        return healthCheckType;
+    }
+
+    /**
+     * @return health check http endpoint value
+     */
+    public String getHealthCheckHttpEndpoint() {
+        return healthCheckHttpEndpoint;
+    }
+
+    /**
+     * @return boolean value to see if ssh is enabled
+     */
+    public Boolean isSshEnabled() {
+        return sshEnabled;
+    }
+
+    /**
      * @return the stack to use when staging the application, or null to use the default stack
      */
     public String getStack() {
@@ -132,10 +185,8 @@ public class Staging {
 
     @Override
     public String toString() {
-        return "Staging [command=" + getCommand() +
-                " buildpack=" + getBuildpackUrl() +
-                " stack=" + getStack() +
-                " healthCheckTimeout=" + getHealthCheckTimeout() +
-                "]";
+        return "Staging [command=" + getCommand() + " buildpack=" + getBuildpackUrl() + " stack=" + getStack() + " healthCheckTimeout="
+            + getHealthCheckTimeout() + " healthCheckType" + getHealthCheckType() + " healthCheckHttpEndpoint="
+            + getHealthCheckHttpEndpoint() + " sshEnabled=" + isSshEnabled() + "]";
     }
 }
