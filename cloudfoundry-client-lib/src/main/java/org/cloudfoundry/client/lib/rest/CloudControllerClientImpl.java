@@ -1568,21 +1568,20 @@ public class CloudControllerClientImpl implements CloudControllerClient {
             String.valueOf(instanceIndex), filePath);
     }
 
-    protected void extractUriInfo(Map<String, UUID> domains, String uri, Map<String, String> uriInfo) {
+    protected void extractUriInfo(Map<String, UUID> existingDomains, String uri, Map<String, String> uriInfo) {
         URI newUri = URI.create(uri);
         String host = newUri.getScheme() != null ? newUri.getHost() : newUri.getPath();
-        for (String domain : domains.keySet()) {
-            if (host != null && host.endsWith(domain)) {
-                String previousDomain = uriInfo.get("domainName");
-                if (previousDomain == null || domain.length() > previousDomain.length()) {
-                    // Favor most specific subdomains
-                    uriInfo.put("domainName", domain);
-                    if (domain.length() < host.length()) {
-                        uriInfo.put("host", host.substring(0, host.indexOf(domain) - 1));
-                    } else if (domain.length() == host.length()) {
-                        uriInfo.put("host", "");
-                    }
-                }
+
+        String[] hostAndDomain = host.split("\\.", 2);
+        if (hostAndDomain.length != 2) {
+            throw new IllegalArgumentException("Invalid URI " + uri + " -- host or domain is not specified");
+        }
+
+        String domain = hostAndDomain[1];
+        for (String existingDomain : existingDomains.keySet()) {
+            if (host != null && domain.equals(existingDomain)) {
+                uriInfo.put("domainName", existingDomain);
+                uriInfo.put("host", hostAndDomain[0]);
             }
         }
         if (uriInfo.get("domainName") == null) {
