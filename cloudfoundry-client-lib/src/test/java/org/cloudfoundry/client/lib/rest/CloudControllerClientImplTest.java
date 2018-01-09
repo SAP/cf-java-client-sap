@@ -54,21 +54,21 @@ public class CloudControllerClientImplTest {
     private RestUtil restUtil;
 
     @Test
-    public void extractUriInfo_selects_most_specific_subdomain() throws Exception {
+    public void extractUriInfo_selects_matching_domain() throws Exception {
         //given
-        String uri = "myhost.sub1.sub2.domain.com";
+        String uri = "xyz.domain.com";
         Map<String, UUID> domains = new LinkedHashMap<String, UUID>(); //Since impl iterates key, need to control
         // iteration order with a LinkedHashMap
         domains.put("domain.com", UUID.randomUUID());
-        domains.put("sub1.sub2.domain.com", UUID.randomUUID());
+        domains.put("z.domain.com", UUID.randomUUID());
         Map<String, String> uriInfo = new HashMap<String, String>(2);
 
         //when
         controllerClient.extractUriInfo(domains, uri, uriInfo);
 
         //then
-        Assert.assertEquals(domains.get("sub1.sub2.domain.com"), domains.get(uriInfo.get("domainName")));
-        Assert.assertEquals("myhost", uriInfo.get("host"));
+        Assert.assertEquals(domains.get("domain.com"), domains.get(uriInfo.get("domainName")));
+        Assert.assertEquals("xyz", uriInfo.get("host"));
     }
 
     @Test
