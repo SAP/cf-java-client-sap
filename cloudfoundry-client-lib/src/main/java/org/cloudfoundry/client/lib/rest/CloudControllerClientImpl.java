@@ -2077,8 +2077,10 @@ public class CloudControllerClientImpl implements CloudControllerClient {
             Object response = getRestTemplate().getForObject(getUrl(pathUrl), Object.class);
             if (response instanceof Map) {
                 Map<String, Object> responseMap = (Map<String, Object>) response;
-                if (responseMap.containsKey("resources")) {
-                    response = responseMap.get("resources");
+                List<Map<String, Object>> resources = (List<Map<String, Object>>) responseMap.get("resources");
+                if (resources != null) {
+                    addAllRemainingResources(responseMap, resources);
+                    response = resources;
                 }
             }
             entity.put(headKey, response);
@@ -2210,22 +2212,26 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     @SuppressWarnings("unchecked")
     private List<Map<String, Object>> getAllResources(String urlPath, Map<String, Object> urlVars) {
         List<Map<String, Object>> allResources = new ArrayList<Map<String, Object>>();
-        String resp;
+        String response;
         if (urlVars != null) {
-            resp = getRestTemplate().getForObject(getUrl(urlPath), String.class, urlVars);
+            response = getRestTemplate().getForObject(getUrl(urlPath), String.class, urlVars);
         } else {
-            resp = getRestTemplate().getForObject(getUrl(urlPath), String.class);
+            response = getRestTemplate().getForObject(getUrl(urlPath), String.class);
         }
-        Map<String, Object> respMap = JsonUtil.convertJsonToMap(resp);
-        List<Map<String, Object>> newResources = (List<Map<String, Object>>) respMap.get("resources");
+        Map<String, Object> responseMap = JsonUtil.convertJsonToMap(response);
+        List<Map<String, Object>> newResources = (List<Map<String, Object>>) responseMap.get("resources");
         if (newResources != null && newResources.size() > 0) {
             allResources.addAll(newResources);
         }
-        String nextUrl = (String) respMap.get("next_url");
+        addAllRemainingResources(responseMap, allResources);
+        return allResources;
+    }
+
+    private void addAllRemainingResources(Map<String, Object> responseMap, List<Map<String, Object>> allResources) {
+        String nextUrl = (String) responseMap.get("next_url");
         while (nextUrl != null && nextUrl.length() > 0) {
             nextUrl = addPageOfResources(nextUrl, allResources);
         }
-        return allResources;
     }
 
     @SuppressWarnings("unchecked")
