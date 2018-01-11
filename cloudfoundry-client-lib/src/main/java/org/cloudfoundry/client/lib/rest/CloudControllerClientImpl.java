@@ -732,7 +732,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     @Override
     public List<CloudOrganization> getOrganizations() {
         String urlPath = "/v2/organizations?inline-relations-depth=0";
-        List<Map<String, Object>> resourceList = getAllResources(urlPath, null);
+        List<Map<String, Object>> resourceList = getAllResources(urlPath);
         List<CloudOrganization> orgs = new ArrayList<CloudOrganization>();
         for (Map<String, Object> resource : resourceList) {
             orgs.add(resourceMapper.mapResource(resource, CloudOrganization.class));
@@ -772,7 +772,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     @Override
     public List<CloudQuota> getQuotas() {
         String urlPath = "/v2/quota_definitions";
-        List<Map<String, Object>> resourceList = getAllResources(urlPath, null);
+        List<Map<String, Object>> resourceList = getAllResources(urlPath);
         List<CloudQuota> quotas = new ArrayList<CloudQuota>();
         for (Map<String, Object> resource : resourceList) {
             quotas.add(resourceMapper.mapResource(resource, CloudQuota.class));
@@ -804,7 +804,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     @Override
     public List<CloudSecurityGroup> getRunningSecurityGroups() {
         String urlPath = "/v2/config/running_security_groups";
-        List<Map<String, Object>> resourceList = getAllResources(urlPath, null);
+        List<Map<String, Object>> resourceList = getAllResources(urlPath);
         List<CloudSecurityGroup> groups = new ArrayList<CloudSecurityGroup>();
         for (Map<String, Object> resource : resourceList) {
             groups.add(resourceMapper.mapResource(resource, CloudSecurityGroup.class));
@@ -834,7 +834,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     @Override
     public List<CloudSecurityGroup> getSecurityGroups() {
         String urlPath = "/v2/security_groups";
-        List<Map<String, Object>> resourceList = getAllResources(urlPath, null);
+        List<Map<String, Object>> resourceList = getAllResources(urlPath);
         List<CloudSecurityGroup> groups = new ArrayList<CloudSecurityGroup>();
         for (Map<String, Object> resource : resourceList) {
             groups.add(resourceMapper.mapResource(resource, CloudSecurityGroup.class));
@@ -881,7 +881,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     @Override
     public List<CloudServiceBroker> getServiceBrokers() {
         String urlPath = "/v2/service_brokers?inline-relations-depth=1";
-        List<Map<String, Object>> resourceList = getAllResources(urlPath, null);
+        List<Map<String, Object>> resourceList = getAllResources(urlPath);
         List<CloudServiceBroker> serviceBrokers = new ArrayList<CloudServiceBroker>();
         for (Map<String, Object> resource : resourceList) {
             CloudServiceBroker broker = resourceMapper.mapResource(resource, CloudServiceBroker.class);
@@ -907,7 +907,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         }
         return serviceInstance;
     }
-    
+
     @Override
     public List<ServiceKey> getServiceKeys(String serviceName) {
         CloudService cloudService = getService(serviceName, true);
@@ -917,7 +917,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     @Override
     public List<CloudServiceOffering> getServiceOfferings() {
         String urlPath = "/v2/services?inline-relations-depth=1";
-        List<Map<String, Object>> resourceList = getAllResources(urlPath, null);
+        List<Map<String, Object>> resourceList = getAllResources(urlPath);
         List<CloudServiceOffering> serviceOfferings = new ArrayList<CloudServiceOffering>();
         for (Map<String, Object> resource : resourceList) {
             CloudServiceOffering serviceOffering = resourceMapper.mapResource(resource, CloudServiceOffering.class);
@@ -990,7 +990,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     @Override
     public List<CloudSpace> getSpaces() {
         String urlPath = "/v2/spaces?inline-relations-depth=1";
-        List<Map<String, Object>> resourceList = getAllResources(urlPath, null);
+        List<Map<String, Object>> resourceList = getAllResources(urlPath);
         List<CloudSpace> spaces = new ArrayList<CloudSpace>();
         for (Map<String, Object> resource : resourceList) {
             spaces.add(resourceMapper.mapResource(resource, CloudSpace.class));
@@ -1041,7 +1041,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     @Override
     public List<CloudStack> getStacks() {
         String urlPath = "/v2/stacks";
-        List<Map<String, Object>> resources = getAllResources(urlPath, null);
+        List<Map<String, Object>> resources = getAllResources(urlPath);
         List<CloudStack> stacks = new ArrayList<CloudStack>();
         for (Map<String, Object> resource : resources) {
             stacks.add(resourceMapper.mapResource(resource, CloudStack.class));
@@ -1097,7 +1097,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     @Override
     public List<CloudSecurityGroup> getStagingSecurityGroups() {
         String urlPath = "/v2/config/staging_security_groups";
-        List<Map<String, Object>> resourceList = getAllResources(urlPath, null);
+        List<Map<String, Object>> resourceList = getAllResources(urlPath);
         List<CloudSecurityGroup> groups = new ArrayList<CloudSecurityGroup>();
         for (Map<String, Object> resource : resourceList) {
             groups.add(resourceMapper.mapResource(resource, CloudSecurityGroup.class));
@@ -2006,7 +2006,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         }
         return null;
     }
-    
+
     private List<ServiceKey> doGetServiceKeys(CloudService cloudService) {
         String urlPath = "/v2/service_instances/{serviceId}/service_keys";
         Map<String, Object> pathVariables = new HashMap<String, Object>();
@@ -2203,6 +2203,10 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         return new HttpEntity<MultiValueMap<String, ?>>(body, headers);
     }
 
+    private List<Map<String, Object>> getAllResources(String urlPath) {
+        return getAllResources(urlPath, null);
+    }
+
     @SuppressWarnings("unchecked")
     private List<Map<String, Object>> getAllResources(String urlPath, Map<String, Object> urlVars) {
         List<Map<String, Object>> allResources = new ArrayList<Map<String, Object>>();
@@ -2375,7 +2379,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
 
     private List<CloudServiceOffering> getServiceOfferings(String label) {
         Assert.notNull(label, "Service label must not be null");
-        List<Map<String, Object>> resourceList = getAllResources("/v2/services?inline-relations-depth=1", null);
+        List<Map<String, Object>> resourceList = getAllResources("/v2/services?inline-relations-depth=1");
         List<CloudServiceOffering> results = new ArrayList<CloudServiceOffering>();
         for (Map<String, Object> resource : resourceList) {
             CloudServiceOffering cloudServiceOffering = resourceMapper.mapResource(resource, CloudServiceOffering.class);
