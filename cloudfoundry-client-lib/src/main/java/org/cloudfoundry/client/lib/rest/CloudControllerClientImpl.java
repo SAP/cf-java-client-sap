@@ -2002,6 +2002,12 @@ public class CloudControllerClientImpl implements CloudControllerClient {
             if (hasEmbeddedResource(serviceResource, "service_plan")) {
                 fillInEmbeddedResource(serviceResource, "service_plan", "service");
             }
+            // If the bindings are more than 50, then they will not be included in the response due to the way the 'inline-relations-depth'
+            // parameter works. In this case, we have to make one additional request to the URL specified in the 'service_bindings_url'
+            // field of the response.
+            if (hasEmbeddedResource(serviceResource, "service_bindings")) {
+                fillInEmbeddedResource(serviceResource, "service_bindings");
+            }
             return serviceResource;
         }
         return null;
