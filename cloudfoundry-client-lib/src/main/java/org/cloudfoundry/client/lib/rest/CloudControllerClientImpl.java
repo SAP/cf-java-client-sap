@@ -2073,6 +2073,9 @@ public class CloudControllerClientImpl implements CloudControllerClient {
             return;
         }
         Map<String, Object> entity = (Map<String, Object>) resource.get("entity");
+        if (entity == null) {
+            throw new IllegalStateException("Unable to find required element \"entity\" in the resource.");
+        }
 
         String headKey = resourcePath[0];
         String[] tailPath = Arrays.copyOfRange(resourcePath, 1, resourcePath.length);
