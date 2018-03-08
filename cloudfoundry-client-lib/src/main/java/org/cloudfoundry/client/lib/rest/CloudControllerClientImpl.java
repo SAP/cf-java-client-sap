@@ -1068,8 +1068,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
                 logsRequest.put("offset", offset);
 
                 cfRequestFactory = getRestTemplate().getRequestFactory() instanceof CloudFoundryClientHttpRequestFactory
-                    ? (CloudFoundryClientHttpRequestFactory) getRestTemplate().getRequestFactory()
-                    : null;
+                    ? (CloudFoundryClientHttpRequestFactory) getRestTemplate().getRequestFactory() : null;
                 if (cfRequestFactory != null) {
                     cfRequestFactory.increaseReadTimeoutForStreamedTailedLogs(5 * 60 * 1000);
                 }
@@ -2238,6 +2237,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     private void addAllRemainingResources(Map<String, Object> responseMap, List<Map<String, Object>> allResources) {
         String nextUrl = (String) responseMap.get("next_url");
         while (nextUrl != null && nextUrl.length() > 0) {
+            nextUrl = nextUrl.replaceAll("\\Qorder-by=internal\\E", "");
             nextUrl = addPageOfResources(nextUrl, allResources);
         }
     }
