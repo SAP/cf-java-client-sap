@@ -27,17 +27,25 @@ public interface UploadStatusCallback {
      * Empty implementation
      */
     public static final UploadStatusCallback NONE = new UploadStatusCallback() {
+        @Override
         public void onCheckResources() {
         }
 
+        @Override
         public void onMatchedFileNames(Set<String> matchedFileNames) {
         }
 
+        @Override
         public void onProcessMatchedResources(int length) {
         }
 
+        @Override
         public boolean onProgress(String status) {
             return false;
+        }
+
+        @Override
+        public void onError(String description) {
         }
     };
 
@@ -71,4 +79,6 @@ public interface UploadStatusCallback {
      * @return true to unsubscribe from update report
      */
     boolean onProgress(String status);
+
+    void onError(String description);
 }

@@ -2608,6 +2608,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
                 return;
             }
             if (job.getStatus() == CloudJob.Status.FAILED) {
+                callback.onError(job.getErrorDetails().getDescription());
                 return;
             }
 

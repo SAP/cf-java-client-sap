@@ -2776,14 +2776,22 @@ public class CloudFoundryClientTest {
 
     private static abstract class NoOpUploadStatusCallback implements UploadStatusCallback {
 
+        @Override
         public void onCheckResources() {
         }
 
+        @Override
         public void onMatchedFileNames(Set<String> matchedFileNames) {
         }
 
+        @Override
         public void onProcessMatchedResources(int length) {
         }
+
+        @Override
+        public void onError(String description) {
+        }
+
     }
 
     private static class NonUnsubscribingUploadStatusCallback extends NoOpUploadStatusCallback {
