@@ -16,6 +16,13 @@
 
 package org.cloudfoundry.client.lib.util;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -26,14 +33,6 @@ import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.type.TypeReference;
 import org.springframework.http.MediaType;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 /**
  * Some JSON helper utilities used by the Cloud Foundry Java client.
  *
@@ -41,10 +40,8 @@ import java.util.Map;
  */
 public class JsonUtil {
 
-    public static final MediaType JSON_MEDIA_TYPE = new MediaType(
-            MediaType.APPLICATION_JSON.getType(),
-            MediaType.APPLICATION_JSON.getSubtype(),
-            Charset.forName("UTF-8"));
+    public static final MediaType JSON_MEDIA_TYPE = new MediaType(MediaType.APPLICATION_JSON.getType(),
+        MediaType.APPLICATION_JSON.getSubtype(), Charset.forName("UTF-8"));
 
     protected static final Log logger = LogFactory.getLog(JsonUtil.class);
 
@@ -98,8 +95,8 @@ public class JsonUtil {
                 return null;
             }
         } else {
-            throw new IllegalArgumentException("Value of type " + value.getClass().getName() +
-                    " can not be serialized to JSON.");
+            throw new IllegalArgumentException("Value of type " + value.getClass()
+                .getName() + " can not be serialized to JSON.");
         }
     }
 

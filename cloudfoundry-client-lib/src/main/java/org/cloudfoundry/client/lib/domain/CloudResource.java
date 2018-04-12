@@ -25,8 +25,7 @@ import org.codehaus.jackson.annotate.JsonProperty;
  *
  * @author Phillip Webb
  */
-@JsonAutoDetect(fieldVisibility = Visibility.ANY, getterVisibility = Visibility.NONE, creatorVisibility = Visibility
-        .NONE)
+@JsonAutoDetect(fieldVisibility = Visibility.ANY, getterVisibility = Visibility.NONE, creatorVisibility = Visibility.NONE)
 public class CloudResource {
 
     @JsonProperty("fn")

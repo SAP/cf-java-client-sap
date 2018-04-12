@@ -16,18 +16,18 @@
 
 package org.cloudfoundry.client.lib.domain;
 
-import org.cloudfoundry.client.lib.archive.ApplicationArchive;
-import org.cloudfoundry.client.lib.io.DynamicZipInputStream;
-import org.cloudfoundry.client.lib.io.DynamicZipInputStream.Entry;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Set;
 
+import org.cloudfoundry.client.lib.archive.ApplicationArchive;
+import org.cloudfoundry.client.lib.io.DynamicZipInputStream;
+import org.cloudfoundry.client.lib.io.DynamicZipInputStream.Entry;
+
 /**
- * A payload used to upload application data. The payload data is built from a source {@link ApplicationArchive},
- * excluding any entries that are already known to the remote server.
+ * A payload used to upload application data. The payload data is built from a source {@link ApplicationArchive}, excluding any entries that
+ * are already known to the remote server.
  *
  * @author Phillip Webb
  */
@@ -42,12 +42,11 @@ public class UploadApplicationPayload {
     /**
      * Create a new {@link UploadApplicationPayload}.
      *
-     * @param archive              the source archive
+     * @param archive the source archive
      * @param knownRemoteResources resources that are already known on the remote server
      * @throws IOException
      */
-    public UploadApplicationPayload(ApplicationArchive archive, CloudResources knownRemoteResources) throws
-            IOException {
+    public UploadApplicationPayload(ApplicationArchive archive, CloudResources knownRemoteResources) throws IOException {
         this.archive = archive;
         this.totalUncompressedSize = 0;
         Set<String> matches = knownRemoteResources.getFilenames();

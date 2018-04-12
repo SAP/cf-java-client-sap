@@ -20,8 +20,8 @@ import java.io.IOException;
 import java.io.InputStream;
 
 /**
- * Interface that represents an application archive (for example a WAR file) that can be uploaded to Cloud Foundry.
- * Archives consist of a {@link #getFilename() filename} and one or more {@link #getEntries() entries}.
+ * Interface that represents an application archive (for example a WAR file) that can be uploaded to Cloud Foundry. Archives consist of a
+ * {@link #getFilename() filename} and one or more {@link #getEntries() entries}.
  *
  * @author Phillip Webb
  */
@@ -42,14 +42,13 @@ public interface ApplicationArchive {
     String getFilename();
 
     /**
-     * A single entry contained within an {@link ApplicationArchive}. Entries are used to represent both files and
-     * directories.
+     * A single entry contained within an {@link ApplicationArchive}. Entries are used to represent both files and directories.
      */
     public static interface Entry {
 
         /**
-         * Returns the content of the entry or <tt>null</tt> if the entry is a {@link #isDirectory() directory}. The
-         * caller is responsible for closing the stream.
+         * Returns the content of the entry or <tt>null</tt> if the entry is a {@link #isDirectory() directory}. The caller is responsible
+         * for closing the stream.
          *
          * @return the file contents
          * @throws IOException
@@ -57,16 +56,16 @@ public interface ApplicationArchive {
         InputStream getInputStream() throws IOException;
 
         /**
-         * Returns the name of entry including a path. The <tt>'/'</tt> character should be used as a path separator.
-         * The name should never start with <tt>'/'</tt>.
+         * Returns the name of entry including a path. The <tt>'/'</tt> character should be used as a path separator. The name should never
+         * start with <tt>'/'</tt>.
          *
          * @return the name
          */
         String getName();
 
         /**
-         * Returns a SHA1 digest over the {@link #getInputStream() contents} of the entry or <tt>null</tt> if the entry
-         * is a {@link #isDirectory() directory}.
+         * Returns a SHA1 digest over the {@link #getInputStream() contents} of the entry or <tt>null</tt> if the entry is a
+         * {@link #isDirectory() directory}.
          *
          * @return the SHA1 digest
          */

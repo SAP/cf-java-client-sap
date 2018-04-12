@@ -16,7 +16,6 @@
 
 package org.cloudfoundry.client.lib.domain;
 
-
 public class CloudServicePlan extends CloudEntity {
 
     private boolean _public;
@@ -38,8 +37,7 @@ public class CloudServicePlan extends CloudEntity {
         super(meta, name);
     }
 
-    public CloudServicePlan(Meta meta, String name, String description, boolean free,
-                            boolean _public, String extra, String uniqueId) {
+    public CloudServicePlan(Meta meta, String name, String description, boolean free, boolean _public, String extra, String uniqueId) {
         super(meta, name);
         this.description = description;
         this.free = free;

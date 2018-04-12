@@ -20,9 +20,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Application security groups act as virtual firewalls to control outbound traffic from the applications in your
- * deployment. A security group consists of a list of network egress access rules. <p/> An administrator can assign one
- * or more security groups to a Cloud Foundry deployment or to a specific space in an org within a deployment.
+ * Application security groups act as virtual firewalls to control outbound traffic from the applications in your deployment. A security
+ * group consists of a list of network egress access rules.
+ * <p/>
+ * An administrator can assign one or more security groups to a Cloud Foundry deployment or to a specific space in an org within a
+ * deployment.
  *
  * @author David Ehringer
  * @see http://docs.cloudfoundry.org/adminguide/app-sec-groups.html
@@ -39,20 +41,15 @@ public class CloudSecurityGroup extends CloudEntity {
         this(CloudEntity.Meta.defaultMeta(), name, rules);
     }
 
-    public CloudSecurityGroup(Meta meta, String name,
-                              List<SecurityGroupRule> rules) {
+    public CloudSecurityGroup(Meta meta, String name, List<SecurityGroupRule> rules) {
         this(meta, name, rules, false, false);
     }
 
-    public CloudSecurityGroup(String name, List<SecurityGroupRule> rules,
-                              boolean runningDefault, boolean stagingDefault) {
-        this(CloudEntity.Meta.defaultMeta(), name, rules, runningDefault,
-                stagingDefault);
+    public CloudSecurityGroup(String name, List<SecurityGroupRule> rules, boolean runningDefault, boolean stagingDefault) {
+        this(CloudEntity.Meta.defaultMeta(), name, rules, runningDefault, stagingDefault);
     }
 
-    public CloudSecurityGroup(Meta meta, String name,
-                              List<SecurityGroupRule> rules, boolean runningDefault,
-                              boolean stagingDefault) {
+    public CloudSecurityGroup(Meta meta, String name, List<SecurityGroupRule> rules, boolean runningDefault, boolean stagingDefault) {
         super(meta, name);
         this.rules.addAll(rules);
         this.runningDefault = runningDefault;

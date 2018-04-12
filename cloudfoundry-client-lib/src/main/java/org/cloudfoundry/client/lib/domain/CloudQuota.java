@@ -13,8 +13,7 @@ public class CloudQuota extends CloudEntity {
 
     private int totalServices;
 
-    public CloudQuota(Meta meta, String name, boolean nonBasicServicesAllowed,
-                      int totalServices, int totalRoutes, long memoryLimit) {
+    public CloudQuota(Meta meta, String name, boolean nonBasicServicesAllowed, int totalServices, int totalRoutes, long memoryLimit) {
         super(meta, name);
         this.totalServices = totalServices;
         this.totalRoutes = totalRoutes;
@@ -64,6 +63,5 @@ public class CloudQuota extends CloudEntity {
     public void setNonBasicServicesAllowed(boolean nonBasicServicesAllowed) {
         this.nonBasicServicesAllowed = nonBasicServicesAllowed;
     }
-
 
 }

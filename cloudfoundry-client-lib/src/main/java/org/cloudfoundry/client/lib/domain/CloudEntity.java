@@ -16,10 +16,10 @@
 
 package org.cloudfoundry.client.lib.domain;
 
-import org.codehaus.jackson.annotate.JsonIgnore;
-
 import java.util.Date;
 import java.util.UUID;
+
+import org.codehaus.jackson.annotate.JsonIgnore;
 
 /**
  * @author Thomas Risberg
@@ -65,9 +65,8 @@ public class CloudEntity {
 
     @Override
     public String toString() {
-        return this.getClass().getSimpleName() + ": (" +
-                (meta == null || meta.getGuid() == null ? "-" : meta.getGuid()) + ") " +
-                getName();
+        return this.getClass()
+            .getSimpleName() + ": (" + (meta == null || meta.getGuid() == null ? "-" : meta.getGuid()) + ") " + getName();
     }
 
     public static class Meta {

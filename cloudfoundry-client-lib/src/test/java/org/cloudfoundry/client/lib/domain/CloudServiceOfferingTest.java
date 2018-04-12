@@ -7,10 +7,10 @@ public class CloudServiceOfferingTest {
 
     @Test
     public void testAddCloudServicePlan() {
-        CloudServiceOffering offering = new CloudServiceOffering(
-                CloudEntity.Meta.defaultMeta(), "<name>");
+        CloudServiceOffering offering = new CloudServiceOffering(CloudEntity.Meta.defaultMeta(), "<name>");
 
-        Assert.assertTrue(offering.getCloudServicePlans().isEmpty());
+        Assert.assertTrue(offering.getCloudServicePlans()
+            .isEmpty());
 
         CloudServicePlan plan0 = new CloudServicePlan();
         CloudServicePlan plan1 = new CloudServicePlan();
@@ -19,28 +19,20 @@ public class CloudServiceOfferingTest {
         offering.addCloudServicePlan(plan1);
         offering.addCloudServicePlan(plan2);
 
-        Assert.assertEquals(3, offering.getCloudServicePlans().size());
-        Assert.assertEquals(plan0, offering.getCloudServicePlans().get(0));
-        Assert.assertEquals(plan1, offering.getCloudServicePlans().get(1));
-        Assert.assertEquals(plan2, offering.getCloudServicePlans().get(2));
+        Assert.assertEquals(3, offering.getCloudServicePlans()
+            .size());
+        Assert.assertEquals(plan0, offering.getCloudServicePlans()
+            .get(0));
+        Assert.assertEquals(plan1, offering.getCloudServicePlans()
+            .get(1));
+        Assert.assertEquals(plan2, offering.getCloudServicePlans()
+            .get(2));
     }
 
     @Test
     public void testConstructorFull() {
-        CloudServiceOffering offering = new CloudServiceOffering(
-                CloudEntity.Meta.defaultMeta(),
-                "<name>",
-                "<provider>",
-                "<version>",
-                "<description>",
-                true,
-                true,
-                "<url>",
-                "<infoUrl>",
-                "<uniqueId>",
-                "<extra>",
-                "<docUrl>"
-        );
+        CloudServiceOffering offering = new CloudServiceOffering(CloudEntity.Meta.defaultMeta(), "<name>", "<provider>", "<version>",
+            "<description>", true, true, "<url>", "<infoUrl>", "<uniqueId>", "<extra>", "<docUrl>");
 
         Assert.assertEquals("<name>", offering.getName());
         Assert.assertEquals("<name>", offering.getLabel());
@@ -54,13 +46,13 @@ public class CloudServiceOfferingTest {
         Assert.assertEquals("<uniqueId>", offering.getUniqueId());
         Assert.assertEquals("<extra>", offering.getExtra());
         Assert.assertEquals("<docUrl>", offering.getDocumentationUrl());
-        Assert.assertTrue(offering.getCloudServicePlans().isEmpty());
+        Assert.assertTrue(offering.getCloudServicePlans()
+            .isEmpty());
     }
 
     @Test
     public void testConstructorMinimal() {
-        CloudServiceOffering offering = new CloudServiceOffering(
-                CloudEntity.Meta.defaultMeta(), "<name>", "<provider>", "<version>");
+        CloudServiceOffering offering = new CloudServiceOffering(CloudEntity.Meta.defaultMeta(), "<name>", "<provider>", "<version>");
 
         Assert.assertEquals("<name>", offering.getName());
         Assert.assertEquals("<name>", offering.getLabel());
@@ -74,13 +66,13 @@ public class CloudServiceOfferingTest {
         Assert.assertNull(offering.getUniqueId());
         Assert.assertNull(offering.getExtra());
         Assert.assertNull(offering.getDocumentationUrl());
-        Assert.assertTrue(offering.getCloudServicePlans().isEmpty());
+        Assert.assertTrue(offering.getCloudServicePlans()
+            .isEmpty());
     }
 
     @Test
     public void testConstructorNameOnly() {
-        CloudServiceOffering offering = new CloudServiceOffering(
-                CloudEntity.Meta.defaultMeta(), "<name>");
+        CloudServiceOffering offering = new CloudServiceOffering(CloudEntity.Meta.defaultMeta(), "<name>");
 
         Assert.assertEquals("<name>", offering.getName());
         Assert.assertEquals("<name>", offering.getLabel());
@@ -94,6 +86,7 @@ public class CloudServiceOfferingTest {
         Assert.assertNull(offering.getUniqueId());
         Assert.assertNull(offering.getExtra());
         Assert.assertNull(offering.getDocumentationUrl());
-        Assert.assertTrue(offering.getCloudServicePlans().isEmpty());
+        Assert.assertTrue(offering.getCloudServicePlans()
+            .isEmpty());
     }
 }

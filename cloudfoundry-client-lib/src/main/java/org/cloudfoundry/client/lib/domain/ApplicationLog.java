@@ -1,6 +1,5 @@
 package org.cloudfoundry.client.lib.domain;
 
-
 import java.util.Date;
 
 public class ApplicationLog implements Comparable<ApplicationLog> {
@@ -17,8 +16,7 @@ public class ApplicationLog implements Comparable<ApplicationLog> {
 
     private Date timestamp;
 
-    public ApplicationLog(String appId, String message, Date timestamp, MessageType messageType, String sourceName,
-                          String sourceId) {
+    public ApplicationLog(String appId, String message, Date timestamp, MessageType messageType, String sourceName, String sourceId) {
         this.appId = appId;
         this.message = message;
         this.timestamp = timestamp;
@@ -60,5 +58,7 @@ public class ApplicationLog implements Comparable<ApplicationLog> {
         return String.format("%s [%s] %s (%s, %s)", appId, timestamp, message, messageType, sourceName);
     }
 
-    public enum MessageType {STDOUT, STDERR}
+    public enum MessageType {
+        STDOUT, STDERR
+    }
 }

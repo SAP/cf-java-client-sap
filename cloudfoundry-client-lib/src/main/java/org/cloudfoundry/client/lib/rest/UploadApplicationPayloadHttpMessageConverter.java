@@ -16,6 +16,14 @@
 
 package org.cloudfoundry.client.lib.rest;
 
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Collections;
+import java.util.List;
+
 import org.cloudfoundry.client.lib.domain.UploadApplicationPayload;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpInputMessage;
@@ -26,18 +34,9 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.http.converter.HttpMessageNotWritableException;
 import org.springframework.util.FileCopyUtils;
 
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Collections;
-import java.util.List;
-
 /**
- * Implementation of
- * {@link HttpMessageConverter} that can write {@link org.cloudfoundry.client.lib.domain.UploadApplicationPayload}s.
- * The {@code Content-Type} of written resources is {@code application/octet-stream}.
+ * Implementation of {@link HttpMessageConverter} that can write {@link org.cloudfoundry.client.lib.domain.UploadApplicationPayload}s. The
+ * {@code Content-Type} of written resources is {@code application/octet-stream}.
  *
  * @author Phillip Webb
  */
@@ -56,16 +55,17 @@ public class UploadApplicationPayloadHttpMessageConverter implements HttpMessage
     }
 
     public UploadApplicationPayload read(Class<? extends UploadApplicationPayload> clazz, HttpInputMessage inputMessage)
-            throws IOException, HttpMessageNotReadableException {
+        throws IOException, HttpMessageNotReadableException {
         throw new UnsupportedOperationException();
     }
 
     public void write(UploadApplicationPayload t, MediaType contentType, HttpOutputMessage outputMessage)
-            throws IOException, HttpMessageNotWritableException {
+        throws IOException, HttpMessageNotWritableException {
         setOutputContentType(contentType, outputMessage);
 
         FileCopyUtils.copy(t.getInputStream(), outputMessage.getBody());
-        outputMessage.getBody().flush();
+        outputMessage.getBody()
+            .flush();
 
         writeApplicationZipToFile(t.getInputStream());
     }

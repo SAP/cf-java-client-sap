@@ -1,9 +1,10 @@
 package org.cloudfoundry.client.lib.rest;
 
-import com.google.protobuf.InvalidProtocolBufferException;
+import javax.websocket.MessageHandler;
+
 import org.cloudfoundry.client.lib.ApplicationLogListener;
 
-import javax.websocket.MessageHandler;
+import com.google.protobuf.InvalidProtocolBufferException;
 
 public class LoggregatorMessageHandler implements MessageHandler.Whole<byte[]> {
 

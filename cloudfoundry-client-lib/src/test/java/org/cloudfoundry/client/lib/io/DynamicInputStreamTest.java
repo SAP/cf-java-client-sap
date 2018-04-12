@@ -16,19 +16,19 @@
 
 package org.cloudfoundry.client.lib.io;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.springframework.util.FileCopyUtils;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.springframework.util.FileCopyUtils;
 
 /**
  * Tests for {@link DynamicInputStream}.
@@ -69,19 +69,19 @@ public class DynamicInputStreamTest {
     @Test
     public void shouldNeedLengthLessThanOrEqualToAvailableBuffer() throws Exception {
         thrown.expect(IndexOutOfBoundsException.class);
-        inputStream.read(new byte[]{0x00}, 0, 2);
+        inputStream.read(new byte[] { 0x00 }, 0, 2);
     }
 
     @Test
     public void shouldNeedLengthMoreThanZero() throws Exception {
         thrown.expect(IndexOutOfBoundsException.class);
-        inputStream.read(new byte[]{0x00}, 0, -1);
+        inputStream.read(new byte[] { 0x00 }, 0, -1);
     }
 
     @Test
     public void shouldNeedOffsetMoreThanZero() throws Exception {
         thrown.expect(IndexOutOfBoundsException.class);
-        inputStream.read(new byte[]{0x00}, -1, 1);
+        inputStream.read(new byte[] { 0x00 }, -1, 1);
     }
 
     @Test
@@ -91,37 +91,37 @@ public class DynamicInputStreamTest {
 
     @Test
     public void shouldReadSingleByteWhenAvailable() throws Exception {
-        mockWrite(new byte[]{-1});
+        mockWrite(new byte[] { -1 });
         assertThat(inputStream.read(), is(0x00FF));
         assertThat(inputStream.read(), is(-1));
     }
 
     @Test
     public void shouldSupportCallThatWritesNoData() throws Exception {
-        mockWrite(new byte[]{0x00, 0x01});
-        mockWrite(new byte[]{});
-        mockWrite(new byte[]{0x02, 0x03});
-        mockWrite(new byte[]{});
+        mockWrite(new byte[] { 0x00, 0x01 });
+        mockWrite(new byte[] {});
+        mockWrite(new byte[] { 0x02, 0x03 });
+        mockWrite(new byte[] {});
         byte[] b = readBytes();
-        assertThat(b, is(equalTo(new byte[]{0x00, 0x01, 0x02, 0x03})));
+        assertThat(b, is(equalTo(new byte[] { 0x00, 0x01, 0x02, 0x03 })));
         assertThat(numberOfWriteMoreDataCalls, is(4));
     }
 
     @Test
     public void shouldSupportMultipleWriteMoreDataCalls() throws Exception {
-        mockWrite(new byte[]{0x00, 0x01});
-        mockWrite(new byte[]{0x02, 0x03});
+        mockWrite(new byte[] { 0x00, 0x01 });
+        mockWrite(new byte[] { 0x02, 0x03 });
         byte[] b = readBytes();
-        assertThat(b, is(equalTo(new byte[]{0x00, 0x01, 0x02, 0x03})));
+        assertThat(b, is(equalTo(new byte[] { 0x00, 0x01, 0x02, 0x03 })));
         assertThat(numberOfWriteMoreDataCalls, is(3));
 
     }
 
     @Test
     public void shouldSupportSingleWriteMoreDataCall() throws Exception {
-        mockWrite(new byte[]{0x00, 0x01});
+        mockWrite(new byte[] { 0x00, 0x01 });
         byte[] b = readBytes();
-        assertThat(b, is(equalTo(new byte[]{0x00, 0x01})));
+        assertThat(b, is(equalTo(new byte[] { 0x00, 0x01 })));
         assertThat(numberOfWriteMoreDataCalls, is(2));
     }
 

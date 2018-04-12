@@ -1,5 +1,8 @@
 package org.cloudfoundry.client.lib.domain;
 
+import java.util.Date;
+import java.util.UUID;
+
 /**
  * @author Mark Seidenstricker
  */
@@ -7,11 +10,7 @@ package org.cloudfoundry.client.lib.domain;
 import org.codehaus.jackson.annotate.JsonAutoDetect;
 import org.codehaus.jackson.annotate.JsonAutoDetect.Visibility;
 
-import java.util.Date;
-import java.util.UUID;
-
-@JsonAutoDetect(fieldVisibility = Visibility.ANY, getterVisibility = Visibility.NONE, creatorVisibility = Visibility
-        .NONE)
+@JsonAutoDetect(fieldVisibility = Visibility.ANY, getterVisibility = Visibility.NONE, creatorVisibility = Visibility.NONE)
 public class CloudEvent extends CloudEntity {
 
     private String actee;

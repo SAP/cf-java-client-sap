@@ -8,7 +8,8 @@ public class CloudFoundryFormHttpMessageConverter extends FormHttpMessageConvert
     @Override
     protected String getFilename(Object part) {
         if (part instanceof UploadApplicationPayload) {
-            return ((UploadApplicationPayload) part).getArchive().getFilename();
+            return ((UploadApplicationPayload) part).getArchive()
+                .getFilename();
         }
         return super.getFilename(part);
     }

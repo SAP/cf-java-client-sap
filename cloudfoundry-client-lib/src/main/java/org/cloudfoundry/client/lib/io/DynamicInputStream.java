@@ -16,17 +16,16 @@
 
 package org.cloudfoundry.client.lib.io;
 
-import org.springframework.util.Assert;
-
 import java.io.ByteArrayOutputStream;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import org.springframework.util.Assert;
+
 /**
- * InputStream that dynamically loads data on demand as the stream is read. Subclasses must implement the {@link
- * #writeMoreData()} method.
+ * InputStream that dynamically loads data on demand as the stream is read. Subclasses must implement the {@link #writeMoreData()} method.
  *
  * @author Phillip Webb
  */
@@ -60,9 +59,9 @@ public abstract class DynamicInputStream extends InputStream {
     }
 
     /**
-     * Returns the {@link OutputStream} that should be used when {@link #writeMoreData() writing} data. The output
-     * stream instance will not change during the life of the object and so can be used as the source to a a {@link
-     * FilterInputStream}. This is an in-memory stream so care should be taken to not write large amounts of data.
+     * Returns the {@link OutputStream} that should be used when {@link #writeMoreData() writing} data. The output stream instance will not
+     * change during the life of the object and so can be used as the source to a a {@link FilterInputStream}. This is an in-memory stream
+     * so care should be taken to not write large amounts of data.
      *
      * @return the output stream
      * @see #writeMoreData()
@@ -72,10 +71,9 @@ public abstract class DynamicInputStream extends InputStream {
     }
 
     /**
-     * Called when more data should be written to the {@link #getOutputStream() output stream}. This method can be
-     * called many times, implementations should write zero or more bytes to
-     * {@link #getOutputStream() output stream} on
-     * each call. Generally it is recommended that not more that 4096 bytes are written in a single call.
+     * Called when more data should be written to the {@link #getOutputStream() output stream}. This method can be called many times,
+     * implementations should write zero or more bytes to {@link #getOutputStream() output stream} on each call. Generally it is recommended
+     * that not more that 4096 bytes are written in a single call.
      *
      * @return <tt>false</tt> when no more data is available to write.
      * @throws IOException

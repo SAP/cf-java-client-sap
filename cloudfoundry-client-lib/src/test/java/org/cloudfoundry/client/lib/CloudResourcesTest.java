@@ -54,7 +54,8 @@ public class CloudResourcesTest {
 
     @Test
     public void shouldCreateFromIterator() throws Exception {
-        Iterator<? extends CloudResource> i = Collections.singleton(new CloudResource("index.html", 93L, SHA)).iterator();
+        Iterator<? extends CloudResource> i = Collections.singleton(new CloudResource("index.html", 93L, SHA))
+            .iterator();
         CloudResources o = new CloudResources(i);
         List<CloudResource> l = o.asList();
         assertThat(l.size(), is(1));
@@ -93,7 +94,8 @@ public class CloudResourcesTest {
             CloudResources o = new CloudResources(archive);
             List<CloudResource> l = o.asList();
             assertThat(l.size(), is(96));
-            assertThat(l.get(0).getFilename(), is("index.html"));
+            assertThat(l.get(0)
+                .getFilename(), is("index.html"));
         } finally {
             zipFile.close();
         }

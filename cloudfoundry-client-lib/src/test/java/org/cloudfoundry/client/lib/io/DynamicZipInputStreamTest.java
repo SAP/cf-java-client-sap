@@ -16,9 +16,9 @@
 
 package org.cloudfoundry.client.lib.io;
 
-import org.cloudfoundry.client.lib.io.DynamicZipInputStream.Entry;
-import org.junit.Test;
-import org.springframework.util.FileCopyUtils;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -28,9 +28,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.ZipOutputStream;
 
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import org.cloudfoundry.client.lib.io.DynamicZipInputStream.Entry;
+import org.junit.Test;
+import org.springframework.util.FileCopyUtils;
 
 /**
  * Tests for {@link DynamicZipInputStream}.

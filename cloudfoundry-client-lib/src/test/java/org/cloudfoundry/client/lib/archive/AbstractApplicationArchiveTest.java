@@ -16,13 +16,10 @@
 
 package org.cloudfoundry.client.lib.archive;
 
-import org.cloudfoundry.client.lib.SampleProjects;
-import org.cloudfoundry.client.lib.archive.ApplicationArchive.Entry;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.springframework.util.FileCopyUtils;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.Assert.assertThat;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -33,14 +30,16 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
 
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertThat;
+import org.cloudfoundry.client.lib.SampleProjects;
+import org.cloudfoundry.client.lib.archive.ApplicationArchive.Entry;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.springframework.util.FileCopyUtils;
 
 /**
- * Abstract base class for {@link ApplicationArchive} tests. All tests are based against {@link
- * SampleProjects#springTravel()}.
+ * Abstract base class for {@link ApplicationArchive} tests. All tests are based against {@link SampleProjects#springTravel()}.
  *
  * @author Phillip Webb
  * @see ZipApplicationArchiveTest
@@ -92,7 +91,8 @@ public abstract class AbstractApplicationArchiveTest {
 
     @Test
     public void shouldCalculateSha1() throws Exception {
-        byte[] digest = archiveEntries.get("index.html").getSha1Digest();
+        byte[] digest = archiveEntries.get("index.html")
+            .getSha1Digest();
         String digestString = String.format("%x", new BigInteger(digest));
         assertThat(digestString, is("677e1b9bca206d6534054348511bf41129744839"));
     }

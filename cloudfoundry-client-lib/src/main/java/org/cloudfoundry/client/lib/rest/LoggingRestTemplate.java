@@ -16,6 +16,12 @@
 
 package org.cloudfoundry.client.lib.rest;
 
+import java.io.IOException;
+import java.net.URI;
+import java.util.LinkedHashSet;
+import java.util.Map;
+import java.util.Set;
+
 import org.cloudfoundry.client.lib.RestLogCallback;
 import org.cloudfoundry.client.lib.RestLogEntry;
 import org.springframework.http.HttpMethod;
@@ -26,12 +32,6 @@ import org.springframework.web.client.RequestCallback;
 import org.springframework.web.client.ResponseExtractor;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
-
-import java.io.IOException;
-import java.net.URI;
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.Set;
 
 /**
  * RestTemplate that provides for logging of any REST calls made
@@ -50,8 +50,8 @@ public class LoggingRestTemplate extends RestTemplate {
     }
 
     @Override
-    protected <T> T doExecute(URI url, HttpMethod method, RequestCallback requestCallback, final ResponseExtractor<T>
-            responseExtractor) throws RestClientException {
+    protected <T> T doExecute(URI url, HttpMethod method, RequestCallback requestCallback, final ResponseExtractor<T> responseExtractor)
+        throws RestClientException {
         final String[] status = new String[1];
         final HttpStatus[] httpStatus = new HttpStatus[1];
         final Object[] headers = new Object[1];
@@ -59,28 +59,29 @@ public class LoggingRestTemplate extends RestTemplate {
         T results = null;
         RestClientException exception = null;
         try {
-            results = super.doExecute(url, method, requestCallback,
-                    new ResponseExtractor<T>() {
-                        @SuppressWarnings("rawtypes")
-                        public T extractData(ClientHttpResponse response) throws IOException {
-                            httpStatus[0] = response.getStatusCode();
-                            headers[0] = response.getHeaders();
-                            T data = null;
-                            if (responseExtractor != null && (data = responseExtractor.extractData(response)) != null) {
-                                if (data instanceof String) {
-                                    message[0] = ((String) data).length() + " bytes";
-                                } else if (data instanceof Map) {
-                                    message[0] = ((Map) data).keySet().toString();
-                                } else {
-                                    message[0] = data.getClass().getName();
-                                }
-                                return data;
-                            } else {
-                                message[0] = "<no data>";
-                                return null;
-                            }
+            results = super.doExecute(url, method, requestCallback, new ResponseExtractor<T>() {
+                @SuppressWarnings("rawtypes")
+                public T extractData(ClientHttpResponse response) throws IOException {
+                    httpStatus[0] = response.getStatusCode();
+                    headers[0] = response.getHeaders();
+                    T data = null;
+                    if (responseExtractor != null && (data = responseExtractor.extractData(response)) != null) {
+                        if (data instanceof String) {
+                            message[0] = ((String) data).length() + " bytes";
+                        } else if (data instanceof Map) {
+                            message[0] = ((Map) data).keySet()
+                                .toString();
+                        } else {
+                            message[0] = data.getClass()
+                                .getName();
                         }
-                    });
+                        return data;
+                    } else {
+                        message[0] = "<no data>";
+                        return null;
+                    }
+                }
+            });
             status[0] = "OK";
         } catch (RestClientException e) {
             status[0] = "ERROR";

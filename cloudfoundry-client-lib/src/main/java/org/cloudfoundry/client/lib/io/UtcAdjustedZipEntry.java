@@ -5,7 +5,8 @@ import java.util.zip.ZipEntry;
 
 public class UtcAdjustedZipEntry extends ZipEntry {
 
-    private final int utcOffset = TimeZone.getDefault().getOffset(System.currentTimeMillis());
+    private final int utcOffset = TimeZone.getDefault()
+        .getOffset(System.currentTimeMillis());
 
     public UtcAdjustedZipEntry(String name) {
         super(name);

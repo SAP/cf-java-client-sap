@@ -46,15 +46,14 @@ public class SecurityGroupRule {
     }
 
     /**
-     * @param protocol    network protocol (tcp,icmp,udp,all)
-     * @param ports       port or port range (applicable for tcp,udp,all), may be conditionally <code>null</code>
+     * @param protocol network protocol (tcp,icmp,udp,all)
+     * @param ports port or port range (applicable for tcp,udp,all), may be conditionally <code>null</code>
      * @param destination destination CIDR or destination range
-     * @param log         enables logging for the egress rule, may be <code>null</code>
-     * @param type        control signal for icmp, may be <code>null</code>
-     * @param code        control signal for icmp, may be <code>null</code>
+     * @param log enables logging for the egress rule, may be <code>null</code>
+     * @param type control signal for icmp, may be <code>null</code>
+     * @param code control signal for icmp, may be <code>null</code>
      */
-    public SecurityGroupRule(String protocol, String ports, String destination, Boolean log, Integer type, Integer
-            code) {
+    public SecurityGroupRule(String protocol, String ports, String destination, Boolean log, Integer type, Integer code) {
         this.protocol = protocol;
         this.ports = ports;
         this.destination = destination;

@@ -22,7 +22,7 @@ public class CloudUser extends CloudEntity {
         this.active = active;
 
         this.defaultSpaceGuid = defaultSpaceGuid;
-        //this.organization = organization;
+        // this.organization = organization;
     }
 
     public String getDefaultSpaceGuid() {

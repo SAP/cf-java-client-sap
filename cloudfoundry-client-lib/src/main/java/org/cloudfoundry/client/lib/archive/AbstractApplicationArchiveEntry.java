@@ -21,8 +21,7 @@ import java.io.InputStream;
 import java.security.MessageDigest;
 
 /**
- * Base implementation of {@link ApplicationArchive.Entry} that is reads the input stream to deduce the size and SHA
- * digest.
+ * Base implementation of {@link ApplicationArchive.Entry} that is reads the input stream to deduce the size and SHA digest.
  *
  * @author Phillip Webb
  */
@@ -47,8 +46,7 @@ public abstract class AbstractApplicationArchiveEntry implements ApplicationArch
     }
 
     /**
-     * Sets the SHA1 digest that should be returned. If this method is not called the digest will be deduced by reading
-     * the stream.
+     * Sets the SHA1 digest that should be returned. If this method is not called the digest will be deduced by reading the stream.
      *
      * @param sha1Digest
      */
@@ -67,8 +65,7 @@ public abstract class AbstractApplicationArchiveEntry implements ApplicationArch
     }
 
     /**
-     * Sets the size that should be returned. If this method is not called the size will be deduced by reading the
-     * stream.
+     * Sets the size that should be returned. If this method is not called the size will be deduced by reading the stream.
      *
      * @param size the size.
      */

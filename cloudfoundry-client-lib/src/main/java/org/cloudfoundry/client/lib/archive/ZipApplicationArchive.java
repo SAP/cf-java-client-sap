@@ -16,8 +16,6 @@
 
 package org.cloudfoundry.client.lib.archive;
 
-import org.springframework.util.Assert;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -27,6 +25,8 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
+
+import org.springframework.util.Assert;
 
 /**
  * Implementation of {@link ApplicationArchive} backed by a {@link ZipFile}.

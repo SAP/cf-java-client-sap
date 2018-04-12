@@ -16,14 +16,14 @@
 
 package org.cloudfoundry.client.lib.domain;
 
+import static org.cloudfoundry.client.lib.util.CloudUtil.parse;
+
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-
-import static org.cloudfoundry.client.lib.util.CloudUtil.parse;
 
 public class InstanceStats {
 
@@ -60,8 +60,7 @@ public class InstanceStats {
         if (stats != null) {
             this.cores = parse(Integer.class, stats.get("cores"));
             this.name = parse(String.class, stats.get("name"));
-            Map<String, Object> usageValue = parse(Map.class,
-                    stats.get("usage"));
+            Map<String, Object> usageValue = parse(Map.class, stats.get("usage"));
             if (usageValue != null) {
                 this.usage = new Usage(usageValue);
             }

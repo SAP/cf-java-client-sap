@@ -1,5 +1,8 @@
 package org.cloudfoundry.client.lib.rest;
 
+import java.io.IOException;
+import java.util.Map;
+
 import org.cloudfoundry.client.lib.domain.ApplicationLog;
 import org.cloudfoundry.client.lib.domain.ApplicationLogs;
 import org.cloudfoundry.client.lib.util.Multipart;
@@ -9,9 +12,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.converter.AbstractHttpMessageConverter;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.http.converter.HttpMessageNotWritableException;
-
-import java.io.IOException;
-import java.util.Map;
 
 /**
  * An HttpMessageConverter for parsing and constructing ApplicationLog entries from a Loggregator response.
@@ -33,7 +33,7 @@ public class LoggregatorHttpMessageConverter extends AbstractHttpMessageConverte
 
     @Override
     protected ApplicationLogs readInternal(Class<? extends ApplicationLogs> clazz, HttpInputMessage inputMessage)
-            throws IOException, HttpMessageNotReadableException {
+        throws IOException, HttpMessageNotReadableException {
         String boundary = getMessageBoundary(inputMessage);
 
         Multipart multipart = new Multipart(inputMessage.getBody(), boundary);
@@ -56,12 +56,13 @@ public class LoggregatorHttpMessageConverter extends AbstractHttpMessageConverte
 
     @Override
     protected void writeInternal(ApplicationLogs logs, HttpOutputMessage outputMessage)
-            throws IOException, HttpMessageNotWritableException {
+        throws IOException, HttpMessageNotWritableException {
         throw new UnsupportedOperationException("Writing to LoggregatorHttpMessageConverter is not supported");
     }
 
     private String getMessageBoundary(HttpInputMessage inputMessage) {
-        MediaType mediaType = inputMessage.getHeaders().getContentType();
+        MediaType mediaType = inputMessage.getHeaders()
+            .getContentType();
         Map<String, String> parameters = mediaType.getParameters();
         return parameters.get("boundary");
     }

@@ -16,9 +16,9 @@
 
 package org.cloudfoundry.client.lib.domain;
 
-import org.cloudfoundry.client.lib.util.CloudUtil;
-
 import java.util.Map;
+
+import org.cloudfoundry.client.lib.util.CloudUtil;
 
 /**
  * @author Ramnivas Laddad
@@ -89,9 +89,8 @@ public class CloudInfo {
         }
     }
 
-    public CloudInfo(String name, String support, String authorizationEndpoint, String build, String version,
-                     String user, String description, Limits limits, Usage usage, boolean allowDebug, String
-                             loggregatorEndpoint) {
+    public CloudInfo(String name, String support, String authorizationEndpoint, String build, String version, String user,
+        String description, Limits limits, Usage usage, boolean allowDebug, String loggregatorEndpoint) {
         this.name = name;
         this.support = support;
         this.authorizationEndpoint = authorizationEndpoint;

@@ -16,7 +16,6 @@
 
 package org.cloudfoundry.client.lib.domain;
 
-
 /**
  * Class representing service plan info for a service instance.
  *

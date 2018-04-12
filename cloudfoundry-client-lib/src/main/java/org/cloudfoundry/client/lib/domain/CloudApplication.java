@@ -69,7 +69,9 @@ public class CloudApplication extends CloudEntity {
     public CloudApplication(String name, String command, String buildpackUrl, int memory, int instances, List<String> uris,
         List<String> serviceNames, AppState state) {
         super(CloudEntity.Meta.defaultMeta(), name);
-        this.staging = new Staging.StagingBuilder().command(command).buildpackUrl(buildpackUrl).build();
+        this.staging = new Staging.StagingBuilder().command(command)
+            .buildpackUrl(buildpackUrl)
+            .build();
         this.memory = memory;
         this.instances = instances;
         this.uris = uris;
@@ -119,8 +121,10 @@ public class CloudApplication extends CloudEntity {
                 detectedBuildpack = (String) metaValue.get(DETECTED_BUILDPACK_KEY);
             }
 
-            setStaging(
-                new Staging.StagingBuilder().command(command).buildpackUrl(buildpackUrl).detectedBuildpack(detectedBuildpack).build());
+            setStaging(new Staging.StagingBuilder().command(command)
+                .buildpackUrl(buildpackUrl)
+                .detectedBuildpack(detectedBuildpack)
+                .build());
         }
     }
 
@@ -157,10 +161,12 @@ public class CloudApplication extends CloudEntity {
             if (null == entry.getValue()) {
                 value = "";
             } else {
-                value = entry.getValue().toString();
+                value = entry.getValue()
+                    .toString();
             }
 
-            joined.add(entry.getKey().toString() + '=' + value);
+            joined.add(entry.getKey()
+                .toString() + '=' + value);
         }
 
         this.env = joined;

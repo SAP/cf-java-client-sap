@@ -16,7 +16,6 @@
 
 package org.cloudfoundry.client.lib.util;
 
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.MessageDigest;
@@ -84,8 +83,7 @@ public class CloudUtil {
         try {
             if (clazz == Date.class) {
                 String stringValue = parse(String.class, object);
-                return clazz.cast(new SimpleDateFormat("EEE MMM d HH:mm:ss Z yyyy",
-                        Locale.US).parse(stringValue));
+                return clazz.cast(new SimpleDateFormat("EEE MMM d HH:mm:ss Z yyyy", Locale.US).parse(stringValue));
             }
 
             if (clazz == Integer.class) {
@@ -139,7 +137,8 @@ public class CloudUtil {
         }
         final StringBuilder hex = new StringBuilder(2 * bytes.length);
         for (final byte b : bytes) {
-            hex.append(HEX_CHARS.charAt((b & 0xF0) >> 4)).append(HEX_CHARS.charAt((b & 0x0F)));
+            hex.append(HEX_CHARS.charAt((b & 0xF0) >> 4))
+                .append(HEX_CHARS.charAt((b & 0x0F)));
         }
         return hex.toString();
     }

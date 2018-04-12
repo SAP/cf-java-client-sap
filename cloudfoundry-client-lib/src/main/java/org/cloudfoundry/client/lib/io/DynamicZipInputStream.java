@@ -16,17 +16,17 @@
 
 package org.cloudfoundry.client.lib.io;
 
-import org.springframework.util.Assert;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Iterator;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+import org.springframework.util.Assert;
+
 /**
- * InputStream that dynamically creates ZIP contents as the stream is read without consuming too much memory. Zip {@link
- * Entry entries} should be provided on {@link #DynamicZipInputStream(Iterable) construction}.
+ * InputStream that dynamically creates ZIP contents as the stream is read without consuming too much memory. Zip {@link Entry entries}
+ * should be provided on {@link #DynamicZipInputStream(Iterable) construction}.
  *
  * @author Phillip Webb
  */
@@ -133,8 +133,7 @@ public class DynamicZipInputStream extends DynamicInputStream {
     public static interface Entry {
 
         /**
-         * Opens a new stream that can be used to read the contents of the entry. The steam will be closed by the
-         * caller.
+         * Opens a new stream that can be used to read the contents of the entry. The steam will be closed by the caller.
          *
          * @return the entry input stream
          * @throws IOException

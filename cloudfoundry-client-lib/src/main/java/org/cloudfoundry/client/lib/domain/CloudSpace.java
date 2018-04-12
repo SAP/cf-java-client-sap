@@ -16,7 +16,6 @@
 
 package org.cloudfoundry.client.lib.domain;
 
-
 /**
  * @author Thomas Risberg
  */

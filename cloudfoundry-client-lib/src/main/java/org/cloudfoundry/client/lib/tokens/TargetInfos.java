@@ -1,12 +1,12 @@
 package org.cloudfoundry.client.lib.tokens;
 
+import java.net.URI;
+import java.util.HashMap;
+
 import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
 import org.springframework.security.oauth2.common.DefaultOAuth2RefreshToken;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.security.oauth2.common.OAuth2RefreshToken;
-
-import java.net.URI;
-import java.util.HashMap;
 
 public class TargetInfos extends HashMap<String, HashMap<String, String>> {
 
@@ -64,7 +64,8 @@ public class TargetInfos extends HashMap<String, HashMap<String, String>> {
     }
 
     public void putToken(HashMap<String, String> target, OAuth2AccessToken token) {
-        target.put(ACCESS_TOKEN_KEY, String.format("%s %s", token.getTokenType().toLowerCase(), token.getValue()));
+        target.put(ACCESS_TOKEN_KEY, String.format("%s %s", token.getTokenType()
+            .toLowerCase(), token.getValue()));
     }
 
     public void putVersion(HashMap<String, String> target, String version) {

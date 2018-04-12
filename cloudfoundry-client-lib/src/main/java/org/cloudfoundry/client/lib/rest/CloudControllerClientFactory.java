@@ -16,6 +16,12 @@
 
 package org.cloudfoundry.client.lib.rest;
 
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.cloudfoundry.client.lib.CloudCredentials;
 import org.cloudfoundry.client.lib.HttpProxyConfiguration;
 import org.cloudfoundry.client.lib.domain.CloudSpace;
@@ -24,12 +30,6 @@ import org.cloudfoundry.client.lib.util.RestUtil;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.type.TypeReference;
 import org.springframework.web.client.RestTemplate;
-
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Factory used to create cloud controller client implementations.

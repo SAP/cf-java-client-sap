@@ -243,7 +243,8 @@ public class CloudFoundryClientTest {
         } else {
             s = email;
         }
-        return s.replaceAll("\\.", "-").replaceAll("\\+", "-");
+        return s.replaceAll("\\.", "-")
+            .replaceAll("\\+", "-");
     }
 
     private static int getNextAvailablePort(int initial) {
@@ -313,7 +314,8 @@ public class CloudFoundryClientTest {
 
     @Test
     public void accessRandomApplicationUrl() throws Exception {
-        String appName = UUID.randomUUID().toString();
+        String appName = UUID.randomUUID()
+            .toString();
         CloudApplication app = createAndUploadAndStartSimpleSpringApp(appName);
         connectedClient.startApplication(appName);
         assertEquals(1, app.getInstances());
@@ -324,7 +326,8 @@ public class CloudFoundryClientTest {
         assertEquals(1, app.getRunningInstances());
         RestUtil restUtil = new RestUtil();
         RestTemplate rest = restUtil.createRestTemplate(httpProxyConfiguration, false);
-        String results = rest.getForObject("http://" + app.getUris().get(0), String.class);
+        String results = rest.getForObject("http://" + app.getUris()
+            .get(0), String.class);
         assertTrue(results.contains("Hello world!"));
     }
 
@@ -363,7 +366,8 @@ public class CloudFoundryClientTest {
             connectedClient.deleteDomain(TEST_DOMAIN);
             fail("should have thrown exception");
         } catch (IllegalStateException ex) {
-            assertTrue(ex.getMessage().contains("in use"));
+            assertTrue(ex.getMessage()
+                .contains("in use"));
         }
     }
 
@@ -409,7 +413,9 @@ public class CloudFoundryClientTest {
         String username = CCNG_USER_EMAIL;
         CloudUser user = orgUsers.get(username);
         assertNotNull("Retrieved user should not be null", user);
-        String userGuid = user.getMeta().getGuid().toString();
+        String userGuid = user.getMeta()
+            .getGuid()
+            .toString();
 
         List<UUID> spaceManagers = connectedClient.getSpaceManagers(orgName, spaceName);
         assertEquals("Space should have no manager when created", 0, spaceManagers.size());
@@ -490,20 +496,24 @@ public class CloudFoundryClientTest {
 
         CloudApplication app = connectedClient.getApplication(appName);
         assertNotNull(app.getServices());
-        assertTrue(app.getServices().isEmpty());
+        assertTrue(app.getServices()
+            .isEmpty());
 
         connectedClient.bindService(appName, serviceName);
 
         app = connectedClient.getApplication(appName);
         assertNotNull(app.getServices());
-        assertEquals(1, app.getServices().size());
-        assertEquals(serviceName, app.getServices().get(0));
+        assertEquals(1, app.getServices()
+            .size());
+        assertEquals(serviceName, app.getServices()
+            .get(0));
 
         connectedClient.unbindService(appName, serviceName);
 
         app = connectedClient.getApplication(appName);
         assertNotNull(app.getServices());
-        assertTrue(app.getServices().isEmpty());
+        assertTrue(app.getServices()
+            .isEmpty());
     }
 
     @Test
@@ -613,17 +623,19 @@ public class CloudFoundryClientTest {
         nbInJvmProxyRcvReqs.set(0); // reset for next test
 
         assertTrue(SocketDestHelper.isActivated());
-        assertFalse("expected some installed rules, got:" + SocketDestHelper.getInstalledRules(),
-            SocketDestHelper.getInstalledRules().isEmpty());
+        assertFalse("expected some installed rules, got:" + SocketDestHelper.getInstalledRules(), SocketDestHelper.getInstalledRules()
+            .isEmpty());
     }
 
     @Test
     public void createAndReCreateApplication() {
         String appName = createSpringTravelApp("A");
-        assertEquals(1, connectedClient.getApplications().size());
+        assertEquals(1, connectedClient.getApplications()
+            .size());
         connectedClient.deleteApplication(appName);
         appName = createSpringTravelApp("A");
-        assertEquals(1, connectedClient.getApplications().size());
+        assertEquals(1, connectedClient.getApplications()
+            .size());
         connectedClient.deleteApplication(appName);
     }
 
@@ -637,12 +649,14 @@ public class CloudFoundryClientTest {
         assertNotNull(app);
         assertEquals(appName, app.getName());
 
-        assertNotNull(app.getMeta().getGuid());
+        assertNotNull(app.getMeta()
+            .getGuid());
 
         final Calendar now = Calendar.getInstance();
         now.setTime(new Date());
         final Calendar createdDate = Calendar.getInstance();
-        createdDate.setTime(app.getMeta().getCreated());
+        createdDate.setTime(app.getMeta()
+            .getCreated());
 
         assertEquals(now.get(Calendar.DATE), createdDate.get(Calendar.DATE));
     }
@@ -657,8 +671,10 @@ public class CloudFoundryClientTest {
         assertNotNull(app);
         assertEquals(CloudApplication.AppState.STOPPED, app.getState());
 
-        assertEquals(buildpackUrl, app.getStaging().getBuildpackUrl());
-        assertNull(app.getStaging().getDetectedBuildpack());
+        assertEquals(buildpackUrl, app.getStaging()
+            .getBuildpackUrl());
+        assertNull(app.getStaging()
+            .getDetectedBuildpack());
     }
 
     @Test
@@ -703,7 +719,9 @@ public class CloudFoundryClientTest {
         assertNotNull(app);
         assertEquals(CloudApplication.AppState.STOPPED, app.getState());
 
-        assertEquals(2, app.getStaging().getHealthCheckTimeout().intValue());
+        assertEquals(2, app.getStaging()
+            .getHealthCheckTimeout()
+            .intValue());
     }
 
     @Test
@@ -715,8 +733,10 @@ public class CloudFoundryClientTest {
         assertNotNull(app);
         assertEquals(appName, app.getName());
         assertNotNull(app.getServices());
-        assertEquals(1, app.getServices().size());
-        assertEquals(serviceName, app.getServices().get(0));
+        assertEquals(1, app.getServices()
+            .size());
+        assertEquals(serviceName, app.getServices()
+            .get(0));
     }
 
     @Test
@@ -728,7 +748,8 @@ public class CloudFoundryClientTest {
         assertNotNull(app);
         assertEquals(CloudApplication.AppState.STOPPED, app.getState());
 
-        assertEquals(DEFAULT_STACK_NAME, app.getStaging().getStack());
+        assertEquals(DEFAULT_STACK_NAME, app.getStaging()
+            .getStack());
     }
 
     @Test
@@ -772,7 +793,8 @@ public class CloudFoundryClientTest {
         // Verify created
         securityGroup = connectedClient.getSecurityGroup(CCNG_SECURITY_GROUP_NAME_TEST);
         assertNotNull(securityGroup);
-        assertThat(securityGroup.getRules().size(), is(3));
+        assertThat(securityGroup.getRules()
+            .size(), is(3));
         assertRulesMatchTestData(securityGroup);
 
         // Update group
@@ -784,7 +806,8 @@ public class CloudFoundryClientTest {
 
         // Verify update
         securityGroup = connectedClient.getSecurityGroup(CCNG_SECURITY_GROUP_NAME_TEST);
-        assertThat(securityGroup.getRules().size(), is(1));
+        assertThat(securityGroup.getRules()
+            .size(), is(1));
 
         // Delete group
         connectedClient.deleteSecurityGroup(CCNG_SECURITY_GROUP_NAME_TEST);
@@ -801,9 +824,11 @@ public class CloudFoundryClientTest {
     @Test
     public void deleteApplication() {
         String appName = createSpringTravelApp("4");
-        assertEquals(1, connectedClient.getApplications().size());
+        assertEquals(1, connectedClient.getApplications()
+            .size());
         connectedClient.deleteApplication(appName);
-        assertEquals(0, connectedClient.getApplications().size());
+        assertEquals(0, connectedClient.getApplications()
+            .size());
     }
 
     //
@@ -826,7 +851,8 @@ public class CloudFoundryClientTest {
         assertTrue(deletedRoutes.size() > 0);
         boolean found = false;
         for (CloudRoute route : deletedRoutes) {
-            if (route.getHost().equals("unbound_route")) {
+            if (route.getHost()
+                .equals("unbound_route")) {
                 found = true;
             }
         }
@@ -840,8 +866,10 @@ public class CloudFoundryClientTest {
 
         CloudApplication app = connectedClient.getApplication(appName);
         assertNotNull(app.getServices());
-        assertEquals(1, app.getServices().size());
-        assertEquals(serviceName, app.getServices().get(0));
+        assertEquals(1, app.getServices()
+            .size());
+        assertEquals(serviceName, app.getServices()
+            .get(0));
 
         connectedClient.deleteService(serviceName);
     }
@@ -856,7 +884,8 @@ public class CloudFoundryClientTest {
     public void getApplicationByGuid() {
         String appName = createSpringTravelApp("3");
         CloudApplication app = connectedClient.getApplication(appName);
-        CloudApplication guidApp = connectedClient.getApplication(app.getMeta().getGuid());
+        CloudApplication guidApp = connectedClient.getApplication(app.getMeta()
+            .getGuid());
         assertEquals(app.getName(), guidApp.getName());
     }
 
@@ -868,17 +897,23 @@ public class CloudFoundryClientTest {
         assertNotNull(app);
         assertEquals(appName, app.getName());
 
-        assertEquals(1, app.getServices().size());
-        assertEquals(serviceName, app.getServices().get(0));
-        assertEquals(CCNG_USER_SPACE, app.getSpace().getName());
+        assertEquals(1, app.getServices()
+            .size());
+        assertEquals(serviceName, app.getServices()
+            .get(0));
+        assertEquals(CCNG_USER_SPACE, app.getSpace()
+            .getName());
 
         assertEquals(1, app.getInstances());
         assertEquals(DEFAULT_MEMORY, app.getMemory());
         assertEquals(DEFAULT_DISK, app.getDiskQuota());
 
-        assertNull(app.getStaging().getCommand());
-        assertNull(app.getStaging().getBuildpackUrl());
-        assertNull(app.getStaging().getHealthCheckTimeout());
+        assertNull(app.getStaging()
+            .getCommand());
+        assertNull(app.getStaging()
+            .getBuildpackUrl());
+        assertNull(app.getStaging()
+            .getHealthCheckTimeout());
     }
 
     @Test
@@ -889,7 +924,8 @@ public class CloudFoundryClientTest {
         connectedClient.createApplication(appName, staging, DEFAULT_MEMORY, uris, null);
         connectedClient.updateApplicationEnv(appName, Collections.singletonMap("testKey", "testValue"));
         CloudApplication app = connectedClient.getApplication(appName);
-        Map<String, Object> env = connectedClient.getApplicationEnvironment(app.getMeta().getGuid());
+        Map<String, Object> env = connectedClient.getApplicationEnvironment(app.getMeta()
+            .getGuid());
         assertAppEnvironment(env);
     }
 
@@ -946,7 +982,8 @@ public class CloudFoundryClientTest {
         ApplicationStats stats = connectedClient.getApplicationStats(appName);
         assertNotNull(stats);
         assertNotNull(stats.getRecords());
-        assertEquals(instanceCount, stats.getRecords().size());
+        assertEquals(instanceCount, stats.getRecords()
+            .size());
 
         for (InstanceStats instanceStats : stats.getRecords()) {
             assertNotNull(instanceStats.getUris());
@@ -962,7 +999,8 @@ public class CloudFoundryClientTest {
             assertTrue(usage.getDisk() > 0);
             assertTrue(usage.getMem() > 0);
 
-            assertTimeWithinRange("Usage time should be very recent", usage.getTime().getTime(), FIVE_MINUTES);
+            assertTimeWithinRange("Usage time should be very recent", usage.getTime()
+                .getTime(), FIVE_MINUTES);
         }
     }
 
@@ -977,7 +1015,8 @@ public class CloudFoundryClientTest {
         connectedClient.stopApplication(appName);
 
         ApplicationStats stats = connectedClient.getApplicationStats(appName);
-        assertTrue(stats.getRecords().isEmpty());
+        assertTrue(stats.getRecords()
+            .isEmpty());
     }
 
     @Test
@@ -990,10 +1029,13 @@ public class CloudFoundryClientTest {
         CloudApplication app = apps.get(0);
         assertEquals(appName, app.getName());
         assertNotNull(app.getMeta());
-        assertNotNull(app.getMeta().getGuid());
+        assertNotNull(app.getMeta()
+            .getGuid());
 
-        assertEquals(1, app.getServices().size());
-        assertEquals(serviceName, app.getServices().get(0));
+        assertEquals(1, app.getServices()
+            .size());
+        assertEquals(serviceName, app.getServices()
+            .get(0));
 
         createSpringTravelApp("3");
         apps = connectedClient.getApplications();
@@ -1006,14 +1048,31 @@ public class CloudFoundryClientTest {
         List<CloudApplication> apps = connectedClient.getApplications();
         assertEquals(1, apps.size());
         CloudApplication app = connectedClient.getApplication(appName);
-        assertEquals(app.getName(), apps.get(0).getName());
-        assertEquals(app.getState(), apps.get(0).getState());
-        assertEquals(app.getInstances(), apps.get(0).getInstances());
-        assertEquals(app.getMemory(), apps.get(0).getMemory());
-        assertEquals(app.getMeta().getGuid(), apps.get(0).getMeta().getGuid());
-        assertEquals(app.getMeta().getCreated(), apps.get(0).getMeta().getCreated());
-        assertEquals(app.getMeta().getUpdated(), apps.get(0).getMeta().getUpdated());
-        assertEquals(app.getUris(), apps.get(0).getUris());
+        assertEquals(app.getName(), apps.get(0)
+            .getName());
+        assertEquals(app.getState(), apps.get(0)
+            .getState());
+        assertEquals(app.getInstances(), apps.get(0)
+            .getInstances());
+        assertEquals(app.getMemory(), apps.get(0)
+            .getMemory());
+        assertEquals(app.getMeta()
+            .getGuid(),
+            apps.get(0)
+                .getMeta()
+                .getGuid());
+        assertEquals(app.getMeta()
+            .getCreated(),
+            apps.get(0)
+                .getMeta()
+                .getCreated());
+        assertEquals(app.getMeta()
+            .getUpdated(),
+            apps.get(0)
+                .getMeta()
+                .getUpdated());
+        assertEquals(app.getUris(), apps.get(0)
+            .getUris());
     }
 
     @Test
@@ -1048,7 +1107,8 @@ public class CloudFoundryClientTest {
 
         CrashesInfo crashes = connectedClient.getCrashes(appName);
         assertNotNull(crashes);
-        assertTrue(!crashes.getCrashes().isEmpty());
+        assertTrue(!crashes.getCrashes()
+            .isEmpty());
         for (CrashInfo info : crashes.getCrashes()) {
             assertNotNull(info.getInstance());
             assertNotNull(info.getSince());
@@ -1063,7 +1123,9 @@ public class CloudFoundryClientTest {
         CloudService service = connectedClient.getService(serviceName);
         assertNotNull(service);
         assertEquals(serviceName, service.getName());
-        assertTimeWithinRange("Creation time should be very recent", service.getMeta().getCreated().getTime(), FIVE_MINUTES);
+        assertTimeWithinRange("Creation time should be very recent", service.getMeta()
+            .getCreated()
+            .getTime(), FIVE_MINUTES);
 
         connectedClient.deleteService(serviceName);
 
@@ -1192,11 +1254,14 @@ public class CloudFoundryClientTest {
         assertNotNull(bindings);
         assertEquals(1, bindings.size());
         CloudServiceBinding binding = bindings.get(0);
-        assertEquals(application.getMeta().getGuid(), binding.getAppGuid());
+        assertEquals(application.getMeta()
+            .getGuid(), binding.getAppGuid());
         assertNotNull(binding.getCredentials());
-        assertTrue(binding.getCredentials().size() > 0);
+        assertTrue(binding.getCredentials()
+            .size() > 0);
         assertNotNull(binding.getBindingOptions());
-        assertEquals(0, binding.getBindingOptions().size());
+        assertEquals(0, binding.getBindingOptions()
+            .size());
         assertNull(binding.getSyslogDrainUrl());
     }
 
@@ -1209,7 +1274,8 @@ public class CloudFoundryClientTest {
 
         CloudServiceOffering offering = null;
         for (CloudServiceOffering so : offerings) {
-            if (so.getLabel().equals(MYSQL_SERVICE_LABEL)) {
+            if (so.getLabel()
+                .equals(MYSQL_SERVICE_LABEL)) {
                 offering = so;
                 break;
             }
@@ -1217,14 +1283,16 @@ public class CloudFoundryClientTest {
         assertNotNull(offering);
         assertEquals(MYSQL_SERVICE_LABEL, offering.getLabel());
         assertNotNull(offering.getCloudServicePlans());
-        assertTrue(offering.getCloudServicePlans().size() > 0);
+        assertTrue(offering.getCloudServicePlans()
+            .size() > 0);
         assertNotNull(offering.getName());
         assertNotNull(offering.getDescription());
         assertNotNull(offering.getLabel());
         assertNotNull(offering.getUniqueId());
         assertNotNull(offering.getExtra());
 
-        CloudServicePlan plan = offering.getCloudServicePlans().get(0);
+        CloudServicePlan plan = offering.getCloudServicePlans()
+            .get(0);
         assertNotNull(plan.getName());
         assertNotNull(plan.getUniqueId());
         assertNotNull(plan.getDescription());
@@ -1261,7 +1329,8 @@ public class CloudFoundryClientTest {
     public void getStack() throws Exception {
         CloudStack stack = connectedClient.getStack(DEFAULT_STACK_NAME);
         assertNotNull(stack);
-        assertNotNull(stack.getMeta().getGuid());
+        assertNotNull(stack.getMeta()
+            .getGuid());
         assertEquals(DEFAULT_STACK_NAME, stack.getName());
         assertNotNull(stack.getDescription());
     }
@@ -1278,7 +1347,8 @@ public class CloudFoundryClientTest {
             }
         }
         assertNotNull(stack);
-        assertNotNull(stack.getMeta().getGuid());
+        assertNotNull(stack.getMeta()
+            .getGuid());
         assertEquals(DEFAULT_STACK_NAME, stack.getName());
         assertNotNull(stack.getDescription());
     }
@@ -1361,10 +1431,22 @@ public class CloudFoundryClientTest {
         assertEquals(CCNG_USER_EMAIL, info.getUser());
         assertNotNull(info.getLimits());
         // Just ensure that we got back some sensible values
-        assertTrue(info.getLimits().getMaxApps() > 0 && info.getLimits().getMaxApps() < 1000);
-        assertTrue(info.getLimits().getMaxServices() > 0 && info.getLimits().getMaxServices() < 1000);
-        assertTrue(info.getLimits().getMaxTotalMemory() > 0 && info.getLimits().getMaxTotalMemory() < 100000);
-        assertTrue(info.getLimits().getMaxUrisPerApp() > 0 && info.getLimits().getMaxUrisPerApp() < 100);
+        assertTrue(info.getLimits()
+            .getMaxApps() > 0
+            && info.getLimits()
+                .getMaxApps() < 1000);
+        assertTrue(info.getLimits()
+            .getMaxServices() > 0
+            && info.getLimits()
+                .getMaxServices() < 1000);
+        assertTrue(info.getLimits()
+            .getMaxTotalMemory() > 0
+            && info.getLimits()
+                .getMaxTotalMemory() < 100000);
+        assertTrue(info.getLimits()
+            .getMaxUrisPerApp() > 0
+            && info.getLimits()
+                .getMaxUrisPerApp() < 100);
     }
 
     @Test
@@ -1464,7 +1546,8 @@ public class CloudFoundryClientTest {
         // Verify created
         CloudSecurityGroup securityGroup = connectedClient.getSecurityGroup(CCNG_SECURITY_GROUP_NAME_TEST);
         assertNotNull(securityGroup);
-        assertThat(securityGroup.getRules().size(), is(4));
+        assertThat(securityGroup.getRules()
+            .size(), is(4));
         assertRulesMatchThoseInJsonFile1(securityGroup);
 
         // Update group
@@ -1473,7 +1556,8 @@ public class CloudFoundryClientTest {
 
         // Verify update
         securityGroup = connectedClient.getSecurityGroup(CCNG_SECURITY_GROUP_NAME_TEST);
-        assertThat(securityGroup.getRules().size(), is(1));
+        assertThat(securityGroup.getRules()
+            .size(), is(1));
 
         // Clean up after ourselves
         connectedClient.deleteSecurityGroup(CCNG_SECURITY_GROUP_NAME_TEST);
@@ -1532,7 +1616,8 @@ public class CloudFoundryClientTest {
     public void setEnvironmentThroughList() throws IOException {
         String appName = createSpringTravelApp("env1");
         CloudApplication app = connectedClient.getApplication(appName);
-        assertTrue(app.getEnv().isEmpty());
+        assertTrue(app.getEnv()
+            .isEmpty());
 
         connectedClient.updateApplicationEnv(appName, asList("foo=bar", "bar=baz"));
         app = connectedClient.getApplication(app.getName());
@@ -1544,14 +1629,16 @@ public class CloudFoundryClientTest {
 
         connectedClient.updateApplicationEnv(appName, new ArrayList<String>());
         app = connectedClient.getApplication(app.getName());
-        assertTrue(app.getEnv().isEmpty());
+        assertTrue(app.getEnv()
+            .isEmpty());
     }
 
     @Test
     public void setEnvironmentThroughMap() throws IOException {
         String appName = createSpringTravelApp("env3");
         CloudApplication app = connectedClient.getApplication(appName);
-        assertTrue(app.getEnv().isEmpty());
+        assertTrue(app.getEnv()
+            .isEmpty());
 
         Map<String, String> env1 = new HashMap<String, String>();
         env1.put("foo", "bar");
@@ -1574,15 +1661,18 @@ public class CloudFoundryClientTest {
 
         connectedClient.updateApplicationEnv(appName, new HashMap<String, String>());
         app = connectedClient.getApplication(app.getName());
-        assertTrue(app.getEnv().isEmpty());
-        assertTrue(app.getEnvAsMap().isEmpty());
+        assertTrue(app.getEnv()
+            .isEmpty());
+        assertTrue(app.getEnvAsMap()
+            .isEmpty());
     }
 
     @Test
     public void setEnvironmentThroughMapEqualsInValue() throws IOException {
         String appName = createSpringTravelApp("env4");
         CloudApplication app = connectedClient.getApplication(appName);
-        assertTrue(app.getEnv().isEmpty());
+        assertTrue(app.getEnv()
+            .isEmpty());
 
         Map<String, String> env1 = new HashMap<String, String>();
         env1.put("key", "foo=bar,fu=baz");
@@ -1596,8 +1686,10 @@ public class CloudFoundryClientTest {
 
         connectedClient.updateApplicationEnv(appName, new HashMap<String, String>());
         app = connectedClient.getApplication(app.getName());
-        assertTrue(app.getEnv().isEmpty());
-        assertTrue(app.getEnvAsMap().isEmpty());
+        assertTrue(app.getEnv()
+            .isEmpty());
+        assertTrue(app.getEnvAsMap()
+            .isEmpty());
     }
 
     @Test
@@ -1605,7 +1697,8 @@ public class CloudFoundryClientTest {
         thrown.expect(IllegalArgumentException.class);
         String appName = createSpringTravelApp("env2");
         CloudApplication app = connectedClient.getApplication(appName);
-        assertTrue(app.getEnv().isEmpty());
+        assertTrue(app.getEnv()
+            .isEmpty());
         connectedClient.updateApplicationEnv(appName, asList("foo:bar", "bar=baz"));
     }
 
@@ -1642,7 +1735,8 @@ public class CloudFoundryClientTest {
         connectedClient = new CloudFoundryClient(new CloudCredentials(CCNG_USER_EMAIL, CCNG_USER_PASS), cloudControllerUrl, CCNG_USER_ORG,
             CCNG_USER_SPACE, httpProxyConfiguration, CCNG_API_SSL);
         connectedClient.login();
-        defaultDomainName = connectedClient.getDefaultDomain().getName();
+        defaultDomainName = connectedClient.getDefaultDomain()
+            .getName();
 
         // Optimization to avoid redoing the work already done is tearDown()
         if (!tearDownComplete) {
@@ -1689,7 +1783,8 @@ public class CloudFoundryClientTest {
         assertEquals(CloudApplication.AppState.STOPPED, app.getState());
 
         String url = computeAppUrlNoProtocol(appName);
-        assertEquals(url, app.getUris().get(0));
+        assertEquals(url, app.getUris()
+            .get(0));
 
         StartingInfo info = connectedClient.startApplication(appName);
         app = connectedClient.getApplication(appName);
@@ -1716,13 +1811,17 @@ public class CloudFoundryClientTest {
         List<ApplicationLog> logs = doGetRecentLogs(appName);
 
         for (int index = 0; index < logs.size() - 1; index++) {
-            int comparison = logs.get(index).getTimestamp().compareTo(logs.get(index + 1).getTimestamp());
+            int comparison = logs.get(index)
+                .getTimestamp()
+                .compareTo(logs.get(index + 1)
+                    .getTimestamp());
             assertTrue("Logs are not properly sorted", comparison <= 0);
         }
 
         AccumulatingApplicationLogListener testListener = new AccumulatingApplicationLogListener();
         connectedClient.streamLogs(appName, testListener);
-        String appUri = "http://" + app.getUris().get(0);
+        String appUri = "http://" + app.getUris()
+            .get(0);
         RestTemplate appTemplate = new RestTemplate();
         int attempt = 0;
         do {
@@ -1793,8 +1892,10 @@ public class CloudFoundryClientTest {
         connectedClient.updateApplicationServices(appName, Collections.singletonList(serviceName));
         CloudApplication app = connectedClient.getApplication(appName);
         assertNotNull(app.getServices());
-        assertTrue(app.getServices().size() > 0);
-        assertEquals(serviceName, app.getServices().get(0));
+        assertTrue(app.getServices()
+            .size() > 0);
+        assertEquals(serviceName, app.getServices()
+            .get(0));
 
         List<String> emptyList = Collections.emptyList();
         connectedClient.updateApplicationServices(appName, emptyList);
@@ -1853,7 +1954,8 @@ public class CloudFoundryClientTest {
         assertNotNull(app);
         assertEquals(CloudApplication.AppState.STARTED, app.getState());
         assertEquals(uris, app.getUris());
-        assertEquals("ruby simple.rb", app.getStaging().getCommand());
+        assertEquals("ruby simple.rb", app.getStaging()
+            .getCommand());
         connectedClient.stopApplication(appName);
 
         Staging newStaging = new Staging.StagingBuilder().command("ruby simple.rb test")
@@ -1863,8 +1965,10 @@ public class CloudFoundryClientTest {
         app = connectedClient.getApplication(appName);
         assertNotNull(app);
         assertEquals(uris, app.getUris());
-        assertEquals("ruby simple.rb test", app.getStaging().getCommand());
-        assertEquals("https://github.com/cloudfoundry/heroku-buildpack-ruby", app.getStaging().getBuildpackUrl());
+        assertEquals("ruby simple.rb test", app.getStaging()
+            .getCommand());
+        assertEquals("https://github.com/cloudfoundry/heroku-buildpack-ruby", app.getStaging()
+            .getBuildpackUrl());
     }
 
     @Test
@@ -1963,7 +2067,8 @@ public class CloudFoundryClientTest {
         List<String> uris = new ArrayList<String>();
         uris.add(computeAppUrl(appName));
         List<String> services = new ArrayList<String>();
-        Staging staging = new Staging.StagingBuilder().command("node app.js").build();
+        Staging staging = new Staging.StagingBuilder().command("node app.js")
+            .build();
         File file = SampleProjects.standaloneNode();
         connectedClient.createApplication(appName, staging, 64, uris, services);
         connectedClient.uploadApplication(appName, file.getCanonicalPath());
@@ -1999,7 +2104,8 @@ public class CloudFoundryClientTest {
     private void assertEventTimestamps(List<CloudEvent> events) {
         for (CloudEvent event : events) {
             if (event.getTimestamp() != null) {
-                assertTimeWithinRange("Event time should be very recent", event.getTimestamp().getTime(), FIVE_MINUTES);
+                assertTimeWithinRange("Event time should be very recent", event.getTimestamp()
+                    .getTime(), FIVE_MINUTES);
             }
         }
     }
@@ -2029,7 +2135,8 @@ public class CloudFoundryClientTest {
             }
         }
 
-        assertTrue(value.getClass().getName(), value instanceof Map);
+        assertTrue(value.getClass()
+            .getName(), value instanceof Map);
         Map map = (Map) value;
         assertTrue(map.size() >= expectedKeys.length);
 
@@ -2057,7 +2164,8 @@ public class CloudFoundryClientTest {
     private void assertRulesMatchTestData(CloudSecurityGroup securityGroup) {
         // This asserts against the test data defined in the crudSecurityGroups method
         // Rule ordering is preserved so we can depend on it here
-        SecurityGroupRule rule = securityGroup.getRules().get(0);
+        SecurityGroupRule rule = securityGroup.getRules()
+            .get(0);
         assertThat(rule.getProtocol(), is("tcp"));
         assertThat(rule.getPorts(), is("80, 443"));
         assertThat(rule.getDestination(), is("205.158.11.29"));
@@ -2065,7 +2173,8 @@ public class CloudFoundryClientTest {
         assertNull(rule.getType());
         assertNull(rule.getCode());
 
-        rule = securityGroup.getRules().get(1);
+        rule = securityGroup.getRules()
+            .get(1);
         assertThat(rule.getProtocol(), is("all"));
         assertNull(rule.getPorts());
         assertThat(rule.getDestination(), is("0.0.0.0-255.255.255.255"));
@@ -2073,7 +2182,8 @@ public class CloudFoundryClientTest {
         assertNull(rule.getType());
         assertNull(rule.getCode());
 
-        rule = securityGroup.getRules().get(2);
+        rule = securityGroup.getRules()
+            .get(2);
         assertThat(rule.getProtocol(), is("icmp"));
         assertNull(rule.getPorts());
         assertThat(rule.getDestination(), is("0.0.0.0/0"));
@@ -2085,7 +2195,8 @@ public class CloudFoundryClientTest {
     private void assertRulesMatchThoseInJsonFile1(CloudSecurityGroup securityGroup) {
         // Rule ordering is preserved so we can depend on it here
 
-        SecurityGroupRule rule = securityGroup.getRules().get(0);
+        SecurityGroupRule rule = securityGroup.getRules()
+            .get(0);
         assertThat(rule.getProtocol(), is("icmp"));
         assertNull(rule.getPorts());
         assertThat(rule.getDestination(), is("0.0.0.0/0"));
@@ -2093,7 +2204,8 @@ public class CloudFoundryClientTest {
         assertThat(rule.getType(), is(0));
         assertThat(rule.getCode(), is(1));
 
-        rule = securityGroup.getRules().get(1);
+        rule = securityGroup.getRules()
+            .get(1);
         assertThat(rule.getProtocol(), is("tcp"));
         assertThat(rule.getPorts(), is("2048-3000"));
         assertThat(rule.getDestination(), is("1.0.0.0/0"));
@@ -2101,7 +2213,8 @@ public class CloudFoundryClientTest {
         assertNull(rule.getType());
         assertNull(rule.getCode());
 
-        rule = securityGroup.getRules().get(2);
+        rule = securityGroup.getRules()
+            .get(2);
         assertThat(rule.getProtocol(), is("udp"));
         assertThat(rule.getPorts(), is("53, 5353"));
         assertThat(rule.getDestination(), is("2.0.0.0/0"));
@@ -2109,7 +2222,8 @@ public class CloudFoundryClientTest {
         assertNull(rule.getType());
         assertNull(rule.getCode());
 
-        rule = securityGroup.getRules().get(3);
+        rule = securityGroup.getRules()
+            .get(3);
         assertThat(rule.getProtocol(), is("all"));
         assertNull(rule.getPorts());
         assertThat(rule.getDestination(), is("3.0.0.0/0"));
@@ -2120,7 +2234,8 @@ public class CloudFoundryClientTest {
 
     private void assertServiceMatching(CloudService expectedService, List<CloudService> services) {
         for (CloudService service : services) {
-            if (service.getName().equals(expectedService.getName())) {
+            if (service.getName()
+                .equals(expectedService.getName())) {
                 assertServicesEqual(expectedService, service);
                 return;
             }
@@ -2145,7 +2260,8 @@ public class CloudFoundryClientTest {
         if (domain != null) {
             List<CloudRoute> routes = connectedClient.getRoutes(domain.getName());
             for (CloudRoute route : routes) {
-                connectedClient.deleteRoute(route.getHost(), route.getDomain().getName());
+                connectedClient.deleteRoute(route.getHost(), route.getDomain()
+                    .getName());
             }
             connectedClient.deleteDomain(domain.getName());
         }
@@ -2254,11 +2370,14 @@ public class CloudFoundryClientTest {
     }
 
     private void createSpringApplication(String appName, String buildpackUrl) {
-        createTestApp(appName, null, new Staging.StagingBuilder().buildpackUrl(buildpackUrl).build());
+        createTestApp(appName, null, new Staging.StagingBuilder().buildpackUrl(buildpackUrl)
+            .build());
     }
 
     private void createSpringApplication(String appName, String stack, Integer healthCheckTimeout) {
-        createTestApp(appName, null, new Staging.StagingBuilder().stack(stack).healthCheckTimeout(healthCheckTimeout).build());
+        createTestApp(appName, null, new Staging.StagingBuilder().stack(stack)
+            .healthCheckTimeout(healthCheckTimeout)
+            .build());
     }
 
     private String createSpringTravelApp(String suffix) {
@@ -2272,7 +2391,8 @@ public class CloudFoundryClientTest {
     }
 
     private void createStandaloneRubyTestApp(String appName, List<String> uris, List<String> services) throws IOException {
-        Staging staging = new Staging.StagingBuilder().command("ruby simple.rb").build();
+        Staging staging = new Staging.StagingBuilder().command("ruby simple.rb")
+            .build();
         File file = SampleProjects.standaloneRuby();
         connectedClient.createApplication(appName, staging, 128, uris, services);
         connectedClient.uploadApplication(appName, file.getCanonicalPath());
@@ -2368,7 +2488,8 @@ public class CloudFoundryClientTest {
             client.getFile(appName, 0, fileName, invalidStartPosition);
             fail("should have thrown exception");
         } catch (CloudFoundryException e) {
-            assertTrue(e.getStatusCode().equals(HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE));
+            assertTrue(e.getStatusCode()
+                .equals(HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE));
         }
 
         // Test downloading empty file
@@ -2380,31 +2501,36 @@ public class CloudFoundryClientTest {
             client.getFile(appName, 0, fileName, -2);
             fail("should have thrown exception");
         } catch (IllegalArgumentException e) {
-            assertTrue(e.getMessage().contains("start position"));
+            assertTrue(e.getMessage()
+                .contains("start position"));
         }
         try {
             client.getFile(appName, 0, fileName, 10, -2);
             fail("should have thrown exception");
         } catch (IllegalArgumentException e) {
-            assertTrue(e.getMessage().contains("end position"));
+            assertTrue(e.getMessage()
+                .contains("end position"));
         }
         try {
             client.getFile(appName, 0, fileName, 29, 28);
             fail("should have thrown exception");
         } catch (IllegalArgumentException e) {
-            assertTrue(e.getMessage().contains("end position"));
+            assertTrue(e.getMessage()
+                .contains("end position"));
         }
         try {
             client.getFile(appName, 0, fileName, 29, 28);
             fail("should have thrown exception");
         } catch (IllegalArgumentException e) {
-            assertTrue(e.getMessage().contains("29"));
+            assertTrue(e.getMessage()
+                .contains("29"));
         }
         try {
             client.getFileTail(appName, 0, fileName, 0);
             fail("should have thrown exception");
         } catch (IllegalArgumentException e) {
-            assertTrue(e.getMessage().contains("length"));
+            assertTrue(e.getMessage()
+                .contains("length"));
         }
     }
 
@@ -2497,7 +2623,8 @@ public class CloudFoundryClientTest {
     private CloudServiceOffering getCloudServiceOffering(String label) {
         List<CloudServiceOffering> serviceOfferings = connectedClient.getServiceOfferings();
         for (CloudServiceOffering so : serviceOfferings) {
-            if (so.getLabel().equals(label)) {
+            if (so.getLabel()
+                .equals(label)) {
                 return so;
             }
         }
@@ -2506,7 +2633,8 @@ public class CloudFoundryClientTest {
 
     private CloudDomain getDomainNamed(String domainName, List<CloudDomain> domains) {
         for (CloudDomain domain : domains) {
-            if (domain.getName().equals(domainName)) {
+            if (domain.getName()
+                .equals(domainName)) {
                 return domain;
             }
         }
@@ -2583,7 +2711,8 @@ public class CloudFoundryClientTest {
 
     private CloudRoute getRouteWithHost(String hostName, List<CloudRoute> routes) {
         for (CloudRoute route : routes) {
-            if (route.getHost().equals(hostName)) {
+            if (route.getHost()
+                .equals(hostName)) {
                 return route;
             }
         }
@@ -2609,7 +2738,8 @@ public class CloudFoundryClientTest {
     }
 
     private String randomSecurityGroupName() {
-        return UUID.randomUUID().toString();
+        return UUID.randomUUID()
+            .toString();
     }
 
     private CloudApplication uploadSpringTravelApp(String appName) throws IOException {
@@ -2627,17 +2757,20 @@ public class CloudFoundryClientTest {
     private void waitForStatsAvailable(String appName, int instanceCount) throws InterruptedException {
         // TODO: Make this pattern reusable
         ApplicationStats stats = connectedClient.getApplicationStats(appName);
-        for (int retries = 0; retries < 10 && stats.getRecords().size() < instanceCount; retries++) {
+        for (int retries = 0; retries < 10 && stats.getRecords()
+            .size() < instanceCount; retries++) {
             Thread.sleep(1000);
             stats = connectedClient.getApplicationStats(appName);
         }
 
-        InstanceStats firstInstance = stats.getRecords().get(0);
+        InstanceStats firstInstance = stats.getRecords()
+            .get(0);
         assertEquals("0", firstInstance.getId());
         for (int retries = 0; retries < 50 && firstInstance.getUsage() == null; retries++) {
             Thread.sleep(1000);
             stats = connectedClient.getApplicationStats(appName);
-            firstInstance = stats.getRecords().get(0);
+            firstInstance = stats.getRecords()
+                .get(0);
         }
     }
 

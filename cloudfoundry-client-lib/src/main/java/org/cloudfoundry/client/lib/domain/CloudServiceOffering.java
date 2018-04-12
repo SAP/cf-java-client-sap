@@ -35,7 +35,7 @@ public class CloudServiceOffering extends CloudEntity {
 
     private String infoUrl;
 
-    //Note name is used for label
+    // Note name is used for label
     private String provider;
 
     private String uniqueId;
@@ -54,10 +54,8 @@ public class CloudServiceOffering extends CloudEntity {
         this.version = version;
     }
 
-    public CloudServiceOffering(Meta meta, String name, String provider, String version,
-                                String description, boolean active, boolean bindable,
-                                String url, String infoUrl, String uniqueId, String extra,
-                                String docUrl) {
+    public CloudServiceOffering(Meta meta, String name, String provider, String version, String description, boolean active,
+        boolean bindable, String url, String infoUrl, String uniqueId, String extra, String docUrl) {
         super(meta, name);
         this.provider = provider;
         this.version = version;

@@ -768,7 +768,7 @@ public interface CloudFoundryOperations {
      * @return the service keys info
      */
     List<ServiceKey> getServiceKeys(String serviceName);
-    
+
     /**
      * Get all service offerings.
      *

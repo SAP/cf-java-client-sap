@@ -1,11 +1,12 @@
 package org.cloudfoundry.client.lib.rest;
 
-import org.cloudfoundry.client.lib.StreamingLogToken;
-
-import javax.websocket.Session;
 import java.io.IOException;
 import java.util.Timer;
 import java.util.TimerTask;
+
+import javax.websocket.Session;
+
+import org.cloudfoundry.client.lib.StreamingLogToken;
 
 public class StreamingLogTokenImpl implements StreamingLogToken {
 
@@ -35,7 +36,8 @@ public class StreamingLogTokenImpl implements StreamingLogToken {
         @Override
         public void run() {
             if (session.isOpen()) {
-                session.getAsyncRemote().sendText("keep alive");
+                session.getAsyncRemote()
+                    .sendText("keep alive");
             } else {
                 keepAliveTimer.cancel();
             }

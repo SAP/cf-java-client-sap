@@ -16,20 +16,20 @@
 
 package org.cloudfoundry.client.lib.archive;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.zip.ZipFile;
+
 import org.cloudfoundry.client.lib.SampleProjects;
 import org.cloudfoundry.client.lib.archive.ApplicationArchive.Entry;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.zip.ZipFile;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 
 /**
  * Tests for {@link DirectoryApplicationArchive}.
@@ -46,19 +46,18 @@ public class DirectoryApplicationArchiveTest extends AbstractApplicationArchiveT
 
     @Test
     public void archiveShouldNotIncludeScmMetadataDirectories() throws IOException {
-        ApplicationArchive archive = new DirectoryApplicationArchive(SampleProjects.appWithScmMetaData
-                (temporaryFolder));
+        ApplicationArchive archive = new DirectoryApplicationArchive(SampleProjects.appWithScmMetaData(temporaryFolder));
         assertNoScmDirectories(archive);
         assertContainsAppFiles(archive);
     }
 
     @Test
     public void archiveShouldPreserveDirectoryStructure() throws IOException {
-        ApplicationArchive archive = new DirectoryApplicationArchive(SampleProjects.appWithDirectoryStructure
-                (temporaryFolder));
+        ApplicationArchive archive = new DirectoryApplicationArchive(SampleProjects.appWithDirectoryStructure(temporaryFolder));
         boolean containsFile = false;
         for (Entry entry : archive.getEntries()) {
-            if (entry.getName().equals("parent/child/file")) {
+            if (entry.getName()
+                .equals("parent/child/file")) {
                 containsFile = true;
             }
         }
@@ -93,16 +92,20 @@ public class DirectoryApplicationArchiveTest extends AbstractApplicationArchiveT
         boolean containsExample = false;
         for (Entry entry : archive.getEntries()) {
             fileCount++;
-            if (entry.getName().equals("app.js")) {
+            if (entry.getName()
+                .equals("app.js")) {
                 containsApp = true;
             }
-            if (entry.getName().equals("package.json")) {
+            if (entry.getName()
+                .equals("package.json")) {
                 containsPackage = true;
             }
-            if (entry.getName().equals(subProjectPath)) {
+            if (entry.getName()
+                .equals(subProjectPath)) {
                 containsSubproject = true;
             }
-            if (entry.getName().equals(subProjectPath + "example.txt")) {
+            if (entry.getName()
+                .equals(subProjectPath + "example.txt")) {
                 containsExample = true;
             }
         }
@@ -117,10 +120,12 @@ public class DirectoryApplicationArchiveTest extends AbstractApplicationArchiveT
         boolean containsGit = false;
         boolean containsSvn = false;
         for (Entry entry : archive.getEntries()) {
-            if (entry.getName().contains(".svn" + File.separator)) {
+            if (entry.getName()
+                .contains(".svn" + File.separator)) {
                 containsSvn = true;
             }
-            if (entry.getName().contains(".git" + File.separator)) {
+            if (entry.getName()
+                .contains(".git" + File.separator)) {
                 containsGit = true;
             }
         }

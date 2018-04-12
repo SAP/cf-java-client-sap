@@ -1,14 +1,5 @@
 package org.cloudfoundry.client.lib.tokens;
 
-import com.esotericsoftware.yamlbeans.YamlConfig;
-import com.esotericsoftware.yamlbeans.YamlReader;
-import com.esotericsoftware.yamlbeans.YamlWriter;
-import org.cloudfoundry.client.lib.domain.CloudInfo;
-import org.cloudfoundry.client.lib.domain.CloudSpace;
-import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
-import org.springframework.security.oauth2.common.DefaultOAuth2RefreshToken;
-import org.springframework.security.oauth2.common.OAuth2AccessToken;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -17,6 +8,16 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+
+import org.cloudfoundry.client.lib.domain.CloudInfo;
+import org.cloudfoundry.client.lib.domain.CloudSpace;
+import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
+import org.springframework.security.oauth2.common.DefaultOAuth2RefreshToken;
+import org.springframework.security.oauth2.common.OAuth2AccessToken;
+
+import com.esotericsoftware.yamlbeans.YamlConfig;
+import com.esotericsoftware.yamlbeans.YamlReader;
+import com.esotericsoftware.yamlbeans.YamlWriter;
 
 public class TokensFile {
 
@@ -66,8 +67,13 @@ public class TokensFile {
         targetInfos.putToken(targetInfo, token);
         targetInfos.putRefreshToken(targetInfo, token.getRefreshToken());
         targetInfos.putVersion(targetInfo, cloudInfo.getVersion());
-        targetInfos.putSpace(targetInfo, space.getMeta().getGuid().toString());
-        targetInfos.putOrganization(targetInfo, space.getOrganization().getMeta().getGuid().toString());
+        targetInfos.putSpace(targetInfo, space.getMeta()
+            .getGuid()
+            .toString());
+        targetInfos.putOrganization(targetInfo, space.getOrganization()
+            .getMeta()
+            .getGuid()
+            .toString());
 
         targetInfos.put(target, targetInfo);
 
@@ -86,15 +92,15 @@ public class TokensFile {
         } catch (FileNotFoundException fnfe) {
             return new TargetInfos();
         } catch (IOException e) {
-            throw new RuntimeException("An error occurred reading the tokens file at " +
-                    tokensFile.getPath() + ":" + e.getMessage(), e);
+            throw new RuntimeException("An error occurred reading the tokens file at " + tokensFile.getPath() + ":" + e.getMessage(), e);
         }
 
     }
 
     protected void saveTokensToFile(TargetInfos targetInfos) {
         final File tokensFile = getTokensFile();
-        tokensFile.getParentFile().mkdirs();
+        tokensFile.getParentFile()
+            .mkdirs();
         try {
             FileWriter fileWriter = new FileWriter(tokensFile);
 
@@ -110,8 +116,7 @@ public class TokensFile {
             yamlWriter.close();
             fileWriter.close();
         } catch (IOException e) {
-            throw new RuntimeException("An error occurred writing the tokens file at " +
-                    tokensFile.getPath() + ":" + e.getMessage(), e);
+            throw new RuntimeException("An error occurred writing the tokens file at " + tokensFile.getPath() + ":" + e.getMessage(), e);
         }
     }
 }

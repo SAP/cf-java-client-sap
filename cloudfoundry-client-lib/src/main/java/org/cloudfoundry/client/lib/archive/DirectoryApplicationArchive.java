@@ -16,8 +16,6 @@
 
 package org.cloudfoundry.client.lib.archive;
 
-import org.springframework.util.Assert;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -26,6 +24,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.zip.ZipFile;
+
+import org.springframework.util.Assert;
 
 /**
  * Implementation of {@link ApplicationArchive} backed by a {@link ZipFile}.
@@ -68,9 +68,12 @@ public class DirectoryApplicationArchive implements ApplicationArchive {
     }
 
     private boolean exclude(File file) {
-        return file.getName().startsWith(".git") ||
-                file.getName().startsWith(".svn") ||
-                file.getName().startsWith(".darcs");
+        return file.getName()
+            .startsWith(".git")
+            || file.getName()
+                .startsWith(".svn")
+            || file.getName()
+                .startsWith(".darcs");
     }
 
     private class EntryAdapter extends AbstractApplicationArchiveEntry {
@@ -81,7 +84,9 @@ public class DirectoryApplicationArchive implements ApplicationArchive {
 
         public EntryAdapter(File file) {
             this.file = file;
-            String entryName = file.getAbsolutePath().substring(directory.getAbsolutePath().length() + 1);
+            String entryName = file.getAbsolutePath()
+                .substring(directory.getAbsolutePath()
+                    .length() + 1);
             if (isDirectory()) {
                 entryName = entryName + File.separatorChar;
             }

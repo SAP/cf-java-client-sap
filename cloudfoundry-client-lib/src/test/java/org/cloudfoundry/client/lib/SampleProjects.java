@@ -207,7 +207,8 @@ public class SampleProjects {
             if (entry.isDirectory()) {
                 destination.mkdirs();
             } else {
-                destination.getParentFile().mkdirs();
+                destination.getParentFile()
+                    .mkdirs();
                 FileCopyUtils.copy(zipFile.getInputStream(entry), new FileOutputStream(destination));
             }
             if (entry.getTime() != -1) {

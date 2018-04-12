@@ -1,11 +1,11 @@
 package org.cloudfoundry.client.lib.rest;
 
-import org.apache.http.conn.ssl.SSLContextBuilder;
-import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
-import org.apache.tomcat.websocket.WsWebSocketContainer;
-import org.cloudfoundry.client.lib.ApplicationLogListener;
-import org.cloudfoundry.client.lib.CloudOperationException;
-import org.springframework.web.util.UriTemplate;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.security.GeneralSecurityException;
+import java.util.Map;
+import java.util.UUID;
 
 import javax.net.ssl.SSLContext;
 import javax.websocket.ClientEndpointConfig;
@@ -13,12 +13,13 @@ import javax.websocket.ContainerProvider;
 import javax.websocket.DeploymentException;
 import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.security.GeneralSecurityException;
-import java.util.Map;
-import java.util.UUID;
+
+import org.apache.http.conn.ssl.SSLContextBuilder;
+import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
+import org.apache.tomcat.websocket.WsWebSocketContainer;
+import org.cloudfoundry.client.lib.ApplicationLogListener;
+import org.cloudfoundry.client.lib.CloudOperationException;
+import org.springframework.web.util.UriTemplate;
 
 public class LoggregatorClient {
 
@@ -32,9 +33,8 @@ public class LoggregatorClient {
         this.trustSelfSignedCerts = trustSelfSignedCerts;
     }
 
-    public StreamingLogTokenImpl connectToLoggregator(String endpoint, String mode, UUID appId,
-                                                      ApplicationLogListener listener,
-                                                      ClientEndpointConfig.Configurator configurator) {
+    public StreamingLogTokenImpl connectToLoggregator(String endpoint, String mode, UUID appId, ApplicationLogListener listener,
+        ClientEndpointConfig.Configurator configurator) {
         URI loggregatorUri = loggregatorStreamUriTemplate.expand(endpoint, mode, appId);
 
         try {
@@ -61,11 +61,14 @@ public class LoggregatorClient {
             scheme = "http";
         }
 
-        return loggregatorRecentUriTemplate.expand(scheme, host).toString();
+        return loggregatorRecentUriTemplate.expand(scheme, host)
+            .toString();
     }
 
     private ClientEndpointConfig buildClientConfig(ClientEndpointConfig.Configurator configurator) {
-        ClientEndpointConfig config = ClientEndpointConfig.Builder.create().configurator(configurator).build();
+        ClientEndpointConfig config = ClientEndpointConfig.Builder.create()
+            .configurator(configurator)
+            .build();
 
         if (trustSelfSignedCerts) {
             SSLContext sslContext = buildSslContext();
@@ -78,9 +81,8 @@ public class LoggregatorClient {
 
     private SSLContext buildSslContext() {
         try {
-            SSLContextBuilder contextBuilder = new SSLContextBuilder().
-                    useTLS().
-                    loadTrustMaterial(null, new TrustSelfSignedStrategy());
+            SSLContextBuilder contextBuilder = new SSLContextBuilder().useTLS()
+                .loadTrustMaterial(null, new TrustSelfSignedStrategy());
 
             return contextBuilder.build();
         } catch (GeneralSecurityException e) {

@@ -1,12 +1,12 @@
 package org.cloudfoundry.client.lib.rest;
 
-import org.cloudfoundry.client.lib.ApplicationLogListener;
-import org.cloudfoundry.client.lib.CloudOperationException;
-
 import javax.websocket.CloseReason;
 import javax.websocket.Endpoint;
 import javax.websocket.EndpointConfig;
 import javax.websocket.Session;
+
+import org.cloudfoundry.client.lib.ApplicationLogListener;
+import org.cloudfoundry.client.lib.CloudOperationException;
 
 public class LoggregatorEndpoint extends Endpoint {
 
@@ -19,7 +19,7 @@ public class LoggregatorEndpoint extends Endpoint {
     @Override
     public void onClose(Session session, CloseReason closeReason) {
         if (closeReason.getCloseCode() == CloseReason.CloseCodes.NORMAL_CLOSURE
-                || closeReason.getCloseCode() == CloseReason.CloseCodes.GOING_AWAY) {
+            || closeReason.getCloseCode() == CloseReason.CloseCodes.GOING_AWAY) {
             listener.onComplete();
         } else {
             listener.onError(new CloudOperationException("Loggregrator connection closed unexpectedly " + closeReason));

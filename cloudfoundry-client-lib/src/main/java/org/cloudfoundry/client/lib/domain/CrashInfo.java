@@ -16,10 +16,10 @@
 
 package org.cloudfoundry.client.lib.domain;
 
-import org.cloudfoundry.client.lib.util.CloudUtil;
-
 import java.util.Date;
 import java.util.Map;
+
+import org.cloudfoundry.client.lib.util.CloudUtil;
 
 public class CrashInfo {
 

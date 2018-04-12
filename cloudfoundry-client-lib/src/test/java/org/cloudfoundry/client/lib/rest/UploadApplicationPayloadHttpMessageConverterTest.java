@@ -16,6 +16,17 @@
 
 package org.cloudfoundry.client.lib.rest;
 
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.util.List;
+
 import org.cloudfoundry.client.lib.domain.UploadApplicationPayload;
 import org.junit.Rule;
 import org.junit.Test;
@@ -26,17 +37,6 @@ import org.springframework.http.HttpInputMessage;
 import org.springframework.http.HttpOutputMessage;
 import org.springframework.http.MediaType;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.util.List;
-
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-
 /**
  * Tests for {@link org.cloudfoundry.client.lib.rest.UploadApplicationPayloadHttpMessageConverter}.
  *
@@ -44,7 +44,7 @@ import static org.mockito.Mockito.verify;
  */
 public class UploadApplicationPayloadHttpMessageConverterTest {
 
-    private static final byte[] CONTENT = new byte[]{0x00, 0x01};
+    private static final byte[] CONTENT = new byte[] { 0x00, 0x01 };
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();

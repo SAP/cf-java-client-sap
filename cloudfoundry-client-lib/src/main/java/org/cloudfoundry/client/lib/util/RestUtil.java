@@ -1,5 +1,13 @@
 package org.cloudfoundry.client.lib.util;
 
+import static org.apache.http.conn.ssl.SSLSocketFactory.BROWSER_COMPATIBLE_HOSTNAME_VERIFIER;
+
+import java.net.URL;
+import java.security.GeneralSecurityException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
@@ -28,14 +36,6 @@ import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.web.client.RestTemplate;
 
-import java.net.URL;
-import java.security.GeneralSecurityException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
-import static org.apache.http.conn.ssl.SSLSocketFactory.BROWSER_COMPATIBLE_HOSTNAME_VERIFIER;
-
 /**
  * Some helper utilities for creating classes used for the REST support.
  *
@@ -43,14 +43,14 @@ import static org.apache.http.conn.ssl.SSLSocketFactory.BROWSER_COMPATIBLE_HOSTN
  */
 public class RestUtil {
 
-    public OauthClient createOauthClient(URL authorizationUrl, HttpProxyConfiguration httpProxyConfiguration, boolean
-            trustSelfSignedCerts) {
+    public OauthClient createOauthClient(URL authorizationUrl, HttpProxyConfiguration httpProxyConfiguration,
+        boolean trustSelfSignedCerts) {
         return new OauthClient(authorizationUrl, createRestTemplate(httpProxyConfiguration, trustSelfSignedCerts));
     }
 
-    public ClientHttpRequestFactory createRequestFactory(HttpProxyConfiguration httpProxyConfiguration, boolean
-            trustSelfSignedCerts) {
-        HttpClientBuilder httpClientBuilder = HttpClients.custom().useSystemProperties();
+    public ClientHttpRequestFactory createRequestFactory(HttpProxyConfiguration httpProxyConfiguration, boolean trustSelfSignedCerts) {
+        HttpClientBuilder httpClientBuilder = HttpClients.custom()
+            .useSystemProperties();
 
         if (trustSelfSignedCerts) {
             httpClientBuilder.setSslcontext(buildSslContext());
@@ -64,9 +64,8 @@ public class RestUtil {
             if (httpProxyConfiguration.isAuthRequired()) {
                 BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
                 credentialsProvider.setCredentials(
-                        new AuthScope(httpProxyConfiguration.getProxyHost(), httpProxyConfiguration.getProxyPort()),
-                        new UsernamePasswordCredentials(httpProxyConfiguration.getUsername(), httpProxyConfiguration
-                                .getPassword()));
+                    new AuthScope(httpProxyConfiguration.getProxyHost(), httpProxyConfiguration.getProxyPort()),
+                    new UsernamePasswordCredentials(httpProxyConfiguration.getUsername(), httpProxyConfiguration.getPassword()));
                 httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider);
             }
 
@@ -80,8 +79,7 @@ public class RestUtil {
         return requestFactory;
     }
 
-    public RestTemplate createRestTemplate(HttpProxyConfiguration httpProxyConfiguration, boolean
-            trustSelfSignedCerts) {
+    public RestTemplate createRestTemplate(HttpProxyConfiguration httpProxyConfiguration, boolean trustSelfSignedCerts) {
         RestTemplate restTemplate = new LoggingRestTemplate();
         restTemplate.setRequestFactory(createRequestFactory(httpProxyConfiguration, trustSelfSignedCerts));
         restTemplate.setErrorHandler(new CloudControllerResponseErrorHandler());
@@ -92,7 +90,9 @@ public class RestUtil {
 
     private javax.net.ssl.SSLContext buildSslContext() {
         try {
-            return new SSLContextBuilder().useSSL().loadTrustMaterial(null, new TrustSelfSignedStrategy()).build();
+            return new SSLContextBuilder().useSSL()
+                .loadTrustMaterial(null, new TrustSelfSignedStrategy())
+                .build();
         } catch (GeneralSecurityException gse) {
             throw new RuntimeException("An error occurred setting up the SSLContext", gse);
         }

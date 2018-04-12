@@ -599,7 +599,7 @@ public class CloudFoundryClient implements CloudFoundryOperations {
     public List<ServiceKey> getServiceKeys(String serviceName) {
         return cc.getServiceKeys(serviceName);
     }
-    
+
     @Override
     public List<CloudServiceOffering> getServiceOfferings() {
         return cc.getServiceOfferings();
