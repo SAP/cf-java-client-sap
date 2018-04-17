@@ -21,7 +21,7 @@ import org.springframework.http.HttpStatus;
 @SuppressWarnings("serial")
 public class CloudFoundryException extends RuntimeException {
 
-    private static final int DEFAULT_CF_ERROR_CODE = -1;
+    protected static final int DEFAULT_CF_ERROR_CODE = -1;
 
     private HttpStatus statusCode;
     private final String statusText;
