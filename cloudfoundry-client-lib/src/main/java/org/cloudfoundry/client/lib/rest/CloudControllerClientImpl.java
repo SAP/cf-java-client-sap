@@ -106,6 +106,7 @@ import org.springframework.util.Assert;
 import org.springframework.util.FileCopyUtils;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.util.StringUtils;
 import org.springframework.web.client.RequestCallback;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.ResponseErrorHandler;
@@ -124,6 +125,10 @@ import org.springframework.web.client.RestTemplate;
  * @author Scott Frederick
  */
 public class CloudControllerClientImpl implements CloudControllerClient {
+
+    private static final String DEFAULT_HOST_DOMAIN_SEPARATOR = "\\.";
+
+    private static final String DEFAULT_PATH_SEPARATOR = "/";
 
     private static final String AUTHORIZATION_HEADER_KEY = "Authorization";
 
@@ -192,7 +197,9 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     public void addRoute(String host, String domainName) {
         assertSpaceProvided("add route for domain");
         UUID domainGuid = getDomainGuid(domainName, true);
-        doAddRoute(host, domainGuid);
+        Map<String, String> uriInfo = new HashMap<String, String>();
+        uriInfo.put("host", host);
+        doAddRoute(uriInfo, domainGuid);
     }
 
     @Override
@@ -454,7 +461,9 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     public void deleteRoute(String host, String domainName) {
         assertSpaceProvided("delete route for domain");
         UUID domainGuid = getDomainGuid(domainName, true);
-        UUID routeGuid = getRouteGuid(host, domainGuid);
+        Map<String, String> uriInfo = new HashMap<String, String>();
+        uriInfo.put("host", host);
+        UUID routeGuid = getRouteGuid(uriInfo, domainGuid);
         if (routeGuid == null) {
             throw new CloudFoundryException(HttpStatus.NOT_FOUND, "Not Found",
                 "Host '" + host + "' not found for domain '" + domainName + "'.");
@@ -1600,7 +1609,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         }
         Map<String, String> logs = new HashMap<String, String>(fileNames.size());
         for (String fileName : fileNames) {
-            String logFile = LOGS_LOCATION + "/" + fileName;
+            String logFile = LOGS_LOCATION + DEFAULT_PATH_SEPARATOR + fileName;
             logs.put(logFile, doGetFile(urlPath, appId, instance, logFile, -1, -1));
         }
         return logs;
@@ -1616,16 +1625,25 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         URI newUri = URI.create(uri);
         String host = newUri.getScheme() != null ? newUri.getHost() : newUri.getPath();
 
-        String[] hostAndDomain = host.split("\\.", 2);
+        String[] hostAndDomain = host.split(DEFAULT_HOST_DOMAIN_SEPARATOR, 2);
         if (hostAndDomain.length != 2) {
             throw new IllegalArgumentException("Invalid URI " + uri + " -- host or domain is not specified");
         }
 
+        String hostName = hostAndDomain[0];
+        int indexOfPathSeparator = hostAndDomain[1].indexOf(DEFAULT_PATH_SEPARATOR);
         String domain = hostAndDomain[1];
+        String path = "";
+        if(indexOfPathSeparator > 0) {
+            domain = hostAndDomain[1].substring(0, indexOfPathSeparator);
+            path = hostAndDomain[1].substring(indexOfPathSeparator);
+        }
+        
         for (String existingDomain : existingDomains.keySet()) {
             if (host != null && domain.equals(existingDomain)) {
                 uriInfo.put("domainName", existingDomain);
-                uriInfo.put("host", hostAndDomain[0]);
+                uriInfo.put("host", hostName);
+                uriInfo.put("path", path);
             }
         }
         if (uriInfo.get("domainName") == null) {
@@ -1649,7 +1667,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     protected String getUrl(String path) {
-        return cloudControllerUrl + (path.startsWith("/") ? path : "/" + path);
+        return cloudControllerUrl + (path.startsWith(DEFAULT_PATH_SEPARATOR) ? path : DEFAULT_PATH_SEPARATOR + path);
     }
 
     @SuppressWarnings("unchecked")
@@ -1685,7 +1703,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
             Map<String, String> uriInfo = new HashMap<String, String>(2);
             extractUriInfo(domains, uri, uriInfo);
             UUID domainGuid = domains.get(uriInfo.get("domainName"));
-            bindRoute(uriInfo.get("host"), domainGuid, appGuid);
+            bindRoute(uriInfo, domainGuid, appGuid);
         }
     }
 
@@ -1709,10 +1727,10 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         getRestTemplate().put(getUrl(urlPath), spaceRequest, spaceGuid, userId);
     }
 
-    private void bindRoute(String host, UUID domainGuid, UUID appGuid) {
-        UUID routeGuid = getRouteGuid(host, domainGuid);
+    private void bindRoute(Map<String, String> uriInfo, UUID domainGuid, UUID appGuid) {
+        UUID routeGuid = getRouteGuid(uriInfo, domainGuid);
         if (routeGuid == null) {
-            routeGuid = doAddRoute(host, domainGuid);
+            routeGuid = doAddRoute(uriInfo, domainGuid);
         }
         String bindPath = "/v2/apps/{app}/routes/{route}";
         Map<String, Object> bindVars = new HashMap<String, Object>();
@@ -1775,11 +1793,12 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         getRestTemplate().postForObject(getUrl("/v2/user_provided_service_instances"), serviceRequest, String.class);
     }
 
-    private UUID doAddRoute(String host, UUID domainGuid) {
+    private UUID doAddRoute(Map<String, String> uriInfo, UUID domainGuid) {
         assertSpaceProvided("add route");
 
         HashMap<String, Object> routeRequest = new HashMap<String, Object>();
-        routeRequest.put("host", host);
+        routeRequest.put("host", uriInfo.get("host"));
+        routeRequest.put("path", uriInfo.get("path"));
         routeRequest.put("domain_guid", domainGuid);
         routeRequest.put("space_guid", sessionSpace.getMeta()
             .getGuid());
@@ -2409,11 +2428,16 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         return new CloudResources(cloudResources);
     }
 
-    private UUID getRouteGuid(String host, UUID domainGuid) {
+    private UUID getRouteGuid(Map<String, String> uriInfo, UUID domainGuid) {
         Map<String, Object> urlVars = new HashMap<String, Object>();
         String urlPath = "/v2";
         urlPath = urlPath + "/routes?inline-relations-depth=0&q=host:{host}";
-        urlVars.put("host", host);
+        urlVars.put("host", uriInfo.get("host"));
+        String path =  uriInfo.get("path");
+        if(!StringUtils.isEmpty(path)) {
+            urlPath = urlPath + "&q=path:{path}";
+            urlVars.put("path", path);
+        }
         List<Map<String, Object>> allRoutes = getAllResources(urlPath, urlVars);
         UUID routeGuid = null;
         for (Map<String, Object> route : allRoutes) {
@@ -2631,7 +2655,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
             Map<String, String> uriInfo = new HashMap<String, String>(2);
             extractUriInfo(domains, uri, uriInfo);
             UUID domainGuid = domains.get(uriInfo.get("domainName"));
-            unbindRoute(uriInfo.get("host"), domainGuid, appGuid);
+            unbindRoute(uriInfo, domainGuid, appGuid);
         }
     }
 
@@ -2652,8 +2676,8 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         return loggregatorClient.connectToLoggregator(endpoint, mode, appId, listener, configurator);
     }
 
-    private void unbindRoute(String host, UUID domainGuid, UUID appGuid) {
-        UUID routeGuid = getRouteGuid(host, domainGuid);
+    private void unbindRoute(Map<String, String> uriInfo, UUID domainGuid, UUID appGuid) {
+        UUID routeGuid = getRouteGuid(uriInfo, domainGuid);
         if (routeGuid != null) {
             String bindPath = "/v2/apps/{app}/routes/{route}";
             Map<String, Object> bindVars = new HashMap<String, Object>();
