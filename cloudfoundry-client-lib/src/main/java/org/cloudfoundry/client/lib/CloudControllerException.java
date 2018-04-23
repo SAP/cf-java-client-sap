@@ -11,7 +11,7 @@ public class CloudControllerException extends CloudFoundryException {
 
     public CloudControllerException(CloudFoundryException cloudFoundryException) {
         super(cloudFoundryException.getStatusCode(), cloudFoundryException.getStatusText(), cloudFoundryException.getDescription(),
-            cloudFoundryException.getCloudFoundryErrorCode(), cloudFoundryException.getCloudFoundryErrorName());
+            cloudFoundryException.getCloudFoundryErrorCode(), cloudFoundryException.getCloudFoundryErrorName(), cloudFoundryException);
     }
 
     public CloudControllerException(HttpStatus statusCode) {
