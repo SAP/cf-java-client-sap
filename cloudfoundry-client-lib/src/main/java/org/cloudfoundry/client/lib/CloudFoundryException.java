@@ -43,7 +43,12 @@ public class CloudFoundryException extends RuntimeException {
 
     public CloudFoundryException(HttpStatus statusCode, String statusText, String description, int cloudFoundryErrorCode,
         String cloudFoundryErrorName) {
-        super(getExceptionMessage(statusCode, statusText, description));
+        this(statusCode, statusText, description, cloudFoundryErrorCode, cloudFoundryErrorName, null);
+    }
+
+    public CloudFoundryException(HttpStatus statusCode, String statusText, String description, int cloudFoundryErrorCode,
+        String cloudFoundryErrorName, Throwable cause) {
+        super(getExceptionMessage(statusCode, statusText, description), cause);
         this.statusCode = statusCode;
         this.statusText = statusText;
         this.cloudFoundryErrorCode = cloudFoundryErrorCode;

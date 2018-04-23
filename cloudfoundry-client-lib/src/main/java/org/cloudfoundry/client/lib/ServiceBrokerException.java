@@ -11,7 +11,7 @@ public class ServiceBrokerException extends CloudFoundryException {
 
     public ServiceBrokerException(CloudFoundryException cloudFoundryException) {
         super(cloudFoundryException.getStatusCode(), cloudFoundryException.getStatusText(), cloudFoundryException.getDescription(),
-            cloudFoundryException.getCloudFoundryErrorCode(), cloudFoundryException.getCloudFoundryErrorName());
+            cloudFoundryException.getCloudFoundryErrorCode(), cloudFoundryException.getCloudFoundryErrorName(), cloudFoundryException);
     }
 
     public ServiceBrokerException(HttpStatus statusCode) {
