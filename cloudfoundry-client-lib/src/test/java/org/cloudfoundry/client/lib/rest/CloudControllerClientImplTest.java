@@ -60,7 +60,7 @@ public class CloudControllerClientImplTest {
         // iteration order with a LinkedHashMap
         domains.put("domain.com", UUID.randomUUID());
         domains.put("z.domain.com", UUID.randomUUID());
-        Map<String, String> uriInfo = new HashMap<String, String>(2);
+        Map<String, String> uriInfo = new HashMap<String, String>(3);
 
         // when
         controllerClient.extractUriInfo(domains, uri, uriInfo);
@@ -84,6 +84,21 @@ public class CloudControllerClientImplTest {
         Assert.assertEquals("bang", uriInfo.get("host"));
     }
 
+    @Test
+    public void extractUriInfo_with_route_path() {
+        String uri = "xyz.domain.com/path";
+        Map<String, UUID> domains = new LinkedHashMap<String, UUID>(); 
+        domains.put("domain.com", UUID.randomUUID());
+        domains.put("z.domain.com", UUID.randomUUID());
+        Map<String, String> uriInfo = new HashMap<String, String>(3);
+        
+        controllerClient.extractUriInfo(domains, uri, uriInfo);
+        
+        Assert.assertEquals(domains.get("domain.com"), domains.get(uriInfo.get("domainName")));
+        Assert.assertEquals("xyz", uriInfo.get("host"));
+        Assert.assertEquals("/path", uriInfo.get("path"));
+    }
+    
     @Before
     public void setUpWithEmptyConstructor() throws Exception {
         controllerClient = new CloudControllerClientImpl();
