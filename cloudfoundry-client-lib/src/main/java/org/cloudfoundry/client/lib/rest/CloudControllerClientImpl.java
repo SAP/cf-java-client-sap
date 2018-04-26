@@ -593,6 +593,15 @@ public class CloudControllerClientImpl implements CloudControllerClient {
 
     @Override
     public List<CloudApplication> getApplications() {
+        return getApplicationsWithCustomDepth("1");
+    }
+
+    @Override
+    public List<CloudApplication> getApplications(String inlineDepth) {
+        return getApplicationsWithCustomDepth(inlineDepth);
+    }
+    
+    private List<CloudApplication> getApplicationsWithCustomDepth(String inlineDepth) {
         Map<String, Object> urlVars = new HashMap<String, Object>();
         String urlPath = "/v2";
         if (sessionSpace != null) {
@@ -600,7 +609,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
                 .getGuid());
             urlPath = urlPath + "/spaces/{space}";
         }
-        urlPath = urlPath + "/apps?inline-relations-depth=1";
+        urlPath = urlPath + "/apps?inline-relations-depth=" + inlineDepth;
         List<Map<String, Object>> resourceList = getAllResources(urlPath, urlVars);
         List<CloudApplication> apps = new ArrayList<CloudApplication>();
         for (Map<String, Object> resource : resourceList) {

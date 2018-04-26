@@ -466,6 +466,8 @@ public interface CloudFoundryOperations {
      * @return list of cloud applications
      */
     List<CloudApplication> getApplications();
+    
+    List<CloudApplication> getApplications(String inlineDepth);
 
     /**
      * Get the URL used for the cloud controller.

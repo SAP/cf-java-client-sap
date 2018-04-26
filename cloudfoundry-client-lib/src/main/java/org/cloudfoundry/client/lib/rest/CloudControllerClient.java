@@ -152,6 +152,8 @@ public interface CloudControllerClient {
     ApplicationStats getApplicationStats(String appName);
 
     List<CloudApplication> getApplications();
+    
+    List<CloudApplication> getApplications(String inlineDepth);
 
     URL getCloudControllerUrl();
 
