@@ -408,6 +408,11 @@ public class CloudFoundryClient implements CloudFoundryOperations {
     public List<CloudApplication> getApplications() {
         return cc.getApplications();
     }
+    
+    @Override
+    public List<CloudApplication> getApplications(String inlineDepth){
+        return cc.getApplications(inlineDepth);
+    }
 
     @Override
     public URL getCloudControllerUrl() {

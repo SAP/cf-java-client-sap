@@ -235,8 +235,10 @@ public class CloudEntityResourceMapper {
         app.setStaging(staging);
 
         Map<String, Object> spaceResource = getEmbeddedResource(resource, "space");
-        CloudSpace space = mapSpaceResource(spaceResource);
-        app.setSpace(space);
+        if(spaceResource != null) {
+            CloudSpace space = mapSpaceResource(spaceResource);
+            app.setSpace(space);
+        }
 
         Map envMap = getEntityAttribute(resource, "environment_json", Map.class);
         if (envMap.size() > 0) {
