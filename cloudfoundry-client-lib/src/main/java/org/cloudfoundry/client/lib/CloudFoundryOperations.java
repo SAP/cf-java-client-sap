@@ -46,6 +46,7 @@ import org.cloudfoundry.client.lib.domain.CrashesInfo;
 import org.cloudfoundry.client.lib.domain.InstancesInfo;
 import org.cloudfoundry.client.lib.domain.ServiceKey;
 import org.cloudfoundry.client.lib.domain.Staging;
+import org.cloudfoundry.client.lib.domain.Upload;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.web.client.ResponseErrorHandler;
 
@@ -1281,5 +1282,19 @@ public interface CloudFoundryOperations {
      * @throws java.io.IOException
      */
     void uploadApplication(String appName, ApplicationArchive archive, UploadStatusCallback callback) throws IOException;
+
+    String asyncUploadApplication(String appName, File file) throws IOException;
+
+    String asyncUploadApplication(String appName, File file, UploadStatusCallback callback) throws IOException;
+
+    String asyncUploadApplication(String appName, InputStream inputStream) throws IOException;
+
+    String asyncUploadApplication(String appName, InputStream inputStream, UploadStatusCallback callback) throws IOException;
+
+    String asyncUploadApplication(String appName, ApplicationArchive archive) throws IOException;
+
+    String asyncUploadApplication(String appName, ApplicationArchive archive, UploadStatusCallback callback) throws IOException;
+
+    Upload getUploadStatus(String uploadToken);
 
 }

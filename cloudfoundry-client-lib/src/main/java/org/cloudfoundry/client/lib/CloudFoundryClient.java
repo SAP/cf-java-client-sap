@@ -47,6 +47,7 @@ import org.cloudfoundry.client.lib.domain.CrashesInfo;
 import org.cloudfoundry.client.lib.domain.InstancesInfo;
 import org.cloudfoundry.client.lib.domain.ServiceKey;
 import org.cloudfoundry.client.lib.domain.Staging;
+import org.cloudfoundry.client.lib.domain.Upload;
 import org.cloudfoundry.client.lib.rest.CloudControllerClient;
 import org.cloudfoundry.client.lib.rest.CloudControllerClientFactory;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
@@ -898,6 +899,41 @@ public class CloudFoundryClient implements CloudFoundryOperations {
     @Override
     public void uploadApplication(String appName, ApplicationArchive archive, UploadStatusCallback callback) throws IOException {
         cc.uploadApplication(appName, archive, callback);
+    }
+
+    @Override
+    public String asyncUploadApplication(String appName, File file) throws IOException {
+        return cc.asyncUploadApplication(appName, file, null);
+    }
+
+    @Override
+    public String asyncUploadApplication(String appName, File file, UploadStatusCallback callback) throws IOException {
+        return cc.asyncUploadApplication(appName, file, callback);
+    }
+
+    @Override
+    public String asyncUploadApplication(String appName, InputStream inputStream) throws IOException {
+        return cc.asyncUploadApplication(appName, inputStream, null);
+    }
+
+    @Override
+    public String asyncUploadApplication(String appName, InputStream inputStream, UploadStatusCallback callback) throws IOException {
+        return cc.asyncUploadApplication(appName, inputStream, callback);
+    }
+
+    @Override
+    public String asyncUploadApplication(String appName, ApplicationArchive archive) throws IOException {
+        return cc.asyncUploadApplication(appName, archive, null);
+    }
+
+    @Override
+    public String asyncUploadApplication(String appName, ApplicationArchive archive, UploadStatusCallback callback) throws IOException {
+        return cc.asyncUploadApplication(appName, archive, callback);
+    }
+
+    @Override
+    public Upload getUploadStatus(String uploadToken) {
+        return cc.getUploadStatus(uploadToken);
     }
 
 }
