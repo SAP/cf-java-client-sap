@@ -40,6 +40,7 @@ import java.util.zip.ZipFile;
 
 import javax.websocket.ClientEndpointConfig;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.cloudfoundry.client.lib.ApplicationLogListener;
@@ -59,6 +60,7 @@ import org.cloudfoundry.client.lib.domain.ApplicationLogs;
 import org.cloudfoundry.client.lib.domain.ApplicationStats;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.cloudfoundry.client.lib.domain.CloudDomain;
+import org.cloudfoundry.client.lib.domain.CloudEntity.Meta;
 import org.cloudfoundry.client.lib.domain.CloudEvent;
 import org.cloudfoundry.client.lib.domain.CloudInfo;
 import org.cloudfoundry.client.lib.domain.CloudJob;
@@ -85,6 +87,7 @@ import org.cloudfoundry.client.lib.domain.SecurityGroupRule;
 import org.cloudfoundry.client.lib.domain.ServiceKey;
 import org.cloudfoundry.client.lib.domain.Staging;
 import org.cloudfoundry.client.lib.domain.UploadApplicationPayload;
+import org.cloudfoundry.client.lib.domain.Upload;
 import org.cloudfoundry.client.lib.oauth2.OauthClient;
 import org.cloudfoundry.client.lib.util.CloudEntityResourceMapper;
 import org.cloudfoundry.client.lib.util.CloudUtil;
@@ -1526,34 +1529,56 @@ public class CloudControllerClientImpl implements CloudControllerClient {
 
     @Override
     public void uploadApplication(String appName, File file, UploadStatusCallback callback) throws IOException {
+        String uploadToken = asyncUploadApplication(appName, file, callback);
+        processAsyncJob(uploadToken, callback);
+    }
+
+    @Override
+    public void uploadApplication(String appName, InputStream inputStream, UploadStatusCallback callback) throws IOException {
+        String uploadToken = asyncUploadApplication(appName, inputStream, callback);
+        processAsyncJob(uploadToken, callback);
+    }
+
+    @Override
+    public void uploadApplication(String appName, ApplicationArchive archive, UploadStatusCallback callback) throws IOException {
+        String uploadToken = asyncUploadApplication(appName, archive, callback);
+        processAsyncJob(uploadToken, callback);
+    }
+
+    @Override
+    public String asyncUploadApplication(String appName, File file, UploadStatusCallback callback) throws IOException {
         Assert.notNull(file, "File must not be null");
         if (file.isDirectory()) {
             ApplicationArchive archive = new DirectoryApplicationArchive(file);
-            uploadApplication(appName, archive, callback);
-        } else {
-            try (ZipFile zipFile = new ZipFile(file)) {
-                ApplicationArchive archive = new ZipApplicationArchive(zipFile);
-                uploadApplication(appName, archive, callback);
+            return asyncUploadApplication(appName, archive, callback);
+        }
+        try (ZipFile zipFile = new ZipFile(file)) {
+            ApplicationArchive archive = new ZipApplicationArchive(zipFile);
+            return asyncUploadApplication(appName, archive, callback);
+        }
+    }
+
+    @Override
+    public String asyncUploadApplication(String appName, InputStream inputStream, UploadStatusCallback callback) throws IOException {
+        Assert.notNull(inputStream, "InputStream must not be null");
+
+        File file = null;
+        ZipFile zipFile = null;
+        try {
+            file = createTemporaryUploadFile(inputStream);
+            zipFile = new ZipFile(file);
+            ApplicationArchive archive = new ZipApplicationArchive(zipFile);
+            return asyncUploadApplication(appName, archive, callback);
+        } finally {
+            IOUtils.closeQuietly(zipFile);
+            if (file != null) {
+                file.delete();
             }
         }
     }
 
     @Override
-    public void uploadApplication(String appName, InputStream inputStream, UploadStatusCallback callback) throws IOException {
-        Assert.notNull(inputStream, "InputStream must not be null");
-
-        File file = createTemporaryUploadFile(inputStream);
-
-        try (ZipFile zipFile = new ZipFile(file)) {
-            ApplicationArchive archive = new ZipApplicationArchive(zipFile);
-            uploadApplication(appName, archive, callback);
-        }
-
-        file.delete();
-    }
-
-    @Override
-    public void uploadApplication(String appName, ApplicationArchive archive, UploadStatusCallback callback) throws IOException {
+    public String asyncUploadApplication(String appName, ApplicationArchive archive, UploadStatusCallback callback) throws IOException {
         Assert.notNull(appName, "AppName must not be null");
         Assert.notNull(archive, "Archive must not be null");
         UUID appId = getAppId(appName);
@@ -1570,7 +1595,15 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         ResponseEntity<Map<String, Object>> responseEntity = getRestTemplate().exchange(getUrl("/v2/apps/{guid}/bits?async=true"),
             HttpMethod.PUT, entity, new ParameterizedTypeReference<Map<String, Object>>() {
             }, appId);
-        processAsyncJob(responseEntity.getBody(), callback);
+        Map<String, Object> responseEntityBody = responseEntity.getBody();
+        CloudJob job = resourceMapper.mapResource(responseEntityBody, CloudJob.class);
+        return getUrl(job);
+    }
+
+    @Override
+    public Upload getUploadStatus(String uploadToken) {
+        CloudJob job = getJob(uploadToken);
+        return new Upload(job.getStatus(), job.getErrorDetails());
     }
 
     protected void configureCloudFoundryRequestFactory(RestTemplate restTemplate) {
@@ -1672,6 +1705,11 @@ public class CloudControllerClientImpl implements CloudControllerClient {
 
     protected RestTemplate getRestTemplate() {
         return this.restTemplate;
+    }
+
+    protected String getUrl(CloudJob job) {
+        Meta meta = job.getMeta();
+        return getUrl(meta.getUrl());
     }
 
     protected String getUrl(String path) {
@@ -2631,12 +2669,12 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         return resource;
     }
 
-    private void processAsyncJob(Map<String, Object> jobResource, UploadStatusCallback callback) {
-        CloudJob job = resourceMapper.mapResource(jobResource, CloudJob.class);
-        do {
+    private void processAsyncJob(String jobUrl, UploadStatusCallback callback) {
+        while (true) {
+            CloudJob job = getJob(jobUrl);
             boolean unsubscribe = callback.onProgress(job.getStatus()
                 .toString());
-            if (unsubscribe) {
+            if (unsubscribe || job.getStatus() == CloudJob.Status.FINISHED) {
                 return;
             }
             if (job.getStatus() == CloudJob.Status.FAILED) {
@@ -2647,15 +2685,17 @@ public class CloudControllerClientImpl implements CloudControllerClient {
 
             try {
                 Thread.sleep(JOB_POLLING_PERIOD);
-            } catch (InterruptedException ex) {
+            } catch (InterruptedException e) {
                 return;
             }
+        }
+    }
 
-            ResponseEntity<Map<String, Object>> jobProgressEntity = getRestTemplate().exchange(getUrl(job.getMeta()
-                .getUrl()), HttpMethod.GET, HttpEntity.EMPTY, new ParameterizedTypeReference<Map<String, Object>>() {
-                });
-            job = resourceMapper.mapResource(jobProgressEntity.getBody(), CloudJob.class);
-        } while (job.getStatus() != CloudJob.Status.FINISHED);
+    private CloudJob getJob(String jobUrl) {
+        ResponseEntity<Map<String, Object>> jobProgressEntity = getRestTemplate().exchange(jobUrl, HttpMethod.GET, HttpEntity.EMPTY,
+            new ParameterizedTypeReference<Map<String, Object>>() {
+            });
+        return resourceMapper.mapResource(jobProgressEntity.getBody(), CloudJob.class);
     }
 
     private void removeUris(List<String> uris, UUID appGuid) {
