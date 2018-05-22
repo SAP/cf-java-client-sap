@@ -466,7 +466,7 @@ public interface CloudFoundryOperations {
      * @return list of cloud applications
      */
     List<CloudApplication> getApplications();
-    
+
     List<CloudApplication> getApplications(String inlineDepth);
 
     /**
@@ -1245,11 +1245,10 @@ public interface CloudFoundryOperations {
      * upload.
      *
      * @param appName the application name
-     * @param fileName the logical name of the application file
      * @param inputStream the InputStream to read from
      * @throws java.io.IOException
      */
-    void uploadApplication(String appName, String fileName, InputStream inputStream) throws IOException;
+    void uploadApplication(String appName, InputStream inputStream) throws IOException;
 
     /**
      * Upload an application to Cloud Foundry.
@@ -1258,12 +1257,11 @@ public interface CloudFoundryOperations {
      * upload.
      *
      * @param appName the application name
-     * @param fileName the logical name of the application file
      * @param inputStream the InputStream to read from
      * @param callback a callback interface used to provide progress information or <tt>null</tt>
      * @throws java.io.IOException
      */
-    void uploadApplication(String appName, String fileName, InputStream inputStream, UploadStatusCallback callback) throws IOException;
+    void uploadApplication(String appName, InputStream inputStream, UploadStatusCallback callback) throws IOException;
 
     /**
      * Upload an application to Cloud Foundry.

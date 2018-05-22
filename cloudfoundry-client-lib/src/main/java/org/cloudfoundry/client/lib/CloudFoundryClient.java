@@ -408,9 +408,9 @@ public class CloudFoundryClient implements CloudFoundryOperations {
     public List<CloudApplication> getApplications() {
         return cc.getApplications();
     }
-    
+
     @Override
-    public List<CloudApplication> getApplications(String inlineDepth){
+    public List<CloudApplication> getApplications(String inlineDepth) {
         return cc.getApplications(inlineDepth);
     }
 
@@ -881,14 +881,13 @@ public class CloudFoundryClient implements CloudFoundryOperations {
     }
 
     @Override
-    public void uploadApplication(String appName, String fileName, InputStream inputStream) throws IOException {
-        cc.uploadApplication(appName, fileName, inputStream, null);
+    public void uploadApplication(String appName, InputStream inputStream) throws IOException {
+        cc.uploadApplication(appName, inputStream, null);
     }
 
     @Override
-    public void uploadApplication(String appName, String fileName, InputStream inputStream, UploadStatusCallback callback)
-        throws IOException {
-        cc.uploadApplication(appName, fileName, inputStream, callback);
+    public void uploadApplication(String appName, InputStream inputStream, UploadStatusCallback callback) throws IOException {
+        cc.uploadApplication(appName, inputStream, callback);
     }
 
     @Override

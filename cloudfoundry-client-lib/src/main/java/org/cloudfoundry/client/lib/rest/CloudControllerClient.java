@@ -152,7 +152,7 @@ public interface CloudControllerClient {
     ApplicationStats getApplicationStats(String appName);
 
     List<CloudApplication> getApplications();
-    
+
     List<CloudApplication> getApplications(String inlineDepth);
 
     URL getCloudControllerUrl();
@@ -327,7 +327,7 @@ public interface CloudControllerClient {
 
     void uploadApplication(String appName, File file, UploadStatusCallback callback) throws IOException;
 
-    void uploadApplication(String appName, String fileName, InputStream inputStream, UploadStatusCallback callback) throws IOException;
+    void uploadApplication(String appName, InputStream inputStream, UploadStatusCallback callback) throws IOException;
 
     void uploadApplication(String appName, ApplicationArchive archive, UploadStatusCallback callback) throws IOException;
 }

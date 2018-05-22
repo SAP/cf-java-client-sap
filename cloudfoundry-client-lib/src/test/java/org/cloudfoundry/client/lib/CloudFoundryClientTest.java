@@ -1977,7 +1977,7 @@ public class CloudFoundryClientTest {
         createSpringApplication(appName);
         File file = SampleProjects.springTravel();
         FileInputStream inputStream = new FileInputStream(file);
-        connectedClient.uploadApplication(appName, appName, inputStream);
+        connectedClient.uploadApplication(appName, inputStream);
         connectedClient.startApplication(appName);
         CloudApplication env = connectedClient.getApplication(appName);
         assertEquals(CloudApplication.AppState.STARTED, env.getState());
