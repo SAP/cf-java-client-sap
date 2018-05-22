@@ -600,7 +600,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     public List<CloudApplication> getApplications(String inlineDepth) {
         return getApplicationsWithCustomDepth(inlineDepth);
     }
-    
+
     private List<CloudApplication> getApplicationsWithCustomDepth(String inlineDepth) {
         Map<String, Object> urlVars = new HashMap<String, Object>();
         String urlPath = "/v2";
@@ -1109,7 +1109,8 @@ public class CloudControllerClientImpl implements CloudControllerClient {
                 logsRequest.put("offset", offset);
 
                 cfRequestFactory = getRestTemplate().getRequestFactory() instanceof CloudFoundryClientHttpRequestFactory
-                    ? (CloudFoundryClientHttpRequestFactory) getRestTemplate().getRequestFactory() : null;
+                    ? (CloudFoundryClientHttpRequestFactory) getRestTemplate().getRequestFactory()
+                    : null;
                 if (cfRequestFactory != null) {
                     cfRequestFactory.increaseReadTimeoutForStreamedTailedLogs(5 * 60 * 1000);
                 }
@@ -1538,9 +1539,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public void uploadApplication(String appName, String fileName, InputStream inputStream, UploadStatusCallback callback)
-        throws IOException {
-        Assert.notNull(fileName, "FileName must not be null");
+    public void uploadApplication(String appName, InputStream inputStream, UploadStatusCallback callback) throws IOException {
         Assert.notNull(inputStream, "InputStream must not be null");
 
         File file = createTemporaryUploadFile(inputStream);
@@ -1643,11 +1642,11 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         int indexOfPathSeparator = hostAndDomain[1].indexOf(DEFAULT_PATH_SEPARATOR);
         String domain = hostAndDomain[1];
         String path = "";
-        if(indexOfPathSeparator > 0) {
+        if (indexOfPathSeparator > 0) {
             domain = hostAndDomain[1].substring(0, indexOfPathSeparator);
             path = hostAndDomain[1].substring(indexOfPathSeparator);
         }
-        
+
         for (String existingDomain : existingDomains.keySet()) {
             if (host != null && domain.equals(existingDomain)) {
                 uriInfo.put("domainName", existingDomain);
@@ -2442,8 +2441,8 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         String urlPath = "/v2";
         urlPath = urlPath + "/routes?inline-relations-depth=0&q=host:{host}";
         urlVars.put("host", uriInfo.get("host"));
-        String path =  uriInfo.get("path");
-        if(!StringUtils.isEmpty(path)) {
+        String path = uriInfo.get("path");
+        if (!StringUtils.isEmpty(path)) {
             urlPath = urlPath + "&q=path:{path}";
             urlVars.put("path", path);
         }
@@ -2641,7 +2640,8 @@ public class CloudControllerClientImpl implements CloudControllerClient {
                 return;
             }
             if (job.getStatus() == CloudJob.Status.FAILED) {
-                callback.onError(job.getErrorDetails().getDescription());
+                callback.onError(job.getErrorDetails()
+                    .getDescription());
                 return;
             }
 
