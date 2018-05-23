@@ -2371,7 +2371,6 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     private void addAllRemainingResources(Map<String, Object> responseMap, List<Map<String, Object>> allResources) {
         String nextUrl = (String) responseMap.get("next_url");
         while (nextUrl != null && nextUrl.length() > 0) {
-            nextUrl = nextUrl.replaceAll("\\Qorder-by=internal\\E", "");
             nextUrl = addPageOfResources(nextUrl, allResources);
         }
     }
