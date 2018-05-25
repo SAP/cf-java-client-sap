@@ -912,16 +912,6 @@ public class CloudFoundryClient implements CloudFoundryOperations {
     }
 
     @Override
-    public String asyncUploadApplication(String appName, InputStream inputStream) throws IOException {
-        return cc.asyncUploadApplication(appName, inputStream, null);
-    }
-
-    @Override
-    public String asyncUploadApplication(String appName, InputStream inputStream, UploadStatusCallback callback) throws IOException {
-        return cc.asyncUploadApplication(appName, inputStream, callback);
-    }
-
-    @Override
     public String asyncUploadApplication(String appName, ApplicationArchive archive) throws IOException {
         return cc.asyncUploadApplication(appName, archive, null);
     }

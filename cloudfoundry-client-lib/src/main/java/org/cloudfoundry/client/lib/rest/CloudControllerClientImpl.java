@@ -1529,37 +1529,12 @@ public class CloudControllerClientImpl implements CloudControllerClient {
 
     @Override
     public void uploadApplication(String appName, File file, UploadStatusCallback callback) throws IOException {
-        String uploadToken = asyncUploadApplication(appName, file, callback);
+        String uploadToken = startUpload(appName, file, callback);
         processAsyncJob(uploadToken, callback);
     }
 
     @Override
     public void uploadApplication(String appName, InputStream inputStream, UploadStatusCallback callback) throws IOException {
-        String uploadToken = asyncUploadApplication(appName, inputStream, callback);
-        processAsyncJob(uploadToken, callback);
-    }
-
-    @Override
-    public void uploadApplication(String appName, ApplicationArchive archive, UploadStatusCallback callback) throws IOException {
-        String uploadToken = asyncUploadApplication(appName, archive, callback);
-        processAsyncJob(uploadToken, callback);
-    }
-
-    @Override
-    public String asyncUploadApplication(String appName, File file, UploadStatusCallback callback) throws IOException {
-        Assert.notNull(file, "File must not be null");
-        if (file.isDirectory()) {
-            ApplicationArchive archive = new DirectoryApplicationArchive(file);
-            return asyncUploadApplication(appName, archive, callback);
-        }
-        try (ZipFile zipFile = new ZipFile(file)) {
-            ApplicationArchive archive = new ZipApplicationArchive(zipFile);
-            return asyncUploadApplication(appName, archive, callback);
-        }
-    }
-
-    @Override
-    public String asyncUploadApplication(String appName, InputStream inputStream, UploadStatusCallback callback) throws IOException {
         Assert.notNull(inputStream, "InputStream must not be null");
 
         File file = null;
@@ -1568,7 +1543,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
             file = createTemporaryUploadFile(inputStream);
             zipFile = new ZipFile(file);
             ApplicationArchive archive = new ZipApplicationArchive(zipFile);
-            return asyncUploadApplication(appName, archive, callback);
+            uploadApplication(appName, archive, callback);
         } finally {
             IOUtils.closeQuietly(zipFile);
             if (file != null) {
@@ -1578,7 +1553,38 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
+    public void uploadApplication(String appName, ApplicationArchive archive, UploadStatusCallback callback) throws IOException {
+        String uploadToken = startUpload(appName, archive, callback);
+        processAsyncJob(uploadToken, callback);
+    }
+
+    @Override
+    public String asyncUploadApplication(String appName, File file, UploadStatusCallback callback) throws IOException {
+        String uploadToken = startUpload(appName, file, callback);
+        processAsyncJobInBackground(uploadToken, callback);
+        return uploadToken;
+    }
+
+    @Override
     public String asyncUploadApplication(String appName, ApplicationArchive archive, UploadStatusCallback callback) throws IOException {
+        String uploadToken = startUpload(appName, archive, callback);
+        processAsyncJobInBackground(uploadToken, callback);
+        return uploadToken;
+    }
+
+    private String startUpload(String appName, File file, UploadStatusCallback callback) throws IOException {
+        Assert.notNull(file, "File must not be null");
+        if (file.isDirectory()) {
+            ApplicationArchive archive = new DirectoryApplicationArchive(file);
+            return startUpload(appName, archive, callback);
+        }
+        try (ZipFile zipFile = new ZipFile(file)) {
+            ApplicationArchive archive = new ZipApplicationArchive(zipFile);
+            return startUpload(appName, archive, callback);
+        }
+    }
+
+    private String startUpload(String appName, ApplicationArchive archive, UploadStatusCallback callback) throws IOException {
         Assert.notNull(appName, "AppName must not be null");
         Assert.notNull(archive, "Archive must not be null");
         UUID appId = getAppId(appName);
@@ -2666,6 +2672,18 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         }
         fillInEmbeddedResource(resource, "stack");
         return resource;
+    }
+
+    private void processAsyncJobInBackground(final String jobUrl, final UploadStatusCallback callback) {
+        String threadName = String.format("App upload monitor: %s", jobUrl);
+        new Thread(new Runnable() {
+
+            @Override
+            public void run() {
+                processAsyncJob(jobUrl, callback);
+            }
+
+        }, threadName).start();
     }
 
     private void processAsyncJob(String jobUrl, UploadStatusCallback callback) {
