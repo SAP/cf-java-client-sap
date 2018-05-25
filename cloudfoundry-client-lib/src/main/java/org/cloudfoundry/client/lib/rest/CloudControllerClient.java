@@ -334,8 +334,6 @@ public interface CloudControllerClient {
 
     String asyncUploadApplication(String appName, File file, UploadStatusCallback callback) throws IOException;
 
-    String asyncUploadApplication(String appName, InputStream inputStream, UploadStatusCallback callback) throws IOException;
-
     String asyncUploadApplication(String appName, ApplicationArchive archive, UploadStatusCallback callback) throws IOException;
 
     Upload getUploadStatus(String uploadToken);

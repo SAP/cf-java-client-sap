@@ -1287,10 +1287,6 @@ public interface CloudFoundryOperations {
 
     String asyncUploadApplication(String appName, File file, UploadStatusCallback callback) throws IOException;
 
-    String asyncUploadApplication(String appName, InputStream inputStream) throws IOException;
-
-    String asyncUploadApplication(String appName, InputStream inputStream, UploadStatusCallback callback) throws IOException;
-
     String asyncUploadApplication(String appName, ApplicationArchive archive) throws IOException;
 
     String asyncUploadApplication(String appName, ApplicationArchive archive, UploadStatusCallback callback) throws IOException;
