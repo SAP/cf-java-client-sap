@@ -817,6 +817,8 @@ public interface CloudFoundryOperations {
      * @return List of space auditor UUID
      */
     List<UUID> getSpaceAuditors(String spaceName);
+    
+    List<UUID> getSpaceAuditors(UUID spaceGuid);
 
     /**
      * Get list of space auditor UUID for the space.
@@ -834,6 +836,8 @@ public interface CloudFoundryOperations {
      * @return List of space developer UUID
      */
     List<UUID> getSpaceDevelopers(String spaceName);
+    
+    List<UUID> getSpaceDevelopers(UUID spaceGuid);
 
     /**
      * Get list of space developer UUID for the space.
@@ -851,6 +855,8 @@ public interface CloudFoundryOperations {
      * @return List of space manager UUID
      */
     List<UUID> getSpaceManagers(String spaceName);
+    
+    List<UUID> getSpaceManagers(UUID spaceGuid);
 
     /**
      * Get list of space manager UUID for the space.
