@@ -635,6 +635,11 @@ public class CloudFoundryClient implements CloudFoundryOperations {
     public List<UUID> getSpaceAuditors(String spaceName) {
         return cc.getSpaceAuditors(null, spaceName);
     }
+    
+    @Override
+    public List<UUID> getSpaceAuditors(UUID spaceGuid){
+        return cc.getSpaceAuditors(spaceGuid);
+    }
 
     @Override
     public List<UUID> getSpaceAuditors(String orgName, String spaceName) {
@@ -645,6 +650,11 @@ public class CloudFoundryClient implements CloudFoundryOperations {
     public List<UUID> getSpaceDevelopers(String spaceName) {
         return cc.getSpaceDevelopers(null, spaceName);
     }
+    
+    @Override
+    public List<UUID> getSpaceDevelopers(UUID spaceGuid){
+        return cc.getSpaceDevelopers(spaceGuid);
+    }
 
     @Override
     public List<UUID> getSpaceDevelopers(String orgName, String spaceName) {
@@ -654,6 +664,11 @@ public class CloudFoundryClient implements CloudFoundryOperations {
     @Override
     public List<UUID> getSpaceManagers(String spaceName) {
         return cc.getSpaceManagers(null, spaceName);
+    }
+    
+    @Override
+    public List<UUID> getSpaceManagers(UUID spaceGuid){
+        return cc.getSpaceManagers(spaceGuid);
     }
 
     @Override

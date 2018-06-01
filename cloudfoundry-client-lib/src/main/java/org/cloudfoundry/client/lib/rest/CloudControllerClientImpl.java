@@ -1018,17 +1018,35 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         String urlPath = "/v2/spaces/{guid}/auditors";
         return getSpaceUserGuids(orgName, spaceName, urlPath);
     }
+    
+    @Override
+    public List<UUID> getSpaceAuditors(UUID spaceGuid){
+        String urlPath = "/v2/spaces/{guid}/auditors";
+        return getSpaceUserGuids(spaceGuid, urlPath);
+    }
 
     @Override
     public List<UUID> getSpaceDevelopers(String orgName, String spaceName) {
         String urlPath = "/v2/spaces/{guid}/developers";
         return getSpaceUserGuids(orgName, spaceName, urlPath);
     }
+    
+    @Override
+    public List<UUID> getSpaceDevelopers(UUID spaceGuid){
+        String urlPath = "/v2/spaces/{guid}/developers";
+        return getSpaceUserGuids(spaceGuid, urlPath);
+    }
 
     @Override
     public List<UUID> getSpaceManagers(String orgName, String spaceName) {
         String urlPath = "/v2/spaces/{guid}/managers";
         return getSpaceUserGuids(orgName, spaceName, urlPath);
+    }
+    
+    @Override
+    public List<UUID> getSpaceManagers(UUID spaceGuid){
+        String urlPath = "/v2/spaces/{guid}/managers";
+        return getSpaceUserGuids(spaceGuid, urlPath);
     }
 
     @Override
@@ -2586,7 +2604,11 @@ public class CloudControllerClientImpl implements CloudControllerClient {
             spaceGuid = getSpaceGuid(spaceName, organization.getMeta()
                 .getGuid());
         }
-
+        return getSpaceUserGuids(spaceGuid, urlPath);
+    }
+    
+    private List<UUID> getSpaceUserGuids(UUID spaceGuid, String urlPath){
+        Assert.notNull(spaceGuid, "Unable to get space users without specifying space GUID.");
         Map<String, Object> urlVars = new HashMap<String, Object>();
         urlVars.put("guid", spaceGuid);
 

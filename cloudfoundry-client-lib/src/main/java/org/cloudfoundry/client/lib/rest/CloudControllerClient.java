@@ -233,12 +233,18 @@ public interface CloudControllerClient {
     CloudSpace getSpace(String spaceName, boolean required);
 
     List<UUID> getSpaceAuditors(String orgName, String spaceName);
+    
+    List<UUID> getSpaceAuditors(UUID spaceGuid);
 
     List<UUID> getSpaceDevelopers(String orgName, String spaceName);
+    
+    List<UUID> getSpaceDevelopers(UUID spaceGuid);
 
     // Domains and routes management
 
     List<UUID> getSpaceManagers(String orgName, String spaceName);
+    
+    List<UUID> getSpaceManagers(UUID spaceGuid);
 
     List<CloudSpace> getSpaces();
 
