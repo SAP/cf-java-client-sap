@@ -18,7 +18,7 @@ import org.apache.http.conn.ssl.SSLContextBuilder;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.tomcat.websocket.WsWebSocketContainer;
 import org.cloudfoundry.client.lib.ApplicationLogListener;
-import org.cloudfoundry.client.lib.CloudOperationException;
+import org.cloudfoundry.client.lib.CloudException;
 import org.springframework.web.util.UriTemplate;
 
 public class LoggregatorClient {
@@ -43,9 +43,9 @@ public class LoggregatorClient {
             Session session = container.connectToServer(new LoggregatorEndpoint(listener), config, loggregatorUri);
             return new StreamingLogTokenImpl(session);
         } catch (DeploymentException e) {
-            throw new CloudOperationException(e);
+            throw new CloudException(e);
         } catch (IOException e) {
-            throw new CloudOperationException(e);
+            throw new CloudException(e);
         }
     }
 
@@ -86,7 +86,7 @@ public class LoggregatorClient {
 
             return contextBuilder.build();
         } catch (GeneralSecurityException e) {
-            throw new CloudOperationException(e);
+            throw new CloudException(e);
         }
     }
 
@@ -94,7 +94,7 @@ public class LoggregatorClient {
         try {
             return new URI(endPoint);
         } catch (URISyntaxException e) {
-            throw new CloudOperationException("Unable to parse Loggregator endpoint " + endPoint);
+            throw new CloudException("Unable to parse Loggregator endpoint " + endPoint);
         }
     }
 }

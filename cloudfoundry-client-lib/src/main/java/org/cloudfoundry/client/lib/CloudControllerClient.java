@@ -60,7 +60,7 @@ import org.springframework.web.client.ResponseErrorHandler;
  * @author Thomas Risberg
  * @author Alexander Orlov
  */
-public interface CloudFoundryOperations {
+public interface CloudControllerClient {
 
     /**
      * Add a private domain in the current organization.
@@ -167,7 +167,7 @@ public interface CloudFoundryOperations {
      * @param orgName The name of the organization that the space is in.
      * @param spaceName The name of the space
      * @param securityGroupName The name of the security group to bind to the space
-     * @throws CloudFoundryException if the org, space, or security group do not exist
+     * @throws CloudOperationException if the org, space, or security group do not exist
      */
     void bindSecurityGroup(String orgName, String spaceName, String securityGroupName);
 
@@ -354,7 +354,7 @@ public interface CloudFoundryOperations {
      * This method requires the logged in user to have admin permissions in the cloud controller.
      *
      * @param securityGroupName
-     * @throws CloudFoundryException if a security group does not exist with the given name
+     * @throws CloudOperationException if a security group does not exist with the given name
      */
     void deleteSecurityGroup(String securityGroupName);
 
@@ -609,7 +609,7 @@ public interface CloudFoundryOperations {
      *
      * @param orgName organization name
      * @return a Map CloudUser with username as key
-     * @throws CloudFoundryException if the org do not exist
+     * @throws CloudOperationException if the org do not exist
      */
     Map<String, CloudUser> getOrganizationUsers(String orgName);
 
@@ -1047,7 +1047,7 @@ public interface CloudFoundryOperations {
      * @param orgName The name of the organization that the space is in.
      * @param spaceName The name of the space
      * @param securityGroupName The name of the security group to bind to the space
-     * @throws CloudFoundryException if the org, space, or security group do not exist
+     * @throws CloudOperationException if the org, space, or security group do not exist
      */
     void unbindSecurityGroup(String orgName, String spaceName, String securityGroupName);
 
@@ -1165,7 +1165,7 @@ public interface CloudFoundryOperations {
      * This method requires the logged in user to have admin permissions in the cloud controller.
      *
      * @param securityGroup
-     * @throws CloudFoundryException if a security group does not exist with the name of the given CloudSecurityGroup
+     * @throws CloudOperationException if a security group does not exist with the name of the given CloudSecurityGroup
      */
     void updateSecurityGroup(CloudSecurityGroup securityGroup);
 
@@ -1196,7 +1196,7 @@ public interface CloudFoundryOperations {
      * This method requires the logged in user to have admin permissions in the cloud controller.
      *
      * @param jsonRulesFile An input stream that has a single array with JSON objects inside describing the rules
-     * @throws CloudFoundryException if a security group does not exist with the given name
+     * @throws CloudOperationException if a security group does not exist with the given name
      * @see http://docs.cloudfoundry.org/adminguide/app-sec-groups.html
      */
     void updateSecurityGroup(String name, InputStream jsonRulesFile);

@@ -65,8 +65,8 @@ import org.cloudfoundry.client.lib.domain.InstancesInfo;
 import org.cloudfoundry.client.lib.domain.SecurityGroupRule;
 import org.cloudfoundry.client.lib.domain.Staging;
 import org.cloudfoundry.client.lib.oauth2.OauthClient;
-import org.cloudfoundry.client.lib.rest.CloudControllerClient;
-import org.cloudfoundry.client.lib.rest.CloudControllerClientFactory;
+import org.cloudfoundry.client.lib.rest.CloudControllerRestClient;
+import org.cloudfoundry.client.lib.rest.CloudControllerRestClientFactory;
 import org.cloudfoundry.client.lib.util.RestUtil;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ConnectHandler;
@@ -115,7 +115,7 @@ import org.springframework.web.client.RestTemplate;
  */
 @RunWith(BMUnitRunner.class)
 @BMScript(value = "trace", dir = "target/test-classes")
-public class CloudFoundryClientTest {
+public class CloudControllerClientTest {
 
     public static final int STARTUP_TIMEOUT = Integer.getInteger("ccng.startup.timeout", 60000);
 
@@ -204,7 +204,7 @@ public class CloudFoundryClientTest {
         }
     };
 
-    private CloudFoundryOperations connectedClient;
+    private CloudControllerClient connectedClient;
 
     @AfterClass
     public static void afterClass() throws Exception {
@@ -959,7 +959,7 @@ public class CloudFoundryClientTest {
 
     @Test
     public void getApplicationNonExistent() {
-        thrown.expect(CloudFoundryException.class);
+        thrown.expect(CloudOperationException.class);
         thrown.expect(hasProperty("statusCode", is(HttpStatus.NOT_FOUND)));
         thrown.expectMessage(containsString("Not Found"));
         String appName = namespacedAppName("non_existent");
@@ -1410,7 +1410,7 @@ public class CloudFoundryClientTest {
 
     @Test
     public void infoAvailableWithoutLoggingIn() throws Exception {
-        CloudFoundryClient infoClient = new CloudFoundryClient(new URL(CCNG_API_URL), httpProxyConfiguration, CCNG_API_SSL);
+        CloudControllerClientImpl infoClient = new CloudControllerClientImpl(new URL(CCNG_API_URL), httpProxyConfiguration, CCNG_API_SSL);
         CloudInfo info = infoClient.getCloudInfo();
         assertNotNull(info.getName());
         assertNotNull(info.getSupport());
@@ -1504,8 +1504,8 @@ public class CloudFoundryClientTest {
         URL cloudControllerUrl = new URL(CCNG_API_URL);
         CloudCredentials credentials = new CloudCredentials(CCNG_USER_EMAIL, CCNG_USER_PASS);
 
-        CloudControllerClientFactory factory = new CloudControllerClientFactory(httpProxyConfiguration, CCNG_API_SSL);
-        CloudControllerClient client = factory.newCloudController(cloudControllerUrl, credentials, CCNG_USER_ORG, CCNG_USER_SPACE);
+        CloudControllerRestClientFactory factory = new CloudControllerRestClientFactory(httpProxyConfiguration, CCNG_API_SSL);
+        CloudControllerRestClient client = factory.newCloudController(cloudControllerUrl, credentials, CCNG_USER_ORG, CCNG_USER_SPACE);
 
         client.login();
 
@@ -1732,7 +1732,7 @@ public class CloudFoundryClientTest {
         URL cloudControllerUrl;
 
         cloudControllerUrl = new URL(CCNG_API_URL);
-        connectedClient = new CloudFoundryClient(new CloudCredentials(CCNG_USER_EMAIL, CCNG_USER_PASS), cloudControllerUrl, CCNG_USER_ORG,
+        connectedClient = new CloudControllerClientImpl(new CloudCredentials(CCNG_USER_EMAIL, CCNG_USER_PASS), cloudControllerUrl, CCNG_USER_ORG,
             CCNG_USER_SPACE, httpProxyConfiguration, CCNG_API_SSL);
         connectedClient.login();
         defaultDomainName = connectedClient.getDefaultDomain()
@@ -1934,7 +1934,7 @@ public class CloudFoundryClientTest {
 
         String newPassword = "newPass123";
         connectedClient.updatePassword(newPassword);
-        CloudFoundryClient clientWithChangedPassword = new CloudFoundryClient(new CloudCredentials(CCNG_USER_EMAIL, newPassword),
+        CloudControllerClientImpl clientWithChangedPassword = new CloudControllerClientImpl(new CloudCredentials(CCNG_USER_EMAIL, newPassword),
             new URL(CCNG_API_URL), httpProxyConfiguration);
         clientWithChangedPassword.login();
 
@@ -2437,7 +2437,7 @@ public class CloudFoundryClientTest {
         }
     }
 
-    private void doGetFile(CloudFoundryOperations client, String appName) throws Exception {
+    private void doGetFile(CloudControllerClient client, String appName) throws Exception {
         String appDir = "app";
         String fileName = appDir + "/WEB-INF/web.xml";
         String emptyPropertiesFileName = appDir + "/WEB-INF/classes/empty.properties";
@@ -2487,7 +2487,7 @@ public class CloudFoundryClientTest {
         try {
             client.getFile(appName, 0, fileName, invalidStartPosition);
             fail("should have thrown exception");
-        } catch (CloudFoundryException e) {
+        } catch (CloudOperationException e) {
             assertTrue(e.getStatusCode()
                 .equals(HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE));
         }
@@ -2548,7 +2548,7 @@ public class CloudFoundryClientTest {
         return null;
     }
 
-    private void doOpenFile(CloudFoundryOperations client, String appName) throws Exception {
+    private void doOpenFile(CloudControllerClient client, String appName) throws Exception {
         String appDir = "app";
         String fileName = appDir + "/WEB-INF/web.xml";
         String emptyPropertiesFileName = appDir + "/WEB-INF/classes/empty.properties";
@@ -2608,7 +2608,7 @@ public class CloudFoundryClientTest {
                     pass = true;
                     break;
                 }
-            } catch (CloudFoundryException ex) {
+            } catch (CloudOperationException ex) {
                 // ignore (we may get this when staging is still ongoing)
             }
             try {
@@ -2674,7 +2674,7 @@ public class CloudFoundryClientTest {
                     pass = true;
                     break;
                 }
-            } catch (CloudFoundryException ex) {
+            } catch (CloudOperationException ex) {
                 // ignore (we may get this when staging is still ongoing)
             }
             try {
@@ -2686,7 +2686,7 @@ public class CloudFoundryClientTest {
         return pass;
     }
 
-    private InstancesInfo getInstancesWithTimeout(CloudFoundryOperations client, String appName) {
+    private InstancesInfo getInstancesWithTimeout(CloudControllerClient client, String appName) {
         long start = System.currentTimeMillis();
         while (true) {
             try {
@@ -2748,7 +2748,7 @@ public class CloudFoundryClientTest {
         return connectedClient.getApplication(appName);
     }
 
-    private void validateClientAccess(CloudControllerClient client) {
+    private void validateClientAccess(CloudControllerRestClient client) {
         List<CloudServiceOffering> offerings = client.getServiceOfferings();
         assertNotNull(offerings);
         assertTrue(offerings.size() >= 2);

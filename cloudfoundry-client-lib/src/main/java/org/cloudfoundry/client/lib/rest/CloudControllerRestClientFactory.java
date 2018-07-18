@@ -37,7 +37,7 @@ import org.springframework.web.client.RestTemplate;
  * @author Thgomas Risberg
  * @author Ramnivas Laddad
  */
-public class CloudControllerClientFactory {
+public class CloudControllerRestClientFactory {
 
     private final HttpProxyConfiguration httpProxyConfiguration;
 
@@ -53,7 +53,7 @@ public class CloudControllerClientFactory {
 
     private ObjectMapper objectMapper;
 
-    public CloudControllerClientFactory(HttpProxyConfiguration httpProxyConfiguration, boolean trustSelfSignedCerts) {
+    public CloudControllerRestClientFactory(HttpProxyConfiguration httpProxyConfiguration, boolean trustSelfSignedCerts) {
         this.restUtil = new RestUtil();
         this.restTemplate = restUtil.createRestTemplate(httpProxyConfiguration, trustSelfSignedCerts);
 
@@ -71,38 +71,38 @@ public class CloudControllerClientFactory {
         return restTemplate;
     }
 
-    public CloudControllerClient newCloudController(URL cloudControllerUrl, CloudCredentials cloudCredentials, CloudSpace sessionSpace) {
+    public CloudControllerRestClient newCloudController(URL cloudControllerUrl, CloudCredentials cloudCredentials, CloudSpace sessionSpace) {
         createOauthClient(cloudControllerUrl);
         LoggregatorClient loggregatorClient = new LoggregatorClient(trustSelfSignedCerts);
 
-        return new CloudControllerClientImpl(cloudControllerUrl, restTemplate, oauthClient, loggregatorClient, cloudCredentials,
+        return new CloudControllerRestClientImpl(cloudControllerUrl, restTemplate, oauthClient, loggregatorClient, cloudCredentials,
             sessionSpace);
     }
 
-    public CloudControllerClient newCloudController(URL cloudControllerUrl, CloudCredentials cloudCredentials, CloudSpace sessionSpace,
+    public CloudControllerRestClient newCloudController(URL cloudControllerUrl, CloudCredentials cloudCredentials, CloudSpace sessionSpace,
         OauthClient oauthClient) {
         this.oauthClient = oauthClient;
         LoggregatorClient loggregatorClient = new LoggregatorClient(trustSelfSignedCerts);
 
-        return new CloudControllerClientImpl(cloudControllerUrl, restTemplate, oauthClient, loggregatorClient, cloudCredentials,
+        return new CloudControllerRestClientImpl(cloudControllerUrl, restTemplate, oauthClient, loggregatorClient, cloudCredentials,
             sessionSpace);
     }
 
-    public CloudControllerClient newCloudController(URL cloudControllerUrl, CloudCredentials cloudCredentials, String orgName,
+    public CloudControllerRestClient newCloudController(URL cloudControllerUrl, CloudCredentials cloudCredentials, String orgName,
         String spaceName) {
         createOauthClient(cloudControllerUrl);
         LoggregatorClient loggregatorClient = new LoggregatorClient(trustSelfSignedCerts);
 
-        return new CloudControllerClientImpl(cloudControllerUrl, restTemplate, oauthClient, loggregatorClient, cloudCredentials, orgName,
+        return new CloudControllerRestClientImpl(cloudControllerUrl, restTemplate, oauthClient, loggregatorClient, cloudCredentials, orgName,
             spaceName);
     }
 
-    public CloudControllerClient newCloudController(URL cloudControllerUrl, CloudCredentials cloudCredentials, String orgName,
+    public CloudControllerRestClient newCloudController(URL cloudControllerUrl, CloudCredentials cloudCredentials, String orgName,
         String spaceName, OauthClient oauthClient) {
         this.oauthClient = oauthClient;
         LoggregatorClient loggregatorClient = new LoggregatorClient(trustSelfSignedCerts);
 
-        return new CloudControllerClientImpl(cloudControllerUrl, restTemplate, oauthClient, loggregatorClient, cloudCredentials, orgName,
+        return new CloudControllerRestClientImpl(cloudControllerUrl, restTemplate, oauthClient, loggregatorClient, cloudCredentials, orgName,
             spaceName);
     }
 

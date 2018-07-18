@@ -23,7 +23,7 @@ import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.web.client.RestTemplate;
 
 @RunWith(org.mockito.runners.MockitoJUnitRunner.class)
-public class CloudControllerClientImplTest {
+public class CloudControllerRestClientImplTest {
 
     private static final String CCNG_API_URL = System.getProperty("ccng.target", "http://api.run.pivotal.io");
 
@@ -38,7 +38,7 @@ public class CloudControllerClientImplTest {
     @Mock
     private ClientHttpRequestFactory clientHttpRequestFactory;
 
-    private CloudControllerClientImpl controllerClient;
+    private CloudControllerRestClientImpl controllerClient;
 
     @Mock
     private LoggregatorClient loggregatorClient;
@@ -101,7 +101,7 @@ public class CloudControllerClientImplTest {
     
     @Before
     public void setUpWithEmptyConstructor() throws Exception {
-        controllerClient = new CloudControllerClientImpl();
+        controllerClient = new CloudControllerRestClientImpl();
     }
 
     /**
@@ -117,7 +117,7 @@ public class CloudControllerClientImplTest {
         restUtil.createRestTemplate(null, false);
         restUtil.createOauthClient(new URL(CCNG_API_URL), null, false);
 
-        controllerClient = new CloudControllerClientImpl(new URL("http://api.dummyendpoint.com/login"), restTemplate, oauthClient,
+        controllerClient = new CloudControllerRestClientImpl(new URL("http://api.dummyendpoint.com/login"), restTemplate, oauthClient,
             loggregatorClient, new CloudCredentials(CCNG_USER_EMAIL, CCNG_USER_PASS), CCNG_USER_ORG, CCNG_USER_SPACE);
     }
 

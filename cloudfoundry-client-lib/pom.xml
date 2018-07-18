@@ -39,7 +39,7 @@
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
                             <includes>
-                                <include>**/CloudFoundryClientTest.java</include>
+                                <include>**/CloudControllerClientTest.java</include>
                             </includes>
                             <excludes>
                                 <exclude>NONE</exclude>
@@ -364,7 +364,7 @@
                         <include>**/*Test.java</include>
                     </includes>
                     <excludes>
-                        <exclude>**/CloudFoundryClientTest.java</exclude>
+                        <exclude>**/CloudControllerClientTest.java</exclude>
                         <exclude>**/Abstract*.java</exclude>
                     </excludes>
                 </configuration>

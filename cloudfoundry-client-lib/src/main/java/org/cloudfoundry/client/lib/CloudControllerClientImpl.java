@@ -48,8 +48,8 @@ import org.cloudfoundry.client.lib.domain.InstancesInfo;
 import org.cloudfoundry.client.lib.domain.ServiceKey;
 import org.cloudfoundry.client.lib.domain.Staging;
 import org.cloudfoundry.client.lib.domain.Upload;
-import org.cloudfoundry.client.lib.rest.CloudControllerClient;
-import org.cloudfoundry.client.lib.rest.CloudControllerClientFactory;
+import org.cloudfoundry.client.lib.rest.CloudControllerRestClient;
+import org.cloudfoundry.client.lib.rest.CloudControllerRestClientFactory;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.util.Assert;
 import org.springframework.web.client.ResponseErrorHandler;
@@ -64,9 +64,9 @@ import org.springframework.web.client.ResponseErrorHandler;
  * @author Thomas Risberg
  * @author Alexander Orlov
  */
-public class CloudFoundryClient implements CloudFoundryOperations {
+public class CloudControllerClientImpl implements CloudControllerClient {
 
-    private CloudControllerClient cc;
+    private CloudControllerRestClient cc;
 
     private CloudInfo info;
 
@@ -74,19 +74,19 @@ public class CloudFoundryClient implements CloudFoundryOperations {
      * Construct client for anonymous user. Useful only to get to the '/info' endpoint.
      */
 
-    public CloudFoundryClient(URL cloudControllerUrl) {
+    public CloudControllerClientImpl(URL cloudControllerUrl) {
         this(null, cloudControllerUrl, null, (HttpProxyConfiguration) null, false);
     }
 
-    public CloudFoundryClient(URL cloudControllerUrl, boolean trustSelfSignedCerts) {
+    public CloudControllerClientImpl(URL cloudControllerUrl, boolean trustSelfSignedCerts) {
         this(null, cloudControllerUrl, null, (HttpProxyConfiguration) null, trustSelfSignedCerts);
     }
 
-    public CloudFoundryClient(URL cloudControllerUrl, HttpProxyConfiguration httpProxyConfiguration) {
+    public CloudControllerClientImpl(URL cloudControllerUrl, HttpProxyConfiguration httpProxyConfiguration) {
         this(null, cloudControllerUrl, null, httpProxyConfiguration, false);
     }
 
-    public CloudFoundryClient(URL cloudControllerUrl, HttpProxyConfiguration httpProxyConfiguration, boolean trustSelfSignedCerts) {
+    public CloudControllerClientImpl(URL cloudControllerUrl, HttpProxyConfiguration httpProxyConfiguration, boolean trustSelfSignedCerts) {
         this(null, cloudControllerUrl, null, httpProxyConfiguration, trustSelfSignedCerts);
     }
 
@@ -94,19 +94,19 @@ public class CloudFoundryClient implements CloudFoundryOperations {
      * Construct client without a default org and space.
      */
 
-    public CloudFoundryClient(CloudCredentials credentials, URL cloudControllerUrl) {
+    public CloudControllerClientImpl(CloudCredentials credentials, URL cloudControllerUrl) {
         this(credentials, cloudControllerUrl, null, (HttpProxyConfiguration) null, false);
     }
 
-    public CloudFoundryClient(CloudCredentials credentials, URL cloudControllerUrl, boolean trustSelfSignedCerts) {
+    public CloudControllerClientImpl(CloudCredentials credentials, URL cloudControllerUrl, boolean trustSelfSignedCerts) {
         this(credentials, cloudControllerUrl, null, (HttpProxyConfiguration) null, trustSelfSignedCerts);
     }
 
-    public CloudFoundryClient(CloudCredentials credentials, URL cloudControllerUrl, HttpProxyConfiguration httpProxyConfiguration) {
+    public CloudControllerClientImpl(CloudCredentials credentials, URL cloudControllerUrl, HttpProxyConfiguration httpProxyConfiguration) {
         this(credentials, cloudControllerUrl, null, httpProxyConfiguration, false);
     }
 
-    public CloudFoundryClient(CloudCredentials credentials, URL cloudControllerUrl, HttpProxyConfiguration httpProxyConfiguration,
+    public CloudControllerClientImpl(CloudCredentials credentials, URL cloudControllerUrl, HttpProxyConfiguration httpProxyConfiguration,
         boolean trustSelfSignedCerts) {
         this(credentials, cloudControllerUrl, null, httpProxyConfiguration, trustSelfSignedCerts);
     }
@@ -115,23 +115,23 @@ public class CloudFoundryClient implements CloudFoundryOperations {
      * Construct a client with a default CloudSpace.
      */
 
-    public CloudFoundryClient(CloudCredentials credentials, URL cloudControllerUrl, CloudSpace sessionSpace) {
+    public CloudControllerClientImpl(CloudCredentials credentials, URL cloudControllerUrl, CloudSpace sessionSpace) {
         this(credentials, cloudControllerUrl, sessionSpace, null, false);
     }
 
-    public CloudFoundryClient(CloudCredentials credentials, URL cloudControllerUrl, CloudSpace sessionSpace, boolean trustSelfSignedCerts) {
+    public CloudControllerClientImpl(CloudCredentials credentials, URL cloudControllerUrl, CloudSpace sessionSpace, boolean trustSelfSignedCerts) {
         this(credentials, cloudControllerUrl, sessionSpace, null, trustSelfSignedCerts);
     }
 
-    public CloudFoundryClient(CloudCredentials credentials, URL cloudControllerUrl, CloudSpace sessionSpace,
+    public CloudControllerClientImpl(CloudCredentials credentials, URL cloudControllerUrl, CloudSpace sessionSpace,
         HttpProxyConfiguration httpProxyConfiguration) {
         this(credentials, cloudControllerUrl, sessionSpace, httpProxyConfiguration, false);
     }
 
-    public CloudFoundryClient(CloudCredentials credentials, URL cloudControllerUrl, CloudSpace sessionSpace,
+    public CloudControllerClientImpl(CloudCredentials credentials, URL cloudControllerUrl, CloudSpace sessionSpace,
         HttpProxyConfiguration httpProxyConfiguration, boolean trustSelfSignedCerts) {
         Assert.notNull(cloudControllerUrl, "URL for cloud controller cannot be null");
-        CloudControllerClientFactory cloudControllerClientFactory = new CloudControllerClientFactory(httpProxyConfiguration,
+        CloudControllerRestClientFactory cloudControllerClientFactory = new CloudControllerRestClientFactory(httpProxyConfiguration,
             trustSelfSignedCerts);
         this.cc = cloudControllerClientFactory.newCloudController(cloudControllerUrl, credentials, sessionSpace);
     }
@@ -140,24 +140,24 @@ public class CloudFoundryClient implements CloudFoundryOperations {
      * Construct a client with a default space name and org name.
      */
 
-    public CloudFoundryClient(CloudCredentials credentials, URL cloudControllerUrl, String orgName, String spaceName) {
+    public CloudControllerClientImpl(CloudCredentials credentials, URL cloudControllerUrl, String orgName, String spaceName) {
         this(credentials, cloudControllerUrl, orgName, spaceName, null, false);
     }
 
-    public CloudFoundryClient(CloudCredentials credentials, URL cloudControllerUrl, String orgName, String spaceName,
+    public CloudControllerClientImpl(CloudCredentials credentials, URL cloudControllerUrl, String orgName, String spaceName,
         boolean trustSelfSignedCerts) {
         this(credentials, cloudControllerUrl, orgName, spaceName, null, trustSelfSignedCerts);
     }
 
-    public CloudFoundryClient(CloudCredentials credentials, URL cloudControllerUrl, String orgName, String spaceName,
+    public CloudControllerClientImpl(CloudCredentials credentials, URL cloudControllerUrl, String orgName, String spaceName,
         HttpProxyConfiguration httpProxyConfiguration) {
         this(credentials, cloudControllerUrl, orgName, spaceName, httpProxyConfiguration, false);
     }
 
-    public CloudFoundryClient(CloudCredentials credentials, URL cloudControllerUrl, String orgName, String spaceName,
+    public CloudControllerClientImpl(CloudCredentials credentials, URL cloudControllerUrl, String orgName, String spaceName,
         HttpProxyConfiguration httpProxyConfiguration, boolean trustSelfSignedCerts) {
         Assert.notNull(cloudControllerUrl, "URL for cloud controller cannot be null");
-        CloudControllerClientFactory cloudControllerClientFactory = new CloudControllerClientFactory(httpProxyConfiguration,
+        CloudControllerRestClientFactory cloudControllerClientFactory = new CloudControllerRestClientFactory(httpProxyConfiguration,
             trustSelfSignedCerts);
         this.cc = cloudControllerClientFactory.newCloudController(cloudControllerUrl, credentials, orgName, spaceName);
     }
@@ -165,7 +165,7 @@ public class CloudFoundryClient implements CloudFoundryOperations {
     /**
      * Construct a client with a pre-configured CloudControllerClient
      */
-    public CloudFoundryClient(CloudControllerClient cc) {
+    public CloudControllerClientImpl(CloudControllerRestClient cc) {
         this.cc = cc;
     }
 

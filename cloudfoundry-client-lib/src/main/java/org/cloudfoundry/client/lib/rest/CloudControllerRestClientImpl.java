@@ -46,8 +46,8 @@ import org.apache.commons.logging.LogFactory;
 import org.cloudfoundry.client.lib.ApplicationLogListener;
 import org.cloudfoundry.client.lib.ClientHttpResponseCallback;
 import org.cloudfoundry.client.lib.CloudCredentials;
-import org.cloudfoundry.client.lib.CloudFoundryException;
 import org.cloudfoundry.client.lib.CloudOperationException;
+import org.cloudfoundry.client.lib.CloudException;
 import org.cloudfoundry.client.lib.RestLogCallback;
 import org.cloudfoundry.client.lib.StartingInfo;
 import org.cloudfoundry.client.lib.StreamingLogToken;
@@ -127,7 +127,7 @@ import org.springframework.web.client.RestTemplate;
  * @author Alexander Orlov
  * @author Scott Frederick
  */
-public class CloudControllerClientImpl implements CloudControllerClient {
+public class CloudControllerRestClientImpl implements CloudControllerRestClient {
 
     private static final String DEFAULT_HOST_DOMAIN_SEPARATOR = "\\.";
 
@@ -159,7 +159,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
 
     private CloudSpace sessionSpace;
 
-    public CloudControllerClientImpl(URL cloudControllerUrl, RestTemplate restTemplate, OauthClient oauthClient,
+    public CloudControllerRestClientImpl(URL cloudControllerUrl, RestTemplate restTemplate, OauthClient oauthClient,
         LoggregatorClient loggregatorClient, CloudCredentials cloudCredentials, CloudSpace sessionSpace) {
         logger = LogFactory.getLog(getClass().getName());
 
@@ -168,10 +168,10 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         this.sessionSpace = sessionSpace;
     }
 
-    public CloudControllerClientImpl(URL cloudControllerUrl, RestTemplate restTemplate, OauthClient oauthClient,
+    public CloudControllerRestClientImpl(URL cloudControllerUrl, RestTemplate restTemplate, OauthClient oauthClient,
         LoggregatorClient loggregatorClient, CloudCredentials cloudCredentials, String orgName, String spaceName) {
         logger = LogFactory.getLog(getClass().getName());
-        CloudControllerClientImpl tempClient = new CloudControllerClientImpl(cloudControllerUrl, restTemplate, oauthClient,
+        CloudControllerRestClientImpl tempClient = new CloudControllerRestClientImpl(cloudControllerUrl, restTemplate, oauthClient,
             loggregatorClient, cloudCredentials, null);
 
         initialize(cloudControllerUrl, restTemplate, oauthClient, loggregatorClient, cloudCredentials);
@@ -183,7 +183,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
      * Only for unit tests. This works around the fact that the initialize method is called within the constructor and hence can not be
      * overloaded, making it impossible to write unit tests that don't trigger network calls.
      */
-    protected CloudControllerClientImpl() {
+    protected CloudControllerRestClientImpl() {
         logger = LogFactory.getLog(getClass().getName());
     }
 
@@ -468,7 +468,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         uriInfo.put("host", host);
         UUID routeGuid = getRouteGuid(uriInfo, domainGuid);
         if (routeGuid == null) {
-            throw new CloudFoundryException(HttpStatus.NOT_FOUND, "Not Found",
+            throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found",
                 "Host '" + host + "' not found for domain '" + domainName + "'.");
         }
         doDeleteRoute(routeGuid);
@@ -524,7 +524,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
             application = mapCloudApplication(resource);
         }
         if (application == null && required) {
-            throw new CloudFoundryException(HttpStatus.NOT_FOUND, "Not Found", "Application '" + appName + "' not found.");
+            throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Application '" + appName + "' not found.");
         }
         return application;
     }
@@ -542,7 +542,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
             application = mapCloudApplication(resource);
         }
         if (application == null && required) {
-            throw new CloudFoundryException(HttpStatus.NOT_FOUND, "Not Found", "Application '" + appGuid + "' not found.");
+            throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Application '" + appGuid + "' not found.");
         }
         return application;
     }
@@ -648,7 +648,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     public CrashesInfo getCrashes(String appName) {
         UUID appId = getAppId(appName);
         if (appId == null) {
-            throw new CloudFoundryException(HttpStatus.NOT_FOUND, "Not Found", "Application '" + appName + "' not found.");
+            throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Application '" + appName + "' not found.");
         }
         Map<String, Object> urlVars = new HashMap<String, Object>();
         urlVars.put("guid", appId);
@@ -747,7 +747,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         }
 
         if (org == null && required) {
-            throw new CloudFoundryException(HttpStatus.NOT_FOUND, "Not Found", "Organization '" + orgName + "' not found.");
+            throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Organization '" + orgName + "' not found.");
         }
 
         return org;
@@ -806,7 +806,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         }
 
         if (quota == null && required) {
-            throw new CloudFoundryException(HttpStatus.NOT_FOUND, "Not Found", "Quota '" + quotaName + "' not found.");
+            throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Quota '" + quotaName + "' not found.");
         }
 
         return quota;
@@ -868,7 +868,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
             securityGroup = resourceMapper.mapResource(resource, CloudSecurityGroup.class);
         }
         if (securityGroup == null && required) {
-            throw new CloudFoundryException(HttpStatus.NOT_FOUND, "Not Found",
+            throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found",
                 "Security group named '" + securityGroupName + "' not found.");
         }
         return securityGroup;
@@ -898,7 +898,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
             service = resourceMapper.mapResource(resource, CloudService.class);
         }
         if (service == null && required) {
-            throw new CloudFoundryException(HttpStatus.NOT_FOUND, "Not Found", "Service '" + serviceName + "' not found.");
+            throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Service '" + serviceName + "' not found.");
         }
         return service;
     }
@@ -916,7 +916,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
             serviceBroker = resourceMapper.mapResource(resource, CloudServiceBroker.class);
         }
         if (serviceBroker == null && required) {
-            throw new CloudFoundryException(HttpStatus.NOT_FOUND, "Not Found", "Service broker '" + name + "' not found.");
+            throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Service broker '" + name + "' not found.");
         }
         return serviceBroker;
     }
@@ -946,7 +946,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
             serviceInstance = resourceMapper.mapResource(resource, CloudServiceInstance.class);
         }
         if (serviceInstance == null && required) {
-            throw new CloudFoundryException(HttpStatus.NOT_FOUND, "Not Found", "Service instance '" + serviceName + "' not found.");
+            throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Service instance '" + serviceName + "' not found.");
         }
         return serviceInstance;
     }
@@ -1008,7 +1008,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
             space = resourceMapper.mapResource(resource, CloudSpace.class);
         }
         if (space == null && required) {
-            throw new CloudFoundryException(HttpStatus.NOT_FOUND, "Not Found", "Space '" + spaceName + "' not found.");
+            throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Space '" + spaceName + "' not found.");
         }
         return space;
     }
@@ -1018,9 +1018,9 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         String urlPath = "/v2/spaces/{guid}/auditors";
         return getSpaceUserGuids(orgName, spaceName, urlPath);
     }
-    
+
     @Override
-    public List<UUID> getSpaceAuditors(UUID spaceGuid){
+    public List<UUID> getSpaceAuditors(UUID spaceGuid) {
         String urlPath = "/v2/spaces/{guid}/auditors";
         return getSpaceUserGuids(spaceGuid, urlPath);
     }
@@ -1030,9 +1030,9 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         String urlPath = "/v2/spaces/{guid}/developers";
         return getSpaceUserGuids(orgName, spaceName, urlPath);
     }
-    
+
     @Override
-    public List<UUID> getSpaceDevelopers(UUID spaceGuid){
+    public List<UUID> getSpaceDevelopers(UUID spaceGuid) {
         String urlPath = "/v2/spaces/{guid}/developers";
         return getSpaceUserGuids(spaceGuid, urlPath);
     }
@@ -1042,9 +1042,9 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         String urlPath = "/v2/spaces/{guid}/managers";
         return getSpaceUserGuids(orgName, spaceName, urlPath);
     }
-    
+
     @Override
-    public List<UUID> getSpaceManagers(UUID spaceGuid){
+    public List<UUID> getSpaceManagers(UUID spaceGuid) {
         String urlPath = "/v2/spaces/{guid}/managers";
         return getSpaceUserGuids(spaceGuid, urlPath);
     }
@@ -1077,7 +1077,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
                 spaces.add(resourceMapper.mapResource(spaceResource, CloudSpace.class));
             }
         } else {
-            throw new CloudFoundryException(HttpStatus.NOT_FOUND, "Not Found", "Security group '" + securityGroupName + "' not found.");
+            throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Security group '" + securityGroupName + "' not found.");
         }
         return spaces;
     }
@@ -1095,7 +1095,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
             stack = resourceMapper.mapResource(resource, CloudStack.class);
         }
         if (stack == null && required) {
-            throw new CloudFoundryException(HttpStatus.NOT_FOUND, "Not Found", "Stack '" + name + "' not found.");
+            throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Stack '" + name + "' not found.");
         }
         return stack;
     }
@@ -1114,9 +1114,9 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     /**
      * Returns null if no further content is available. Two errors that will lead to a null value are 404 Bad Request errors, which are
      * handled in the implementation, meaning that no further log file contents are available, or ResourceAccessException, also handled in
-     * the implementation, indicating a possible timeout in the server serving the content. Note that any other CloudFoundryException or
-     * RestClientException exception not related to the two errors mentioned above may still be thrown (e.g. 500 level errors, Unauthorized
-     * or Forbidden exceptions, etc..)
+     * the implementation, indicating a possible timeout in the server serving the content. Note that any other
+     * {@link org.cloudfoundry.client.lib.CloudOperationException}s not related to the two errors mentioned above may still be thrown (e.g.
+     * 500 level errors, Unauthorized or Forbidden exceptions, etc..)
      *
      * @return content if available, which may contain multiple lines, or null if no further content is available.
      */
@@ -1124,19 +1124,19 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     public String getStagingLogs(StartingInfo info, int offset) {
         String stagingFile = info.getStagingFile();
         if (stagingFile != null) {
-            CloudFoundryClientHttpRequestFactory cfRequestFactory = null;
+            CloudControllerRestClientHttpRequestFactory cfRequestFactory = null;
             try {
                 HashMap<String, Object> logsRequest = new HashMap<String, Object>();
                 logsRequest.put("offset", offset);
 
-                cfRequestFactory = getRestTemplate().getRequestFactory() instanceof CloudFoundryClientHttpRequestFactory
-                    ? (CloudFoundryClientHttpRequestFactory) getRestTemplate().getRequestFactory()
+                cfRequestFactory = getRestTemplate().getRequestFactory() instanceof CloudControllerRestClientHttpRequestFactory
+                    ? (CloudControllerRestClientHttpRequestFactory) getRestTemplate().getRequestFactory()
                     : null;
                 if (cfRequestFactory != null) {
                     cfRequestFactory.increaseReadTimeoutForStreamedTailedLogs(5 * 60 * 1000);
                 }
                 return getRestTemplate().getForObject(stagingFile + "&tail&tail_offset={offset}", String.class, logsRequest);
-            } catch (CloudFoundryException e) {
+            } catch (CloudOperationException e) {
                 if (e.getStatusCode()
                     .equals(HttpStatus.NOT_FOUND)) {
                     // Content is no longer available
@@ -1630,10 +1630,10 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         return new Upload(job.getStatus(), job.getErrorDetails());
     }
 
-    protected void configureCloudFoundryRequestFactory(RestTemplate restTemplate) {
+    protected void configureRequestFactory(RestTemplate restTemplate) {
         ClientHttpRequestFactory requestFactory = restTemplate.getRequestFactory();
-        if (!(requestFactory instanceof CloudFoundryClientHttpRequestFactory)) {
-            restTemplate.setRequestFactory(new CloudFoundryClientHttpRequestFactory(requestFactory));
+        if (!(requestFactory instanceof CloudControllerRestClientHttpRequestFactory)) {
+            restTemplate.setRequestFactory(new CloudControllerRestClientHttpRequestFactory(requestFactory));
         }
     }
 
@@ -1972,7 +1972,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
                 instanceList.add(instanceMap);
             }
             return new InstancesInfo(instanceList);
-        } catch (CloudFoundryException e) {
+        } catch (CloudOperationException e) {
             if (e.getStatusCode()
                 .equals(HttpStatus.BAD_REQUEST)) {
                 return null;
@@ -2049,7 +2049,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
                         .equals(HttpStatus.PARTIAL_CONTENT);
                 }
             }, app, instance, filePath);
-        } catch (CloudFoundryException e) {
+        } catch (CloudOperationException e) {
             if (e.getStatusCode()
                 .equals(HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE)) {
                 // must be a 0 byte file
@@ -2079,7 +2079,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
                     if (response.length() == 0) {
                         return "";
                     }
-                    throw new CloudFoundryException(HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE,
+                    throw new CloudOperationException(HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE,
                         "The starting position " + start + " is past the end of the file content.");
                 }
                 if (end != -1) {
@@ -2355,7 +2355,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
                 }
             }
         }
-        throw new CloudFoundryException(HttpStatus.NOT_FOUND, "Not Found", "Service plan " + service.getPlan() + " not found.");
+        throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Service plan " + service.getPlan() + " not found.");
     }
 
     private HttpEntity<MultiValueMap<String, ?>> generatePartialResourceRequest(UploadApplicationPayload application,
@@ -2454,7 +2454,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
             domainGuid = resourceMapper.getGuidOfResource(resource);
         }
         if (domainGuid == null && required) {
-            throw new CloudFoundryException(HttpStatus.NOT_FOUND, "Not Found", "Domain '" + domainName + "' not found.");
+            throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Domain '" + domainName + "' not found.");
         }
         return domainGuid;
     }
@@ -2606,8 +2606,8 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         }
         return getSpaceUserGuids(spaceGuid, urlPath);
     }
-    
-    private List<UUID> getSpaceUserGuids(UUID spaceGuid, String urlPath){
+
+    private List<UUID> getSpaceUserGuids(UUID spaceGuid, String urlPath) {
         Assert.notNull(spaceGuid, "Unable to get space users without specifying space GUID.");
         Map<String, Object> urlVars = new HashMap<String, Object>();
         urlVars.put("guid", spaceGuid);
@@ -2662,7 +2662,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         this.cloudControllerUrl = cloudControllerUrl;
 
         this.restTemplate = restTemplate;
-        configureCloudFoundryRequestFactory(restTemplate);
+        configureRequestFactory(restTemplate);
 
         this.oauthClient = oauthClient;
 
@@ -2775,7 +2775,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         }
     }
 
-    private CloudSpace validateSpaceAndOrg(String spaceName, String orgName, CloudControllerClientImpl client) {
+    private CloudSpace validateSpaceAndOrg(String spaceName, String orgName, CloudControllerRestClientImpl client) {
         List<CloudSpace> spaces = client.getSpaces();
 
         for (CloudSpace space : spaces) {
@@ -2802,7 +2802,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
             }
 
             if (job.getStatus() == CloudJob.Status.FAILED) {
-                throw new CloudOperationException(job.getErrorDetails()
+                throw new CloudException(job.getErrorDetails()
                     .getDescription());
             }
 
@@ -2864,13 +2864,13 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         }
     }
 
-    private class CloudFoundryClientHttpRequestFactory implements ClientHttpRequestFactory {
+    private class CloudControllerRestClientHttpRequestFactory implements ClientHttpRequestFactory {
 
         private Integer defaultSocketTimeout = 0;
 
         private ClientHttpRequestFactory delegate;
 
-        public CloudFoundryClientHttpRequestFactory(ClientHttpRequestFactory delegate) {
+        public CloudControllerRestClientHttpRequestFactory(ClientHttpRequestFactory delegate) {
             this.delegate = delegate;
             captureDefaultReadTimeout();
         }

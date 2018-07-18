@@ -19,7 +19,7 @@ package org.cloudfoundry.client.lib;
 import org.springframework.http.HttpStatus;
 
 @SuppressWarnings("serial")
-public class StagingErrorException extends CloudFoundryException {
+public class StagingErrorException extends CloudOperationException {
 
     public static final int ERROR_CODE = 170001;
 

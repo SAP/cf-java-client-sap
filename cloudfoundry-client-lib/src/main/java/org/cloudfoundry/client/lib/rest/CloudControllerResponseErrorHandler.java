@@ -3,7 +3,7 @@ package org.cloudfoundry.client.lib.rest;
 import java.io.IOException;
 import java.util.Map;
 
-import org.cloudfoundry.client.lib.CloudFoundryException;
+import org.cloudfoundry.client.lib.CloudOperationException;
 import org.cloudfoundry.client.lib.NotFinishedStagingException;
 import org.cloudfoundry.client.lib.StagingErrorException;
 import org.cloudfoundry.client.lib.util.CloudUtil;
@@ -16,7 +16,7 @@ import org.springframework.web.client.RestClientException;
 
 public class CloudControllerResponseErrorHandler extends DefaultResponseErrorHandler {
 
-    private static CloudFoundryException getException(ClientHttpResponse response) throws IOException {
+    private static CloudOperationException getException(ClientHttpResponse response) throws IOException {
         HttpStatus statusCode = response.getStatusCode();
         String statusText = response.getStatusText();
 
@@ -43,18 +43,18 @@ public class CloudControllerResponseErrorHandler extends DefaultResponseErrorHan
                             return new NotFinishedStagingException(statusCode, statusText, description, cloudFoundryErrorCode,
                                 cloudFoundryErrorName);
                         default:
-                            return new CloudFoundryException(statusCode, statusText, description, cloudFoundryErrorCode,
+                            return new CloudOperationException(statusCode, statusText, description, cloudFoundryErrorCode,
                                 cloudFoundryErrorName);
                     }
                 }
-                return new CloudFoundryException(statusCode, statusText, description);
+                return new CloudOperationException(statusCode, statusText, description);
             } catch (JsonParseException e) {
                 // Fall through. Handled below.
             } catch (IOException e) {
                 // Fall through. Handled below.
             }
         }
-        return new CloudFoundryException(statusCode, statusText);
+        return new CloudOperationException(statusCode, statusText);
     }
 
     @Override

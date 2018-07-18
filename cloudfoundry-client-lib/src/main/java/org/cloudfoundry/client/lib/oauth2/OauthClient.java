@@ -21,7 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.cloudfoundry.client.lib.CloudCredentials;
-import org.cloudfoundry.client.lib.CloudFoundryException;
+import org.cloudfoundry.client.lib.CloudOperationException;
 import org.cloudfoundry.client.lib.util.JsonUtil;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -110,7 +110,7 @@ public class OauthClient {
             return provider.obtainAccessToken(resource, request);
         } catch (OAuth2AccessDeniedException oauthEx) {
             HttpStatus status = HttpStatus.valueOf(oauthEx.getHttpErrorCode());
-            throw new CloudFoundryException(status, oauthEx.getMessage(), oauthEx.getSummary());
+            throw new CloudOperationException(status, oauthEx.getMessage(), oauthEx.getSummary());
         }
     }
 

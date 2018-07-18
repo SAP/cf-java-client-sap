@@ -4,14 +4,15 @@ import java.text.MessageFormat;
 
 import org.springframework.http.HttpStatus;
 
-public class CloudControllerException extends CloudFoundryException {
+public class CloudControllerException extends CloudOperationException {
 
     private static final long serialVersionUID = 1L;
     private static final String DEFAULT_CLOUD_CONTROLLER_ERROR_MESSAGE = "Controller operation failed: {0}";
 
-    public CloudControllerException(CloudFoundryException cloudFoundryException) {
-        super(cloudFoundryException.getStatusCode(), cloudFoundryException.getStatusText(), cloudFoundryException.getDescription(),
-            cloudFoundryException.getCloudFoundryErrorCode(), cloudFoundryException.getCloudFoundryErrorName(), cloudFoundryException);
+    public CloudControllerException(CloudOperationException cloudOperationException) {
+        super(cloudOperationException.getStatusCode(), cloudOperationException.getStatusText(), cloudOperationException.getDescription(),
+            cloudOperationException.getCloudFoundryErrorCode(), cloudOperationException.getCloudFoundryErrorName(),
+            cloudOperationException);
     }
 
     public CloudControllerException(HttpStatus statusCode) {

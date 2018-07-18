@@ -62,7 +62,7 @@ import org.springframework.web.client.ResponseErrorHandler;
  *
  * @author Thomas Risberg
  */
-public interface CloudControllerClient {
+public interface CloudControllerRestClient {
 
     // User and Info methods
 
