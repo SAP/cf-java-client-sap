@@ -58,6 +58,8 @@ public class CloudApplication extends CloudEntity {
 
     private Staging staging;
 
+    private String stagingError;
+
     private AppState state;
 
     private List<String> uris;
@@ -235,6 +237,14 @@ public class CloudApplication extends CloudEntity {
 
     public void setStaging(Staging staging) {
         this.staging = staging;
+    }
+
+    public String getStagingError() {
+        return stagingError;
+    }
+
+    public void setStagingError(String stagingError) {
+        this.stagingError = stagingError;
     }
 
     public AppState getState() {

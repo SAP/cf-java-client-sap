@@ -234,8 +234,11 @@ public class CloudEntityResourceMapper {
 
         app.setStaging(staging);
 
+        String stagingFailedDescription = getEntityAttribute(resource, "staging_failed_description", String.class);
+        app.setStagingError(stagingFailedDescription);
+
         Map<String, Object> spaceResource = getEmbeddedResource(resource, "space");
-        if(spaceResource != null) {
+        if (spaceResource != null) {
             CloudSpace space = mapSpaceResource(spaceResource);
             app.setSpace(space);
         }
