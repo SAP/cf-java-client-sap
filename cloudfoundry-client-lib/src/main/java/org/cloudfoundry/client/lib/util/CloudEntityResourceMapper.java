@@ -41,6 +41,7 @@ import org.cloudfoundry.client.lib.domain.CloudServicePlan;
 import org.cloudfoundry.client.lib.domain.CloudSpace;
 import org.cloudfoundry.client.lib.domain.CloudStack;
 import org.cloudfoundry.client.lib.domain.CloudUser;
+import org.cloudfoundry.client.lib.domain.PackageState;
 import org.cloudfoundry.client.lib.domain.SecurityGroupRule;
 import org.cloudfoundry.client.lib.domain.ServiceKey;
 import org.cloudfoundry.client.lib.domain.Staging;
@@ -51,7 +52,6 @@ import org.cloudfoundry.client.lib.domain.Staging;
  * @author Thomas Risberg
  */
 // TODO: use some more advanced JSON mapping framework?
-@SuppressWarnings("ConstantConditions")
 public class CloudEntityResourceMapper {
 
     private static SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
@@ -234,6 +234,12 @@ public class CloudEntityResourceMapper {
 
         app.setStaging(staging);
 
+        String stateAsString = getEntityAttribute(resource, "package_state", String.class);
+        if (stateAsString != null) {
+            PackageState packageState = PackageState.valueOf(stateAsString);
+            app.setPackageState(packageState);
+        }
+
         String stagingFailedDescription = getEntityAttribute(resource, "staging_failed_description", String.class);
         app.setStagingError(stagingFailedDescription);
 
@@ -296,6 +302,7 @@ public class CloudEntityResourceMapper {
 
     private CloudJob mapJobResource(Map<String, Object> resource) {
         String status = getEntityAttribute(resource, "status", String.class);
+        @SuppressWarnings("unchecked")
         Map<String, Object> errorDetailsResource = getEntityAttribute(resource, "error_details", Map.class);
         CloudJob.ErrorDetails errorDetails = null;
         if (errorDetailsResource != null) {
