@@ -279,6 +279,11 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     public void createServiceBroker(CloudServiceBroker serviceBroker) {
         cc.createServiceBroker(serviceBroker);
     }
+    
+    @Override
+    public void createServiceKey(String serviceName, String serviceKeyName, Map<String, Object> parameters) {
+        cc.createServiceKey(serviceName, serviceKeyName, parameters);
+    }
 
     @Override
     public void createSpace(String spaceName) {
@@ -348,6 +353,11 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     @Override
     public void deleteServiceBroker(String name) {
         cc.deleteServiceBroker(name);
+    }
+    
+    @Override
+    public void deleteServiceKey(String service, String serviceKey) {
+        cc.deleteServiceKey(service, serviceKey);
     }
 
     @Override

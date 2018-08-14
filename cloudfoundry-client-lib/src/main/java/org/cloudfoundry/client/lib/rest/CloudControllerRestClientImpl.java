@@ -36,6 +36,7 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 import java.util.zip.ZipFile;
 
 import javax.websocket.ClientEndpointConfig;
@@ -46,8 +47,8 @@ import org.apache.commons.logging.LogFactory;
 import org.cloudfoundry.client.lib.ApplicationLogListener;
 import org.cloudfoundry.client.lib.ClientHttpResponseCallback;
 import org.cloudfoundry.client.lib.CloudCredentials;
-import org.cloudfoundry.client.lib.CloudOperationException;
 import org.cloudfoundry.client.lib.CloudException;
+import org.cloudfoundry.client.lib.CloudOperationException;
 import org.cloudfoundry.client.lib.RestLogCallback;
 import org.cloudfoundry.client.lib.StartingInfo;
 import org.cloudfoundry.client.lib.StreamingLogToken;
@@ -86,8 +87,8 @@ import org.cloudfoundry.client.lib.domain.InstancesInfo;
 import org.cloudfoundry.client.lib.domain.SecurityGroupRule;
 import org.cloudfoundry.client.lib.domain.ServiceKey;
 import org.cloudfoundry.client.lib.domain.Staging;
-import org.cloudfoundry.client.lib.domain.UploadApplicationPayload;
 import org.cloudfoundry.client.lib.domain.Upload;
+import org.cloudfoundry.client.lib.domain.UploadApplicationPayload;
 import org.cloudfoundry.client.lib.oauth2.OauthClient;
 import org.cloudfoundry.client.lib.util.CloudEntityResourceMapper;
 import org.cloudfoundry.client.lib.util.CloudUtil;
@@ -369,6 +370,20 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
+    public void createServiceKey(String serviceName, String serviceKeyName, Map<String, Object> parameters) {
+        Assert.notNull(serviceName, "Service name must not be null");
+        Assert.notNull(serviceKeyName, "Service Key name must not be null");
+        Assert.notNull(parameters, "Parameters must not be null");
+        CloudService service = getService(serviceName);
+        
+        HashMap<String, Object> serviceKeyRequest = new HashMap<>();
+        serviceKeyRequest.put("service_instance_guid", service.getMeta().getGuid().toString());
+        serviceKeyRequest.put("name", serviceKeyName);
+        serviceKeyRequest.put("parameters", parameters);
+        getRestTemplate().postForObject(getUrl("/v2/service_keys"), serviceKeyRequest, String.class);
+    }
+    
+    @Override
     public void createSpace(String spaceName) {
         assertSpaceProvided("create a new space");
         UUID orgGuid = sessionSpace.getOrganization()
@@ -499,6 +514,20 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
             .getGuid());
     }
 
+    @Override
+    public void deleteServiceKey(String serviceName, final String serviceKeyName) {
+        List<ServiceKey> serviceKeys = getServiceKeys(serviceName);
+        
+        for(ServiceKey serviceKey : serviceKeys) {
+            if(serviceKey.getName().equals(serviceKeyName)) {
+                getRestTemplate().delete(getUrl("/v2/service_keys/{guid}"), serviceKey.getMeta().getGuid());
+                return;
+            }
+        }
+
+        throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Service key '" + serviceKeyName + "' not found.");
+    }
+    
     @Override
     public void deleteSpace(String spaceName) {
         assertSpaceProvided("delete a space");

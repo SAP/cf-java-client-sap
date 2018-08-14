@@ -271,6 +271,16 @@ public interface CloudControllerClient {
      * @param serviceBroker cloud service broker info
      */
     void createServiceBroker(CloudServiceBroker serviceBroker);
+    
+    /**
+     * Create a service key.
+     * 
+     * @param service name of service
+     * @param serviceKey name of service-key
+     * @param parameters parameters of service-key
+     * @return
+     */
+    void createServiceKey(String serviceName, String serviceKeyName, Map<String, Object> parameters);
 
     /**
      * Create a space with the specified name
@@ -372,6 +382,14 @@ public interface CloudControllerClient {
      */
     void deleteServiceBroker(String name);
 
+    /**
+     * Delete a service key.
+     * 
+     * @param serviceName name of service
+     * @param serviceKey name of service key
+     */
+    void deleteServiceKey(String service, String serviceKey);
+    
     /**
      * Delete a space with the specified name
      *
