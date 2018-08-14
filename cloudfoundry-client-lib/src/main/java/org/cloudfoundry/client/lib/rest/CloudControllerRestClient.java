@@ -99,6 +99,8 @@ public interface CloudControllerRestClient {
     void createService(CloudService service);
 
     void createServiceBroker(CloudServiceBroker serviceBroker);
+    
+    void createServiceKey(String service, String serviceKey, Map<String, Object> parameters);
 
     void createSpace(String spaceName);
 
@@ -129,6 +131,8 @@ public interface CloudControllerRestClient {
     void deleteService(String service);
 
     void deleteServiceBroker(String name);
+    
+    void deleteServiceKey(String service, String serviceKey);
 
     void deleteSpace(String spaceName);
 
