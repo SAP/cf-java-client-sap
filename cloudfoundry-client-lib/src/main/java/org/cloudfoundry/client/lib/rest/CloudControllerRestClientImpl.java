@@ -375,14 +375,16 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         Assert.notNull(serviceKeyName, "Service Key name must not be null");
         Assert.notNull(parameters, "Parameters must not be null");
         CloudService service = getService(serviceName);
-        
+
         HashMap<String, Object> serviceKeyRequest = new HashMap<>();
-        serviceKeyRequest.put("service_instance_guid", service.getMeta().getGuid().toString());
+        serviceKeyRequest.put("service_instance_guid", service.getMeta()
+            .getGuid()
+            .toString());
         serviceKeyRequest.put("name", serviceKeyName);
         serviceKeyRequest.put("parameters", parameters);
         getRestTemplate().postForObject(getUrl("/v2/service_keys"), serviceKeyRequest, String.class);
     }
-    
+
     @Override
     public void createSpace(String spaceName) {
         assertSpaceProvided("create a new space");
@@ -517,17 +519,19 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     @Override
     public void deleteServiceKey(String serviceName, final String serviceKeyName) {
         List<ServiceKey> serviceKeys = getServiceKeys(serviceName);
-        
-        for(ServiceKey serviceKey : serviceKeys) {
-            if(serviceKey.getName().equals(serviceKeyName)) {
-                getRestTemplate().delete(getUrl("/v2/service_keys/{guid}"), serviceKey.getMeta().getGuid());
+
+        for (ServiceKey serviceKey : serviceKeys) {
+            if (serviceKey.getName()
+                .equals(serviceKeyName)) {
+                getRestTemplate().delete(getUrl("/v2/service_keys/{guid}"), serviceKey.getMeta()
+                    .getGuid());
                 return;
             }
         }
 
         throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Service key '" + serviceKeyName + "' not found.");
     }
-    
+
     @Override
     public void deleteSpace(String spaceName) {
         assertSpaceProvided("delete a space");
@@ -2033,7 +2037,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                 .getGuid());
             urlPath = urlPath + "/organizations/{org}";
         }
-        urlPath = urlPath + "/domains";
+        urlPath = urlPath + "/private_domains";
         return doGetDomains(urlPath, urlVars);
     }
 
@@ -2489,18 +2493,12 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     private Map<String, UUID> getDomainGuids() {
-        Map<String, Object> urlVars = new HashMap<String, Object>();
-        String urlPath = "/v2";
-        if (sessionSpace != null) {
-            urlVars.put("space", sessionSpace.getMeta()
-                .getGuid());
-            urlPath = urlPath + "/spaces/{space}";
-        }
-        String domainPath = urlPath + "/domains?inline-relations-depth=1";
-        List<Map<String, Object>> resourceList = getAllResources(domainPath, urlVars);
-        Map<String, UUID> domains = new HashMap<String, UUID>(resourceList.size());
-        for (Map<String, Object> d : resourceList) {
-            domains.put(CloudEntityResourceMapper.getEntityAttribute(d, "name", String.class), CloudEntityResourceMapper.getMeta(d)
+        List<CloudDomain> availableDomains = new ArrayList<CloudDomain>();
+        availableDomains.addAll(getDomainsForOrg());
+        availableDomains.addAll(getSharedDomains());
+        Map<String, UUID> domains = new HashMap<String, UUID>(availableDomains.size());
+        for (CloudDomain availableDomain : availableDomains) {
+            domains.put(availableDomain.getName(), availableDomain.getMeta()
                 .getGuid());
         }
         return domains;
