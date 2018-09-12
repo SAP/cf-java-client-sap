@@ -9,6 +9,7 @@ import java.net.URI;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 
+import org.apache.commons.io.IOUtils;
 import org.cloudfoundry.client.lib.domain.CloudInfo;
 import org.cloudfoundry.client.lib.domain.CloudSpace;
 import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
@@ -86,13 +87,24 @@ public class TokensFile {
 
     protected TargetInfos getTokensFromFile() {
         final File tokensFile = getTokensFile();
+        FileReader fileReader = null;
+        YamlReader reader = null;
         try {
-            YamlReader reader = new YamlReader(new FileReader(tokensFile));
+            fileReader = new FileReader(tokensFile);
+            reader = new YamlReader(fileReader);
             return reader.read(TargetInfos.class);
         } catch (FileNotFoundException fnfe) {
             return new TargetInfos();
         } catch (IOException e) {
             throw new RuntimeException("An error occurred reading the tokens file at " + tokensFile.getPath() + ":" + e.getMessage(), e);
+        } finally {
+            if (reader != null) {
+                try {
+                    reader.close();
+                } catch (IOException e) {
+                }
+            }
+            IOUtils.closeQuietly(fileReader);
         }
 
     }

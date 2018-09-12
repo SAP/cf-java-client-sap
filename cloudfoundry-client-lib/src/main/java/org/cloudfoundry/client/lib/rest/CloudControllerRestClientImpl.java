@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.Socket;
 import java.net.SocketException;
+import java.net.SocketOptions;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLDecoder;
@@ -1319,7 +1320,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public StreamingLogToken streamLogs(String appName, ApplicationLogListener listener) {
-        return streamLoggregatorLogs(appName, listener, false);
+        return streamLoggregatorLogs(appName, listener);
     }
 
     @Override
@@ -1723,6 +1724,10 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         URI newUri = URI.create(uri);
         String host = newUri.getScheme() != null ? newUri.getHost() : newUri.getPath();
 
+        if (host == null) {
+            throw new IllegalArgumentException("Invalid URI " + uri + " -- host is not specified");
+        }
+        
         String[] hostAndDomain = host.split(DEFAULT_HOST_DOMAIN_SEPARATOR, 2);
         if (hostAndDomain.length != 2) {
             throw new IllegalArgumentException("Invalid URI " + uri + " -- host or domain is not specified");
@@ -1738,7 +1743,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         }
 
         for (String existingDomain : existingDomains.keySet()) {
-            if (host != null && domain.equals(existingDomain)) {
+            if (domain.equals(existingDomain)) {
                 uriInfo.put("domainName", existingDomain);
                 uriInfo.put("host", hostName);
                 uriInfo.put("path", path);
@@ -2774,7 +2779,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         }
     }
 
-    private StreamingLogToken streamLoggregatorLogs(String appName, ApplicationLogListener listener, boolean recent) {
+    private StreamingLogToken streamLoggregatorLogs(String appName, ApplicationLogListener listener) {
         ClientEndpointConfig.Configurator configurator = new ClientEndpointConfig.Configurator() {
             @Override
             public void beforeRequest(Map<String, List<String>> headers) {
@@ -2786,9 +2791,8 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         };
 
         String endpoint = getInfo().getLoggregatorEndpoint();
-        String mode = recent ? "dump" : "tail";
         UUID appId = getAppId(appName);
-        return loggregatorClient.connectToLoggregator(endpoint, mode, appId, listener, configurator);
+        return loggregatorClient.connectToLoggregator(endpoint, "tail", appId, listener, configurator);
     }
 
     private void unbindRoute(Map<String, String> uriInfo, UUID domainGuid, UUID appGuid) {
@@ -2940,11 +2944,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
             // so we fallback to java.net.Socket.
 
             if (defaultSocketTimeout == null) {
-                try {
-                    defaultSocketTimeout = new Socket().getSoTimeout();
-                } catch (SocketException e) {
-                    defaultSocketTimeout = 0;
-                }
+                defaultSocketTimeout = SocketOptions.SO_TIMEOUT;
             }
         }
     }

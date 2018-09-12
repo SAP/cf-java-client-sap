@@ -92,7 +92,7 @@ public abstract class AbstractApplicationArchiveEntry implements ApplicationArch
                         this.size = byteCount;
                     }
                     if (this.sha1Digest == null) {
-                        this.sha1Digest = digest.digest();
+                        this.sha1Digest = digest != null ? digest.digest() : null;
                     }
                 } catch (Exception e) {
                     throw new IllegalStateException(e);
