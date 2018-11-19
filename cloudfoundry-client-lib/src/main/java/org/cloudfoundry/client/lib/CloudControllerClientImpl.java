@@ -44,6 +44,7 @@ import org.cloudfoundry.client.lib.domain.CloudSpace;
 import org.cloudfoundry.client.lib.domain.CloudStack;
 import org.cloudfoundry.client.lib.domain.CloudUser;
 import org.cloudfoundry.client.lib.domain.CrashesInfo;
+import org.cloudfoundry.client.lib.domain.DockerInfo;
 import org.cloudfoundry.client.lib.domain.InstancesInfo;
 import org.cloudfoundry.client.lib.domain.ServiceKey;
 import org.cloudfoundry.client.lib.domain.Staging;
@@ -251,8 +252,8 @@ public class CloudControllerClientImpl implements CloudControllerClient {
 
     @Override
     public void createApplication(String appName, Staging staging, Integer disk, Integer memory, List<String> uris,
-        List<String> serviceNames) {
-        cc.createApplication(appName, staging, disk, memory, uris, serviceNames);
+        List<String> serviceNames, DockerInfo dockerInfo) {
+        cc.createApplication(appName, staging, disk, memory, uris, serviceNames, dockerInfo);
     }
 
     @Override

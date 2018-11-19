@@ -43,6 +43,7 @@ import org.cloudfoundry.client.lib.domain.CloudSpace;
 import org.cloudfoundry.client.lib.domain.CloudStack;
 import org.cloudfoundry.client.lib.domain.CloudUser;
 import org.cloudfoundry.client.lib.domain.CrashesInfo;
+import org.cloudfoundry.client.lib.domain.DockerInfo;
 import org.cloudfoundry.client.lib.domain.InstancesInfo;
 import org.cloudfoundry.client.lib.domain.ServiceKey;
 import org.cloudfoundry.client.lib.domain.Staging;
@@ -206,9 +207,10 @@ public interface CloudControllerClient {
      * @param memory memory to use in MB
      * @param uris list of URIs for the app
      * @param serviceNames list of service names to bind to app
+     * @param dockerInfo docker params(image, username, password)
      */
     public void createApplication(String appName, Staging staging, Integer disk, Integer memory, List<String> uris,
-        List<String> serviceNames);
+        List<String> serviceNames, DockerInfo dockerInfo);
 
     /**
      * Create quota

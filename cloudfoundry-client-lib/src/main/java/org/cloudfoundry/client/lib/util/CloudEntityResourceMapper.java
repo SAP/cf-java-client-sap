@@ -16,6 +16,7 @@
 
 package org.cloudfoundry.client.lib.util;
 
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -41,10 +42,14 @@ import org.cloudfoundry.client.lib.domain.CloudServicePlan;
 import org.cloudfoundry.client.lib.domain.CloudSpace;
 import org.cloudfoundry.client.lib.domain.CloudStack;
 import org.cloudfoundry.client.lib.domain.CloudUser;
+import org.cloudfoundry.client.lib.domain.DockerCredentials;
+import org.cloudfoundry.client.lib.domain.DockerInfo;
 import org.cloudfoundry.client.lib.domain.PackageState;
 import org.cloudfoundry.client.lib.domain.SecurityGroupRule;
 import org.cloudfoundry.client.lib.domain.ServiceKey;
 import org.cloudfoundry.client.lib.domain.Staging;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * Class handling the mapping of the cloud domain objects
@@ -221,6 +226,9 @@ public class CloudEntityResourceMapper {
         String healthCheckType = getEntityAttribute(resource, "health_check_type", String.class);
         String healthCheckHttpEndpoint = getEntityAttribute(resource, "health_check_http_endpoint", String.class);
         Boolean sshEnabled = getEntityAttribute(resource, "enable_ssh", Boolean.class);
+        String dockerImage = getEntityAttribute(resource, "docker_image", String.class);
+        Map<String, String> dockerCredentials = getEntityAttribute(resource, "docker_credentials", Map.class);
+        DockerInfo dockerInfo = createDockerInfo(dockerImage, dockerCredentials);
 
         Staging staging = new Staging.StagingBuilder().command(command)
             .buildpackUrl(buildpack)
@@ -230,6 +238,7 @@ public class CloudEntityResourceMapper {
             .healthCheckType(healthCheckType)
             .healthCheckHttpEndpoint(healthCheckHttpEndpoint)
             .sshEnabled(sshEnabled)
+            .dockerInfo(dockerInfo)
             .build();
 
         app.setStaging(staging);
@@ -266,6 +275,22 @@ public class CloudEntityResourceMapper {
         }
         app.setServices(serviceList);
         return app;
+    }
+
+    private DockerInfo createDockerInfo(String dockerImage, Map<String, String> dockerCredentials) {
+        if (dockerImage == null) {
+            return null;
+        }
+        DockerInfo dockerInfo = new DockerInfo(dockerImage);
+        String username = dockerCredentials.get("username");
+        String password = dockerCredentials.get("password");
+        if (username == null || password == null) {
+            return dockerInfo;
+        }
+        DockerCredentials credentials = new DockerCredentials(username, password);
+        dockerInfo.setDockerCredentials(credentials);
+
+        return dockerInfo;
     }
 
     private CloudSecurityGroup mapApplicationSecurityGroupResource(Map<String, Object> resource) {

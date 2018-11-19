@@ -36,7 +36,6 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Predicate;
 import java.util.zip.ZipFile;
 
 import javax.websocket.ClientEndpointConfig;
@@ -81,6 +80,7 @@ import org.cloudfoundry.client.lib.domain.CloudStack;
 import org.cloudfoundry.client.lib.domain.CloudUser;
 import org.cloudfoundry.client.lib.domain.CrashInfo;
 import org.cloudfoundry.client.lib.domain.CrashesInfo;
+import org.cloudfoundry.client.lib.domain.DockerInfo;
 import org.cloudfoundry.client.lib.domain.InstanceState;
 import org.cloudfoundry.client.lib.domain.InstanceStats;
 import org.cloudfoundry.client.lib.domain.InstancesInfo;
@@ -275,12 +275,12 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public void createApplication(String appName, Staging staging, Integer memory, List<String> uris, List<String> serviceNames) {
-        createApplication(appName, staging, null, memory, uris, serviceNames);
+        createApplication(appName, staging, null, memory, uris, serviceNames, null);
     }
 
     @Override
     public void createApplication(String appName, Staging staging, Integer disk, Integer memory, List<String> uris,
-        List<String> serviceNames) {
+        List<String> serviceNames, DockerInfo dockerInfo) {
         HashMap<String, Object> appRequest = new HashMap<String, Object>();
         appRequest.put("space_guid", sessionSpace.getMeta()
             .getGuid());
@@ -288,6 +288,12 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         appRequest.put("memory", memory);
         if (disk != null) {
             appRequest.put("disk_quota", disk);
+        }
+        if (dockerInfo != null) {
+            appRequest.put("docker_image", dockerInfo.getImage());
+            if (dockerInfo.getDockerCredentials() != null) {
+                appRequest.put("docker_credentials", dockerInfo.getDockerCredentials());
+            }
         }
         appRequest.put("instances", 1);
         addStagingToRequest(staging, appRequest);
