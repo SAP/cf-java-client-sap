@@ -50,6 +50,7 @@ import org.cloudfoundry.client.lib.domain.CloudSpace;
 import org.cloudfoundry.client.lib.domain.CloudStack;
 import org.cloudfoundry.client.lib.domain.CloudUser;
 import org.cloudfoundry.client.lib.domain.CrashesInfo;
+import org.cloudfoundry.client.lib.domain.DockerInfo;
 import org.cloudfoundry.client.lib.domain.InstancesInfo;
 import org.cloudfoundry.client.lib.domain.ServiceKey;
 import org.cloudfoundry.client.lib.domain.Staging;
@@ -86,7 +87,7 @@ public interface CloudControllerRestClient {
 
     void createApplication(String appName, Staging staging, Integer memory, List<String> uris, List<String> serviceNames);
 
-    void createApplication(String appName, Staging staging, Integer disk, Integer memory, List<String> uris, List<String> serviceNames);
+    void createApplication(String appName, Staging staging, Integer disk, Integer memory, List<String> uris, List<String> serviceNames, DockerInfo dockerInfo);
 
     // Service methods
 

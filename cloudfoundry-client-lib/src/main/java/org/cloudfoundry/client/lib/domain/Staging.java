@@ -40,6 +40,8 @@ public class Staging {
     private String healthCheckHttpEndpoint;
 
     private Boolean sshEnabled;
+    
+    private DockerInfo dockerInfo;
 
     /**
      * Default staging: No command, default buildpack
@@ -57,6 +59,7 @@ public class Staging {
         this.healthCheckType = builder.healthCheckType;
         this.healthCheckHttpEndpoint = builder.healthCheckHttpEndpoint;
         this.sshEnabled = builder.sshEnabled;
+        this.dockerInfo = builder.dockerInfo;
     }
 
     public static class StagingBuilder {
@@ -68,7 +71,8 @@ public class Staging {
         private String healthCheckType;
         private String healthCheckHttpEndpoint;
         private Boolean sshEnabled;
-
+        private DockerInfo dockerInfo;
+        
         // @param command the application command; may be null
         public StagingBuilder command(String command) {
             this.command = command;
@@ -117,6 +121,12 @@ public class Staging {
         // @param sshEnabled boolean value which shows if the ssh for the app is enabled or disabled; may be null
         public StagingBuilder sshEnabled(Boolean sshEnabled) {
             this.sshEnabled = sshEnabled;
+            return this;
+        }
+        
+        // @param dockerInfo; may be null if a docker image is not used
+        public StagingBuilder dockerInfo(DockerInfo dockerInfo) {
+            this.dockerInfo = dockerInfo;
             return this;
         }
 
@@ -181,6 +191,13 @@ public class Staging {
      */
     public String getStack() {
         return stack;
+    }
+    
+    /**
+     * @return dockerInfo
+     */
+    public DockerInfo getDockerInfo() {
+        return dockerInfo;
     }
 
     @Override
