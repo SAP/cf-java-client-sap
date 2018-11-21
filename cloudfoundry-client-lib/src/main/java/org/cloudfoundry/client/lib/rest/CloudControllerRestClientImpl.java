@@ -1975,11 +1975,10 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                     .getGuid());
             }
         }
-        ResponseEntity<Map<String, Object>> response = getRestTemplate().exchange(getUrl("/v2/service_instances/{guid}?async=true"),
+        ResponseEntity<Map<String, Object>> response = getRestTemplate().exchange(getUrl("/v2/service_instances/{guid}?accepts_incomplete=true"),
             HttpMethod.DELETE, HttpEntity.EMPTY, new ParameterizedTypeReference<Map<String, Object>>() {
             }, cloudService.getMeta()
                 .getGuid());
-        waitForAsyncJobCompletion(response.getBody());
     }
 
     private void doDeleteSpace(UUID spaceGuid) {
