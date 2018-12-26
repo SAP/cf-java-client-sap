@@ -48,6 +48,7 @@ import org.cloudfoundry.client.lib.domain.CloudServiceInstance;
 import org.cloudfoundry.client.lib.domain.CloudServiceOffering;
 import org.cloudfoundry.client.lib.domain.CloudSpace;
 import org.cloudfoundry.client.lib.domain.CloudStack;
+import org.cloudfoundry.client.lib.domain.CloudTask;
 import org.cloudfoundry.client.lib.domain.CloudUser;
 import org.cloudfoundry.client.lib.domain.CrashesInfo;
 import org.cloudfoundry.client.lib.domain.DockerInfo;
@@ -87,7 +88,8 @@ public interface CloudControllerRestClient {
 
     void createApplication(String appName, Staging staging, Integer memory, List<String> uris, List<String> serviceNames);
 
-    void createApplication(String appName, Staging staging, Integer disk, Integer memory, List<String> uris, List<String> serviceNames, DockerInfo dockerInfo);
+    void createApplication(String appName, Staging staging, Integer disk, Integer memory, List<String> uris, List<String> serviceNames,
+        DockerInfo dockerInfo);
 
     // Service methods
 
@@ -100,7 +102,7 @@ public interface CloudControllerRestClient {
     void createService(CloudService service);
 
     void createServiceBroker(CloudServiceBroker serviceBroker);
-    
+
     void createServiceKey(String service, String serviceKey, Map<String, Object> parameters);
 
     void createSpace(String spaceName);
@@ -132,7 +134,7 @@ public interface CloudControllerRestClient {
     void deleteService(String service);
 
     void deleteServiceBroker(String name);
-    
+
     void deleteServiceKey(String service, String serviceKey);
 
     void deleteSpace(String spaceName);
@@ -238,17 +240,17 @@ public interface CloudControllerRestClient {
     CloudSpace getSpace(String spaceName, boolean required);
 
     List<UUID> getSpaceAuditors(String orgName, String spaceName);
-    
+
     List<UUID> getSpaceAuditors(UUID spaceGuid);
 
     List<UUID> getSpaceDevelopers(String orgName, String spaceName);
-    
+
     List<UUID> getSpaceDevelopers(UUID spaceGuid);
 
     // Domains and routes management
 
     List<UUID> getSpaceManagers(String orgName, String spaceName);
-    
+
     List<UUID> getSpaceManagers(UUID spaceGuid);
 
     List<CloudSpace> getSpaces();
@@ -348,5 +350,13 @@ public interface CloudControllerRestClient {
     String asyncUploadApplication(String appName, ApplicationArchive archive, UploadStatusCallback callback) throws IOException;
 
     Upload getUploadStatus(String uploadToken);
+
+    boolean areTasksSupported();
+
+    List<CloudTask> getTasks(String applicationName);
+
+    CloudTask runTask(String applicationName, CloudTask task);
+
+    CloudTask cancelTask(UUID taskGuid);
 
 }

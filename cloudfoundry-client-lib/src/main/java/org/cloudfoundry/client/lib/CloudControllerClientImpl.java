@@ -42,6 +42,7 @@ import org.cloudfoundry.client.lib.domain.CloudServiceInstance;
 import org.cloudfoundry.client.lib.domain.CloudServiceOffering;
 import org.cloudfoundry.client.lib.domain.CloudSpace;
 import org.cloudfoundry.client.lib.domain.CloudStack;
+import org.cloudfoundry.client.lib.domain.CloudTask;
 import org.cloudfoundry.client.lib.domain.CloudUser;
 import org.cloudfoundry.client.lib.domain.CrashesInfo;
 import org.cloudfoundry.client.lib.domain.DockerInfo;
@@ -120,7 +121,8 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         this(credentials, cloudControllerUrl, sessionSpace, null, false);
     }
 
-    public CloudControllerClientImpl(CloudCredentials credentials, URL cloudControllerUrl, CloudSpace sessionSpace, boolean trustSelfSignedCerts) {
+    public CloudControllerClientImpl(CloudCredentials credentials, URL cloudControllerUrl, CloudSpace sessionSpace,
+        boolean trustSelfSignedCerts) {
         this(credentials, cloudControllerUrl, sessionSpace, null, trustSelfSignedCerts);
     }
 
@@ -280,7 +282,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     public void createServiceBroker(CloudServiceBroker serviceBroker) {
         cc.createServiceBroker(serviceBroker);
     }
-    
+
     @Override
     public void createServiceKey(String serviceName, String serviceKeyName, Map<String, Object> parameters) {
         cc.createServiceKey(serviceName, serviceKeyName, parameters);
@@ -355,7 +357,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     public void deleteServiceBroker(String name) {
         cc.deleteServiceBroker(name);
     }
-    
+
     @Override
     public void deleteServiceKey(String service, String serviceKey) {
         cc.deleteServiceKey(service, serviceKey);
@@ -646,9 +648,9 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     public List<UUID> getSpaceAuditors(String spaceName) {
         return cc.getSpaceAuditors(null, spaceName);
     }
-    
+
     @Override
-    public List<UUID> getSpaceAuditors(UUID spaceGuid){
+    public List<UUID> getSpaceAuditors(UUID spaceGuid) {
         return cc.getSpaceAuditors(spaceGuid);
     }
 
@@ -661,9 +663,9 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     public List<UUID> getSpaceDevelopers(String spaceName) {
         return cc.getSpaceDevelopers(null, spaceName);
     }
-    
+
     @Override
-    public List<UUID> getSpaceDevelopers(UUID spaceGuid){
+    public List<UUID> getSpaceDevelopers(UUID spaceGuid) {
         return cc.getSpaceDevelopers(spaceGuid);
     }
 
@@ -676,9 +678,9 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     public List<UUID> getSpaceManagers(String spaceName) {
         return cc.getSpaceManagers(null, spaceName);
     }
-    
+
     @Override
-    public List<UUID> getSpaceManagers(UUID spaceGuid){
+    public List<UUID> getSpaceManagers(UUID spaceGuid) {
         return cc.getSpaceManagers(spaceGuid);
     }
 
@@ -950,6 +952,26 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     @Override
     public Upload getUploadStatus(String uploadToken) {
         return cc.getUploadStatus(uploadToken);
+    }
+
+    @Override
+    public boolean areTasksSupported() {
+        return cc.areTasksSupported();
+    }
+
+    @Override
+    public List<CloudTask> getTasks(String applicationName) {
+        return cc.getTasks(applicationName);
+    }
+
+    @Override
+    public CloudTask runTask(String applicationName, CloudTask task) {
+        return cc.runTask(applicationName, task);
+    }
+
+    @Override
+    public CloudTask cancelTask(UUID taskGuid) {
+        return cc.cancelTask(taskGuid);
     }
 
 }

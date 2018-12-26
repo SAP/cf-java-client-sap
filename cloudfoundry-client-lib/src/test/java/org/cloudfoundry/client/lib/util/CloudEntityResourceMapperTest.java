@@ -10,17 +10,26 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.apache.commons.io.IOUtils;
+import org.cloudfoundry.client.lib.domain.CloudTask;
 import org.cloudfoundry.client.lib.domain.CloudEntity.Meta;
 import org.junit.Test;
 
 public class CloudEntityResourceMapperTest {
 
-    private static final Map<String, Object> V2_RESOURCE = getResourceAsMap("v2-resource.json");
-    private static final Map<String, Object> V3_RESOURCE = getResourceAsMap("v3-resource.json");
-    private static final String V2_RESOURCE_GUID = "cc3b67fa-cda6-4df7-ba47-eb5f2a123992";
-    private static final String V3_RESOURCE_GUID = "d5cc22ec-99a3-4e6a-af91-a44b4ab7b6fa";
-    private static final String V2_RESOURCE_NAME = "my-service-instance";
-    private static final String V3_RESOURCE_NAME = "migrate";
+    private static final Map<String, Object> SERVICE_INSTANCE_RESOURCE = getResourceAsMap("service-instance.json");
+    private static final String SERVICE_INSTANCE_GUID = "cc3b67fa-cda6-4df7-ba47-eb5f2a123992";
+    private static final String SERVICE_INSTANCE_NAME = "my-service-instance";
+
+    private static final Map<String, Object> TASK_RESOURCE = getResourceAsMap("task.json");
+    private static final String TASK_GUID = "d5cc22ec-99a3-4e6a-af91-a44b4ab7b6fa";
+    private static final String TASK_NAME = "migrate";
+
+    private static final Map<String, Object> V2_RESOURCE = SERVICE_INSTANCE_RESOURCE;
+    private static final Map<String, Object> V3_RESOURCE = TASK_RESOURCE;
+    private static final String V2_RESOURCE_GUID = SERVICE_INSTANCE_GUID;
+    private static final String V3_RESOURCE_GUID = TASK_GUID;
+    private static final String V2_RESOURCE_NAME = SERVICE_INSTANCE_NAME;
+    private static final String V3_RESOURCE_NAME = TASK_NAME;
 
     private CloudEntityResourceMapper resourceMapper = new CloudEntityResourceMapper();
 
@@ -112,6 +121,18 @@ public class CloudEntityResourceMapperTest {
     public void testGetAttributeOfV3ResourceWithNull() {
         String name = CloudEntityResourceMapper.getAttributeOfV3Resource(null, "name", String.class);
         assertNull(name);
+    }
+
+    @Test
+    public void testMapTaskResource() {
+        CloudTask task = resourceMapper.mapResource(V3_RESOURCE, CloudTask.class);
+        assertEquals(TASK_NAME, task.getName());
+        assertEquals(TASK_GUID, task.getMeta()
+            .getGuid()
+            .toString());
+        assertEquals("rake db:migrate", task.getCommand());
+        assertEquals(Integer.valueOf(512), task.getMemory());
+        assertEquals(Integer.valueOf(1024), task.getDiskQuota());
     }
 
     private static Map<String, Object> getResourceAsMap(String resourceName) {
