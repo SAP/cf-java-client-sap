@@ -46,7 +46,6 @@ import org.apache.commons.logging.LogFactory;
 import org.cloudfoundry.client.lib.ApplicationLogListener;
 import org.cloudfoundry.client.lib.ClientHttpResponseCallback;
 import org.cloudfoundry.client.lib.CloudCredentials;
-import org.cloudfoundry.client.lib.CloudException;
 import org.cloudfoundry.client.lib.CloudOperationException;
 import org.cloudfoundry.client.lib.RestLogCallback;
 import org.cloudfoundry.client.lib.StartingInfo;
@@ -137,8 +136,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     private static final String AUTHORIZATION_HEADER_KEY = "Authorization";
 
     private static final long JOB_POLLING_PERIOD = TimeUnit.SECONDS.toMillis(5);
-
-    private static final long JOB_TIMEOUT = TimeUnit.MINUTES.toMillis(3);
 
     private static final String LOGS_LOCATION = "logs";
 
@@ -1981,8 +1978,8 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                     .getGuid());
             }
         }
-        ResponseEntity<Map<String, Object>> response = getRestTemplate().exchange(getUrl("/v2/service_instances/{guid}?accepts_incomplete=true"),
-            HttpMethod.DELETE, HttpEntity.EMPTY, new ParameterizedTypeReference<Map<String, Object>>() {
+        getRestTemplate().exchange(getUrl("/v2/service_instances/{guid}?accepts_incomplete=true"), HttpMethod.DELETE, HttpEntity.EMPTY,
+            new ParameterizedTypeReference<Map<String, Object>>() {
             }, cloudService.getMeta()
                 .getGuid());
     }
@@ -2824,33 +2821,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         throw new IllegalArgumentException("No matching organization and space found for org: " + orgName + " space: " + "" + spaceName);
     }
 
-    private void waitForAsyncJobCompletion(Map<String, Object> jobResponse) {
-        long timeout = System.currentTimeMillis() + JOB_TIMEOUT;
-        while (System.currentTimeMillis() < timeout) {
-            CloudJob job = resourceMapper.mapResource(jobResponse, CloudJob.class);
-
-            if (job.getStatus() == CloudJob.Status.FINISHED) {
-                return;
-            }
-
-            if (job.getStatus() == CloudJob.Status.FAILED) {
-                throw new CloudException(job.getErrorDetails()
-                    .getDescription());
-            }
-
-            try {
-                Thread.sleep(JOB_POLLING_PERIOD);
-            } catch (InterruptedException e) {
-                return;
-            }
-
-            jobResponse = getRestTemplate().exchange(getUrl(job.getMeta()
-                .getUrl()), HttpMethod.GET, HttpEntity.EMPTY, new ParameterizedTypeReference<Map<String, Object>>() {
-                })
-                .getBody();
-        }
-    }
-
     private static class ResponseExtractorWrapper implements ResponseExtractor {
 
         private ClientHttpResponseCallback callback;
@@ -2865,35 +2835,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
             return null;
         }
 
-    }
-
-    private class AccumulatingApplicationLogListener implements ApplicationLogListener {
-
-        private List<ApplicationLog> logs = new ArrayList<ApplicationLog>();
-
-        public List<ApplicationLog> getLogs() {
-            Collections.sort(logs);
-            return logs;
-        }
-
-        @Override
-        public void onComplete() {
-            synchronized (this) {
-                this.notify();
-            }
-        }
-
-        @Override
-        public void onError(Throwable exception) {
-            synchronized (this) {
-                this.notify();
-            }
-        }
-
-        @Override
-        public void onMessage(ApplicationLog log) {
-            logs.add(log);
-        }
     }
 
     private class CloudControllerRestClientHttpRequestFactory implements ClientHttpRequestFactory {

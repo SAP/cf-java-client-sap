@@ -11,7 +11,7 @@ public class CloudServiceBrokerException extends CloudOperationException {
 
     public CloudServiceBrokerException(CloudOperationException cloudOperationException) {
         super(cloudOperationException.getStatusCode(), cloudOperationException.getStatusText(), cloudOperationException.getDescription(),
-            cloudOperationException.getCloudFoundryErrorCode(), cloudOperationException.getCloudFoundryErrorName(), cloudOperationException);
+            cloudOperationException);
     }
 
     public CloudServiceBrokerException(HttpStatus statusCode) {
@@ -24,11 +24,6 @@ public class CloudServiceBrokerException extends CloudOperationException {
 
     public CloudServiceBrokerException(HttpStatus statusCode, String statusText, String description) {
         super(statusCode, statusText, description);
-    }
-
-    public CloudServiceBrokerException(HttpStatus statusCode, String statusText, String description, int cloudFoundryErrorCode,
-        String cloudFoundryErrorName) {
-        super(statusCode, statusText, description, cloudFoundryErrorCode, cloudFoundryErrorName);
     }
 
     @Override
