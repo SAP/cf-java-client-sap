@@ -41,6 +41,7 @@ import org.cloudfoundry.client.lib.domain.CloudServiceInstance;
 import org.cloudfoundry.client.lib.domain.CloudServiceOffering;
 import org.cloudfoundry.client.lib.domain.CloudSpace;
 import org.cloudfoundry.client.lib.domain.CloudStack;
+import org.cloudfoundry.client.lib.domain.CloudTask;
 import org.cloudfoundry.client.lib.domain.CloudUser;
 import org.cloudfoundry.client.lib.domain.CrashesInfo;
 import org.cloudfoundry.client.lib.domain.DockerInfo;
@@ -273,7 +274,7 @@ public interface CloudControllerClient {
      * @param serviceBroker cloud service broker info
      */
     void createServiceBroker(CloudServiceBroker serviceBroker);
-    
+
     /**
      * Create a service key.
      * 
@@ -391,7 +392,7 @@ public interface CloudControllerClient {
      * @param serviceKey name of service key
      */
     void deleteServiceKey(String service, String serviceKey);
-    
+
     /**
      * Delete a space with the specified name
      *
@@ -837,7 +838,7 @@ public interface CloudControllerClient {
      * @return List of space auditor UUID
      */
     List<UUID> getSpaceAuditors(String spaceName);
-    
+
     List<UUID> getSpaceAuditors(UUID spaceGuid);
 
     /**
@@ -856,7 +857,7 @@ public interface CloudControllerClient {
      * @return List of space developer UUID
      */
     List<UUID> getSpaceDevelopers(String spaceName);
-    
+
     List<UUID> getSpaceDevelopers(UUID spaceGuid);
 
     /**
@@ -875,7 +876,7 @@ public interface CloudControllerClient {
      * @return List of space manager UUID
      */
     List<UUID> getSpaceManagers(String spaceName);
-    
+
     List<UUID> getSpaceManagers(UUID spaceGuid);
 
     /**
@@ -1318,5 +1319,34 @@ public interface CloudControllerClient {
     String asyncUploadApplication(String appName, ApplicationArchive archive, UploadStatusCallback callback) throws IOException;
 
     Upload getUploadStatus(String uploadToken);
+
+    boolean areTasksSupported();
+
+    /**
+     * Get the list of one-off tasks currently known for the given application.
+     * 
+     * @param applicationName the application to look for tasks
+     * @return the list of known tasks
+     * @throws UnsupportedOperationException if the targeted controller does not support tasks
+     */
+    List<CloudTask> getTasks(String applicationName);
+
+    /**
+     * Run a one-off task on an application.
+     * 
+     * @param applicationName the application to run the task on
+     * @param task the task to run
+     * @return the ran task
+     * @throws UnsupportedOperationException if the targeted controller does not support tasks
+     */
+    CloudTask runTask(String applicationName, CloudTask task);
+
+    /**
+     * Cancel the given task.
+     * 
+     * @param taskGuid the GUID of the task to cancel
+     * @return the cancelled task
+     */
+    CloudTask cancelTask(UUID taskGuid);
 
 }

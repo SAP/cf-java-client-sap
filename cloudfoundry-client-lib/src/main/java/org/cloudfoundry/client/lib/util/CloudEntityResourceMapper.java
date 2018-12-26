@@ -41,6 +41,8 @@ import org.cloudfoundry.client.lib.domain.CloudServiceOffering;
 import org.cloudfoundry.client.lib.domain.CloudServicePlan;
 import org.cloudfoundry.client.lib.domain.CloudSpace;
 import org.cloudfoundry.client.lib.domain.CloudStack;
+import org.cloudfoundry.client.lib.domain.CloudTask;
+import org.cloudfoundry.client.lib.domain.CloudTask.State;
 import org.cloudfoundry.client.lib.domain.CloudUser;
 import org.cloudfoundry.client.lib.domain.DockerCredentials;
 import org.cloudfoundry.client.lib.domain.DockerInfo;
@@ -192,6 +194,9 @@ public class CloudEntityResourceMapper {
         }
         if (targetClass == CloudEvent.class) {
             return (T) mapEventResource(resource);
+        }
+        if (targetClass == CloudTask.class) {
+            return (T) mapTaskResource(resource);
         }
         if (targetClass == CloudService.class) {
             return (T) mapServiceResource(resource);
@@ -358,6 +363,28 @@ public class CloudEntityResourceMapper {
         event.setTimestamp(timestamp);
 
         return event;
+    }
+
+    private CloudTask mapTaskResource(Map<String, Object> resource) {
+        CloudTask task = new CloudTask(getV3Meta(resource), getNameOfV3Resource(resource));
+        task.setCommand(getAttributeOfV3Resource(resource, "command", String.class));
+        task.setMemory(getAttributeOfV3Resource(resource, "memory_in_mb", Integer.class));
+        task.setDiskQuota(getAttributeOfV3Resource(resource, "disk_in_mb", Integer.class));
+        task.setState(getTaskState(resource));
+        task.setResult(getTaskResult(resource));
+        return task;
+    }
+
+    private State getTaskState(Map<String, Object> resource) {
+        String stateAsString = getAttributeOfV3Resource(resource, "state", String.class);
+        return stateAsString == null ? null : CloudTask.State.valueOf(stateAsString);
+    }
+
+    private CloudTask.Result getTaskResult(Map<String, Object> resource) {
+        @SuppressWarnings("unchecked")
+        Map<String, Object> result = getAttributeOfV3Resource(resource, "result", Map.class);
+        String failureReason = (String) result.get("failure_reason");
+        return new CloudTask.Result(failureReason);
     }
 
     private CloudJob mapJobResource(Map<String, Object> resource) {
