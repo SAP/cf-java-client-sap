@@ -298,7 +298,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
         String appResp = getRestTemplate().postForObject(getUrl("/v2/apps"), appRequest, String.class);
         Map<String, Object> appEntity = JsonUtil.convertJsonToMap(appResp);
-        UUID newAppGuid = CloudEntityResourceMapper.getMeta(appEntity)
+        UUID newAppGuid = CloudEntityResourceMapper.getV2Meta(appEntity)
             .getGuid();
 
         if (serviceNames != null && serviceNames.size() > 0) {
@@ -1910,7 +1910,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
             .getGuid());
         String routeResp = getRestTemplate().postForObject(getUrl("/v2/routes"), routeRequest, String.class);
         Map<String, Object> routeEntity = JsonUtil.convertJsonToMap(routeResp);
-        return CloudEntityResourceMapper.getMeta(routeEntity)
+        return CloudEntityResourceMapper.getV2Meta(routeEntity)
             .getGuid();
     }
 
@@ -1931,7 +1931,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         domainRequest.put("wildcard", true);
         String resp = getRestTemplate().postForObject(getUrl(urlPath), domainRequest, String.class);
         Map<String, Object> respMap = JsonUtil.convertJsonToMap(resp);
-        return resourceMapper.getGuidOfResource(respMap);
+        return resourceMapper.getGuidOfV2Resource(respMap);
     }
 
     private void doCreateSecurityGroup(String name, List<Map<String, Object>> rules) {
@@ -1949,7 +1949,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         spaceRequest.put("name", spaceName);
         String resp = getRestTemplate().postForObject(getUrl(urlPath), spaceRequest, String.class);
         Map<String, Object> respMap = JsonUtil.convertJsonToMap(resp);
-        return resourceMapper.getGuidOfResource(respMap);
+        return resourceMapper.getGuidOfV2Resource(respMap);
     }
 
     private void doDeleteApplication(UUID appId) {
@@ -2143,8 +2143,8 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         List<CloudRoute> routes = new ArrayList<CloudRoute>();
         for (Map<String, Object> route : allRoutes) {
             // TODO: move space_guid to path once implemented (see above):
-            UUID space = CloudEntityResourceMapper.getEntityAttribute(route, "space_guid", UUID.class);
-            UUID domain = CloudEntityResourceMapper.getEntityAttribute(route, "domain_guid", UUID.class);
+            UUID space = CloudEntityResourceMapper.getAttributeOfV2Resource(route, "space_guid", UUID.class);
+            UUID domain = CloudEntityResourceMapper.getAttributeOfV2Resource(route, "domain_guid", UUID.class);
             if (sessionSpace.getMeta()
                 .getGuid()
                 .equals(space) && domainGuid.equals(domain)) {
@@ -2334,8 +2334,8 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         List<String> uris = new ArrayList<String>();
         for (Map<String, Object> resource : resourceList) {
             Map<String, Object> domainResource = CloudEntityResourceMapper.getEmbeddedResource(resource, "domain");
-            String host = CloudEntityResourceMapper.getEntityAttribute(resource, "host", String.class);
-            String domain = CloudEntityResourceMapper.getEntityAttribute(domainResource, "name", String.class);
+            String host = CloudEntityResourceMapper.getAttributeOfV2Resource(resource, "host", String.class);
+            String domain = CloudEntityResourceMapper.getAttributeOfV2Resource(domainResource, "name", String.class);
             if (host != null && host.length() > 0)
                 uris.add(host + "." + domain);
             else
@@ -2460,9 +2460,9 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         List<Map<String, Object>> resourceList = getAllResources(urlPath, urlVars);
         for (Map<String, Object> resource : resourceList) {
             fillInEmbeddedResource(resource, "service_bindings");
-            List<Map<String, Object>> bindings = CloudEntityResourceMapper.getEntityAttribute(resource, "service_bindings", List.class);
+            List<Map<String, Object>> bindings = CloudEntityResourceMapper.getAttributeOfV2Resource(resource, "service_bindings", List.class);
             for (Map<String, Object> binding : bindings) {
-                String appId = CloudEntityResourceMapper.getEntityAttribute(binding, "app_guid", String.class);
+                String appId = CloudEntityResourceMapper.getAttributeOfV2Resource(binding, "app_guid", String.class);
                 if (appId != null) {
                     appGuids.add(UUID.fromString(appId));
                 }
@@ -2486,7 +2486,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         UUID domainGuid = null;
         if (resourceList.size() > 0) {
             Map<String, Object> resource = resourceList.get(0);
-            domainGuid = resourceMapper.getGuidOfResource(resource);
+            domainGuid = resourceMapper.getGuidOfV2Resource(resource);
         }
         if (domainGuid == null && required) {
             throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Domain '" + domainName + "' not found.");
@@ -2539,12 +2539,12 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         List<Map<String, Object>> allRoutes = getAllResources(urlPath, urlVars);
         UUID routeGuid = null;
         for (Map<String, Object> route : allRoutes) {
-            UUID routeSpace = CloudEntityResourceMapper.getEntityAttribute(route, "space_guid", UUID.class);
-            UUID routeDomain = CloudEntityResourceMapper.getEntityAttribute(route, "domain_guid", UUID.class);
+            UUID routeSpace = CloudEntityResourceMapper.getAttributeOfV2Resource(route, "space_guid", UUID.class);
+            UUID routeDomain = CloudEntityResourceMapper.getAttributeOfV2Resource(route, "domain_guid", UUID.class);
             if (sessionSpace.getMeta()
                 .getGuid()
                 .equals(routeSpace) && domainGuid.equals(routeDomain)) {
-                routeGuid = CloudEntityResourceMapper.getMeta(route)
+                routeGuid = CloudEntityResourceMapper.getV2Meta(route)
                     .getGuid();
             }
         }
@@ -2608,7 +2608,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         List<Map<String, Object>> resourceList = getAllResources(urlPath, urlVars);
         if (resourceList.size() > 0) {
             Map<String, Object> resource = resourceList.get(0);
-            return resourceMapper.getGuidOfResource(resource);
+            return resourceMapper.getGuidOfV2Resource(resource);
         }
         return null;
     }
@@ -2644,7 +2644,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         List<UUID> managersGuid = new ArrayList<UUID>();
         List<Map<String, Object>> resourceList = getAllResources(urlPath, urlVars);
         for (Map<String, Object> resource : resourceList) {
-            UUID userGuid = resourceMapper.getGuidOfResource(resource);
+            UUID userGuid = resourceMapper.getGuidOfV2Resource(resource);
             managersGuid.add(userGuid);
         }
         return managersGuid;
@@ -2704,11 +2704,11 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @SuppressWarnings("unchecked")
     private CloudApplication mapCloudApplication(Map<String, Object> resource) {
-        UUID appId = resourceMapper.getGuidOfResource(resource);
+        UUID appId = resourceMapper.getGuidOfV2Resource(resource);
         CloudApplication cloudApp = null;
         if (resource != null) {
             int running = getRunningInstances(appId,
-                CloudApplication.AppState.valueOf(CloudEntityResourceMapper.getEntityAttribute(resource, "state", String.class)));
+                CloudApplication.AppState.valueOf(CloudEntityResourceMapper.getAttributeOfV2Resource(resource, "state", String.class)));
             ((Map<String, Object>) resource.get("entity")).put("running_instances", running);
             cloudApp = resourceMapper.mapResource(resource, CloudApplication.class);
             cloudApp.setUris(findApplicationUris(cloudApp.getMeta()
