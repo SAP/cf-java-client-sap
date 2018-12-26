@@ -11,7 +11,6 @@ public class CloudControllerException extends CloudOperationException {
 
     public CloudControllerException(CloudOperationException cloudOperationException) {
         super(cloudOperationException.getStatusCode(), cloudOperationException.getStatusText(), cloudOperationException.getDescription(),
-            cloudOperationException.getCloudFoundryErrorCode(), cloudOperationException.getCloudFoundryErrorName(),
             cloudOperationException);
     }
 
@@ -25,11 +24,6 @@ public class CloudControllerException extends CloudOperationException {
 
     public CloudControllerException(HttpStatus statusCode, String statusText, String description) {
         super(statusCode, statusText, description);
-    }
-
-    public CloudControllerException(HttpStatus statusCode, String statusText, String description, int cloudFoundryErrorCode,
-        String cloudFoundryErrorName) {
-        super(statusCode, statusText, description, cloudFoundryErrorCode, cloudFoundryErrorName);
     }
 
     @Override
