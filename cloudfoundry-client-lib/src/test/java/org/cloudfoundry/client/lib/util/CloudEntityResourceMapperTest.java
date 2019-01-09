@@ -6,12 +6,23 @@ import static org.junit.Assert.assertNull;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
 
 import org.apache.commons.io.IOUtils;
 import org.cloudfoundry.client.lib.domain.CloudTask;
+import org.cloudfoundry.client.lib.domain.CloudBuild;
 import org.cloudfoundry.client.lib.domain.CloudEntity.Meta;
+import org.cloudfoundry.client.lib.domain.CloudPackage;
 import org.junit.Test;
 
 public class CloudEntityResourceMapperTest {
@@ -21,6 +32,8 @@ public class CloudEntityResourceMapperTest {
     private static final String SERVICE_INSTANCE_NAME = "my-service-instance";
 
     private static final Map<String, Object> TASK_RESOURCE = getResourceAsMap("task.json");
+    private static final Map<String, Object> V3_PACKAGE_RESOURCE = getResourceAsMap("package.json");
+    private static final Map<String, Object> V3_BUILD_RESOURCE = getResourceAsMap("build.json");
     private static final String TASK_GUID = "d5cc22ec-99a3-4e6a-af91-a44b4ab7b6fa";
     private static final String TASK_NAME = "migrate";
 
@@ -133,6 +146,54 @@ public class CloudEntityResourceMapperTest {
         assertEquals("rake db:migrate", task.getCommand());
         assertEquals(Integer.valueOf(512), task.getMemory());
         assertEquals(Integer.valueOf(1024), task.getDiskQuota());
+    }
+
+    @Test
+    public void testV3MapCloudPackageResource() throws ParseException {
+        CloudPackage cloudPackage = resourceMapper.mapResource(V3_PACKAGE_RESOURCE, CloudPackage.class);
+        assertEquals(UUID.fromString("44f7c078-0934-470f-9883-4fcddc5b8f13"), cloudPackage.getMeta()
+            .getGuid());
+        assertEquals("bits", cloudPackage.getType()
+            .toString());
+        assertEquals("sha256", cloudPackage.getData()
+            .getChecksum()
+            .getType());
+        assertEquals(null, cloudPackage.getData()
+            .getChecksum()
+            .getValue());
+        assertEquals(null, cloudPackage.getData()
+            .getError());
+        assertEquals("processing_upload", cloudPackage.getStatus()
+            .toString());
+    }
+
+    @Test
+    public void testV3MapCloudBuildResource() throws ParseException {
+        CloudBuild cloudBuild = resourceMapper.mapResource(V3_BUILD_RESOURCE, CloudBuild.class);
+        assertEquals(UUID.fromString("585bc3c1-3743-497d-88b0-403ad6b56d16"), cloudBuild.getMeta()
+            .getGuid());
+        assertEquals("3cb4e243-bed4-49d5-8739-f8b45abdec1c", cloudBuild.getCreatedBy()
+            .getGuid()
+            .toString());
+        assertEquals("bill", cloudBuild.getCreatedBy()
+            .getName());
+        assertEquals("bill@example.com", cloudBuild.getCreatedBy()
+            .getEmail());
+        assertEquals("STAGING", cloudBuild.getState()
+            .toString());
+        assertEquals(null, cloudBuild.getError());
+        assertEquals("buildpack", cloudBuild.getLifecycle()
+            .getType());
+        assertEquals("[ruby_buildpack]", cloudBuild.getLifecycle()
+            .getData()
+            .getBuildpacks()
+            .toString());
+        assertEquals("cflinuxfs2", cloudBuild.getLifecycle()
+            .getData()
+            .getStack());
+        assertEquals("8e4da443-f255-499c-8b47-b3729b5b7432", cloudBuild.getPackageInfo()
+            .getGuid());
+        assertEquals(null, cloudBuild.getDroplet());
     }
 
     private static Map<String, Object> getResourceAsMap(String resourceName) {

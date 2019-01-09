@@ -1,8 +1,5 @@
 package org.cloudfoundry.client.lib.domain;
 
-import org.cloudfoundry.client.lib.domain.CloudJob.ErrorDetails;
-import org.cloudfoundry.client.lib.domain.CloudJob.Status;
-
 public class Upload {
 
     private final Status status;

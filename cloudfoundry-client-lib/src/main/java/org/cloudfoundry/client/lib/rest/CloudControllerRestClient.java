@@ -35,6 +35,7 @@ import org.cloudfoundry.client.lib.archive.ApplicationArchive;
 import org.cloudfoundry.client.lib.domain.ApplicationLog;
 import org.cloudfoundry.client.lib.domain.ApplicationStats;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
+import org.cloudfoundry.client.lib.domain.CloudBuild;
 import org.cloudfoundry.client.lib.domain.CloudDomain;
 import org.cloudfoundry.client.lib.domain.CloudEvent;
 import org.cloudfoundry.client.lib.domain.CloudInfo;
@@ -56,6 +57,7 @@ import org.cloudfoundry.client.lib.domain.InstancesInfo;
 import org.cloudfoundry.client.lib.domain.ServiceKey;
 import org.cloudfoundry.client.lib.domain.Staging;
 import org.cloudfoundry.client.lib.domain.Upload;
+import org.cloudfoundry.client.lib.domain.UploadToken;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.web.client.ResponseErrorHandler;
 
@@ -345,9 +347,9 @@ public interface CloudControllerRestClient {
 
     void uploadApplication(String appName, ApplicationArchive archive, UploadStatusCallback callback) throws IOException;
 
-    String asyncUploadApplication(String appName, File file, UploadStatusCallback callback) throws IOException;
+    UploadToken asyncUploadApplication(String appName, File file, UploadStatusCallback callback) throws IOException;
 
-    String asyncUploadApplication(String appName, ApplicationArchive archive, UploadStatusCallback callback) throws IOException;
+    UploadToken asyncUploadApplication(String appName, ApplicationArchive archive, UploadStatusCallback callback) throws IOException;
 
     Upload getUploadStatus(String uploadToken);
 
@@ -359,4 +361,9 @@ public interface CloudControllerRestClient {
 
     CloudTask cancelTask(UUID taskGuid);
 
+    CloudBuild createBuild(UUID packageGuid);
+    
+    CloudBuild getBuild(UUID packageGuid);
+    
+    void bindDropletToApp(UUID dropletGuid, UUID appGuid);
 }
