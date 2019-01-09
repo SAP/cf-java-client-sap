@@ -16,6 +16,7 @@
 
 package org.cloudfoundry.client.lib.util;
 
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -25,11 +26,13 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.cloudfoundry.client.lib.domain.CloudApplication;
+import org.cloudfoundry.client.lib.domain.CloudBuild;
 import org.cloudfoundry.client.lib.domain.CloudDomain;
 import org.cloudfoundry.client.lib.domain.CloudEntity;
 import org.cloudfoundry.client.lib.domain.CloudEvent;
 import org.cloudfoundry.client.lib.domain.CloudJob;
 import org.cloudfoundry.client.lib.domain.CloudOrganization;
+import org.cloudfoundry.client.lib.domain.CloudPackage;
 import org.cloudfoundry.client.lib.domain.CloudQuota;
 import org.cloudfoundry.client.lib.domain.CloudRoute;
 import org.cloudfoundry.client.lib.domain.CloudSecurityGroup;
@@ -46,10 +49,13 @@ import org.cloudfoundry.client.lib.domain.CloudTask.State;
 import org.cloudfoundry.client.lib.domain.CloudUser;
 import org.cloudfoundry.client.lib.domain.DockerCredentials;
 import org.cloudfoundry.client.lib.domain.DockerInfo;
+import org.cloudfoundry.client.lib.domain.ErrorDetails;
 import org.cloudfoundry.client.lib.domain.PackageState;
 import org.cloudfoundry.client.lib.domain.SecurityGroupRule;
 import org.cloudfoundry.client.lib.domain.ServiceKey;
 import org.cloudfoundry.client.lib.domain.Staging;
+import org.cloudfoundry.client.lib.domain.Status;
+import org.cloudfoundry.client.lib.domain.CloudEntity.Meta;
 
 /**
  * Class handling the mapping of the cloud domain objects
@@ -228,7 +234,92 @@ public class CloudEntityResourceMapper {
         if (targetClass == CloudUser.class) {
             return (T) mapUserResource(resource);
         }
+        if (targetClass == CloudPackage.class) {
+            return (T) mapPackageResource(resource);
+        }
+        if (targetClass == CloudBuild.class) {
+            return (T) mapBuildResource(resource);
+        }
+
         throw new IllegalArgumentException("Error during mapping - unsupported class for entity mapping " + targetClass.getName());
+    }
+
+    private CloudPackage mapPackageResource(Map<String, Object> resource) {
+        return new CloudPackage.Builder().meta(getV3Meta(resource))
+            .data(getData(resource))
+            .status(Status.valueOf(getAttributeOfV3Resource(resource, "state", String.class).toUpperCase()))
+            .type(CloudPackage.Type.valueOf(getAttributeOfV3Resource(resource, "type", String.class).toUpperCase()))
+            .build();
+    }
+
+    @SuppressWarnings("unchecked")
+    private CloudBuild mapBuildResource(Map<String, Object> resource) {
+        return new CloudBuild.Builder().meta(getV3Meta(resource))
+            .createdBy(getCreatedBy(resource))
+            .droplet(getDroplet(getAttributeOfV3Resource(resource, "droplet", Map.class)))
+            .error(getError(resource))
+            .lifecycle(getLifecycle(resource))
+            .packageInfo(getPackage(resource))
+            .buildState(CloudBuild.BuildState.valueOf(getAttributeOfV3Resource(resource, "state", String.class).toUpperCase()))
+            .build();
+    }
+
+    @SuppressWarnings("unchecked")
+    private CloudPackage.Data getData(Map<String, Object> resource) {
+        Map<String, Object> dataMap = getAttributeOfV3Resource(resource, "data", Map.class);
+        Map<String, Object> checksumMap = getAttributeOfV3Resource(dataMap, "checksum", Map.class);
+
+        String checksumType = getAttributeOfV3Resource(checksumMap, "type", String.class);
+        String checksumValue = getAttributeOfV3Resource(checksumMap, "value", String.class);
+        CloudPackage.Data.Checksum checksum = new CloudPackage.Data.Checksum(checksumType, checksumValue);
+        
+        return new CloudPackage.Data(checksum, getError(dataMap));
+    }
+
+    private String getError(Map<String, Object> resource) {
+        return getAttributeOfV3Resource(resource, "error", String.class);
+    }
+
+    @SuppressWarnings("unchecked")
+    private CloudBuild.Lifecycle getLifecycle(Map<String, Object> resource) {
+        Map<String, Object> lifecycleMap = getAttributeOfV3Resource(resource, "lifecycle", Map.class);
+        String lifecycleType = getAttributeOfV3Resource(lifecycleMap, "type", String.class);
+
+        Map<String, Object> lifecycleDataMap = getAttributeOfV3Resource(lifecycleMap, "data", Map.class);
+        List<String> lifecycleDataBuildpacks = getAttributeOfV3Resource(lifecycleDataMap, "buildpacks", List.class);
+        String lifecycleDataStack = getAttributeOfV3Resource(lifecycleDataMap, "stack", String.class);
+
+        return new CloudBuild.Lifecycle(lifecycleType, new CloudBuild.Lifecycle.Data(lifecycleDataBuildpacks, lifecycleDataStack));
+    }
+
+    @SuppressWarnings("unchecked")
+    private CloudBuild.CreatedBy getCreatedBy(Map<String, Object> resource) {
+        Map<String, Object> createdByMap = getAttributeOfV3Resource(resource, "created_by", Map.class);
+        String createdByEmail = getAttributeOfV3Resource(createdByMap, "email", String.class);
+        UUID createdByGuid = UUID.fromString(getAttributeOfV3Resource(createdByMap, "guid", String.class));
+        String createByName = getAttributeOfV3Resource(createdByMap, "name", String.class);
+
+        return new CloudBuild.CreatedBy(createdByEmail, createdByGuid, createByName);
+    }
+
+    private CloudBuild.Droplet getDroplet(Map<String, Object> dropletMap) {
+        if (dropletMap == null) {
+            return null;
+        }
+
+        UUID dropletGuid = UUID.fromString(getAttributeOfV3Resource(dropletMap, "guid", String.class));
+        String dropletHref = getAttributeOfV3Resource(dropletMap, "href", String.class);
+        
+        return new CloudBuild.Droplet(dropletGuid, dropletHref);
+    }
+
+    @SuppressWarnings("unchecked")
+    private CloudBuild.Package getPackage(Map<String, Object> resource) {
+        Map<String, Object> packageMap = getAttributeOfV3Resource(resource, "package", Map.class);
+        String packageGuid = getAttributeOfV3Resource(packageMap, "guid", String.class);
+        CloudBuild.Package packageInfo = new CloudBuild.Package(packageGuid);
+
+        return packageInfo;
     }
 
     @SuppressWarnings("unchecked")
@@ -391,12 +482,12 @@ public class CloudEntityResourceMapper {
         String status = getAttributeOfV2Resource(resource, "status", String.class);
         @SuppressWarnings("unchecked")
         Map<String, Object> errorDetailsResource = getAttributeOfV2Resource(resource, "error_details", Map.class);
-        CloudJob.ErrorDetails errorDetails = null;
+        ErrorDetails errorDetails = null;
         if (errorDetailsResource != null) {
             Long code = Long.valueOf(String.valueOf(errorDetailsResource.get("code")));
             String description = (String) errorDetailsResource.get("description");
             String errorCode = (String) errorDetailsResource.get("error_code");
-            errorDetails = new CloudJob.ErrorDetails(code, description, errorCode);
+            errorDetails = new ErrorDetails(code, description, errorCode);
         }
 
         return new CloudJob(getV2Meta(resource), CloudJob.Status.getEnum(status), errorDetails);

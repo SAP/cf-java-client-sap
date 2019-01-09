@@ -58,12 +58,14 @@ import org.cloudfoundry.client.lib.domain.ApplicationLog;
 import org.cloudfoundry.client.lib.domain.ApplicationLogs;
 import org.cloudfoundry.client.lib.domain.ApplicationStats;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
+import org.cloudfoundry.client.lib.domain.CloudBuild;
 import org.cloudfoundry.client.lib.domain.CloudDomain;
 import org.cloudfoundry.client.lib.domain.CloudEntity.Meta;
 import org.cloudfoundry.client.lib.domain.CloudEvent;
 import org.cloudfoundry.client.lib.domain.CloudInfo;
 import org.cloudfoundry.client.lib.domain.CloudJob;
 import org.cloudfoundry.client.lib.domain.CloudOrganization;
+import org.cloudfoundry.client.lib.domain.CloudPackage;
 import org.cloudfoundry.client.lib.domain.CloudQuota;
 import org.cloudfoundry.client.lib.domain.CloudResource;
 import org.cloudfoundry.client.lib.domain.CloudResources;
@@ -81,14 +83,17 @@ import org.cloudfoundry.client.lib.domain.CloudUser;
 import org.cloudfoundry.client.lib.domain.CrashInfo;
 import org.cloudfoundry.client.lib.domain.CrashesInfo;
 import org.cloudfoundry.client.lib.domain.DockerInfo;
+import org.cloudfoundry.client.lib.domain.ErrorDetails;
 import org.cloudfoundry.client.lib.domain.InstanceState;
 import org.cloudfoundry.client.lib.domain.InstanceStats;
 import org.cloudfoundry.client.lib.domain.InstancesInfo;
 import org.cloudfoundry.client.lib.domain.SecurityGroupRule;
 import org.cloudfoundry.client.lib.domain.ServiceKey;
 import org.cloudfoundry.client.lib.domain.Staging;
+import org.cloudfoundry.client.lib.domain.Status;
 import org.cloudfoundry.client.lib.domain.Upload;
 import org.cloudfoundry.client.lib.domain.UploadApplicationPayload;
+import org.cloudfoundry.client.lib.domain.UploadToken;
 import org.cloudfoundry.client.lib.oauth2.OauthClient;
 import org.cloudfoundry.client.lib.util.CloudEntityResourceMapper;
 import org.cloudfoundry.client.lib.util.CloudUtil;
@@ -105,7 +110,6 @@ import org.springframework.http.client.ClientHttpRequest;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
-import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.util.Assert;
 import org.springframework.util.FileCopyUtils;
@@ -1629,8 +1633,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public void uploadApplication(String appName, File file, UploadStatusCallback callback) throws IOException {
-        String uploadToken = startUpload(appName, file, callback);
-        processAsyncJob(uploadToken, callback);
+        startUpload(appName, file, callback);
     }
 
     @Override
@@ -1654,25 +1657,20 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public void uploadApplication(String appName, ApplicationArchive archive, UploadStatusCallback callback) throws IOException {
-        String uploadToken = startUpload(appName, archive, callback);
-        processAsyncJob(uploadToken, callback);
+        startUpload(appName, archive, callback);
     }
 
     @Override
-    public String asyncUploadApplication(String appName, File file, UploadStatusCallback callback) throws IOException {
-        String uploadToken = startUpload(appName, file, callback);
-        processAsyncJobInBackground(uploadToken, callback);
-        return uploadToken;
+    public UploadToken asyncUploadApplication(String appName, File file, UploadStatusCallback callback) throws IOException {
+        return startUpload(appName, file, callback);
     }
 
     @Override
-    public String asyncUploadApplication(String appName, ApplicationArchive archive, UploadStatusCallback callback) throws IOException {
-        String uploadToken = startUpload(appName, archive, callback);
-        processAsyncJobInBackground(uploadToken, callback);
-        return uploadToken;
+    public UploadToken asyncUploadApplication(String appName, ApplicationArchive archive, UploadStatusCallback callback) throws IOException {
+        return startUpload(appName, archive, callback);
     }
 
-    private String startUpload(String appName, File file, UploadStatusCallback callback) throws IOException {
+    private UploadToken startUpload(String appName, File file, UploadStatusCallback callback) throws IOException {
         Assert.notNull(file, "File must not be null");
         if (file.isDirectory()) {
             ApplicationArchive archive = new DirectoryApplicationArchive(file);
@@ -1684,10 +1682,10 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         }
     }
 
-    private String startUpload(String appName, ApplicationArchive archive, UploadStatusCallback callback) throws IOException {
+    private UploadToken startUpload(String appName, ApplicationArchive archive, UploadStatusCallback callback) throws IOException {
         Assert.notNull(appName, "AppName must not be null");
         Assert.notNull(archive, "Archive must not be null");
-        UUID appId = getApplicationId(appName);
+        UUID appGuid = getApplicationId(appName);
 
         if (callback == null) {
             callback = UploadStatusCallback.NONE;
@@ -1698,18 +1696,75 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         UploadApplicationPayload payload = new UploadApplicationPayload(archive, knownRemoteResources);
         callback.onProcessMatchedResources(payload.getTotalUncompressedSize());
         HttpEntity<?> entity = generatePartialResourceRequest(payload, knownRemoteResources);
-        ResponseEntity<Map<String, Object>> responseEntity = getRestTemplate().exchange(getUrl("/v2/apps/{guid}/bits?async=true"),
-            HttpMethod.PUT, entity, new ParameterizedTypeReference<Map<String, Object>>() {
-            }, appId);
-        Map<String, Object> responseEntityBody = responseEntity.getBody();
-        CloudJob job = resourceMapper.mapResource(responseEntityBody, CloudJob.class);
-        return getUrl(job);
+
+        UUID packageGuid = createPackageForApplication(appGuid);
+
+        ResponseEntity<Map<String, Object>> responseEntity = getRestTemplate().exchange(getUrl("/v3/packages/{packageGuid}/upload"),
+            HttpMethod.POST, entity, new ParameterizedTypeReference<Map<String, Object>>() {
+            }, packageGuid);
+        
+        CloudPackage cloudPackage = resourceMapper.mapResource(responseEntity.getBody(), CloudPackage.class);
+
+        return new UploadToken(getUrl("/v3/packages/" + cloudPackage.getMeta().getGuid()), cloudPackage.getMeta().getGuid());
+    }
+
+    private UUID createPackageForApplication(UUID appGuid) {
+        Map<String, Object> packageRequest = new HashMap<>();
+        packageRequest.put("type", "bits");
+        Map<String, Map<String, Map<String, Object>>> relationships = new HashMap<>();
+        Map<String, Map<String, Object>> app = new HashMap<>();
+        Map<String, Object> data = new HashMap<>();
+        data.put("guid", appGuid);
+        app.put("data", data);
+        relationships.put("app", app);
+        packageRequest.put("relationships", relationships);
+
+        String packageResponse = getRestTemplate().postForObject(getUrl("/v3/packages"), packageRequest, String.class);
+        Map<String, Object> packageEntity = JsonUtil.convertJsonToMap(packageResponse);
+
+        return resourceMapper.mapResource(packageEntity, CloudPackage.class).getMeta().getGuid();
+    }
+
+    @Override
+    public CloudBuild createBuild(UUID packageGuid) {
+        Map<String, Object> buildRequest = new HashMap<>();
+        Map<String, Object> packageMap = new HashMap<>();
+        packageMap.put("guid", packageGuid);
+        buildRequest.put("package", packageMap);
+
+        String buildResponse = getRestTemplate().postForObject(getUrl("/v3/builds"), buildRequest, String.class);
+        Map<String, Object> buildEntity = JsonUtil.convertJsonToMap(buildResponse);
+
+        return resourceMapper.mapResource(buildEntity, CloudBuild.class);
+    }
+
+    @Override
+    public void bindDropletToApp(UUID dropletGuid, UUID appGuid) {
+        Map<String, Object> bindDropletRequest = new HashMap<>();
+        Map<String, Object> dataMap = new HashMap<>();
+        dataMap.put("guid", dropletGuid);
+        bindDropletRequest.put("data", dataMap);
+
+        getRestTemplate().patchForObject(getUrl("/v3/apps/{appGuid}/relationships/current_droplet"), bindDropletRequest, String.class,
+            appGuid);
+    }
+
+    @Override
+    public CloudBuild getBuild(UUID buildGuid) {
+        ResponseEntity<Map<String, Object>> responseEntity = getRestTemplate().exchange(getUrl("/v3/builds/{buildGuid}"), HttpMethod.GET,
+            HttpEntity.EMPTY, new ParameterizedTypeReference<Map<String, Object>>() {
+            }, buildGuid);
+
+        return resourceMapper.mapResource(responseEntity.getBody(), CloudBuild.class);
     }
 
     @Override
     public Upload getUploadStatus(String uploadToken) {
-        CloudJob job = getJob(uploadToken);
-        return new Upload(job.getStatus(), job.getErrorDetails());
+        CloudPackage cloudPackage = getCloudPackage(uploadToken);
+        ErrorDetails errorDetails = new ErrorDetails(0, cloudPackage.getData()
+            .getError(), null);
+
+        return new Upload(cloudPackage.getStatus(), errorDetails);
     }
 
     protected void configureRequestFactory(RestTemplate restTemplate) {
@@ -2445,7 +2500,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     private HttpEntity<MultiValueMap<String, ?>> generatePartialResourceRequest(UploadApplicationPayload application,
         CloudResources knownRemoteResources) throws IOException {
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<String, Object>(2);
-        body.add("application", application);
+        body.add("bits", application);
         ObjectMapper mapper = new ObjectMapper();
         String knownRemoteResourcesPayload = mapper.writeValueAsString(knownRemoteResources);
         body.add("resources", knownRemoteResourcesPayload);
@@ -2821,6 +2876,14 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
             new ParameterizedTypeReference<Map<String, Object>>() {
             });
         return resourceMapper.mapResource(jobProgressEntity.getBody(), CloudJob.class);
+    }
+
+    private CloudPackage getCloudPackage(String packageUrl) {
+        ResponseEntity<Map<String, Object>> cloudPackageEntity = getRestTemplate().exchange(packageUrl, HttpMethod.GET, HttpEntity.EMPTY,
+            new ParameterizedTypeReference<Map<String, Object>>() {
+            });
+
+        return resourceMapper.mapResource(cloudPackageEntity.getBody(), CloudPackage.class);
     }
 
     private void removeUris(List<String> uris, UUID appGuid) {

@@ -29,6 +29,7 @@ import org.cloudfoundry.client.lib.domain.ApplicationLog;
 import org.cloudfoundry.client.lib.domain.ApplicationStats;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.cloudfoundry.client.lib.domain.CloudApplication.DebugMode;
+import org.cloudfoundry.client.lib.domain.CloudBuild;
 import org.cloudfoundry.client.lib.domain.CloudDomain;
 import org.cloudfoundry.client.lib.domain.CloudEvent;
 import org.cloudfoundry.client.lib.domain.CloudInfo;
@@ -50,6 +51,7 @@ import org.cloudfoundry.client.lib.domain.InstancesInfo;
 import org.cloudfoundry.client.lib.domain.ServiceKey;
 import org.cloudfoundry.client.lib.domain.Staging;
 import org.cloudfoundry.client.lib.domain.Upload;
+import org.cloudfoundry.client.lib.domain.UploadToken;
 import org.cloudfoundry.client.lib.rest.CloudControllerRestClient;
 import org.cloudfoundry.client.lib.rest.CloudControllerRestClientFactory;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
@@ -930,28 +932,38 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public String asyncUploadApplication(String appName, File file) throws IOException {
+    public UploadToken asyncUploadApplication(String appName, File file) throws IOException {
         return cc.asyncUploadApplication(appName, file, null);
     }
 
     @Override
-    public String asyncUploadApplication(String appName, File file, UploadStatusCallback callback) throws IOException {
+    public UploadToken asyncUploadApplication(String appName, File file, UploadStatusCallback callback) throws IOException {
         return cc.asyncUploadApplication(appName, file, callback);
     }
 
     @Override
-    public String asyncUploadApplication(String appName, ApplicationArchive archive) throws IOException {
+    public UploadToken asyncUploadApplication(String appName, ApplicationArchive archive) throws IOException {
         return cc.asyncUploadApplication(appName, archive, null);
     }
 
     @Override
-    public String asyncUploadApplication(String appName, ApplicationArchive archive, UploadStatusCallback callback) throws IOException {
+    public UploadToken asyncUploadApplication(String appName, ApplicationArchive archive, UploadStatusCallback callback) throws IOException {
         return cc.asyncUploadApplication(appName, archive, callback);
     }
 
     @Override
     public Upload getUploadStatus(String uploadToken) {
         return cc.getUploadStatus(uploadToken);
+    }
+    
+    @Override
+    public CloudBuild createBuild(UUID packageGuid) {
+        return cc.createBuild(packageGuid);
+    }
+
+    @Override
+    public CloudBuild getBuild(UUID buildGuid) {
+        return cc.getBuild(buildGuid);
     }
 
     @Override
@@ -972,6 +984,11 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     @Override
     public CloudTask cancelTask(UUID taskGuid) {
         return cc.cancelTask(taskGuid);
+    }
+
+    @Override
+    public void bindDropletToApp(UUID dropletGuid, UUID appGuid) {
+        cc.bindDropletToApp(dropletGuid, appGuid);
     }
 
 }
