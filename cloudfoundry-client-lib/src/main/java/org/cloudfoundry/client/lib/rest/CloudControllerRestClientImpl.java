@@ -1633,7 +1633,8 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public void uploadApplication(String appName, File file, UploadStatusCallback callback) throws IOException {
-        startUpload(appName, file, callback);
+        UploadToken uploadToken = startUpload(appName, file, callback);
+        waitUntilPackageUploadFinish(uploadToken);
     }
 
     @Override
@@ -1657,7 +1658,8 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public void uploadApplication(String appName, ApplicationArchive archive, UploadStatusCallback callback) throws IOException {
-        startUpload(appName, archive, callback);
+        UploadToken uploadToken = startUpload(appName, archive, callback);
+        waitUntilPackageUploadFinish(uploadToken);
     }
 
     @Override
@@ -1666,7 +1668,8 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public UploadToken asyncUploadApplication(String appName, ApplicationArchive archive, UploadStatusCallback callback) throws IOException {
+    public UploadToken asyncUploadApplication(String appName, ApplicationArchive archive, UploadStatusCallback callback)
+        throws IOException {
         return startUpload(appName, archive, callback);
     }
 
@@ -1702,10 +1705,12 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         ResponseEntity<Map<String, Object>> responseEntity = getRestTemplate().exchange(getUrl("/v3/packages/{packageGuid}/upload"),
             HttpMethod.POST, entity, new ParameterizedTypeReference<Map<String, Object>>() {
             }, packageGuid);
-        
+
         CloudPackage cloudPackage = resourceMapper.mapResource(responseEntity.getBody(), CloudPackage.class);
 
-        return new UploadToken(getUrl("/v3/packages/" + cloudPackage.getMeta().getGuid()), cloudPackage.getMeta().getGuid());
+        return new UploadToken(getUrl("/v3/packages/" + cloudPackage.getMeta()
+            .getGuid()), cloudPackage.getMeta()
+                .getGuid());
     }
 
     private UUID createPackageForApplication(UUID appGuid) {
@@ -1722,7 +1727,9 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         String packageResponse = getRestTemplate().postForObject(getUrl("/v3/packages"), packageRequest, String.class);
         Map<String, Object> packageEntity = JsonUtil.convertJsonToMap(packageResponse);
 
-        return resourceMapper.mapResource(packageEntity, CloudPackage.class).getMeta().getGuid();
+        return resourceMapper.mapResource(packageEntity, CloudPackage.class)
+            .getMeta()
+            .getGuid();
     }
 
     @Override
@@ -3012,6 +3019,17 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                     defaultSocketTimeout = 0;
                 }
             }
+        }
+    }
+
+    private void waitUntilPackageUploadFinish(UploadToken uploadToken) {
+        Upload upload = getUploadStatus(uploadToken.getToken());
+
+        while (!upload.getStatus()
+            .equals(Status.EXPIRED)
+            && !upload.getStatus()
+                .equals(Status.READY)) {
+            upload = getUploadStatus(uploadToken.getToken());
         }
     }
 
