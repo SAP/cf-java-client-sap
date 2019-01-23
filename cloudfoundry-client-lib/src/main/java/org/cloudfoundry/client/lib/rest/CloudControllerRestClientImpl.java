@@ -1633,7 +1633,8 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public void uploadApplication(String appName, File file, UploadStatusCallback callback) throws IOException {
-        startUpload(appName, file, callback);
+        UploadToken uploadToken = startUpload(appName, file, callback);
+        processAsyncUpload(uploadToken.getToken(), callback);
     }
 
     @Override
@@ -1657,17 +1658,23 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public void uploadApplication(String appName, ApplicationArchive archive, UploadStatusCallback callback) throws IOException {
-        startUpload(appName, archive, callback);
+        UploadToken uploadToken = startUpload(appName, archive, callback);
+        processAsyncUpload(uploadToken.getToken(), callback);
     }
 
     @Override
     public UploadToken asyncUploadApplication(String appName, File file, UploadStatusCallback callback) throws IOException {
-        return startUpload(appName, file, callback);
+        UploadToken uploadToken = startUpload(appName, file, callback);
+        processAsyncUploadInBackground(uploadToken.getToken(), callback);
+        return uploadToken;
     }
 
     @Override
-    public UploadToken asyncUploadApplication(String appName, ApplicationArchive archive, UploadStatusCallback callback) throws IOException {
-        return startUpload(appName, archive, callback);
+    public UploadToken asyncUploadApplication(String appName, ApplicationArchive archive, UploadStatusCallback callback)
+        throws IOException {
+        UploadToken uploadToken = startUpload(appName, archive, callback);
+        processAsyncUploadInBackground(uploadToken.getToken(), callback);
+        return uploadToken;
     }
 
     private UploadToken startUpload(String appName, File file, UploadStatusCallback callback) throws IOException {
@@ -1702,7 +1709,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         ResponseEntity<Map<String, Object>> responseEntity = getRestTemplate().exchange(getUrl("/v3/packages/{packageGuid}/upload"),
             HttpMethod.POST, entity, new ParameterizedTypeReference<Map<String, Object>>() {
             }, packageGuid);
-        
+
         CloudPackage cloudPackage = resourceMapper.mapResource(responseEntity.getBody(), CloudPackage.class);
 
         return new UploadToken(getUrl("/v3/packages/" + cloudPackage.getMeta().getGuid()), cloudPackage.getMeta().getGuid());
@@ -2837,28 +2844,28 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return resource;
     }
 
-    private void processAsyncJobInBackground(final String jobUrl, final UploadStatusCallback callback) {
-        String threadName = String.format("App upload monitor: %s", jobUrl);
+    private void processAsyncUploadInBackground(final String packageUrl, final UploadStatusCallback callback) {
+        String threadName = String.format("App upload monitor: %s", packageUrl);
         new Thread(new Runnable() {
 
             @Override
             public void run() {
-                processAsyncJob(jobUrl, callback);
+                processAsyncUpload(packageUrl, callback);
             }
 
         }, threadName).start();
     }
 
-    private void processAsyncJob(String jobUrl, UploadStatusCallback callback) {
+    private void processAsyncUpload(String packageUrl, UploadStatusCallback callback) {
         while (true) {
-            CloudJob job = getJob(jobUrl);
-            boolean unsubscribe = callback.onProgress(job.getStatus()
+            Upload upload = getUploadStatus(packageUrl);
+            boolean unsubscribe = callback.onProgress(upload.getStatus()
                 .toString());
-            if (unsubscribe || job.getStatus() == CloudJob.Status.FINISHED) {
+            if (unsubscribe || upload.getStatus() == Status.READY) {
                 return;
             }
-            if (job.getStatus() == CloudJob.Status.FAILED) {
-                callback.onError(job.getErrorDetails()
+            if (upload.getStatus() == Status.EXPIRED) {
+                callback.onError(upload.getErrorDetails()
                     .getDescription());
                 return;
             }
