@@ -658,8 +658,9 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         List<Map<String, Object>> resourceList = getAllResources(urlPath, urlVars);
         List<CloudApplication> apps = new ArrayList<CloudApplication>();
         for (Map<String, Object> resource : resourceList) {
-            processApplicationResource(resource, true);
-            apps.add(mapCloudApplication(resource));
+            if (processApplicationResource(resource, true) != null) {
+                apps.add(mapCloudApplication(resource));
+            }
         }
         return apps;
     }
@@ -2852,11 +2853,20 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     private Map<String, Object> processApplicationResource(Map<String, Object> resource, boolean fetchServiceInfo) {
-        if (fetchServiceInfo) {
-            fillInEmbeddedResource(resource, "service_bindings", "service_instance");
+        try {
+            if (fetchServiceInfo) {
+                fillInEmbeddedResource(resource, "service_bindings", "service_instance");
+            }
+            fillInEmbeddedResource(resource, "stack");
+            return resource;
+        } catch (CloudOperationException e) {
+            if (HttpStatus.NOT_FOUND.equals(e.getStatusCode())) {
+                // Application has been deleted before we could fetch the embedded resource
+                logger.warn(e.getMessage(), e);
+                return null;
+            }
+            throw e;
         }
-        fillInEmbeddedResource(resource, "stack");
-        return resource;
     }
 
     private void processAsyncUploadInBackground(final String packageUrl, final UploadStatusCallback callback) {
