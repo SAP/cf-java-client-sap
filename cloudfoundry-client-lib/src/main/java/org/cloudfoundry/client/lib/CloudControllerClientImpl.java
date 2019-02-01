@@ -947,7 +947,8 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public UploadToken asyncUploadApplication(String appName, ApplicationArchive archive, UploadStatusCallback callback) throws IOException {
+    public UploadToken asyncUploadApplication(String appName, ApplicationArchive archive, UploadStatusCallback callback)
+        throws IOException {
         return cc.asyncUploadApplication(appName, archive, callback);
     }
 
@@ -955,7 +956,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     public Upload getUploadStatus(String uploadToken) {
         return cc.getUploadStatus(uploadToken);
     }
-    
+
     @Override
     public CloudBuild createBuild(UUID packageGuid) {
         return cc.createBuild(packageGuid);
@@ -969,6 +970,11 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     @Override
     public boolean areTasksSupported() {
         return cc.areTasksSupported();
+    }
+
+    @Override
+    public CloudTask getTask(UUID taskGuid) {
+        return cc.getTask(taskGuid);
     }
 
     @Override

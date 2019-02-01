@@ -1593,6 +1593,17 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
+    public CloudTask getTask(UUID taskGuid) {
+        String urlPath = "/v3/tasks/{taskGuid}";
+        Map<String, Object> urlVariables = new HashMap<>();
+        urlVariables.put("taskGuid", taskGuid);
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> response = getRestTemplate().getForObject(getUrl(urlPath), Map.class, urlVariables);
+        return resourceMapper.mapResource(response, CloudTask.class);
+    }
+
+    @Override
     public List<CloudTask> getTasks(String applicationName) {
         UUID applicationId = getRequiredApplicationId(applicationName);
         String urlPath = "/v3/apps/{applicationGuid}/tasks";
@@ -1712,7 +1723,9 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
         CloudPackage cloudPackage = resourceMapper.mapResource(responseEntity.getBody(), CloudPackage.class);
 
-        return new UploadToken(getUrl("/v3/packages/" + cloudPackage.getMeta().getGuid()), cloudPackage.getMeta().getGuid());
+        return new UploadToken(getUrl("/v3/packages/" + cloudPackage.getMeta()
+            .getGuid()), cloudPackage.getMeta()
+                .getGuid());
     }
 
     private UUID createPackageForApplication(UUID appGuid) {
@@ -1729,7 +1742,9 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         String packageResponse = getRestTemplate().postForObject(getUrl("/v3/packages"), packageRequest, String.class);
         Map<String, Object> packageEntity = JsonUtil.convertJsonToMap(packageResponse);
 
-        return resourceMapper.mapResource(packageEntity, CloudPackage.class).getMeta().getGuid();
+        return resourceMapper.mapResource(packageEntity, CloudPackage.class)
+            .getMeta()
+            .getGuid();
     }
 
     @Override
