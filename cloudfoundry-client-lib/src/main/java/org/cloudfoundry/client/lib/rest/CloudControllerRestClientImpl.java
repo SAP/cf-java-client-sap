@@ -112,6 +112,7 @@ import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.FileCopyUtils;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -2136,9 +2137,11 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         List<InstanceStats> instanceList = new ArrayList<InstanceStats>();
         if (appState.equals(CloudApplication.AppState.STARTED)) {
             Map<String, Object> respMap = getInstanceInfoForApp(appId, "stats");
-            for (String instanceId : respMap.keySet()) {
-                InstanceStats instanceStats = new InstanceStats(instanceId, (Map<String, Object>) respMap.get(instanceId));
-                instanceList.add(instanceStats);
+            if (!CollectionUtils.isEmpty(respMap)) {
+                for (String instanceId : respMap.keySet()) {
+                    InstanceStats instanceStats = new InstanceStats(instanceId, (Map<String, Object>) respMap.get(instanceId));
+                    instanceList.add(instanceStats);
+                }
             }
         }
         return new ApplicationStats(instanceList);
@@ -2631,11 +2634,19 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     private Map<String, Object> getInstanceInfoForApp(UUID appId, String path) {
-        String url = getUrl("/v2/apps/{guid}/" + path);
-        Map<String, Object> urlVars = new HashMap<String, Object>();
-        urlVars.put("guid", appId);
-        String resp = getRestTemplate().getForObject(url, String.class, urlVars);
-        return JsonUtil.convertJsonToMap(resp);
+        try {
+            String url = getUrl("/v2/apps/{guid}/" + path);
+            Map<String, Object> urlVars = new HashMap<String, Object>();
+            urlVars.put("guid", appId);
+            String resp = getRestTemplate().getForObject(url, String.class, urlVars);
+            return JsonUtil.convertJsonToMap(resp);
+        } catch (CloudOperationException e) {
+            if (HttpStatus.BAD_REQUEST.equals(e.getStatusCode())) {
+                logger.warn(e.getMessage(), e);
+                return null;
+            }
+            throw e;
+        }
     }
 
     private CloudResources getKnownRemoteResources(ApplicationArchive archive) throws IOException {
