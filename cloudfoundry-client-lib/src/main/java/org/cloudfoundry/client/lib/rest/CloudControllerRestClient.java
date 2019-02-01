@@ -355,6 +355,8 @@ public interface CloudControllerRestClient {
 
     boolean areTasksSupported();
 
+    CloudTask getTask(UUID taskGuid);
+
     List<CloudTask> getTasks(String applicationName);
 
     CloudTask runTask(String applicationName, CloudTask task);
@@ -362,8 +364,8 @@ public interface CloudControllerRestClient {
     CloudTask cancelTask(UUID taskGuid);
 
     CloudBuild createBuild(UUID packageGuid);
-    
+
     CloudBuild getBuild(UUID packageGuid);
-    
+
     void bindDropletToApp(UUID dropletGuid, UUID appGuid);
 }

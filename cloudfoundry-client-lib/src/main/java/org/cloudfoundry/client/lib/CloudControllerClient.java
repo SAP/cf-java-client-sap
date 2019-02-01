@@ -1324,6 +1324,8 @@ public interface CloudControllerClient {
 
     boolean areTasksSupported();
 
+    CloudTask getTask(UUID taskGuid);
+
     /**
      * Get the list of one-off tasks currently known for the given application.
      * 
@@ -1352,8 +1354,8 @@ public interface CloudControllerClient {
     CloudTask cancelTask(UUID taskGuid);
 
     CloudBuild createBuild(UUID packageGuid);
-    
+
     CloudBuild getBuild(UUID buildGuid);
-    
+
     void bindDropletToApp(UUID dropletGuid, UUID appGuid);
 }
