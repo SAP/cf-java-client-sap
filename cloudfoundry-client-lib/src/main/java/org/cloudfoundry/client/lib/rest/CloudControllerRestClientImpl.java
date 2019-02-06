@@ -1926,6 +1926,24 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         if (staging.getHealthCheckTimeout() != null) {
             appRequest.put("health_check_timeout", staging.getHealthCheckTimeout());
         }
+        if (staging.getHealthCheckType() != null) {
+            appRequest.put("health_check_type", staging.getHealthCheckType());
+        }
+        if (staging.getHealthCheckHttpEndpoint() != null) {
+            appRequest.put("health_check_http_endpoint", staging.getHealthCheckHttpEndpoint());
+        }
+        if (staging.isSshEnabled() != null) {
+            appRequest.put("enable_ssh", staging.isSshEnabled());
+        }
+        if (staging.getDockerInfo() != null) {
+            appRequest.put("docker_image", staging.getDockerInfo()
+                .getImage());
+            if (staging.getDockerInfo()
+                .getDockerCredentials() != null) {
+                appRequest.put("docker_credentials", staging.getDockerInfo()
+                    .getDockerCredentials());
+            }
+        }
     }
 
     private void addUris(List<String> uris, UUID appGuid) {
