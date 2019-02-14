@@ -2133,32 +2133,25 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @SuppressWarnings("unchecked")
     private InstancesInfo doGetApplicationInstances(UUID appId) {
-        try {
-            List<Map<String, Object>> instanceList = new ArrayList<Map<String, Object>>();
-            Map<String, Object> respMap = getInstanceInfoForApp(appId, "instances");
-            List<String> keys = new ArrayList<String>(respMap.keySet());
-            Collections.sort(keys);
-            for (String instanceId : keys) {
-                Integer index;
-                try {
-                    index = Integer.valueOf(instanceId);
-                } catch (NumberFormatException e) {
-                    index = -1;
-                }
-                Map<String, Object> instanceMap = (Map<String, Object>) respMap.get(instanceId);
-                instanceMap.put("index", index);
-                instanceList.add(instanceMap);
-            }
-            return new InstancesInfo(instanceList);
-        } catch (CloudOperationException e) {
-            if (e.getStatusCode()
-                .equals(HttpStatus.BAD_REQUEST)) {
-                return null;
-            } else {
-                throw e;
-            }
-
+        List<Map<String, Object>> instanceList = new ArrayList<>();
+        Map<String, Object> respMap = getInstanceInfoForApp(appId, "instances");
+        if (respMap == null) {
+            return null;
         }
+        List<String> keys = new ArrayList<>(respMap.keySet());
+        Collections.sort(keys);
+        for (String instanceId : keys) {
+            Integer index;
+            try {
+                index = Integer.valueOf(instanceId);
+            } catch (NumberFormatException e) {
+                index = -1;
+            }
+            Map<String, Object> instanceMap = (Map<String, Object>) respMap.get(instanceId);
+            instanceMap.put("index", index);
+            instanceList.add(instanceMap);
+        }
+        return new InstancesInfo(instanceList);
     }
 
     @SuppressWarnings("unchecked")
