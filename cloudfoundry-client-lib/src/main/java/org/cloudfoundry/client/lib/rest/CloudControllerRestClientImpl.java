@@ -1622,14 +1622,22 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         Map<String, Object> urlVariables = new HashMap<>();
         urlVariables.put("applicationGuid", applicationId);
         Map<String, Object> request = new HashMap<>();
-        request.put("name", task.getName());
+        Assert.notNull(task.getCommand(), "Command must not be null");
         request.put("command", task.getCommand());
-        request.put("memory_in_mb", task.getMemory());
-        request.put("disk_in_mb", task.getDiskQuota());
+
+        addNonNullRequestParameter(request, "name", task.getName());
+        addNonNullRequestParameter(request, "memory_in_mb", task.getMemory());
+        addNonNullRequestParameter(request, "disk_in_mb", task.getDiskQuota());
 
         @SuppressWarnings("unchecked")
         Map<String, Object> resource = getRestTemplate().postForObject(getUrl(urlPath), request, Map.class, urlVariables);
         return resourceMapper.mapResource(resource, CloudTask.class);
+    }
+
+    private void addNonNullRequestParameter(Map<String, Object> request, String requestParameterName, Object value) {
+        if (value != null) {
+            request.put(requestParameterName, value);
+        }
     }
 
     @Override
