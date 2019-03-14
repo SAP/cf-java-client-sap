@@ -174,14 +174,14 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     public CloudControllerRestClientImpl(URL cloudControllerUrl, RestTemplate restTemplate, OauthClient oauthClient,
-        LoggregatorClient loggregatorClient, CloudCredentials cloudCredentials, String orgName, String spaceName) {
+        LoggregatorClient loggregatorClient, CloudCredentials cloudCredentials, String organizationName, String spaceName) {
         logger = LogFactory.getLog(getClass().getName());
         CloudControllerRestClientImpl tempClient = new CloudControllerRestClientImpl(cloudControllerUrl, restTemplate, oauthClient,
             loggregatorClient, cloudCredentials, null);
 
         initialize(cloudControllerUrl, restTemplate, oauthClient, loggregatorClient, cloudCredentials);
 
-        this.sessionSpace = validateSpaceAndOrg(spaceName, orgName, tempClient);
+        this.sessionSpace = validateSpaceAndOrganization(spaceName, organizationName, tempClient);
     }
 
     /**
@@ -211,21 +211,21 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public void associateAuditorWithSpace(String orgName, String spaceName, String userGuid) {
+    public void associateAuditorWithSpace(String organizationName, String spaceName, String userGuid) {
         String urlPath = "/v2/spaces/{guid}/auditors/{userGuid}";
-        associateRoleWithSpace(orgName, spaceName, userGuid, urlPath);
+        associateRoleWithSpace(organizationName, spaceName, userGuid, urlPath);
     }
 
     @Override
-    public void associateDeveloperWithSpace(String orgName, String spaceName, String userGuid) {
+    public void associateDeveloperWithSpace(String organizationName, String spaceName, String userGuid) {
         String urlPath = "/v2/spaces/{guid}/developers/{userGuid}";
-        associateRoleWithSpace(orgName, spaceName, userGuid, urlPath);
+        associateRoleWithSpace(organizationName, spaceName, userGuid, urlPath);
     }
 
     @Override
-    public void associateManagerWithSpace(String orgName, String spaceName, String userGuid) {
+    public void associateManagerWithSpace(String organizationName, String spaceName, String userGuid) {
         String urlPath = "/v2/spaces/{guid}/managers/{userGuid}";
-        associateRoleWithSpace(orgName, spaceName, userGuid, urlPath);
+        associateRoleWithSpace(organizationName, spaceName, userGuid, urlPath);
     }
 
     @Override
@@ -242,8 +242,8 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public void bindSecurityGroup(String orgName, String spaceName, String securityGroupName) {
-        UUID spaceGuid = getSpaceGuid(orgName, spaceName);
+    public void bindSecurityGroup(String organizationName, String spaceName, String securityGroupName) {
+        UUID spaceGuid = getSpaceGuid(organizationName, spaceName);
         CloudSecurityGroup group = getSecurityGroup(securityGroupName);
 
         String path = "/v2/security_groups/{group_guid}/spaces/{space_guid}";
@@ -257,10 +257,10 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public void bindService(String appName, String serviceName) {
+    public void bindService(String applicationName, String serviceName) {
         CloudService cloudService = getService(serviceName);
-        UUID appId = getApplicationId(appName);
-        doBindService(appId, cloudService.getMeta()
+        UUID applicationGuid = getApplicationGuid(applicationName);
+        doBindService(applicationGuid, cloudService.getMeta()
             .getGuid());
     }
 
@@ -278,17 +278,17 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public void createApplication(String appName, Staging staging, Integer memory, List<String> uris, List<String> serviceNames) {
-        createApplication(appName, staging, null, memory, uris, serviceNames, null);
+    public void createApplication(String applicationName, Staging staging, Integer memory, List<String> uris, List<String> serviceNames) {
+        createApplication(applicationName, staging, null, memory, uris, serviceNames, null);
     }
 
     @Override
-    public void createApplication(String appName, Staging staging, Integer disk, Integer memory, List<String> uris,
+    public void createApplication(String applicationName, Staging staging, Integer disk, Integer memory, List<String> uris,
         List<String> serviceNames, DockerInfo dockerInfo) {
         HashMap<String, Object> appRequest = new HashMap<String, Object>();
         appRequest.put("space_guid", sessionSpace.getMeta()
             .getGuid());
-        appRequest.put("name", appName);
+        appRequest.put("name", applicationName);
         appRequest.put("memory", memory);
         if (disk != null) {
             appRequest.put("disk_quota", disk);
@@ -309,7 +309,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
             .getGuid();
 
         if (serviceNames != null && serviceNames.size() > 0) {
-            updateApplicationServices(appName, serviceNames);
+            updateApplicationServices(applicationName, serviceNames);
         }
 
         if (uris != null && uris.size() > 0) {
@@ -398,12 +398,12 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     @Override
     public void createSpace(String spaceName) {
         assertSpaceProvided("create a new space");
-        UUID orgGuid = sessionSpace.getOrganization()
+        UUID organizationGuid = sessionSpace.getOrganization()
             .getMeta()
             .getGuid();
-        UUID spaceGuid = getSpaceGuid(spaceName, orgGuid);
+        UUID spaceGuid = getSpaceGuid(spaceName, organizationGuid);
         if (spaceGuid == null) {
-            doCreateSpace(spaceName, orgGuid);
+            doCreateSpace(spaceName, organizationGuid);
         }
     }
 
@@ -418,7 +418,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public void debugApplication(String appName, CloudApplication.DebugMode mode) {
+    public void debugApplication(String applicationName, CloudApplication.DebugMode mode) {
         throw new UnsupportedOperationException("Feature is not yet implemented.");
     }
 
@@ -439,9 +439,9 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public void deleteApplication(String appName) {
-        UUID appId = getApplicationId(appName);
-        doDeleteApplication(appId);
+    public void deleteApplication(String applicationName) {
+        UUID applicationGuid = getApplicationGuid(applicationName);
+        doDeleteApplication(applicationGuid);
     }
 
     @Override
@@ -463,7 +463,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     @Override
     public List<CloudRoute> deleteOrphanedRoutes() {
         List<CloudRoute> orphanRoutes = new ArrayList<>();
-        for (CloudDomain cloudDomain : getDomainsForOrg()) {
+        for (CloudDomain cloudDomain : getDomainsForOrganization()) {
             orphanRoutes.addAll(fetchOrphanRoutes(cloudDomain.getName()));
         }
 
@@ -545,96 +545,96 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     @Override
     public void deleteSpace(String spaceName) {
         assertSpaceProvided("delete a space");
-        UUID orgGuid = sessionSpace.getOrganization()
+        UUID organizationGuid = sessionSpace.getOrganization()
             .getMeta()
             .getGuid();
-        UUID spaceGuid = getSpaceGuid(spaceName, orgGuid);
+        UUID spaceGuid = getSpaceGuid(spaceName, organizationGuid);
         if (spaceGuid != null) {
             doDeleteSpace(spaceGuid);
         }
     }
 
     @Override
-    public CloudApplication getApplication(String appName) {
-        return getApplication(appName, true);
+    public CloudApplication getApplication(String applicationName) {
+        return getApplication(applicationName, true);
     }
 
     @Override
-    public CloudApplication getApplication(String appName, boolean required) {
-        Map<String, Object> resource = findApplicationResource(appName, true);
+    public CloudApplication getApplication(String applicationName, boolean required) {
+        Map<String, Object> resource = findApplicationResource(applicationName, true);
         CloudApplication application = null;
         if (resource != null) {
             application = mapCloudApplication(resource);
         }
         if (application == null && required) {
-            throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Application '" + appName + "' not found.");
+            throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Application '" + applicationName + "' not found.");
         }
         return application;
     }
 
     @Override
-    public CloudApplication getApplication(UUID appGuid) {
-        return getApplication(appGuid, true);
+    public CloudApplication getApplication(UUID applicationGuid) {
+        return getApplication(applicationGuid, true);
     }
 
     @Override
-    public CloudApplication getApplication(UUID appGuid, boolean required) {
-        Map<String, Object> resource = findApplicationResource(appGuid, true);
+    public CloudApplication getApplication(UUID applicationGuid, boolean required) {
+        Map<String, Object> resource = findApplicationResource(applicationGuid, true);
         CloudApplication application = null;
         if (resource != null) {
             application = mapCloudApplication(resource);
         }
         if (application == null && required) {
-            throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Application '" + appGuid + "' not found.");
+            throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Application '" + applicationGuid + "' not found.");
         }
         return application;
     }
 
     @Override
-    public Map<String, Object> getApplicationEnvironment(UUID appGuid) {
+    public Map<String, Object> getApplicationEnvironment(UUID applicationGuid) {
         String url = getUrl("/v2/apps/{guid}/env");
         Map<String, Object> urlVars = new HashMap<>();
-        urlVars.put("guid", appGuid);
+        urlVars.put("guid", applicationGuid);
         String resp = restTemplate.getForObject(url, String.class, urlVars);
         return JsonUtil.convertJsonToMap(resp);
     }
 
     @Override
-    public Map<String, Object> getApplicationEnvironment(String appName) {
-        UUID appId = getApplicationId(appName);
-        return getApplicationEnvironment(appId);
+    public Map<String, Object> getApplicationEnvironment(String applicationName) {
+        UUID applicationGuid = getApplicationGuid(applicationName);
+        return getApplicationEnvironment(applicationGuid);
     }
 
     @Override
-    public List<CloudEvent> getApplicationEvents(String appName) {
-        UUID appId = getApplicationId(appName);
+    public List<CloudEvent> getApplicationEvents(String applicationName) {
+        UUID applicationGuid = getApplicationGuid(applicationName);
         Map<String, Object> urlVars = new HashMap<String, Object>();
-        urlVars.put("appId", appId);
-        String urlPath = "/v2/events?q=actee:{appId}";
+        urlVars.put("applicationGuid", applicationGuid);
+        String urlPath = "/v2/events?q=actee:{applicationGuid}";
         return doGetEvents(urlPath, urlVars);
     }
 
     @Override
-    public InstancesInfo getApplicationInstances(String appName) {
-        CloudApplication app = getApplication(appName);
-        return getApplicationInstances(app);
+    public InstancesInfo getApplicationInstances(String applicationName) {
+        CloudApplication application = getApplication(applicationName);
+        return getApplicationInstances(application);
     }
 
     @Override
-    public InstancesInfo getApplicationInstances(CloudApplication app) {
-        if (app.getState()
+    public InstancesInfo getApplicationInstances(CloudApplication application) {
+        if (application.getState()
             .equals(CloudApplication.AppState.STARTED)) {
-            return doGetApplicationInstances(app.getMeta()
+            return doGetApplicationInstances(application.getMeta()
                 .getGuid());
         }
         return null;
     }
 
     @Override
-    public ApplicationStats getApplicationStats(String appName) {
-        CloudApplication app = getApplication(appName);
-        return doGetApplicationStats(app.getMeta()
-            .getGuid(), app.getState());
+    public ApplicationStats getApplicationStats(String applicationName) {
+        CloudApplication application = getApplication(applicationName);
+        return doGetApplicationStats(application.getMeta()
+            .getGuid(), application.getState());
     }
 
     @Override
@@ -672,9 +672,9 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public Map<String, String> getCrashLogs(String appName) {
+    public Map<String, String> getCrashLogs(String applicationName) {
         String urlPath = getFileUrlPath();
-        CrashesInfo crashes = getCrashes(appName);
+        CrashesInfo crashes = getCrashes(applicationName);
         if (crashes.getCrashes()
             .isEmpty()) {
             return Collections.emptyMap();
@@ -684,18 +684,18 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
             crashInstances.put(crash.getSince(), crash.getInstance());
         }
         String instance = crashInstances.get(crashInstances.lastKey());
-        return doGetLogs(urlPath, appName, instance);
+        return doGetLogs(urlPath, applicationName, instance);
     }
 
     @SuppressWarnings("unchecked")
     @Override
-    public CrashesInfo getCrashes(String appName) {
-        UUID appId = getApplicationId(appName);
-        if (appId == null) {
-            throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Application '" + appName + "' not found.");
+    public CrashesInfo getCrashes(String applicationName) {
+        UUID applicationGuid = getApplicationGuid(applicationName);
+        if (applicationGuid == null) {
+            throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Application '" + applicationName + "' not found.");
         }
         Map<String, Object> urlVars = new HashMap<String, Object>();
-        urlVars.put("guid", appId);
+        urlVars.put("guid", applicationGuid);
         String resp = getRestTemplate().getForObject(getUrl("/v2/apps/{guid}/crashes"), String.class, urlVars);
         Map<String, Object> respMap = JsonUtil.convertJsonToMap("{ \"crashes\" : " + resp + " }");
         List<Map<String, Object>> attributes = (List<Map<String, Object>>) respMap.get("crashes");
@@ -718,7 +718,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public List<CloudDomain> getDomainsForOrg() {
+    public List<CloudDomain> getDomainsForOrganization() {
         assertSpaceProvided("access organization domains");
         return doGetDomains(sessionSpace.getOrganization());
     }
@@ -730,10 +730,10 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public String getFile(String appName, int instanceIndex, String filePath, int startPosition, int endPosition) {
+    public String getFile(String applicationName, int instanceIndex, String filePath, int startPosition, int endPosition) {
         String urlPath = getFileUrlPath();
-        UUID appId = getApplicationId(appName);
-        return doGetFile(urlPath, appId, instanceIndex, filePath, startPosition, endPosition);
+        UUID applicationGuid = getApplicationGuid(applicationName);
+        return doGetFile(urlPath, applicationGuid, instanceIndex, filePath, startPosition, endPosition);
     }
 
     @Override
@@ -761,51 +761,51 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public Map<String, String> getLogs(String appName) {
+    public Map<String, String> getLogs(String applicationName) {
         String urlPath = getFileUrlPath();
         String instance = String.valueOf(0);
-        return doGetLogs(urlPath, appName, instance);
+        return doGetLogs(urlPath, applicationName, instance);
     }
 
     @Override
-    public CloudOrganization getOrganization(String orgName) {
-        return getOrganization(orgName, true);
+    public CloudOrganization getOrganization(String organizationName) {
+        return getOrganization(organizationName, true);
     }
 
     /**
      * Get organization by given name.
      *
-     * @param orgName
+     * @param organizationName
      * @param required
      * @return CloudOrganization instance
      */
-    public CloudOrganization getOrganization(String orgName, boolean required) {
+    public CloudOrganization getOrganization(String organizationName, boolean required) {
         Map<String, Object> urlVars = new HashMap<String, Object>();
         String urlPath = "/v2/organizations?inline-relations-depth=1&q=name:{name}";
-        urlVars.put("name", orgName);
-        CloudOrganization org = null;
+        urlVars.put("name", organizationName);
+        CloudOrganization organization = null;
         List<Map<String, Object>> resourceList = getAllResources(urlPath, urlVars);
         if (resourceList.size() > 0) {
             Map<String, Object> resource = resourceList.get(0);
-            org = resourceMapper.mapResource(resource, CloudOrganization.class);
+            organization = resourceMapper.mapResource(resource, CloudOrganization.class);
         }
 
-        if (org == null && required) {
-            throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Organization '" + orgName + "' not found.");
+        if (organization == null && required) {
+            throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Organization '" + organizationName + "' not found.");
         }
 
-        return org;
+        return organization;
     }
 
     @Override
-    public Map<String, CloudUser> getOrganizationUsers(String orgName) {
+    public Map<String, CloudUser> getOrganizationUsers(String organizationName) {
         String urlPath = "/v2/organizations/{guid}/users";
-        CloudOrganization organization = getOrganization(orgName);
+        CloudOrganization organization = getOrganization(organizationName);
 
-        UUID orgGuid = organization.getMeta()
+        UUID organizationGuid = organization.getMeta()
             .getGuid();
         Map<String, Object> urlVars = new HashMap<String, Object>();
-        urlVars.put("guid", orgGuid);
+        urlVars.put("guid", organizationGuid);
 
         List<Map<String, Object>> resourceList = getAllResources(urlPath, urlVars);
         Map<String, CloudUser> orgUsers = new HashMap<String, CloudUser>();
@@ -820,11 +820,11 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     public List<CloudOrganization> getOrganizations() {
         String urlPath = "/v2/organizations?inline-relations-depth=0";
         List<Map<String, Object>> resourceList = getAllResources(urlPath);
-        List<CloudOrganization> orgs = new ArrayList<CloudOrganization>();
+        List<CloudOrganization> organizations = new ArrayList<CloudOrganization>();
         for (Map<String, Object> resource : resourceList) {
-            orgs.add(resourceMapper.mapResource(resource, CloudOrganization.class));
+            organizations.add(resourceMapper.mapResource(resource, CloudOrganization.class));
         }
-        return orgs;
+        return organizations;
     }
 
     @Override
@@ -868,13 +868,13 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public List<ApplicationLog> getRecentLogs(String appName) {
-        UUID appId = getApplicationId(appName);
+    public List<ApplicationLog> getRecentLogs(String applicationName) {
+        UUID applicationGuid = getApplicationGuid(applicationName);
 
         String endpoint = getInfo().getLoggregatorEndpoint();
         String uri = loggregatorClient.getRecentHttpEndpoint(endpoint);
 
-        ApplicationLogs logs = getRestTemplate().getForObject(uri + "?app={guid}", ApplicationLogs.class, appId);
+        ApplicationLogs logs = getRestTemplate().getForObject(uri + "?app={guid}", ApplicationLogs.class, applicationGuid);
 
         Collections.sort(logs);
 
@@ -1058,9 +1058,9 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public List<UUID> getSpaceAuditors(String orgName, String spaceName) {
+    public List<UUID> getSpaceAuditors(String organizationName, String spaceName) {
         String urlPath = "/v2/spaces/{guid}/auditors";
-        return getSpaceUserGuids(orgName, spaceName, urlPath);
+        return getSpaceUserGuids(organizationName, spaceName, urlPath);
     }
 
     @Override
@@ -1070,9 +1070,9 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public List<UUID> getSpaceDevelopers(String orgName, String spaceName) {
+    public List<UUID> getSpaceDevelopers(String organizationName, String spaceName) {
         String urlPath = "/v2/spaces/{guid}/developers";
-        return getSpaceUserGuids(orgName, spaceName, urlPath);
+        return getSpaceUserGuids(organizationName, spaceName, urlPath);
     }
 
     @Override
@@ -1082,9 +1082,9 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public List<UUID> getSpaceManagers(String orgName, String spaceName) {
+    public List<UUID> getSpaceManagers(String organizationName, String spaceName) {
         String urlPath = "/v2/spaces/{guid}/managers";
-        return getSpaceUserGuids(orgName, spaceName, urlPath);
+        return getSpaceUserGuids(organizationName, spaceName, urlPath);
     }
 
     @Override
@@ -1224,10 +1224,10 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public void openFile(String appName, int instanceIndex, String filePath, ClientHttpResponseCallback callback) {
+    public void openFile(String applicationName, int instanceIndex, String filePath, ClientHttpResponseCallback callback) {
         String urlPath = getFileUrlPath();
-        UUID appId = getApplicationId(appName);
-        doOpenFile(urlPath, appId, instanceIndex, filePath, callback);
+        UUID applicationGuid = getApplicationGuid(applicationName);
+        doOpenFile(urlPath, applicationGuid, instanceIndex, filePath, callback);
     }
 
     @Override
@@ -1248,31 +1248,31 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public void rename(String appName, String newName) {
-        UUID appId = getApplicationId(appName);
+    public void rename(String applicationName, String newName) {
+        UUID applicationGuid = getApplicationGuid(applicationName);
         HashMap<String, Object> appRequest = new HashMap<String, Object>();
         appRequest.put("name", newName);
-        getRestTemplate().put(getUrl("/v2/apps/{guid}"), appRequest, appId);
+        getRestTemplate().put(getUrl("/v2/apps/{guid}"), appRequest, applicationGuid);
     }
 
     @Override
-    public StartingInfo restartApplication(String appName) {
-        stopApplication(appName);
-        return startApplication(appName);
+    public StartingInfo restartApplication(String applicationName) {
+        stopApplication(applicationName);
+        return startApplication(applicationName);
     }
 
     /**
      * Set quota to organization
      *
-     * @param orgName
+     * @param organizationName
      * @param quotaName
      */
     @Override
-    public void setQuotaToOrg(String orgName, String quotaName) {
+    public void setQuotaToOrganization(String organizationName, String quotaName) {
         CloudQuota quota = this.getQuota(quotaName);
-        CloudOrganization org = this.getOrganization(orgName);
+        CloudOrganization organization = this.getOrganization(organizationName);
 
-        doSetQuotaToOrg(org.getMeta()
+        doSetQuotaToOrg(organization.getMeta()
             .getGuid(),
             quota.getMeta()
                 .getGuid());
@@ -1284,15 +1284,15 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public StartingInfo startApplication(String appName) {
-        CloudApplication app = getApplication(appName);
-        if (app.getState() != CloudApplication.AppState.STARTED) {
+    public StartingInfo startApplication(String applicationName) {
+        CloudApplication application = getApplication(applicationName);
+        if (application.getState() != CloudApplication.AppState.STARTED) {
             HashMap<String, Object> appRequest = new HashMap<String, Object>();
             appRequest.put("state", CloudApplication.AppState.STARTED);
 
             HttpEntity<Object> requestEntity = new HttpEntity<Object>(appRequest);
             ResponseEntity<String> entity = getRestTemplate().exchange(getUrl("/v2/apps/{guid}?stage_async=true"), HttpMethod.PUT,
-                requestEntity, String.class, app.getMeta()
+                requestEntity, String.class, application.getMeta()
                     .getGuid());
 
             HttpHeaders headers = entity.getHeaders();
@@ -1318,19 +1318,19 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public void stopApplication(String appName) {
-        CloudApplication app = getApplication(appName);
-        if (app.getState() != CloudApplication.AppState.STOPPED) {
+    public void stopApplication(String applicationName) {
+        CloudApplication application = getApplication(applicationName);
+        if (application.getState() != CloudApplication.AppState.STOPPED) {
             HashMap<String, Object> appRequest = new HashMap<String, Object>();
             appRequest.put("state", CloudApplication.AppState.STOPPED);
-            getRestTemplate().put(getUrl("/v2/apps/{guid}"), appRequest, app.getMeta()
+            getRestTemplate().put(getUrl("/v2/apps/{guid}"), appRequest, application.getMeta()
                 .getGuid());
         }
     }
 
     @Override
-    public StreamingLogToken streamLogs(String appName, ApplicationLogListener listener) {
-        return streamLoggregatorLogs(appName, listener, false);
+    public StreamingLogToken streamLogs(String applicationName, ApplicationLogListener listener) {
+        return streamLoggregatorLogs(applicationName, listener, false);
     }
 
     @Override
@@ -1352,8 +1352,8 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public void unbindSecurityGroup(String orgName, String spaceName, String securityGroupName) {
-        UUID spaceGuid = getSpaceGuid(orgName, spaceName);
+    public void unbindSecurityGroup(String organizationName, String spaceName, String securityGroupName) {
+        UUID spaceGuid = getSpaceGuid(organizationName, spaceName);
         CloudSecurityGroup group = getSecurityGroup(securityGroupName);
 
         String path = "/v2/security_groups/{group_guid}/spaces/{space_guid}";
@@ -1367,10 +1367,10 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public void unbindService(String appName, String serviceName) {
+    public void unbindService(String applicationName, String serviceName) {
         CloudService cloudService = getService(serviceName);
-        UUID appId = getApplicationId(appName);
-        doUnbindService(appId, cloudService.getMeta()
+        UUID applicationGuid = getApplicationGuid(applicationName);
+        doUnbindService(applicationGuid, cloudService.getMeta()
             .getGuid());
     }
 
@@ -1391,23 +1391,23 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public void updateApplicationDiskQuota(String appName, int disk) {
-        UUID appId = getApplicationId(appName);
+    public void updateApplicationDiskQuota(String applicationName, int disk) {
+        UUID applicationGuid = getApplicationGuid(applicationName);
         HashMap<String, Object> appRequest = new HashMap<String, Object>();
         appRequest.put("disk_quota", disk);
-        getRestTemplate().put(getUrl("/v2/apps/{guid}"), appRequest, appId);
+        getRestTemplate().put(getUrl("/v2/apps/{guid}"), appRequest, applicationGuid);
     }
 
     @Override
-    public void updateApplicationEnv(String appName, Map<String, String> env) {
-        UUID appId = getApplicationId(appName);
+    public void updateApplicationEnv(String applicationName, Map<String, String> env) {
+        UUID applicationGuid = getApplicationGuid(applicationName);
         HashMap<String, Object> appRequest = new HashMap<String, Object>();
         appRequest.put("environment_json", env);
-        getRestTemplate().put(getUrl("/v2/apps/{guid}"), appRequest, appId);
+        getRestTemplate().put(getUrl("/v2/apps/{guid}"), appRequest, applicationGuid);
     }
 
     @Override
-    public void updateApplicationEnv(String appName, List<String> env) {
+    public void updateApplicationEnv(String applicationName, List<String> env) {
         Map<String, String> envHash = new HashMap<String, String>();
         for (String s : env) {
             if (!s.contains("=")) {
@@ -1419,33 +1419,33 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                 .trim();
             envHash.put(key, value);
         }
-        updateApplicationEnv(appName, envHash);
+        updateApplicationEnv(applicationName, envHash);
     }
 
     @Override
-    public void updateApplicationInstances(String appName, int instances) {
-        UUID appId = getApplicationId(appName);
+    public void updateApplicationInstances(String applicationName, int instances) {
+        UUID applicationGuid = getApplicationGuid(applicationName);
         HashMap<String, Object> appRequest = new HashMap<String, Object>();
         appRequest.put("instances", instances);
-        getRestTemplate().put(getUrl("/v2/apps/{guid}"), appRequest, appId);
+        getRestTemplate().put(getUrl("/v2/apps/{guid}"), appRequest, applicationGuid);
     }
 
     @Override
-    public void updateApplicationMemory(String appName, int memory) {
-        UUID appId = getApplicationId(appName);
+    public void updateApplicationMemory(String applicationName, int memory) {
+        UUID applicationGuid = getApplicationGuid(applicationName);
         HashMap<String, Object> appRequest = new HashMap<String, Object>();
         appRequest.put("memory", memory);
-        getRestTemplate().put(getUrl("/v2/apps/{guid}"), appRequest, appId);
+        getRestTemplate().put(getUrl("/v2/apps/{guid}"), appRequest, applicationGuid);
     }
 
     @Override
-    public void updateApplicationServices(String appName, List<String> services) {
-        CloudApplication app = getApplication(appName);
+    public void updateApplicationServices(String applicationName, List<String> services) {
+        CloudApplication application = getApplication(applicationName);
         List<UUID> addServices = new ArrayList<UUID>();
         List<UUID> deleteServices = new ArrayList<UUID>();
         // services to add
         for (String serviceName : services) {
-            if (!app.getServices()
+            if (!application.getServices()
                 .contains(serviceName)) {
                 CloudService cloudService = getService(serviceName);
                 addServices.add(cloudService.getMeta()
@@ -1453,7 +1453,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
             }
         }
         // services to delete
-        for (String serviceName : app.getServices()) {
+        for (String serviceName : application.getServices()) {
             if (!services.contains(serviceName)) {
                 CloudService cloudService = getService(serviceName, false);
                 if (cloudService != null) {
@@ -1463,33 +1463,33 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
             }
         }
         for (UUID serviceId : addServices) {
-            doBindService(app.getMeta()
+            doBindService(application.getMeta()
                 .getGuid(), serviceId);
         }
         for (UUID serviceId : deleteServices) {
-            doUnbindService(app.getMeta()
+            doUnbindService(application.getMeta()
                 .getGuid(), serviceId);
         }
     }
 
     @Override
-    public void updateApplicationStaging(String appName, Staging staging) {
-        UUID appId = getApplicationId(appName);
+    public void updateApplicationStaging(String applicationName, Staging staging) {
+        UUID applicationGuid = getApplicationGuid(applicationName);
         HashMap<String, Object> appRequest = new HashMap<String, Object>();
         addStagingToRequest(staging, appRequest);
-        getRestTemplate().put(getUrl("/v2/apps/{guid}"), appRequest, appId);
+        getRestTemplate().put(getUrl("/v2/apps/{guid}"), appRequest, applicationGuid);
     }
 
     @Override
-    public void updateApplicationUris(String appName, List<String> uris) {
-        CloudApplication app = getApplication(appName);
+    public void updateApplicationUris(String applicationName, List<String> uris) {
+        CloudApplication application = getApplication(applicationName);
         List<String> newUris = new ArrayList<String>(uris);
-        newUris.removeAll(app.getUris());
-        List<String> removeUris = app.getUris();
+        newUris.removeAll(application.getUris());
+        List<String> removeUris = application.getUris();
         removeUris.removeAll(uris);
-        removeUris(removeUris, app.getMeta()
+        removeUris(removeUris, application.getMeta()
             .getGuid());
-        addUris(newUris, app.getMeta()
+        addUris(newUris, application.getMeta()
             .getGuid());
     }
 
@@ -1607,7 +1607,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public List<CloudTask> getTasks(String applicationName) {
-        UUID applicationId = getRequiredApplicationId(applicationName);
+        UUID applicationId = getRequiredApplicationGuid(applicationName);
         String urlPath = "/v3/apps/{applicationGuid}/tasks";
         Map<String, Object> urlVariables = new HashMap<>();
         urlVariables.put("applicationGuid", applicationId);
@@ -1617,7 +1617,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public CloudTask runTask(String applicationName, CloudTask task) {
-        UUID applicationId = getRequiredApplicationId(applicationName);
+        UUID applicationId = getRequiredApplicationGuid(applicationName);
         String urlPath = "/v3/apps/{applicationGuid}/tasks";
         Map<String, Object> urlVariables = new HashMap<>();
         urlVariables.put("applicationGuid", applicationId);
@@ -1653,13 +1653,13 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public void uploadApplication(String appName, File file, UploadStatusCallback callback) throws IOException {
-        UploadToken uploadToken = startUpload(appName, file, callback);
+    public void uploadApplication(String applicationName, File file, UploadStatusCallback callback) throws IOException {
+        UploadToken uploadToken = startUpload(applicationName, file, callback);
         processAsyncUpload(uploadToken.getToken(), callback);
     }
 
     @Override
-    public void uploadApplication(String appName, InputStream inputStream, UploadStatusCallback callback) throws IOException {
+    public void uploadApplication(String applicationName, InputStream inputStream, UploadStatusCallback callback) throws IOException {
         Assert.notNull(inputStream, "InputStream must not be null");
 
         File file = null;
@@ -1668,7 +1668,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
             file = createTemporaryUploadFile(inputStream);
             zipFile = new ZipFile(file);
             ApplicationArchive archive = new ZipApplicationArchive(zipFile);
-            uploadApplication(appName, archive, callback);
+            uploadApplication(applicationName, archive, callback);
         } finally {
             IOUtils.closeQuietly(zipFile);
             if (file != null) {
@@ -1678,42 +1678,42 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public void uploadApplication(String appName, ApplicationArchive archive, UploadStatusCallback callback) throws IOException {
-        UploadToken uploadToken = startUpload(appName, archive, callback);
+    public void uploadApplication(String applicationName, ApplicationArchive archive, UploadStatusCallback callback) throws IOException {
+        UploadToken uploadToken = startUpload(applicationName, archive, callback);
         processAsyncUpload(uploadToken.getToken(), callback);
     }
 
     @Override
-    public UploadToken asyncUploadApplication(String appName, File file, UploadStatusCallback callback) throws IOException {
-        UploadToken uploadToken = startUpload(appName, file, callback);
+    public UploadToken asyncUploadApplication(String applicationName, File file, UploadStatusCallback callback) throws IOException {
+        UploadToken uploadToken = startUpload(applicationName, file, callback);
         processAsyncUploadInBackground(uploadToken.getToken(), callback);
         return uploadToken;
     }
 
     @Override
-    public UploadToken asyncUploadApplication(String appName, ApplicationArchive archive, UploadStatusCallback callback)
+    public UploadToken asyncUploadApplication(String applicationName, ApplicationArchive archive, UploadStatusCallback callback)
         throws IOException {
-        UploadToken uploadToken = startUpload(appName, archive, callback);
+        UploadToken uploadToken = startUpload(applicationName, archive, callback);
         processAsyncUploadInBackground(uploadToken.getToken(), callback);
         return uploadToken;
     }
 
-    private UploadToken startUpload(String appName, File file, UploadStatusCallback callback) throws IOException {
+    private UploadToken startUpload(String applicationName, File file, UploadStatusCallback callback) throws IOException {
         Assert.notNull(file, "File must not be null");
         if (file.isDirectory()) {
             ApplicationArchive archive = new DirectoryApplicationArchive(file);
-            return startUpload(appName, archive, callback);
+            return startUpload(applicationName, archive, callback);
         }
         try (ZipFile zipFile = new ZipFile(file)) {
             ApplicationArchive archive = new ZipApplicationArchive(zipFile);
-            return startUpload(appName, archive, callback);
+            return startUpload(applicationName, archive, callback);
         }
     }
 
-    private UploadToken startUpload(String appName, ApplicationArchive archive, UploadStatusCallback callback) throws IOException {
-        Assert.notNull(appName, "AppName must not be null");
+    private UploadToken startUpload(String applicationName, ApplicationArchive archive, UploadStatusCallback callback) throws IOException {
+        Assert.notNull(applicationName, "AppName must not be null");
         Assert.notNull(archive, "Archive must not be null");
-        UUID appGuid = getApplicationId(appName);
+        UUID applicationGuid = getApplicationGuid(applicationName);
 
         if (callback == null) {
             callback = UploadStatusCallback.NONE;
@@ -1725,7 +1725,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         callback.onProcessMatchedResources(payload.getTotalUncompressedSize());
         HttpEntity<?> entity = generatePartialResourceRequest(payload, knownRemoteResources);
 
-        UUID packageGuid = createPackageForApplication(appGuid);
+        UUID packageGuid = createPackageForApplication(applicationGuid);
 
         ResponseEntity<Map<String, Object>> responseEntity = getRestTemplate().exchange(getUrl("/v3/packages/{packageGuid}/upload"),
             HttpMethod.POST, entity, new ParameterizedTypeReference<Map<String, Object>>() {
@@ -1738,13 +1738,13 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                 .getGuid());
     }
 
-    private UUID createPackageForApplication(UUID appGuid) {
+    private UUID createPackageForApplication(UUID applicationGuid) {
         Map<String, Object> packageRequest = new HashMap<>();
         packageRequest.put("type", "bits");
         Map<String, Map<String, Map<String, Object>>> relationships = new HashMap<>();
         Map<String, Map<String, Object>> app = new HashMap<>();
         Map<String, Object> data = new HashMap<>();
-        data.put("guid", appGuid);
+        data.put("guid", applicationGuid);
         app.put("data", data);
         relationships.put("app", app);
         packageRequest.put("relationships", relationships);
@@ -1771,14 +1771,14 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public void bindDropletToApp(UUID dropletGuid, UUID appGuid) {
+    public void bindDropletToApp(UUID dropletGuid, UUID applicationGuid) {
         Map<String, Object> bindDropletRequest = new HashMap<>();
         Map<String, Object> dataMap = new HashMap<>();
         dataMap.put("guid", dropletGuid);
         bindDropletRequest.put("data", dataMap);
 
-        getRestTemplate().patchForObject(getUrl("/v3/apps/{appGuid}/relationships/current_droplet"), bindDropletRequest, String.class,
-            appGuid);
+        getRestTemplate().patchForObject(getUrl("/v3/apps/{applicationGuid}/relationships/current_droplet"), bindDropletRequest,
+            String.class, applicationGuid);
     }
 
     @Override
@@ -1806,11 +1806,12 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         }
     }
 
-    protected String doGetFile(String urlPath, UUID appId, int instanceIndex, String filePath, int startPosition, int endPosition) {
-        return doGetFile(urlPath, appId, String.valueOf(instanceIndex), filePath, startPosition, endPosition);
+    protected String doGetFile(String urlPath, UUID applicationGuid, int instanceIndex, String filePath, int startPosition,
+        int endPosition) {
+        return doGetFile(urlPath, applicationGuid, String.valueOf(instanceIndex), filePath, startPosition, endPosition);
     }
 
-    protected String doGetFile(String urlPath, UUID appId, String instance, String filePath, int startPosition, int endPosition) {
+    protected String doGetFile(String urlPath, UUID applicationGuid, String instance, String filePath, int startPosition, int endPosition) {
         Assert.isTrue(startPosition >= -1, "Invalid start position value: " + startPosition);
         Assert.isTrue(endPosition >= -1, "Invalid end position value: " + endPosition);
         Assert.isTrue(startPosition < 0 || endPosition < 0 || endPosition >= startPosition,
@@ -1827,12 +1828,12 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
         final String range = "bytes=" + (start == -1 ? "" : start) + "-" + (end == -1 ? "" : end);
 
-        return doGetFileByRange(urlPath, appId, instance, filePath, start, end, range);
+        return doGetFileByRange(urlPath, applicationGuid, instance, filePath, start, end, range);
     }
 
-    protected Map<String, String> doGetLogs(String urlPath, String appName, String instance) {
-        UUID appId = getApplicationId(appName);
-        String logFiles = doGetFile(urlPath, appId, instance, LOGS_LOCATION, -1, -1);
+    protected Map<String, String> doGetLogs(String urlPath, String applicationName, String instance) {
+        UUID applicationGuid = getApplicationGuid(applicationName);
+        String logFiles = doGetFile(urlPath, applicationGuid, instance, LOGS_LOCATION, -1, -1);
         String[] lines = logFiles.split("\n");
         List<String> fileNames = new ArrayList<String>();
         for (String line : lines) {
@@ -1844,14 +1845,15 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         Map<String, String> logs = new HashMap<String, String>(fileNames.size());
         for (String fileName : fileNames) {
             String logFile = LOGS_LOCATION + DEFAULT_PATH_SEPARATOR + fileName;
-            logs.put(logFile, doGetFile(urlPath, appId, instance, logFile, -1, -1));
+            logs.put(logFile, doGetFile(urlPath, applicationGuid, instance, logFile, -1, -1));
         }
         return logs;
     }
 
     @SuppressWarnings("unchecked")
-    protected void doOpenFile(String urlPath, UUID appId, int instanceIndex, String filePath, ClientHttpResponseCallback callback) {
-        getRestTemplate().execute(getUrl(urlPath), HttpMethod.GET, null, new ResponseExtractorWrapper(callback), appId,
+    protected void doOpenFile(String urlPath, UUID applicationGuid, int instanceIndex, String filePath,
+        ClientHttpResponseCallback callback) {
+        getRestTemplate().execute(getUrl(urlPath), HttpMethod.GET, null, new ResponseExtractorWrapper(callback), applicationGuid,
             String.valueOf(instanceIndex), filePath);
     }
 
@@ -1889,7 +1891,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     protected String getFileUrlPath() {
-        return "/v2/apps/{appId}/instances/{instance}/files/{filePath}";
+        return "/v2/apps/{applicationGuid}/instances/{instance}/files/{filePath}";
     }
 
     protected RestTemplate getRestTemplate() {
@@ -1950,13 +1952,13 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         }
     }
 
-    private void addUris(List<String> uris, UUID appGuid) {
+    private void addUris(List<String> uris, UUID applicationGuid) {
         Map<String, UUID> domains = getDomainGuids();
         for (String uri : uris) {
             Map<String, String> uriInfo = new HashMap<String, String>(2);
             extractUriInfo(domains, uri, uriInfo);
             UUID domainGuid = domains.get(uriInfo.get("domainName"));
-            bindRoute(uriInfo, domainGuid, appGuid);
+            bindRoute(uriInfo, domainGuid, applicationGuid);
         }
     }
 
@@ -1964,14 +1966,14 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         Assert.notNull(sessionSpace, "Unable to " + operation + " without specifying organization and space to use.");
     }
 
-    private void associateRoleWithSpace(String orgName, String spaceName, String userGuid, String urlPath) {
+    private void associateRoleWithSpace(String organizationName, String spaceName, String userGuid, String urlPath) {
         assertSpaceProvided("associate roles");
 
-        CloudOrganization organization = (orgName == null ? sessionSpace.getOrganization() : getOrganization(orgName));
-        UUID orgGuid = organization.getMeta()
+        CloudOrganization organization = (organizationName == null ? sessionSpace.getOrganization() : getOrganization(organizationName));
+        UUID organizationGuid = organization.getMeta()
             .getGuid();
 
-        UUID spaceGuid = getSpaceGuid(spaceName, orgGuid);
+        UUID spaceGuid = getSpaceGuid(spaceName, organizationGuid);
         HashMap<String, Object> spaceRequest = new HashMap<String, Object>();
         spaceRequest.put("guid", spaceGuid);
 
@@ -1980,14 +1982,14 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         getRestTemplate().put(getUrl(urlPath), spaceRequest, spaceGuid, userId);
     }
 
-    private void bindRoute(Map<String, String> uriInfo, UUID domainGuid, UUID appGuid) {
+    private void bindRoute(Map<String, String> uriInfo, UUID domainGuid, UUID applicationGuid) {
         UUID routeGuid = getRouteGuid(uriInfo, domainGuid);
         if (routeGuid == null) {
             routeGuid = doAddRoute(uriInfo, domainGuid);
         }
-        String bindPath = "/v2/apps/{app}/routes/{route}";
+        String bindPath = "/v2/apps/{application}/routes/{route}";
         Map<String, Object> bindVars = new HashMap<String, Object>();
-        bindVars.put("app", appGuid);
+        bindVars.put("application", applicationGuid);
         bindVars.put("route", routeGuid);
         HashMap<String, Object> bindRequest = new HashMap<String, Object>();
         getRestTemplate().put(getUrl(bindPath), bindRequest, bindVars);
@@ -2061,10 +2063,10 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
             .getGuid();
     }
 
-    private void doBindService(UUID appId, UUID serviceId) {
+    private void doBindService(UUID applicationGuid, UUID serviceId) {
         HashMap<String, Object> serviceRequest = new HashMap<String, Object>();
         serviceRequest.put("service_instance_guid", serviceId);
-        serviceRequest.put("app_guid", appId);
+        serviceRequest.put("app_guid", applicationGuid);
         getRestTemplate().postForObject(getUrl("/v2/service_bindings"), serviceRequest, String.class);
     }
 
@@ -2089,18 +2091,18 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         getRestTemplate().postForObject(getUrl(path), request, String.class);
     }
 
-    private UUID doCreateSpace(String spaceName, UUID orgGuid) {
+    private UUID doCreateSpace(String spaceName, UUID organizationGuid) {
         String urlPath = "/v2/spaces";
         HashMap<String, Object> spaceRequest = new HashMap<String, Object>();
-        spaceRequest.put("organization_guid", orgGuid);
+        spaceRequest.put("organization_guid", organizationGuid);
         spaceRequest.put("name", spaceName);
         String resp = getRestTemplate().postForObject(getUrl(urlPath), spaceRequest, String.class);
         Map<String, Object> respMap = JsonUtil.convertJsonToMap(resp);
         return resourceMapper.getGuidOfV2Resource(respMap);
     }
 
-    private void doDeleteApplication(UUID appId) {
-        getRestTemplate().delete(getUrl("/v2/apps/{guid}?recursive=true"), appId);
+    private void doDeleteApplication(UUID applicationGuid) {
+        getRestTemplate().delete(getUrl("/v2/apps/{guid}?recursive=true"), applicationGuid);
     }
 
     private void doDeleteDomain(UUID domainGuid) {
@@ -2118,10 +2120,10 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     private void doDeleteService(CloudService cloudService) {
-        List<UUID> appIds = getAppsBoundToService(cloudService);
-        if (appIds.size() > 0) {
-            for (UUID appId : appIds) {
-                doUnbindService(appId, cloudService.getMeta()
+        List<UUID> applicationGuids = getAppsBoundToService(cloudService);
+        if (applicationGuids.size() > 0) {
+            for (UUID applicationGuid : applicationGuids) {
+                doUnbindService(applicationGuid, cloudService.getMeta()
                     .getGuid());
             }
         }
@@ -2136,9 +2138,9 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @SuppressWarnings("unchecked")
-    private InstancesInfo doGetApplicationInstances(UUID appId) {
+    private InstancesInfo doGetApplicationInstances(UUID applicationGuid) {
         List<Map<String, Object>> instanceList = new ArrayList<>();
-        Map<String, Object> respMap = getInstanceInfoForApp(appId, "instances");
+        Map<String, Object> respMap = getInstanceInfoForApp(applicationGuid, "instances");
         if (respMap == null) {
             return null;
         }
@@ -2159,10 +2161,10 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @SuppressWarnings("unchecked")
-    private ApplicationStats doGetApplicationStats(UUID appId, CloudApplication.AppState appState) {
+    private ApplicationStats doGetApplicationStats(UUID applicationGuid, CloudApplication.AppState appState) {
         List<InstanceStats> instanceList = new ArrayList<InstanceStats>();
         if (appState.equals(CloudApplication.AppState.STARTED)) {
-            Map<String, Object> respMap = getInstanceInfoForApp(appId, "stats");
+            Map<String, Object> respMap = getInstanceInfoForApp(applicationGuid, "stats");
             if (!CollectionUtils.isEmpty(respMap)) {
                 for (String instanceId : respMap.keySet()) {
                     InstanceStats instanceStats = new InstanceStats(instanceId, (Map<String, Object>) respMap.get(instanceId));
@@ -2173,13 +2175,13 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return new ApplicationStats(instanceList);
     }
 
-    private List<CloudDomain> doGetDomains(CloudOrganization org) {
+    private List<CloudDomain> doGetDomains(CloudOrganization organization) {
         Map<String, Object> urlVars = new HashMap<String, Object>();
         String urlPath = "/v2";
-        if (org != null) {
-            urlVars.put("org", org.getMeta()
+        if (organization != null) {
+            urlVars.put("organization", organization.getMeta()
                 .getGuid());
-            urlPath = urlPath + "/organizations/{org}";
+            urlPath = urlPath + "/organizations/{organization}";
         }
         urlPath = urlPath + "/private_domains";
         return doGetDomains(urlPath, urlVars);
@@ -2212,7 +2214,8 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return resources;
     }
 
-    private String doGetFileByRange(String urlPath, UUID appId, String instance, String filePath, int start, int end, String range) {
+    private String doGetFileByRange(String urlPath, UUID applicationGuid, String instance, String filePath, int start, int end,
+        String range) {
         boolean supportsRanges;
         try {
             supportsRanges = getRestTemplate().execute(getUrl(urlPath), HttpMethod.HEAD, new RequestCallback() {
@@ -2227,7 +2230,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                     return response.getStatusCode()
                         .equals(HttpStatus.PARTIAL_CONTENT);
                 }
-            }, appId, instance, filePath);
+            }, applicationGuid, instance, filePath);
         } catch (CloudOperationException e) {
             if (e.getStatusCode()
                 .equals(HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE)) {
@@ -2243,7 +2246,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         }
         HttpEntity<Object> requestEntity = new HttpEntity<Object>(headers);
         ResponseEntity<String> responseEntity = getRestTemplate().exchange(getUrl(urlPath), HttpMethod.GET, requestEntity, String.class,
-            appId, instance, filePath);
+            applicationGuid, instance, filePath);
         String response = responseEntity.getBody();
         boolean partialFile = false;
         if (responseEntity.getStatusCode()
@@ -2357,18 +2360,18 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return serviceKeys;
     }
 
-    private void doSetQuotaToOrg(UUID orgGuid, UUID quotaGuid) {
-        String setPath = "/v2/organizations/{org}";
+    private void doSetQuotaToOrg(UUID organizationGuid, UUID quotaGuid) {
+        String setPath = "/v2/organizations/{organization}";
         Map<String, Object> setVars = new HashMap<String, Object>();
-        setVars.put("org", orgGuid);
+        setVars.put("organization", organizationGuid);
         HashMap<String, Object> setRequest = new HashMap<String, Object>();
         setRequest.put("quota_definition_guid", quotaGuid);
 
         getRestTemplate().put(getUrl(setPath), setRequest, setVars);
     }
 
-    private void doUnbindService(UUID appId, UUID serviceId) {
-        UUID serviceBindingId = getServiceBindingId(appId, serviceId);
+    private void doUnbindService(UUID applicationGuid, UUID serviceId) {
+        UUID serviceBindingId = getServiceBindingId(applicationGuid, serviceId);
         getRestTemplate().delete(getUrl("/v2/service_bindings/{guid}"), serviceBindingId);
     }
 
@@ -2443,16 +2446,16 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         }
     }
 
-    private Map<String, Object> findApplicationResource(UUID appGuid, boolean fetchServiceInfo) {
+    private Map<String, Object> findApplicationResource(UUID applicationGuid, boolean fetchServiceInfo) {
         Map<String, Object> urlVars = new HashMap<String, Object>();
-        String urlPath = "/v2/apps/{app}?inline-relations-depth=1";
-        urlVars.put("app", appGuid);
+        String urlPath = "/v2/apps/{application}?inline-relations-depth=1";
+        urlVars.put("application", applicationGuid);
         String resp = getRestTemplate().getForObject(getUrl(urlPath), String.class, urlVars);
 
         return processApplicationResource(JsonUtil.convertJsonToMap(resp), fetchServiceInfo);
     }
 
-    private Map<String, Object> findApplicationResource(String appName, boolean fetchServiceInfo) {
+    private Map<String, Object> findApplicationResource(String applicationName, boolean fetchServiceInfo) {
         Map<String, Object> urlVars = new HashMap<String, Object>();
         String urlPath = "/v2";
         if (sessionSpace != null) {
@@ -2460,7 +2463,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                 .getGuid());
             urlPath = urlPath + "/spaces/{space}";
         }
-        urlVars.put("q", "name:" + appName);
+        urlVars.put("q", "name:" + applicationName);
         urlPath = urlPath + "/apps?inline-relations-depth=1&q={q}";
 
         List<Map<String, Object>> allResources = getAllResources(urlPath, urlVars);
@@ -2470,10 +2473,10 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return null;
     }
 
-    private List<String> findApplicationUris(UUID appGuid) {
-        String urlPath = "/v2/apps/{app}/routes?inline-relations-depth=1";
+    private List<String> findApplicationUris(UUID applicationGuid) {
+        String urlPath = "/v2/apps/{application}/routes?inline-relations-depth=1";
         Map<String, Object> urlVars = new HashMap<String, Object>();
-        urlVars.put("app", appGuid);
+        urlVars.put("application", applicationGuid);
         List<Map<String, Object>> resourceList = getAllResources(urlPath, urlVars);
         List<String> uris = new ArrayList<String>();
         for (Map<String, Object> resource : resourceList) {
@@ -2578,16 +2581,16 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         }
     }
 
-    private UUID getRequiredApplicationId(String applicationName) {
-        UUID applicationId = getApplicationId(applicationName);
-        if (applicationId == null) {
+    private UUID getRequiredApplicationGuid(String applicationName) {
+        UUID applicationGuid = getApplicationGuid(applicationName);
+        if (applicationGuid == null) {
             throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Application '" + applicationName + "' not found.");
         }
-        return applicationId;
+        return applicationGuid;
     }
 
     @SuppressWarnings("unchecked")
-    private UUID getApplicationId(String applicationName) {
+    private UUID getApplicationGuid(String applicationName) {
         Map<String, Object> resource = findApplicationResource(applicationName, false);
         if (resource == null) {
             return null;
@@ -2598,7 +2601,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @SuppressWarnings("unchecked")
     private List<UUID> getAppsBoundToService(CloudService cloudService) {
-        List<UUID> appGuids = new ArrayList<UUID>();
+        List<UUID> applicationGuids = new ArrayList<UUID>();
         String urlPath = "/v2";
         Map<String, Object> urlVars = new HashMap<String, Object>();
         if (sessionSpace != null) {
@@ -2614,13 +2617,13 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
             List<Map<String, Object>> bindings = CloudEntityResourceMapper.getAttributeOfV2Resource(resource, "service_bindings",
                 List.class);
             for (Map<String, Object> binding : bindings) {
-                String appId = CloudEntityResourceMapper.getAttributeOfV2Resource(binding, "app_guid", String.class);
-                if (appId != null) {
-                    appGuids.add(UUID.fromString(appId));
+                String applicationGuid = CloudEntityResourceMapper.getAttributeOfV2Resource(binding, "app_guid", String.class);
+                if (applicationGuid != null) {
+                    applicationGuids.add(UUID.fromString(applicationGuid));
                 }
             }
         }
-        return appGuids;
+        return applicationGuids;
     }
 
     private String getCurrentUserId() {
@@ -2648,7 +2651,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     private Map<String, UUID> getDomainGuids() {
         List<CloudDomain> availableDomains = new ArrayList<CloudDomain>();
-        availableDomains.addAll(getDomainsForOrg());
+        availableDomains.addAll(getDomainsForOrganization());
         availableDomains.addAll(getSharedDomains());
         Map<String, UUID> domains = new HashMap<String, UUID>(availableDomains.size());
         for (CloudDomain availableDomain : availableDomains) {
@@ -2658,11 +2661,11 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return domains;
     }
 
-    private Map<String, Object> getInstanceInfoForApp(UUID appId, String path) {
+    private Map<String, Object> getInstanceInfoForApp(UUID applicationGuid, String path) {
         try {
             String url = getUrl("/v2/apps/{guid}/" + path);
             Map<String, Object> urlVars = new HashMap<String, Object>();
-            urlVars.put("guid", appId);
+            urlVars.put("guid", applicationGuid);
             String resp = getRestTemplate().getForObject(url, String.class, urlVars);
             return JsonUtil.convertJsonToMap(resp);
         } catch (CloudOperationException e) {
@@ -2712,12 +2715,12 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return routeGuid;
     }
 
-    private int getRunningInstances(UUID appId, CloudApplication.AppState appState) {
+    private int getRunningInstances(UUID applicationGuid, CloudApplication.AppState appState) {
         int running = 0;
-        ApplicationStats appStats = doGetApplicationStats(appId, appState);
-        if (appStats != null && appStats.getRecords() != null) {
-            for (InstanceStats inst : appStats.getRecords()) {
-                if (InstanceState.RUNNING == inst.getState()) {
+        ApplicationStats applicationStats = doGetApplicationStats(applicationGuid, appState);
+        if (applicationStats != null && applicationStats.getRecords() != null) {
+            for (InstanceStats instanceStats : applicationStats.getRecords()) {
+                if (InstanceState.RUNNING == instanceStats.getState()) {
                     running++;
                 }
             }
@@ -2728,9 +2731,9 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     // Security Group operations
 
     @SuppressWarnings("unchecked")
-    private UUID getServiceBindingId(UUID appId, UUID serviceId) {
+    private UUID getServiceBindingId(UUID applicationGuid, UUID serviceId) {
         Map<String, Object> urlVars = new HashMap<String, Object>();
-        urlVars.put("guid", appId);
+        urlVars.put("guid", applicationGuid);
         List<Map<String, Object>> resourceList = getAllResources("/v2/apps/{guid}/service_bindings", urlVars);
         UUID serviceBindingId = null;
         if (resourceList != null && resourceList.size() > 0) {
@@ -2761,10 +2764,10 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return results;
     }
 
-    private UUID getSpaceGuid(String spaceName, UUID orgGuid) {
+    private UUID getSpaceGuid(String spaceName, UUID organizationGuid) {
         Map<String, Object> urlVars = new HashMap<String, Object>();
-        String urlPath = "/v2/organizations/{orgGuid}/spaces?inline-relations-depth=1&q=name:{name}";
-        urlVars.put("orgGuid", orgGuid);
+        String urlPath = "/v2/organizations/{organizationGuid}/spaces?inline-relations-depth=1&q=name:{name}";
+        urlVars.put("organizationGuid", organizationGuid);
         urlVars.put("name", spaceName);
         List<Map<String, Object>> resourceList = getAllResources(urlPath, urlVars);
         if (resourceList.size() > 0) {
@@ -2774,14 +2777,14 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return null;
     }
 
-    private UUID getSpaceGuid(String orgName, String spaceName) {
-        CloudOrganization org = getOrganization(orgName);
-        return getSpaceGuid(spaceName, org.getMeta()
+    private UUID getSpaceGuid(String organizationName, String spaceName) {
+        CloudOrganization organization = getOrganization(organizationName);
+        return getSpaceGuid(spaceName, organization.getMeta()
             .getGuid());
     }
 
-    private List<UUID> getSpaceUserGuids(String orgName, String spaceName, String urlPath) {
-        if (orgName == null || spaceName == null) {
+    private List<UUID> getSpaceUserGuids(String organizationName, String spaceName, String urlPath) {
+        if (organizationName == null || spaceName == null) {
             assertSpaceProvided("get space users");
         }
 
@@ -2790,7 +2793,8 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
             spaceGuid = sessionSpace.getMeta()
                 .getGuid();
         } else {
-            CloudOrganization organization = (orgName == null ? sessionSpace.getOrganization() : getOrganization(orgName));
+            CloudOrganization organization = (organizationName == null ? sessionSpace.getOrganization()
+                : getOrganization(organizationName));
             spaceGuid = getSpaceGuid(spaceName, organization.getMeta()
                 .getGuid());
         }
@@ -2865,10 +2869,10 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @SuppressWarnings("unchecked")
     private CloudApplication mapCloudApplication(Map<String, Object> resource) {
-        UUID appId = resourceMapper.getGuidOfV2Resource(resource);
+        UUID applicationGuid = resourceMapper.getGuidOfV2Resource(resource);
         CloudApplication cloudApp = null;
         if (resource != null) {
-            int running = getRunningInstances(appId,
+            int running = getRunningInstances(applicationGuid,
                 CloudApplication.AppState.valueOf(CloudEntityResourceMapper.getAttributeOfV2Resource(resource, "state", String.class)));
             ((Map<String, Object>) resource.get("entity")).put("running_instances", running);
             cloudApp = resourceMapper.mapResource(resource, CloudApplication.class);
@@ -2944,17 +2948,17 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return resourceMapper.mapResource(cloudPackageEntity.getBody(), CloudPackage.class);
     }
 
-    private void removeUris(List<String> uris, UUID appGuid) {
+    private void removeUris(List<String> uris, UUID applicationGuid) {
         Map<String, UUID> domains = getDomainGuids();
         for (String uri : uris) {
             Map<String, String> uriInfo = new HashMap<String, String>(2);
             extractUriInfo(domains, uri, uriInfo);
             UUID domainGuid = domains.get(uriInfo.get("domainName"));
-            unbindRoute(uriInfo, domainGuid, appGuid);
+            unbindRoute(uriInfo, domainGuid, applicationGuid);
         }
     }
 
-    private StreamingLogToken streamLoggregatorLogs(String appName, ApplicationLogListener listener, boolean recent) {
+    private StreamingLogToken streamLoggregatorLogs(String applicationName, ApplicationLogListener listener, boolean recent) {
         ClientEndpointConfig.Configurator configurator = new ClientEndpointConfig.Configurator() {
             @Override
             public void beforeRequest(Map<String, List<String>> headers) {
@@ -2967,36 +2971,37 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
         String endpoint = getInfo().getLoggregatorEndpoint();
         String mode = recent ? "dump" : "tail";
-        UUID appId = getApplicationId(appName);
-        return loggregatorClient.connectToLoggregator(endpoint, mode, appId, listener, configurator);
+        UUID applicationGuid = getApplicationGuid(applicationName);
+        return loggregatorClient.connectToLoggregator(endpoint, mode, applicationGuid, listener, configurator);
     }
 
-    private void unbindRoute(Map<String, String> uriInfo, UUID domainGuid, UUID appGuid) {
+    private void unbindRoute(Map<String, String> uriInfo, UUID domainGuid, UUID applicationGuid) {
         UUID routeGuid = getRouteGuid(uriInfo, domainGuid);
         if (routeGuid != null) {
-            String bindPath = "/v2/apps/{app}/routes/{route}";
+            String bindPath = "/v2/apps/{application}/routes/{route}";
             Map<String, Object> bindVars = new HashMap<String, Object>();
-            bindVars.put("app", appGuid);
+            bindVars.put("application", applicationGuid);
             bindVars.put("route", routeGuid);
             getRestTemplate().delete(getUrl(bindPath), bindVars);
         }
     }
 
-    private CloudSpace validateSpaceAndOrg(String spaceName, String orgName, CloudControllerRestClientImpl client) {
+    private CloudSpace validateSpaceAndOrganization(String spaceName, String organizationName, CloudControllerRestClientImpl client) {
         List<CloudSpace> spaces = client.getSpaces();
 
         for (CloudSpace space : spaces) {
             if (space.getName()
                 .equals(spaceName)) {
-                CloudOrganization org = space.getOrganization();
-                if (orgName == null || org.getName()
-                    .equals(orgName)) {
+                CloudOrganization organization = space.getOrganization();
+                if (organizationName == null || organization.getName()
+                    .equals(organizationName)) {
                     return space;
                 }
             }
         }
 
-        throw new IllegalArgumentException("No matching organization and space found for org: " + orgName + " space: " + "" + spaceName);
+        throw new IllegalArgumentException(
+            "No matching organization and space found for organization: " + organizationName + " space: " + "" + spaceName);
     }
 
     private static class ResponseExtractorWrapper implements ResponseExtractor {

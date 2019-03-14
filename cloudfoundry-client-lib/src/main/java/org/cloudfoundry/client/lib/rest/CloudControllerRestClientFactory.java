@@ -88,21 +88,21 @@ public class CloudControllerRestClientFactory {
             sessionSpace);
     }
 
-    public CloudControllerRestClient newCloudController(URL cloudControllerUrl, CloudCredentials cloudCredentials, String orgName,
+    public CloudControllerRestClient newCloudController(URL cloudControllerUrl, CloudCredentials cloudCredentials, String organizationName,
         String spaceName) {
         createOauthClient(cloudControllerUrl);
         LoggregatorClient loggregatorClient = new LoggregatorClient(trustSelfSignedCerts);
 
-        return new CloudControllerRestClientImpl(cloudControllerUrl, restTemplate, oauthClient, loggregatorClient, cloudCredentials, orgName,
+        return new CloudControllerRestClientImpl(cloudControllerUrl, restTemplate, oauthClient, loggregatorClient, cloudCredentials, organizationName,
             spaceName);
     }
 
-    public CloudControllerRestClient newCloudController(URL cloudControllerUrl, CloudCredentials cloudCredentials, String orgName,
+    public CloudControllerRestClient newCloudController(URL cloudControllerUrl, CloudCredentials cloudCredentials, String organizationName,
         String spaceName, OauthClient oauthClient) {
         this.oauthClient = oauthClient;
         LoggregatorClient loggregatorClient = new LoggregatorClient(trustSelfSignedCerts);
 
-        return new CloudControllerRestClientImpl(cloudControllerUrl, restTemplate, oauthClient, loggregatorClient, cloudCredentials, orgName,
+        return new CloudControllerRestClientImpl(cloudControllerUrl, restTemplate, oauthClient, loggregatorClient, cloudCredentials, organizationName,
             spaceName);
     }
 

@@ -95,7 +95,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     /**
-     * Construct client without a default org and space.
+     * Construct client without a default organization and space.
      */
 
     public CloudControllerClientImpl(CloudCredentials credentials, URL cloudControllerUrl) {
@@ -142,29 +142,29 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     /**
-     * Construct a client with a default space name and org name.
+     * Construct a client with a default space name and organization name.
      */
 
-    public CloudControllerClientImpl(CloudCredentials credentials, URL cloudControllerUrl, String orgName, String spaceName) {
-        this(credentials, cloudControllerUrl, orgName, spaceName, null, false);
+    public CloudControllerClientImpl(CloudCredentials credentials, URL cloudControllerUrl, String organizationName, String spaceName) {
+        this(credentials, cloudControllerUrl, organizationName, spaceName, null, false);
     }
 
-    public CloudControllerClientImpl(CloudCredentials credentials, URL cloudControllerUrl, String orgName, String spaceName,
+    public CloudControllerClientImpl(CloudCredentials credentials, URL cloudControllerUrl, String organizationName, String spaceName,
         boolean trustSelfSignedCerts) {
-        this(credentials, cloudControllerUrl, orgName, spaceName, null, trustSelfSignedCerts);
+        this(credentials, cloudControllerUrl, organizationName, spaceName, null, trustSelfSignedCerts);
     }
 
-    public CloudControllerClientImpl(CloudCredentials credentials, URL cloudControllerUrl, String orgName, String spaceName,
+    public CloudControllerClientImpl(CloudCredentials credentials, URL cloudControllerUrl, String organizationName, String spaceName,
         HttpProxyConfiguration httpProxyConfiguration) {
-        this(credentials, cloudControllerUrl, orgName, spaceName, httpProxyConfiguration, false);
+        this(credentials, cloudControllerUrl, organizationName, spaceName, httpProxyConfiguration, false);
     }
 
-    public CloudControllerClientImpl(CloudCredentials credentials, URL cloudControllerUrl, String orgName, String spaceName,
+    public CloudControllerClientImpl(CloudCredentials credentials, URL cloudControllerUrl, String organizationName, String spaceName,
         HttpProxyConfiguration httpProxyConfiguration, boolean trustSelfSignedCerts) {
         Assert.notNull(cloudControllerUrl, "URL for cloud controller cannot be null");
         CloudControllerRestClientFactory cloudControllerClientFactory = new CloudControllerRestClientFactory(httpProxyConfiguration,
             trustSelfSignedCerts);
-        this.cc = cloudControllerClientFactory.newCloudController(cloudControllerUrl, credentials, orgName, spaceName);
+        this.cc = cloudControllerClientFactory.newCloudController(cloudControllerUrl, credentials, organizationName, spaceName);
     }
 
     /**
@@ -190,13 +190,13 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public void associateAuditorWithSpace(String orgName, String spaceName) {
-        cc.associateAuditorWithSpace(orgName, spaceName, null);
+    public void associateAuditorWithSpace(String organizationName, String spaceName) {
+        cc.associateAuditorWithSpace(organizationName, spaceName, null);
     }
 
     @Override
-    public void associateAuditorWithSpace(String orgName, String spaceName, String userGuid) {
-        cc.associateAuditorWithSpace(orgName, spaceName, userGuid);
+    public void associateAuditorWithSpace(String organizationName, String spaceName, String userGuid) {
+        cc.associateAuditorWithSpace(organizationName, spaceName, userGuid);
     }
 
     @Override
@@ -205,13 +205,13 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public void associateDeveloperWithSpace(String orgName, String spaceName) {
-        cc.associateDeveloperWithSpace(orgName, spaceName, null);
+    public void associateDeveloperWithSpace(String organizationName, String spaceName) {
+        cc.associateDeveloperWithSpace(organizationName, spaceName, null);
     }
 
     @Override
-    public void associateDeveloperWithSpace(String orgName, String spaceName, String userGuid) {
-        cc.associateDeveloperWithSpace(orgName, spaceName, userGuid);
+    public void associateDeveloperWithSpace(String organizationName, String spaceName, String userGuid) {
+        cc.associateDeveloperWithSpace(organizationName, spaceName, userGuid);
     }
 
     @Override
@@ -220,13 +220,13 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public void associateManagerWithSpace(String orgName, String spaceName) {
-        cc.associateManagerWithSpace(orgName, spaceName, null);
+    public void associateManagerWithSpace(String organizationName, String spaceName) {
+        cc.associateManagerWithSpace(organizationName, spaceName, null);
     }
 
     @Override
-    public void associateManagerWithSpace(String orgName, String spaceName, String userGuid) {
-        cc.associateManagerWithSpace(orgName, spaceName, userGuid);
+    public void associateManagerWithSpace(String organizationName, String spaceName, String userGuid) {
+        cc.associateManagerWithSpace(organizationName, spaceName, userGuid);
     }
 
     @Override
@@ -235,13 +235,13 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public void bindSecurityGroup(String orgName, String spaceName, String securityGroupName) {
-        cc.bindSecurityGroup(orgName, spaceName, securityGroupName);
+    public void bindSecurityGroup(String organizationName, String spaceName, String securityGroupName) {
+        cc.bindSecurityGroup(organizationName, spaceName, securityGroupName);
     }
 
     @Override
-    public void bindService(String appName, String serviceName) {
-        cc.bindService(appName, serviceName);
+    public void bindService(String applicationName, String serviceName) {
+        cc.bindService(applicationName, serviceName);
     }
 
     @Override
@@ -250,14 +250,14 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public void createApplication(String appName, Staging staging, Integer memory, List<String> uris, List<String> serviceNames) {
-        cc.createApplication(appName, staging, memory, uris, serviceNames);
+    public void createApplication(String applicationName, Staging staging, Integer memory, List<String> uris, List<String> serviceNames) {
+        cc.createApplication(applicationName, staging, memory, uris, serviceNames);
     }
 
     @Override
-    public void createApplication(String appName, Staging staging, Integer disk, Integer memory, List<String> uris,
+    public void createApplication(String applicationName, Staging staging, Integer disk, Integer memory, List<String> uris,
         List<String> serviceNames, DockerInfo dockerInfo) {
-        cc.createApplication(appName, staging, disk, memory, uris, serviceNames, dockerInfo);
+        cc.createApplication(applicationName, staging, disk, memory, uris, serviceNames, dockerInfo);
     }
 
     @Override
@@ -306,8 +306,8 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public void debugApplication(String appName, DebugMode mode) {
-        cc.debugApplication(appName, mode);
+    public void debugApplication(String applicationName, DebugMode mode) {
+        cc.debugApplication(applicationName, mode);
     }
 
     @Override
@@ -321,8 +321,8 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public void deleteApplication(String appName) {
-        cc.deleteApplication(appName);
+    public void deleteApplication(String applicationName) {
+        cc.deleteApplication(applicationName);
     }
 
     @Override
@@ -371,43 +371,43 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public CloudApplication getApplication(String appName) {
-        return cc.getApplication(appName);
+    public CloudApplication getApplication(String applicationName) {
+        return cc.getApplication(applicationName);
     }
 
     @Override
-    public CloudApplication getApplication(String appName, boolean required) {
-        return cc.getApplication(appName, required);
+    public CloudApplication getApplication(String applicationName, boolean required) {
+        return cc.getApplication(applicationName, required);
     }
 
     @Override
-    public CloudApplication getApplication(UUID appGuid) {
-        return cc.getApplication(appGuid);
+    public CloudApplication getApplication(UUID applicationGuid) {
+        return cc.getApplication(applicationGuid);
     }
 
     @Override
-    public CloudApplication getApplication(UUID appGuid, boolean required) {
-        return cc.getApplication(appGuid, required);
+    public CloudApplication getApplication(UUID applicationGuid, boolean required) {
+        return cc.getApplication(applicationGuid, required);
     }
 
     @Override
-    public Map<String, Object> getApplicationEnvironment(UUID appGuid) {
-        return cc.getApplicationEnvironment(appGuid);
+    public Map<String, Object> getApplicationEnvironment(UUID applicationGuid) {
+        return cc.getApplicationEnvironment(applicationGuid);
     }
 
     @Override
-    public Map<String, Object> getApplicationEnvironment(String appName) {
-        return cc.getApplicationEnvironment(appName);
+    public Map<String, Object> getApplicationEnvironment(String applicationName) {
+        return cc.getApplicationEnvironment(applicationName);
     }
 
     @Override
-    public List<CloudEvent> getApplicationEvents(String appName) {
-        return cc.getApplicationEvents(appName);
+    public List<CloudEvent> getApplicationEvents(String applicationName) {
+        return cc.getApplicationEvents(applicationName);
     }
 
     @Override
-    public InstancesInfo getApplicationInstances(String appName) {
-        return cc.getApplicationInstances(appName);
+    public InstancesInfo getApplicationInstances(String applicationName) {
+        return cc.getApplicationInstances(applicationName);
     }
 
     @Override
@@ -416,8 +416,8 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public ApplicationStats getApplicationStats(String appName) {
-        return cc.getApplicationStats(appName);
+    public ApplicationStats getApplicationStats(String applicationName) {
+        return cc.getApplicationStats(applicationName);
     }
 
     @Override
@@ -447,13 +447,13 @@ public class CloudControllerClientImpl implements CloudControllerClient {
      * @deprecated use {@link #streamLogs(String, ApplicationLogListener)} or {@link #getRecentLogs(String)}
      */
     @Override
-    public Map<String, String> getCrashLogs(String appName) {
-        return cc.getCrashLogs(appName);
+    public Map<String, String> getCrashLogs(String applicationName) {
+        return cc.getCrashLogs(applicationName);
     }
 
     @Override
-    public CrashesInfo getCrashes(String appName) {
-        return cc.getCrashes(appName);
+    public CrashesInfo getCrashes(String applicationName) {
+        return cc.getCrashes(applicationName);
     }
 
     @Override
@@ -467,8 +467,8 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public List<CloudDomain> getDomainsForOrg() {
-        return cc.getDomainsForOrg();
+    public List<CloudDomain> getDomainsForOrganization() {
+        return cc.getDomainsForOrganization();
     }
 
     @Override
@@ -477,53 +477,53 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public String getFile(String appName, int instanceIndex, String filePath) {
-        return cc.getFile(appName, instanceIndex, filePath, 0, -1);
+    public String getFile(String applicationName, int instanceIndex, String filePath) {
+        return cc.getFile(applicationName, instanceIndex, filePath, 0, -1);
     }
 
     @Override
-    public String getFile(String appName, int instanceIndex, String filePath, int startPosition) {
+    public String getFile(String applicationName, int instanceIndex, String filePath, int startPosition) {
         Assert.isTrue(startPosition >= 0, startPosition + " is not a valid value for start position, it should be 0 or greater.");
-        return cc.getFile(appName, instanceIndex, filePath, startPosition, -1);
+        return cc.getFile(applicationName, instanceIndex, filePath, startPosition, -1);
     }
 
     @Override
-    public String getFile(String appName, int instanceIndex, String filePath, int startPosition, int endPosition) {
+    public String getFile(String applicationName, int instanceIndex, String filePath, int startPosition, int endPosition) {
         Assert.isTrue(startPosition >= 0, startPosition + " is not a valid value for start position, it should be 0 or greater.");
         Assert.isTrue(endPosition > startPosition, endPosition
             + " is not a valid value for end position, it should be greater than startPosition " + "which is " + startPosition + ".");
-        return cc.getFile(appName, instanceIndex, filePath, startPosition, endPosition - 1);
+        return cc.getFile(applicationName, instanceIndex, filePath, startPosition, endPosition - 1);
     }
 
     // list services, un/provision services, modify instance
 
     @Override
-    public String getFileTail(String appName, int instanceIndex, String filePath, int length) {
+    public String getFileTail(String applicationName, int instanceIndex, String filePath, int length) {
         Assert.isTrue(length > 0, length + " is not a valid value for length, it should be 1 or greater.");
-        return cc.getFile(appName, instanceIndex, filePath, -1, length);
+        return cc.getFile(applicationName, instanceIndex, filePath, -1, length);
     }
 
     /**
      * @deprecated use {@link #streamLogs(String, ApplicationLogListener)} or {@link #getRecentLogs(String)}
      */
     @Override
-    public Map<String, String> getLogs(String appName) {
-        return cc.getLogs(appName);
+    public Map<String, String> getLogs(String applicationName) {
+        return cc.getLogs(applicationName);
     }
 
     @Override
-    public CloudOrganization getOrganization(String orgName) {
-        return cc.getOrganization(orgName);
+    public CloudOrganization getOrganization(String organizationName) {
+        return cc.getOrganization(organizationName);
     }
 
     @Override
-    public CloudOrganization getOrganization(String orgName, boolean required) {
-        return cc.getOrganization(orgName, required);
+    public CloudOrganization getOrganization(String organizationName, boolean required) {
+        return cc.getOrganization(organizationName, required);
     }
 
     @Override
-    public Map<String, CloudUser> getOrganizationUsers(String orgName) {
-        return cc.getOrganizationUsers(orgName);
+    public Map<String, CloudUser> getOrganizationUsers(String organizationName) {
+        return cc.getOrganizationUsers(organizationName);
     }
 
     @Override
@@ -552,8 +552,8 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public List<ApplicationLog> getRecentLogs(String appName) {
-        return cc.getRecentLogs(appName);
+    public List<ApplicationLog> getRecentLogs(String applicationName) {
+        return cc.getRecentLogs(applicationName);
     }
 
     @Override
@@ -657,8 +657,8 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public List<UUID> getSpaceAuditors(String orgName, String spaceName) {
-        return cc.getSpaceAuditors(orgName, spaceName);
+    public List<UUID> getSpaceAuditors(String organizationName, String spaceName) {
+        return cc.getSpaceAuditors(organizationName, spaceName);
     }
 
     @Override
@@ -672,8 +672,8 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public List<UUID> getSpaceDevelopers(String orgName, String spaceName) {
-        return cc.getSpaceDevelopers(orgName, spaceName);
+    public List<UUID> getSpaceDevelopers(String organizationName, String spaceName) {
+        return cc.getSpaceDevelopers(organizationName, spaceName);
     }
 
     @Override
@@ -687,8 +687,8 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public List<UUID> getSpaceManagers(String orgName, String spaceName) {
-        return cc.getSpaceManagers(orgName, spaceName);
+    public List<UUID> getSpaceManagers(String organizationName, String spaceName) {
+        return cc.getSpaceManagers(organizationName, spaceName);
     }
 
     @Override
@@ -737,8 +737,8 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public void openFile(String appName, int instanceIndex, String filePath, ClientHttpResponseCallback callback) {
-        cc.openFile(appName, instanceIndex, filePath, callback);
+    public void openFile(String applicationName, int instanceIndex, String filePath, ClientHttpResponseCallback callback) {
+        cc.openFile(applicationName, instanceIndex, filePath, callback);
     }
 
     @Override
@@ -757,18 +757,18 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public void rename(String appName, String newName) {
-        cc.rename(appName, newName);
+    public void rename(String applicationName, String newName) {
+        cc.rename(applicationName, newName);
     }
 
     @Override
-    public StartingInfo restartApplication(String appName) {
-        return cc.restartApplication(appName);
+    public StartingInfo restartApplication(String applicationName) {
+        return cc.restartApplication(applicationName);
     }
 
     @Override
-    public void setQuotaToOrg(String orgName, String quotaName) {
-        cc.setQuotaToOrg(orgName, quotaName);
+    public void setQuotaToOrganization(String organizationName, String quotaName) {
+        cc.setQuotaToOrganization(organizationName, quotaName);
     }
 
     @Override
@@ -777,18 +777,18 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public StartingInfo startApplication(String appName) {
-        return cc.startApplication(appName);
+    public StartingInfo startApplication(String applicationName) {
+        return cc.startApplication(applicationName);
     }
 
     @Override
-    public void stopApplication(String appName) {
-        cc.stopApplication(appName);
+    public void stopApplication(String applicationName) {
+        cc.stopApplication(applicationName);
     }
 
     @Override
-    public StreamingLogToken streamLogs(String appName, ApplicationLogListener listener) {
-        return cc.streamLogs(appName, listener);
+    public StreamingLogToken streamLogs(String applicationName, ApplicationLogListener listener) {
+        return cc.streamLogs(applicationName, listener);
     }
 
     @Override
@@ -802,13 +802,13 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public void unbindSecurityGroup(String orgName, String spaceName, String securityGroupName) {
-        cc.unbindSecurityGroup(orgName, spaceName, securityGroupName);
+    public void unbindSecurityGroup(String organizationName, String spaceName, String securityGroupName) {
+        cc.unbindSecurityGroup(organizationName, spaceName, securityGroupName);
     }
 
     @Override
-    public void unbindService(String appName, String serviceName) {
-        cc.unbindService(appName, serviceName);
+    public void unbindService(String applicationName, String serviceName) {
+        cc.unbindService(applicationName, serviceName);
     }
 
     @Override
@@ -822,43 +822,43 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public void updateApplicationDiskQuota(String appName, int disk) {
-        cc.updateApplicationDiskQuota(appName, disk);
+    public void updateApplicationDiskQuota(String applicationName, int disk) {
+        cc.updateApplicationDiskQuota(applicationName, disk);
     }
 
     @Override
-    public void updateApplicationEnv(String appName, Map<String, String> env) {
-        cc.updateApplicationEnv(appName, env);
+    public void updateApplicationEnv(String applicationName, Map<String, String> env) {
+        cc.updateApplicationEnv(applicationName, env);
     }
 
     @Override
-    public void updateApplicationEnv(String appName, List<String> env) {
-        cc.updateApplicationEnv(appName, env);
+    public void updateApplicationEnv(String applicationName, List<String> env) {
+        cc.updateApplicationEnv(applicationName, env);
     }
 
     @Override
-    public void updateApplicationInstances(String appName, int instances) {
-        cc.updateApplicationInstances(appName, instances);
+    public void updateApplicationInstances(String applicationName, int instances) {
+        cc.updateApplicationInstances(applicationName, instances);
     }
 
     @Override
-    public void updateApplicationMemory(String appName, int memory) {
-        cc.updateApplicationMemory(appName, memory);
+    public void updateApplicationMemory(String applicationName, int memory) {
+        cc.updateApplicationMemory(applicationName, memory);
     }
 
     @Override
-    public void updateApplicationServices(String appName, List<String> services) {
-        cc.updateApplicationServices(appName, services);
+    public void updateApplicationServices(String applicationName, List<String> services) {
+        cc.updateApplicationServices(applicationName, services);
     }
 
     @Override
-    public void updateApplicationStaging(String appName, Staging staging) {
-        cc.updateApplicationStaging(appName, staging);
+    public void updateApplicationStaging(String applicationName, Staging staging) {
+        cc.updateApplicationStaging(applicationName, staging);
     }
 
     @Override
-    public void updateApplicationUris(String appName, List<String> uris) {
-        cc.updateApplicationUris(appName, uris);
+    public void updateApplicationUris(String applicationName, List<String> uris) {
+        cc.updateApplicationUris(applicationName, uris);
     }
 
     @Override
@@ -897,59 +897,59 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public void uploadApplication(String appName, String file) throws IOException {
-        cc.uploadApplication(appName, new File(file), null);
+    public void uploadApplication(String applicationName, String file) throws IOException {
+        cc.uploadApplication(applicationName, new File(file), null);
     }
 
     @Override
-    public void uploadApplication(String appName, File file) throws IOException {
-        cc.uploadApplication(appName, file, null);
+    public void uploadApplication(String applicationName, File file) throws IOException {
+        cc.uploadApplication(applicationName, file, null);
     }
 
     @Override
-    public void uploadApplication(String appName, File file, UploadStatusCallback callback) throws IOException {
-        cc.uploadApplication(appName, file, callback);
+    public void uploadApplication(String applicationName, File file, UploadStatusCallback callback) throws IOException {
+        cc.uploadApplication(applicationName, file, callback);
     }
 
     @Override
-    public void uploadApplication(String appName, InputStream inputStream) throws IOException {
-        cc.uploadApplication(appName, inputStream, null);
+    public void uploadApplication(String applicationName, InputStream inputStream) throws IOException {
+        cc.uploadApplication(applicationName, inputStream, null);
     }
 
     @Override
-    public void uploadApplication(String appName, InputStream inputStream, UploadStatusCallback callback) throws IOException {
-        cc.uploadApplication(appName, inputStream, callback);
+    public void uploadApplication(String applicationName, InputStream inputStream, UploadStatusCallback callback) throws IOException {
+        cc.uploadApplication(applicationName, inputStream, callback);
     }
 
     @Override
-    public void uploadApplication(String appName, ApplicationArchive archive) throws IOException {
-        cc.uploadApplication(appName, archive, null);
+    public void uploadApplication(String applicationName, ApplicationArchive archive) throws IOException {
+        cc.uploadApplication(applicationName, archive, null);
     }
 
     @Override
-    public void uploadApplication(String appName, ApplicationArchive archive, UploadStatusCallback callback) throws IOException {
-        cc.uploadApplication(appName, archive, callback);
+    public void uploadApplication(String applicationName, ApplicationArchive archive, UploadStatusCallback callback) throws IOException {
+        cc.uploadApplication(applicationName, archive, callback);
     }
 
     @Override
-    public UploadToken asyncUploadApplication(String appName, File file) throws IOException {
-        return cc.asyncUploadApplication(appName, file, null);
+    public UploadToken asyncUploadApplication(String applicationName, File file) throws IOException {
+        return cc.asyncUploadApplication(applicationName, file, null);
     }
 
     @Override
-    public UploadToken asyncUploadApplication(String appName, File file, UploadStatusCallback callback) throws IOException {
-        return cc.asyncUploadApplication(appName, file, callback);
+    public UploadToken asyncUploadApplication(String applicationName, File file, UploadStatusCallback callback) throws IOException {
+        return cc.asyncUploadApplication(applicationName, file, callback);
     }
 
     @Override
-    public UploadToken asyncUploadApplication(String appName, ApplicationArchive archive) throws IOException {
-        return cc.asyncUploadApplication(appName, archive, null);
+    public UploadToken asyncUploadApplication(String applicationName, ApplicationArchive archive) throws IOException {
+        return cc.asyncUploadApplication(applicationName, archive, null);
     }
 
     @Override
-    public UploadToken asyncUploadApplication(String appName, ApplicationArchive archive, UploadStatusCallback callback)
+    public UploadToken asyncUploadApplication(String applicationName, ApplicationArchive archive, UploadStatusCallback callback)
         throws IOException {
-        return cc.asyncUploadApplication(appName, archive, callback);
+        return cc.asyncUploadApplication(applicationName, archive, callback);
     }
 
     @Override
@@ -993,8 +993,8 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public void bindDropletToApp(UUID dropletGuid, UUID appGuid) {
-        cc.bindDropletToApp(dropletGuid, appGuid);
+    public void bindDropletToApp(UUID dropletGuid, UUID applicationGuid) {
+        cc.bindDropletToApp(dropletGuid, applicationGuid);
     }
 
 }

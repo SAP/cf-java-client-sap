@@ -23,7 +23,7 @@ import java.util.List;
  * Application security groups act as virtual firewalls to control outbound traffic from the applications in your deployment. A security
  * group consists of a list of network egress access rules.
  * <p/>
- * An administrator can assign one or more security groups to a Cloud Foundry deployment or to a specific space in an org within a
+ * An administrator can assign one or more security groups to a Cloud Foundry deployment or to a specific space in an organization within a
  * deployment.
  *
  * @author David Ehringer

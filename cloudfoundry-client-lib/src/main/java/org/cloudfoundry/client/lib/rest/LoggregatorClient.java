@@ -25,7 +25,7 @@ public class LoggregatorClient {
 
     private static final UriTemplate loggregatorRecentUriTemplate = new UriTemplate("{scheme}://{host}/recent");
 
-    private static final UriTemplate loggregatorStreamUriTemplate = new UriTemplate("{endpoint}/{kind}/?app={appId}");
+    private static final UriTemplate loggregatorStreamUriTemplate = new UriTemplate("{endpoint}/{kind}/?app={applicationGuid}");
 
     private boolean trustSelfSignedCerts;
 
@@ -33,9 +33,9 @@ public class LoggregatorClient {
         this.trustSelfSignedCerts = trustSelfSignedCerts;
     }
 
-    public StreamingLogTokenImpl connectToLoggregator(String endpoint, String mode, UUID appId, ApplicationLogListener listener,
+    public StreamingLogTokenImpl connectToLoggregator(String endpoint, String mode, UUID applicationGuid, ApplicationLogListener listener,
         ClientEndpointConfig.Configurator configurator) {
-        URI loggregatorUri = loggregatorStreamUriTemplate.expand(endpoint, mode, appId);
+        URI loggregatorUri = loggregatorStreamUriTemplate.expand(endpoint, mode, applicationGuid);
 
         try {
             WebSocketContainer container = ContainerProvider.getWebSocketContainer();

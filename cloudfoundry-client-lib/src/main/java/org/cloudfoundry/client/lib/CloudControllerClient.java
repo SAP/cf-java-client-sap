@@ -91,20 +91,20 @@ public interface CloudControllerClient {
     /**
      * Associate current user to the space auditors role
      *
-     * @param orgName name of the organization containing the space
+     * @param organizationName name of the organization containing the space
      * @param spaceName name of the space
      */
-    void associateAuditorWithSpace(String orgName, String spaceName);
+    void associateAuditorWithSpace(String organizationName, String spaceName);
 
     /**
      * Associate a user to the space auditors role
      *
-     * @param orgName name of the organization containing the space
+     * @param organizationName name of the organization containing the space
      * @param spaceName name of the space
      * @param userGuid guid of the user. If null, use current user. To retrieve user guid, use {@link #getOrganizationUsers(String)
      *        getOrganizationUsers } and search for username
      */
-    void associateAuditorWithSpace(String orgName, String spaceName, String userGuid);
+    void associateAuditorWithSpace(String organizationName, String spaceName, String userGuid);
 
     /**
      * Associate current user to the space developer role
@@ -116,20 +116,20 @@ public interface CloudControllerClient {
     /**
      * Associate current user to the space developer role
      *
-     * @param orgName name of the organization containing the space
+     * @param organizationName name of the organization containing the space
      * @param spaceName name of the space
      */
-    void associateDeveloperWithSpace(String orgName, String spaceName);
+    void associateDeveloperWithSpace(String organizationName, String spaceName);
 
     /**
      * Associate a user to the space developer role
      *
-     * @param orgName name of the organization containing the space
+     * @param organizationName name of the organization containing the space
      * @param spaceName name of the space
      * @param userGuid guid of the user. If null, use current user. To retrieve user guid, use {@link #getOrganizationUsers(String)
      *        getOrganizationUsers } and search for username
      */
-    void associateDeveloperWithSpace(String orgName, String spaceName, String userGuid);
+    void associateDeveloperWithSpace(String organizationName, String spaceName, String userGuid);
 
     /**
      * Associate current user to the space managers role
@@ -141,20 +141,20 @@ public interface CloudControllerClient {
     /**
      * Associate current user to the space managers role
      *
-     * @param orgName name of the organization containing the space
+     * @param organizationName name of the organization containing the space
      * @param spaceName name of the space
      */
-    void associateManagerWithSpace(String orgName, String spaceName);
+    void associateManagerWithSpace(String organizationName, String spaceName);
 
     /**
      * Associate a user to the space managers role
      *
-     * @param orgName name of the organization containing the space
+     * @param organizationName name of the organization containing the space
      * @param spaceName name of the space
      * @param userGuid guid of the user. If null, use current user. To retrieve user guid, use {@link #getOrganizationUsers(String)
      *        getOrganizationUsers } and search for username
      */
-    void associateManagerWithSpace(String orgName, String spaceName, String userGuid);
+    void associateManagerWithSpace(String organizationName, String spaceName, String userGuid);
 
     /**
      * Bind a security group to the list of security groups to be used for running applications.
@@ -168,20 +168,20 @@ public interface CloudControllerClient {
      * <p/>
      * This method requires the logged in user to have admin permissions in the cloud controller.
      *
-     * @param orgName The name of the organization that the space is in.
+     * @param organizationName The name of the organization that the space is in.
      * @param spaceName The name of the space
      * @param securityGroupName The name of the security group to bind to the space
      * @throws CloudOperationException if the org, space, or security group do not exist
      */
-    void bindSecurityGroup(String orgName, String spaceName, String securityGroupName);
+    void bindSecurityGroup(String organizationName, String spaceName, String securityGroupName);
 
     /**
      * Associate (provision) a service with an application.
      *
-     * @param appName the application name
+     * @param applicationName the application name
      * @param serviceName the service name
      */
-    void bindService(String appName, String serviceName);
+    void bindService(String applicationName, String serviceName);
 
     /**
      * Bind a security group to the list of security groups to be used for staging applications.
@@ -193,18 +193,18 @@ public interface CloudControllerClient {
     /**
      * Create application.
      *
-     * @param appName application name
+     * @param applicationName application name
      * @param staging staging info
      * @param memory memory to use in MB
      * @param uris list of URIs for the app
      * @param serviceNames list of service names to bind to app
      */
-    void createApplication(String appName, Staging staging, Integer memory, List<String> uris, List<String> serviceNames);
+    void createApplication(String applicationName, Staging staging, Integer memory, List<String> uris, List<String> serviceNames);
 
     /**
      * Create application.
      *
-     * @param appName application name
+     * @param applicationName application name
      * @param staging staging info
      * @param disk disk quota to use in MB
      * @param memory memory to use in MB
@@ -212,7 +212,7 @@ public interface CloudControllerClient {
      * @param serviceNames list of service names to bind to app
      * @param dockerInfo docker params(image, username, password)
      */
-    public void createApplication(String appName, Staging staging, Integer disk, Integer memory, List<String> uris,
+    public void createApplication(String applicationName, Staging staging, Integer disk, Integer memory, List<String> uris,
         List<String> serviceNames, DockerInfo dockerInfo);
 
     /**
@@ -314,10 +314,10 @@ public interface CloudControllerClient {
     /**
      * Debug application.
      *
-     * @param appName name of application
+     * @param applicationName name of application
      * @param mode debug mode info
      */
-    void debugApplication(String appName, CloudApplication.DebugMode mode);
+    void debugApplication(String applicationName, CloudApplication.DebugMode mode);
 
     /**
      * Delete all applications.
@@ -332,9 +332,9 @@ public interface CloudControllerClient {
     /**
      * Delete application.
      *
-     * @param appName name of application
+     * @param applicationName name of application
      */
-    void deleteApplication(String appName);
+    void deleteApplication(String applicationName);
 
     /**
      * Delete a private domain in the current organization.
@@ -405,19 +405,19 @@ public interface CloudControllerClient {
     /**
      * Get cloud application with the specified name.
      *
-     * @param appName name of the app
+     * @param applicationName name of the app
      * @return the cloud application
      */
-    CloudApplication getApplication(String appName);
+    CloudApplication getApplication(String applicationName);
 
     /**
      * Get cloud application with the specified name.
      *
-     * @param appName name of the app
+     * @param applicationName name of the app
      * @param required if true, and organization is not found, throw an exception
      * @return the cloud application
      */
-    CloudApplication getApplication(String appName, boolean required);
+    CloudApplication getApplication(String applicationName, boolean required);
 
     /**
      * Get cloud application with the specified GUID.
@@ -439,34 +439,34 @@ public interface CloudControllerClient {
     /**
      * Get application environment variables for the app with the specified name.
      *
-     * @param appName name of the app
+     * @param applicationName name of the app
      * @return the cloud application environment variables
      */
-    Map<String, Object> getApplicationEnvironment(String appName);
+    Map<String, Object> getApplicationEnvironment(String applicationName);
 
     /**
      * Get application environment variables for the app with the specified GUID.
      *
-     * @param appGuid GUID of the app
+     * @param applicationGuid GUID of the app
      * @return the cloud application environment variables
      */
-    Map<String, Object> getApplicationEnvironment(UUID appGuid);
+    Map<String, Object> getApplicationEnvironment(UUID applicationGuid);
 
     /**
      * Get application events.
      *
-     * @param appName name of application
+     * @param applicationName name of application
      * @return application events
      */
-    List<CloudEvent> getApplicationEvents(String appName);
+    List<CloudEvent> getApplicationEvents(String applicationName);
 
     /**
      * Get application instances info for application.
      *
-     * @param appName name of application.
+     * @param applicationName name of application.
      * @return instances info
      */
-    InstancesInfo getApplicationInstances(String appName);
+    InstancesInfo getApplicationInstances(String applicationName);
 
     /**
      * Get application instances info for application.
@@ -479,10 +479,10 @@ public interface CloudControllerClient {
     /**
      * Get application stats for the app with the specified name.
      *
-     * @param appName name of the app
+     * @param applicationName name of the app
      * @return the cloud application stats
      */
-    ApplicationStats getApplicationStats(String appName);
+    ApplicationStats getApplicationStats(String applicationName);
 
     /**
      * Get all cloud applications.
@@ -511,20 +511,20 @@ public interface CloudControllerClient {
      * Get logs from most recent crash of the deployed application. The logs will be returned in a Map keyed by the path of the log file
      * (logs/stderr.log, logs/stdout.log).
      *
-     * @param appName name of the application
+     * @param applicationName name of the application
      * @return a Map containing the logs. The logs will be returned with the path to the log file used as the key and the full content of
      *         the log file will be returned as a String value for the corresponding key.
      * @deprecated Use {@link #streamLogs(String, ApplicationLogListener)} or {@link #getRecentLogs(String)}
      */
-    Map<String, String> getCrashLogs(String appName);
+    Map<String, String> getCrashLogs(String applicationName);
 
     /**
      * Get crashes info for application.
      *
-     * @param appName name of application
+     * @param applicationName name of application
      * @return crashes info
      */
-    CrashesInfo getCrashes(String appName);
+    CrashesInfo getCrashes(String applicationName);
 
     /**
      * Gets the default domain for the current org, which is the first shared domain.
@@ -545,7 +545,7 @@ public interface CloudControllerClient {
      *
      * @return list of domains
      */
-    List<CloudDomain> getDomainsForOrg();
+    List<CloudDomain> getDomainsForOrganization();
 
     /**
      * Get system events.
@@ -557,84 +557,84 @@ public interface CloudControllerClient {
     /**
      * Get file from the deployed application.
      *
-     * @param appName name of the application
+     * @param applicationName name of the application
      * @param instanceIndex instance index
      * @param filePath path to the file
      * @return the contents of the file
      */
-    String getFile(String appName, int instanceIndex, String filePath);
+    String getFile(String applicationName, int instanceIndex, String filePath);
 
     /**
      * Get a the content, starting at a specific position, of a file from the deployed application.
      *
-     * @param appName name of the application
+     * @param applicationName name of the application
      * @param instanceIndex instance index
      * @param filePath path to the file
      * @param startPosition the starting position of the file contents (inclusive)
      * @return the contents of the file
      */
-    String getFile(String appName, int instanceIndex, String filePath, int startPosition);
+    String getFile(String applicationName, int instanceIndex, String filePath, int startPosition);
 
     /**
      * Get a range of content of a file from the deployed application. The range begins at the specified startPosition and extends to the
      * character at endPosition - 1.
      *
-     * @param appName name of the application
+     * @param applicationName name of the application
      * @param instanceIndex instance index
      * @param filePath path to the file
      * @param startPosition the starting position of the file contents (inclusive)
      * @param endPosition the ending position of the file contents (exclusive)
      * @return the contents of the file
      */
-    String getFile(String appName, int instanceIndex, String filePath, int startPosition, int endPosition);
+    String getFile(String applicationName, int instanceIndex, String filePath, int startPosition, int endPosition);
 
     /**
      * Get a the last bytes, with length as specified, of content of a file from the deployed application.
      *
-     * @param appName name of the application
+     * @param applicationName name of the application
      * @param instanceIndex instance index
      * @param filePath path to the file
      * @param length the length of the file contents to retrieve
      * @return the contents of the file
      */
-    String getFileTail(String appName, int instanceIndex, String filePath, int length);
+    String getFileTail(String applicationName, int instanceIndex, String filePath, int length);
 
     /**
      * Get logs from the deployed application. The logs will be returned in a Map keyed by the path of the log file (logs/stderr.log,
      * logs/stdout.log).
      *
-     * @param appName name of the application
+     * @param applicationName name of the application
      * @return a Map containing the logs. The logs will be returned with the path to the log file used as the key and the full content of
      *         the log file will be returned as a String value for the corresponding key.
      * @deprecated Use {@link #streamLogs(String, ApplicationLogListener)} or {@link #getRecentLogs(String)}
      */
-    Map<String, String> getLogs(String appName);
+    Map<String, String> getLogs(String applicationName);
 
     /**
      * Get the organization with the specified name.
      *
-     * @param orgName name of organization
+     * @param organizationName name of organization
      * @return
      */
-    CloudOrganization getOrganization(String orgName);
+    CloudOrganization getOrganization(String organizationName);
 
     /**
      * Get the organization with the specified name.
      *
-     * @param orgName name of organization
+     * @param organizationName name of organization
      * @param required if true, and organization is not found, throw an exception
      * @return
      */
-    CloudOrganization getOrganization(String orgName, boolean required);
+    CloudOrganization getOrganization(String organizationName, boolean required);
 
     /**
      * Get all users in the specified organization
      *
-     * @param orgName organization name
+     * @param organizationName organization name
      * @return a Map CloudUser with username as key
-     * @throws CloudOperationException if the org do not exist
+     * @throws CloudOperationException if the organization do not exist
      */
-    Map<String, CloudUser> getOrganizationUsers(String orgName);
+    Map<String, CloudUser> getOrganizationUsers(String organizationName);
 
     /**
      * Get list of CloudOrganizations for the current cloud.
@@ -679,10 +679,10 @@ public interface CloudControllerClient {
      *
      * Stream logs that were recently produced for an app.
      *
-     * @param appName the name of the application
+     * @param applicationName the name of the application
      * @return the list of recent log entries
      */
-    List<ApplicationLog> getRecentLogs(String appName);
+    List<ApplicationLog> getRecentLogs(String applicationName);
 
     /**
      * Get the info for all routes for a domain.
@@ -846,11 +846,11 @@ public interface CloudControllerClient {
     /**
      * Get list of space auditor UUID for the space.
      *
-     * @param orgName name of the organization containing the space
+     * @param organizationName name of the organization containing the space
      * @param spaceName name of the space
      * @return List of space auditor UUID
      */
-    List<UUID> getSpaceAuditors(String orgName, String spaceName);
+    List<UUID> getSpaceAuditors(String organizationName, String spaceName);
 
     /**
      * Get list of space developer UUID for the space.
@@ -865,11 +865,11 @@ public interface CloudControllerClient {
     /**
      * Get list of space developer UUID for the space.
      *
-     * @param orgName name of the organization containing the space
+     * @param organizationName name of the organization containing the space
      * @param spaceName name of the space
      * @return List of space developer UUID
      */
-    List<UUID> getSpaceDevelopers(String orgName, String spaceName);
+    List<UUID> getSpaceDevelopers(String organizationName, String spaceName);
 
     /**
      * Get list of space manager UUID for the space.
@@ -884,11 +884,11 @@ public interface CloudControllerClient {
     /**
      * Get list of space manager UUID for the space.
      *
-     * @param orgName name of the organization containing the space
+     * @param organizationName name of the organization containing the space
      * @param spaceName name of the space
      * @return List of space manager UUID
      */
-    List<UUID> getSpaceManagers(String orgName, String spaceName);
+    List<UUID> getSpaceManagers(String organizationName, String spaceName);
 
     /**
      * Get list of CloudSpaces for the current cloud.
@@ -961,12 +961,12 @@ public interface CloudControllerClient {
     /**
      * Provide the content of a file from the deployed application via callbacks.
      *
-     * @param appName name of the application
+     * @param applicationName name of the application
      * @param instanceIndex instance index
      * @param filePath path to the file
      * @param clientHttpResponseCallback callback object to receive file contents
      */
-    void openFile(String appName, int instanceIndex, String filePath, ClientHttpResponseCallback clientHttpResponseCallback);
+    void openFile(String applicationName, int instanceIndex, String filePath, ClientHttpResponseCallback clientHttpResponseCallback);
 
     /**
      * Register new user account with the provided credentials.
@@ -994,25 +994,25 @@ public interface CloudControllerClient {
     /**
      * Rename an application.
      *
-     * @param appName the current name
+     * @param applicationName the current name
      * @param newName the new name
      */
-    void rename(String appName, String newName);
+    void rename(String applicationName, String newName);
 
     /**
      * Restart application.
      *
-     * @param appName name of application
+     * @param applicationName name of application
      */
-    StartingInfo restartApplication(String appName);
+    StartingInfo restartApplication(String applicationName);
 
     /**
      * Set quota to organization
      *
-     * @param orgName
+     * @param organizationName
      * @param quotaName
      */
-    void setQuotaToOrg(String orgName, String quotaName);
+    void setQuotaToOrganization(String organizationName, String quotaName);
 
     /**
      * Override the default REST response error handler with a custom error handler.
@@ -1025,28 +1025,28 @@ public interface CloudControllerClient {
      * Start application. May return starting info if the response obtained after the start request contains headers . If the response does
      * not contain headers, null is returned instead.
      *
-     * @param appName name of application
+     * @param applicationName name of application
      * @return Starting info containing response headers, if headers are present in the response. If there are no headers, return null.
      */
-    StartingInfo startApplication(String appName);
+    StartingInfo startApplication(String applicationName);
 
     /**
      * Stop application.
      *
-     * @param appName name of application
+     * @param applicationName name of application
      */
-    void stopApplication(String appName);
+    void stopApplication(String applicationName);
 
     /**
      * Stream application logs produced <em>after</em> this method is called.
      *
      * This method has 'tail'-like behavior. Every time there is a new log entry, it notifies the listener.
      *
-     * @param appName the name of the application
+     * @param applicationName the name of the application
      * @param listener listener object to be notified
      * @return token than can be used to cancel listening for logs
      */
-    StreamingLogToken streamLogs(String appName, ApplicationLogListener listener);
+    StreamingLogToken streamLogs(String applicationName, ApplicationLogListener listener);
 
     /**
      * Un-register a RestLogCallback
@@ -1067,20 +1067,20 @@ public interface CloudControllerClient {
      * <p/>
      * This method requires the logged in user to have admin permissions in the cloud controller.
      *
-     * @param orgName The name of the organization that the space is in.
+     * @param organizationName The name of the organization that the space is in.
      * @param spaceName The name of the space
      * @param securityGroupName The name of the security group to bind to the space
      * @throws CloudOperationException if the org, space, or security group do not exist
      */
-    void unbindSecurityGroup(String orgName, String spaceName, String securityGroupName);
+    void unbindSecurityGroup(String organizationName, String spaceName, String securityGroupName);
 
     /**
      * Un-associate (unprovision) a service from an application.
      *
-     * @param appName the application name
+     * @param applicationName the application name
      * @param serviceName the service name
      */
-    void unbindService(String appName, String serviceName);
+    void unbindService(String applicationName, String serviceName);
 
     /**
      * Unbind a security group from the set of security groups for staging applications.
@@ -1097,67 +1097,67 @@ public interface CloudControllerClient {
     /**
      * Update application disk quota.
      *
-     * @param appName name of application
+     * @param applicationName name of application
      * @param disk new disk setting in MB
      */
-    void updateApplicationDiskQuota(String appName, int disk);
+    void updateApplicationDiskQuota(String applicationName, int disk);
 
     /**
      * Update application env using a map where the key specifies the name of the environment variable and the value the value of the
      * environment variable..
      *
-     * @param appName name of application
+     * @param applicationName name of application
      * @param env map of environment settings
      */
-    void updateApplicationEnv(String appName, Map<String, String> env);
+    void updateApplicationEnv(String applicationName, Map<String, String> env);
 
     /**
      * Update application env using a list of strings each with one environment setting.
      *
-     * @param appName name of application
+     * @param applicationName name of application
      * @param env list of environment settings
      */
-    void updateApplicationEnv(String appName, List<String> env);
+    void updateApplicationEnv(String applicationName, List<String> env);
 
     /**
      * Update application instances.
      *
-     * @param appName name of application
+     * @param applicationName name of application
      * @param instances number of instances to use
      */
-    void updateApplicationInstances(String appName, int instances);
+    void updateApplicationInstances(String applicationName, int instances);
 
     /**
      * Update application memory.
      *
-     * @param appName name of application
+     * @param applicationName name of application
      * @param memory new memory setting in MB
      */
-    void updateApplicationMemory(String appName, int memory);
+    void updateApplicationMemory(String applicationName, int memory);
 
     /**
      * Update application services.
      *
-     * @param appName name of appplication
+     * @param applicationName name of appplication
      * @param services list of services that should be bound to app
      */
-    void updateApplicationServices(String appName, List<String> services);
+    void updateApplicationServices(String applicationName, List<String> services);
 
     /**
      * Update application staging information.
      *
-     * @param appName name of appplication
+     * @param applicationName name of appplication
      * @param staging staging information for the app
      */
-    void updateApplicationStaging(String appName, Staging staging);
+    void updateApplicationStaging(String applicationName, Staging staging);
 
     /**
      * Update application URIs.
      *
-     * @param appName name of application
+     * @param applicationName name of application
      * @param uris list of URIs the app should use
      */
-    void updateApplicationUris(String appName, List<String> uris);
+    void updateApplicationUris(String applicationName, List<String> uris);
 
     /**
      * Update the password for the logged in user.
@@ -1243,30 +1243,30 @@ public interface CloudControllerClient {
     /**
      * Upload an application to Cloud Foundry.
      *
-     * @param appName application name
+     * @param applicationName application name
      * @param file path to the application archive or folder
      * @throws java.io.IOException
      */
-    void uploadApplication(String appName, String file) throws IOException;
+    void uploadApplication(String applicationName, String file) throws IOException;
 
     /**
      * Upload an application to Cloud Foundry.
      *
-     * @param appName the application name
+     * @param applicationName the application name
      * @param file the application archive or folder
      * @throws java.io.IOException
      */
-    void uploadApplication(String appName, File file) throws IOException;
+    void uploadApplication(String applicationName, File file) throws IOException;
 
     /**
      * Upload an application to Cloud Foundry.
      *
-     * @param appName the application name
+     * @param applicationName the application name
      * @param file the application archive
      * @param callback a callback interface used to provide progress information or <tt>null</tt>
      * @throws java.io.IOException
      */
-    void uploadApplication(String appName, File file, UploadStatusCallback callback) throws IOException;
+    void uploadApplication(String applicationName, File file, UploadStatusCallback callback) throws IOException;
 
     /**
      * Upload an application to Cloud Foundry.
@@ -1274,11 +1274,11 @@ public interface CloudControllerClient {
      * This form of <tt>uploadApplication</tt> will read the passed <tt>InputStream</tt> and copy the contents to a temporary file for
      * upload.
      *
-     * @param appName the application name
+     * @param applicationName the application name
      * @param inputStream the InputStream to read from
      * @throws java.io.IOException
      */
-    void uploadApplication(String appName, InputStream inputStream) throws IOException;
+    void uploadApplication(String applicationName, InputStream inputStream) throws IOException;
 
     /**
      * Upload an application to Cloud Foundry.
@@ -1286,39 +1286,39 @@ public interface CloudControllerClient {
      * This form of <tt>uploadApplication</tt> will read the passed <tt>InputStream</tt> and copy the contents to a temporary file for
      * upload.
      *
-     * @param appName the application name
+     * @param applicationName the application name
      * @param inputStream the InputStream to read from
      * @param callback a callback interface used to provide progress information or <tt>null</tt>
      * @throws java.io.IOException
      */
-    void uploadApplication(String appName, InputStream inputStream, UploadStatusCallback callback) throws IOException;
+    void uploadApplication(String applicationName, InputStream inputStream, UploadStatusCallback callback) throws IOException;
 
     /**
      * Upload an application to Cloud Foundry.
      *
-     * @param appName the application name
+     * @param applicationName the application name
      * @param archive the application archive
      * @throws java.io.IOException
      */
-    void uploadApplication(String appName, ApplicationArchive archive) throws IOException;
+    void uploadApplication(String applicationName, ApplicationArchive archive) throws IOException;
 
     /**
      * Upload an application to Cloud Foundry.
      *
-     * @param appName the application name
+     * @param applicationName the application name
      * @param archive the application archive
      * @param callback a callback interface used to provide progress information or <tt>null</tt>
      * @throws java.io.IOException
      */
-    void uploadApplication(String appName, ApplicationArchive archive, UploadStatusCallback callback) throws IOException;
+    void uploadApplication(String applicationName, ApplicationArchive archive, UploadStatusCallback callback) throws IOException;
 
-    UploadToken asyncUploadApplication(String appName, File file) throws IOException;
+    UploadToken asyncUploadApplication(String applicationName, File file) throws IOException;
 
-    UploadToken asyncUploadApplication(String appName, File file, UploadStatusCallback callback) throws IOException;
+    UploadToken asyncUploadApplication(String applicationName, File file, UploadStatusCallback callback) throws IOException;
 
-    UploadToken asyncUploadApplication(String appName, ApplicationArchive archive) throws IOException;
+    UploadToken asyncUploadApplication(String applicationName, ApplicationArchive archive) throws IOException;
 
-    UploadToken asyncUploadApplication(String appName, ApplicationArchive archive, UploadStatusCallback callback) throws IOException;
+    UploadToken asyncUploadApplication(String applicationName, ApplicationArchive archive, UploadStatusCallback callback) throws IOException;
 
     Upload getUploadStatus(String uploadToken);
 
@@ -1357,5 +1357,5 @@ public interface CloudControllerClient {
 
     CloudBuild getBuild(UUID buildGuid);
 
-    void bindDropletToApp(UUID dropletGuid, UUID appGuid);
+    void bindDropletToApp(UUID dropletGuid, UUID applicationGuid);
 }
