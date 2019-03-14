@@ -732,7 +732,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     @Override
     public String getFile(String appName, int instanceIndex, String filePath, int startPosition, int endPosition) {
         String urlPath = getFileUrlPath();
-        Object appId = getFileAppId(appName);
+        UUID appId = getApplicationId(appName);
         return doGetFile(urlPath, appId, instanceIndex, filePath, startPosition, endPosition);
     }
 
@@ -1226,7 +1226,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     @Override
     public void openFile(String appName, int instanceIndex, String filePath, ClientHttpResponseCallback callback) {
         String urlPath = getFileUrlPath();
-        Object appId = getFileAppId(appName);
+        UUID appId = getApplicationId(appName);
         doOpenFile(urlPath, appId, instanceIndex, filePath, callback);
     }
 
@@ -1806,11 +1806,11 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         }
     }
 
-    protected String doGetFile(String urlPath, Object app, int instanceIndex, String filePath, int startPosition, int endPosition) {
-        return doGetFile(urlPath, app, String.valueOf(instanceIndex), filePath, startPosition, endPosition);
+    protected String doGetFile(String urlPath, UUID appId, int instanceIndex, String filePath, int startPosition, int endPosition) {
+        return doGetFile(urlPath, appId, String.valueOf(instanceIndex), filePath, startPosition, endPosition);
     }
 
-    protected String doGetFile(String urlPath, Object app, String instance, String filePath, int startPosition, int endPosition) {
+    protected String doGetFile(String urlPath, UUID appId, String instance, String filePath, int startPosition, int endPosition) {
         Assert.isTrue(startPosition >= -1, "Invalid start position value: " + startPosition);
         Assert.isTrue(endPosition >= -1, "Invalid end position value: " + endPosition);
         Assert.isTrue(startPosition < 0 || endPosition < 0 || endPosition >= startPosition,
@@ -1827,11 +1827,11 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
         final String range = "bytes=" + (start == -1 ? "" : start) + "-" + (end == -1 ? "" : end);
 
-        return doGetFileByRange(urlPath, app, instance, filePath, start, end, range);
+        return doGetFileByRange(urlPath, appId, instance, filePath, start, end, range);
     }
 
     protected Map<String, String> doGetLogs(String urlPath, String appName, String instance) {
-        Object appId = getFileAppId(appName);
+        UUID appId = getApplicationId(appName);
         String logFiles = doGetFile(urlPath, appId, instance, LOGS_LOCATION, -1, -1);
         String[] lines = logFiles.split("\n");
         List<String> fileNames = new ArrayList<String>();
@@ -1850,8 +1850,8 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @SuppressWarnings("unchecked")
-    protected void doOpenFile(String urlPath, Object app, int instanceIndex, String filePath, ClientHttpResponseCallback callback) {
-        getRestTemplate().execute(getUrl(urlPath), HttpMethod.GET, null, new ResponseExtractorWrapper(callback), app,
+    protected void doOpenFile(String urlPath, UUID appId, int instanceIndex, String filePath, ClientHttpResponseCallback callback) {
+        getRestTemplate().execute(getUrl(urlPath), HttpMethod.GET, null, new ResponseExtractorWrapper(callback), appId,
             String.valueOf(instanceIndex), filePath);
     }
 
@@ -1886,10 +1886,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         if (uriInfo.get("host") == null) {
             throw new IllegalArgumentException("Invalid URI " + uri + " -- host not specified for domain " + uriInfo.get("domainName"));
         }
-    }
-
-    protected Object getFileAppId(String appName) {
-        return getApplicationId(appName);
     }
 
     protected String getFileUrlPath() {
@@ -2216,8 +2212,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return resources;
     }
 
-    private String doGetFileByRange(String urlPath, Object app, String instance, String filePath, int start, int end, String range) {
-
+    private String doGetFileByRange(String urlPath, UUID appId, String instance, String filePath, int start, int end, String range) {
         boolean supportsRanges;
         try {
             supportsRanges = getRestTemplate().execute(getUrl(urlPath), HttpMethod.HEAD, new RequestCallback() {
@@ -2232,7 +2227,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                     return response.getStatusCode()
                         .equals(HttpStatus.PARTIAL_CONTENT);
                 }
-            }, app, instance, filePath);
+            }, appId, instance, filePath);
         } catch (CloudOperationException e) {
             if (e.getStatusCode()
                 .equals(HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE)) {
@@ -2248,7 +2243,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         }
         HttpEntity<Object> requestEntity = new HttpEntity<Object>(headers);
         ResponseEntity<String> responseEntity = getRestTemplate().exchange(getUrl(urlPath), HttpMethod.GET, requestEntity, String.class,
-            app, instance, filePath);
+            appId, instance, filePath);
         String response = responseEntity.getBody();
         boolean partialFile = false;
         if (responseEntity.getStatusCode()
