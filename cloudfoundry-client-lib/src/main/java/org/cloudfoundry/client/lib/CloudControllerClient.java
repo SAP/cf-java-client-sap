@@ -491,7 +491,7 @@ public interface CloudControllerClient {
      */
     List<CloudApplication> getApplications();
 
-    List<CloudApplication> getApplications(String inlineDepth);
+    List<CloudApplication> getApplications(boolean fetchAdditionalInfo);
 
     /**
      * Get the URL used for the cloud controller.

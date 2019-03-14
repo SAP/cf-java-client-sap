@@ -163,7 +163,7 @@ public interface CloudControllerRestClient {
 
     List<CloudApplication> getApplications();
 
-    List<CloudApplication> getApplications(String inlineDepth);
+    List<CloudApplication> getApplications(boolean fetchAdditionalInfo);
 
     URL getCloudControllerUrl();
 

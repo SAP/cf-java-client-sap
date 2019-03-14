@@ -426,8 +426,8 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public List<CloudApplication> getApplications(String inlineDepth) {
-        return cc.getApplications(inlineDepth);
+    public List<CloudApplication> getApplications(boolean fetchAdditionalInfo) {
+        return cc.getApplications(fetchAdditionalInfo);
     }
 
     @Override
