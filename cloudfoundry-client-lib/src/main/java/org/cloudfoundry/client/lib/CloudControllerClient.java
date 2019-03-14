@@ -184,6 +184,15 @@ public interface CloudControllerClient {
     void bindService(String applicationName, String serviceName);
 
     /**
+     * Associate (provision) a service with an application.
+     *
+     * @param applicationName the application name
+     * @param serviceName the service name
+     * @param parameters the binding parameters
+     */
+    void bindService(String applicationName, String serviceName, Map<String, Object> parameters);
+
+    /**
      * Bind a security group to the list of security groups to be used for staging applications.
      * <p/>
      * This method requires the logged in user to have admin permissions in the cloud controller.
@@ -1318,7 +1327,8 @@ public interface CloudControllerClient {
 
     UploadToken asyncUploadApplication(String applicationName, ApplicationArchive archive) throws IOException;
 
-    UploadToken asyncUploadApplication(String applicationName, ApplicationArchive archive, UploadStatusCallback callback) throws IOException;
+    UploadToken asyncUploadApplication(String applicationName, ApplicationArchive archive, UploadStatusCallback callback)
+        throws IOException;
 
     Upload getUploadStatus(String uploadToken);
 

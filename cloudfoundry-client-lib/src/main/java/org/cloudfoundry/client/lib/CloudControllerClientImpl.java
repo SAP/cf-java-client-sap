@@ -245,6 +245,11 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
+    public void bindService(String applicationName, String serviceName, Map<String, Object> parameters) {
+        cc.bindService(applicationName, serviceName, parameters);
+    }
+
+    @Override
     public void bindStagingSecurityGroup(String securityGroupName) {
         cc.bindStagingSecurityGroup(securityGroupName);
     }
