@@ -86,12 +86,14 @@ public interface CloudControllerRestClient {
 
     void bindService(String applicationName, String serviceName);
 
+    void bindService(String applicationName, String serviceName, Map<String, Object> parameters);
+
     void bindStagingSecurityGroup(String securityGroupName);
 
     void createApplication(String applicationName, Staging staging, Integer memory, List<String> uris, List<String> serviceNames);
 
-    void createApplication(String applicationName, Staging staging, Integer disk, Integer memory, List<String> uris, List<String> serviceNames,
-        DockerInfo dockerInfo);
+    void createApplication(String applicationName, Staging staging, Integer disk, Integer memory, List<String> uris,
+        List<String> serviceNames, DockerInfo dockerInfo);
 
     // Service methods
 
@@ -349,7 +351,8 @@ public interface CloudControllerRestClient {
 
     UploadToken asyncUploadApplication(String applicationName, File file, UploadStatusCallback callback) throws IOException;
 
-    UploadToken asyncUploadApplication(String applicationName, ApplicationArchive archive, UploadStatusCallback callback) throws IOException;
+    UploadToken asyncUploadApplication(String applicationName, ApplicationArchive archive, UploadStatusCallback callback)
+        throws IOException;
 
     Upload getUploadStatus(String uploadToken);
 

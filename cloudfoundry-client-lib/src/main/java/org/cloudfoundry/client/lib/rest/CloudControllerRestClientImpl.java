@@ -258,10 +258,15 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public void bindService(String applicationName, String serviceName) {
+        bindService(applicationName, serviceName, null);
+    }
+
+    @Override
+    public void bindService(String applicationName, String serviceName, Map<String, Object> parameters) {
         UUID applicationGuid = getRequiredApplicationGuid(applicationName);
         UUID serviceGuid = getService(serviceName).getMeta()
             .getGuid();
-        doBindService(applicationGuid, serviceGuid);
+        doBindService(applicationGuid, serviceGuid, parameters);
     }
 
     @Override
@@ -1457,7 +1462,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         }
         for (UUID serviceId : addServices) {
             doBindService(application.getMeta()
-                .getGuid(), serviceId);
+                .getGuid(), serviceId, null);
         }
         for (UUID serviceId : deleteServices) {
             doUnbindService(application.getMeta()
@@ -2056,10 +2061,13 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
             .getGuid();
     }
 
-    private void doBindService(UUID applicationGuid, UUID serviceId) {
+    private void doBindService(UUID applicationGuid, UUID serviceId, Map<String, Object> parameters) {
         HashMap<String, Object> serviceRequest = new HashMap<String, Object>();
         serviceRequest.put("service_instance_guid", serviceId);
         serviceRequest.put("app_guid", applicationGuid);
+        if (parameters != null) {
+            serviceRequest.put("parameters", parameters);
+        }
         getRestTemplate().postForObject(getUrl("/v2/service_bindings"), serviceRequest, String.class);
     }
 

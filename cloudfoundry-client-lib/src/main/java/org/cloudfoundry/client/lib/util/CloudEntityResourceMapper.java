@@ -16,7 +16,6 @@
 
 package org.cloudfoundry.client.lib.util;
 
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -55,7 +54,6 @@ import org.cloudfoundry.client.lib.domain.SecurityGroupRule;
 import org.cloudfoundry.client.lib.domain.ServiceKey;
 import org.cloudfoundry.client.lib.domain.Staging;
 import org.cloudfoundry.client.lib.domain.Status;
-import org.cloudfoundry.client.lib.domain.CloudEntity.Meta;
 
 /**
  * Class handling the mapping of the cloud domain objects
@@ -272,7 +270,7 @@ public class CloudEntityResourceMapper {
         String checksumType = getAttributeOfV3Resource(checksumMap, "type", String.class);
         String checksumValue = getAttributeOfV3Resource(checksumMap, "value", String.class);
         CloudPackage.Data.Checksum checksum = new CloudPackage.Data.Checksum(checksumType, checksumValue);
-        
+
         return new CloudPackage.Data(checksum, getError(dataMap));
     }
 
@@ -309,7 +307,7 @@ public class CloudEntityResourceMapper {
 
         UUID dropletGuid = UUID.fromString(getAttributeOfV3Resource(dropletMap, "guid", String.class));
         String dropletHref = getAttributeOfV3Resource(dropletMap, "href", String.class);
-        
+
         return new CloudBuild.Droplet(dropletGuid, dropletHref);
     }
 
@@ -350,8 +348,7 @@ public class CloudEntityResourceMapper {
         String command = getAttributeOfV2Resource(resource, "command", String.class);
         String buildpack = getAttributeOfV2Resource(resource, "buildpack", String.class);
         String detectedBuildpack = getAttributeOfV2Resource(resource, "detected_buildpack", String.class);
-        Map<String, Object> stackResource = getEmbeddedResource(resource, "stack");
-        CloudStack stack = mapStackResource(stackResource);
+        String stackName = getStackName(resource);
         Integer healthCheckTimeout = getAttributeOfV2Resource(resource, "health_check_timeout", Integer.class);
         String healthCheckType = getAttributeOfV2Resource(resource, "health_check_type", String.class);
         String healthCheckHttpEndpoint = getAttributeOfV2Resource(resource, "health_check_http_endpoint", String.class);
@@ -362,7 +359,7 @@ public class CloudEntityResourceMapper {
 
         Staging staging = new Staging.StagingBuilder().command(command)
             .buildpackUrl(buildpack)
-            .stack(stack.getName())
+            .stack(stackName)
             .healthCheckTimeout(healthCheckTimeout)
             .detectedBuildpack(detectedBuildpack)
             .healthCheckType(healthCheckType)
@@ -394,17 +391,33 @@ public class CloudEntityResourceMapper {
         }
         app.setMemory(getAttributeOfV2Resource(resource, "memory", Integer.class));
         app.setDiskQuota(getAttributeOfV2Resource(resource, "disk_quota", Integer.class));
-        List<Map<String, Object>> serviceBindings = getAttributeOfV2Resource(resource, "service_bindings", List.class);
-        List<String> serviceList = new ArrayList<String>();
+        app.setServices(getApplicationServices(resource));
+        return app;
+    }
+
+    private String getStackName(Map<String, Object> applicationResource) {
+        Map<String, Object> stackResource = getEmbeddedResource(applicationResource, "stack");
+        if (stackResource != null) {
+            return mapStackResource(stackResource).getName();
+        }
+        return null;
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<String> getApplicationServices(Map<String, Object> applicationResource) {
+        List<Map<String, Object>> serviceBindings = getAttributeOfV2Resource(applicationResource, "service_bindings", List.class);
+        if (serviceBindings == null) {
+            return Collections.emptyList();
+        }
+        List<String> applicationServices = new ArrayList<String>();
         for (Map<String, Object> binding : serviceBindings) {
             Map<String, Object> service = getAttributeOfV2Resource(binding, "service_instance", Map.class);
             String serviceName = getNameOfV2Resource(service);
             if (serviceName != null) {
-                serviceList.add(serviceName);
+                applicationServices.add(serviceName);
             }
         }
-        app.setServices(serviceList);
-        return app;
+        return applicationServices;
     }
 
     private DockerInfo createDockerInfo(String dockerImage, Map<String, String> dockerCredentials) {
