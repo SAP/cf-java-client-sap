@@ -579,7 +579,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public CloudApplication getApplication(UUID applicationGuid, boolean required) {
-        Map<String, Object> resource = findApplicationResource(applicationGuid, true);
+        Map<String, Object> resource = findApplicationResource(applicationGuid);
         CloudApplication application = null;
         if (resource != null) {
             application = mapCloudApplication(resource);
@@ -659,7 +659,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         List<Map<String, Object>> resourceList = getAllResources(urlPath, urlVars);
         List<CloudApplication> apps = new ArrayList<CloudApplication>();
         for (Map<String, Object> resource : resourceList) {
-            if (processApplicationResource(resource, true) != null) {
+            if (processApplicationResource(resource) != null) {
                 apps.add(mapCloudApplication(resource));
             }
         }
@@ -2439,16 +2439,16 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         }
     }
 
-    private Map<String, Object> findApplicationResource(UUID applicationGuid, boolean fetchServiceInfo) {
+    private Map<String, Object> findApplicationResource(UUID applicationGuid) {
         Map<String, Object> urlVars = new HashMap<String, Object>();
         String urlPath = "/v2/apps/{application}?inline-relations-depth=1";
         urlVars.put("application", applicationGuid);
         String resp = getRestTemplate().getForObject(getUrl(urlPath), String.class, urlVars);
-
-        return processApplicationResource(JsonUtil.convertJsonToMap(resp), fetchServiceInfo);
+        Map<String, Object> resource = JsonUtil.convertJsonToMap(resp);
+        return processApplicationResource(resource);
     }
 
-    private Map<String, Object> findApplicationResource(String applicationName, boolean fetchServiceInfo) {
+    private Map<String, Object> findApplicationResource(String applicationName, boolean fetchAdditionalInfo) {
         Map<String, Object> urlVars = new HashMap<String, Object>();
         String urlPath = "/v2";
         if (sessionSpace != null) {
@@ -2457,13 +2457,15 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
             urlPath = urlPath + "/spaces/{space}";
         }
         urlVars.put("q", "name:" + applicationName);
-        urlPath = urlPath + "/apps?inline-relations-depth=1&q={q}";
+        urlPath = urlPath + "/apps?q={q}";
+        urlPath = fetchAdditionalInfo ? urlPath + "&inline-relations-depth=1" : urlPath;
 
         List<Map<String, Object>> allResources = getAllResources(urlPath, urlVars);
-        if (!allResources.isEmpty()) {
-            return processApplicationResource(allResources.get(0), fetchServiceInfo);
+        if (allResources.isEmpty()) {
+            return null;
         }
-        return null;
+        Map<String, Object> resource = allResources.get(0);
+        return fetchAdditionalInfo ? processApplicationResource(resource) : resource;
     }
 
     private List<String> findApplicationUris(UUID applicationGuid) {
@@ -2875,11 +2877,9 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return cloudApp;
     }
 
-    private Map<String, Object> processApplicationResource(Map<String, Object> resource, boolean fetchServiceInfo) {
+    private Map<String, Object> processApplicationResource(Map<String, Object> resource) {
         try {
-            if (fetchServiceInfo) {
-                fillInEmbeddedResource(resource, "service_bindings", "service_instance");
-            }
+            fillInEmbeddedResource(resource, "service_bindings", "service_instance");
             fillInEmbeddedResource(resource, "stack");
             return resource;
         } catch (CloudOperationException e) {
