@@ -639,15 +639,11 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public List<CloudApplication> getApplications() {
-        return getApplicationsWithCustomDepth("1");
+        return getApplications(true);
     }
 
     @Override
-    public List<CloudApplication> getApplications(String inlineDepth) {
-        return getApplicationsWithCustomDepth(inlineDepth);
-    }
-
-    private List<CloudApplication> getApplicationsWithCustomDepth(String inlineDepth) {
+    public List<CloudApplication> getApplications(boolean fetchAdditionalInfo) {
         Map<String, Object> urlVars = new HashMap<String, Object>();
         String urlPath = "/v2";
         if (sessionSpace != null) {
@@ -655,15 +651,15 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                 .getGuid());
             urlPath = urlPath + "/spaces/{space}";
         }
-        urlPath = urlPath + "/apps?inline-relations-depth=" + inlineDepth;
+        urlPath = urlPath + "/apps";
+        urlPath = fetchAdditionalInfo ? urlPath + "?inline-relations-depth=1" : urlPath;
         List<Map<String, Object>> resourceList = getAllResources(urlPath, urlVars);
-        List<CloudApplication> apps = new ArrayList<CloudApplication>();
+        List<CloudApplication> applications = new ArrayList<CloudApplication>();
         for (Map<String, Object> resource : resourceList) {
-            if (processApplicationResource(resource) != null) {
-                apps.add(mapCloudApplication(resource));
-            }
+            resource = fetchAdditionalInfo ? processApplicationResource(resource) : resource;
+            applications.add(mapCloudApplication(resource));
         }
-        return apps;
+        return applications;
     }
 
     @Override
