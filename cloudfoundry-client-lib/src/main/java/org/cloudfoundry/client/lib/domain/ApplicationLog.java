@@ -4,7 +4,7 @@ import java.util.Date;
 
 public class ApplicationLog implements Comparable<ApplicationLog> {
 
-    private String appId;
+    private String applicationGuid;
 
     private String message;
 
@@ -16,8 +16,9 @@ public class ApplicationLog implements Comparable<ApplicationLog> {
 
     private Date timestamp;
 
-    public ApplicationLog(String appId, String message, Date timestamp, MessageType messageType, String sourceName, String sourceId) {
-        this.appId = appId;
+    public ApplicationLog(String applicationGuid, String message, Date timestamp, MessageType messageType, String sourceName,
+        String sourceId) {
+        this.applicationGuid = applicationGuid;
         this.message = message;
         this.timestamp = timestamp;
         this.messageType = messageType;
@@ -29,8 +30,8 @@ public class ApplicationLog implements Comparable<ApplicationLog> {
         return timestamp.compareTo(o.timestamp);
     }
 
-    public String getAppId() {
-        return appId;
+    public String getApplicationGuid() {
+        return applicationGuid;
     }
 
     public String getMessage() {
@@ -55,7 +56,7 @@ public class ApplicationLog implements Comparable<ApplicationLog> {
 
     @Override
     public String toString() {
-        return String.format("%s [%s] %s (%s, %s)", appId, timestamp, message, messageType, sourceName);
+        return String.format("%s [%s] %s (%s, %s)", applicationGuid, timestamp, message, messageType, sourceName);
     }
 
     public enum MessageType {

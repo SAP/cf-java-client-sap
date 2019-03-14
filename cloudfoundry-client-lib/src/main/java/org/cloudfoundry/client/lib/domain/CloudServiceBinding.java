@@ -10,7 +10,7 @@ import java.util.UUID;
  */
 public class CloudServiceBinding extends CloudEntity {
 
-    private UUID appGuid;
+    private UUID applicationGuid;
 
     private Map<String, Object> bindingOptions;
 
@@ -26,12 +26,12 @@ public class CloudServiceBinding extends CloudEntity {
         super(meta, name);
     }
 
-    public UUID getAppGuid() {
-        return appGuid;
+    public UUID getApplicationGuid() {
+        return applicationGuid;
     }
 
-    public void setAppGuid(UUID appGuid) {
-        this.appGuid = appGuid;
+    public void setApplicationGuid(UUID applicationGuid) {
+        this.applicationGuid = applicationGuid;
     }
 
     public Map<String, Object> getBindingOptions() {

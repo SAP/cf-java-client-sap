@@ -525,7 +525,7 @@ public class CloudEntityResourceMapper {
     private CloudServiceBinding mapServiceBinding(Map<String, Object> resource) {
         CloudServiceBinding binding = new CloudServiceBinding(getV2Meta(resource), getNameOfV2Resource(resource));
 
-        binding.setAppGuid(UUID.fromString(getAttributeOfV2Resource(resource, "app_guid", String.class)));
+        binding.setApplicationGuid(UUID.fromString(getAttributeOfV2Resource(resource, "app_guid", String.class)));
         binding.setSyslogDrainUrl(getAttributeOfV2Resource(resource, "syslog_drain_url", String.class));
         binding.setCredentials(getAttributeOfV2Resource(resource, "credentials", Map.class));
         binding.setBindingOptions(getAttributeOfV2Resource(resource, "binding_options", Map.class));

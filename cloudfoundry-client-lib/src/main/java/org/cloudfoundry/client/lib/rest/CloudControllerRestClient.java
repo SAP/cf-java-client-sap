@@ -74,23 +74,23 @@ public interface CloudControllerRestClient {
 
     void addRoute(String host, String domainName);
 
-    void associateAuditorWithSpace(String orgName, String spaceName, String userGuid);
+    void associateAuditorWithSpace(String organizationName, String spaceName, String userGuid);
 
-    void associateDeveloperWithSpace(String orgName, String spaceName, String userGuid);
+    void associateDeveloperWithSpace(String organizationName, String spaceName, String userGuid);
 
-    void associateManagerWithSpace(String orgName, String spaceName, String userGuid);
+    void associateManagerWithSpace(String organizationName, String spaceName, String userGuid);
 
     void bindRunningSecurityGroup(String securityGroupName);
 
-    void bindSecurityGroup(String orgName, String spaceName, String securityGroupName);
+    void bindSecurityGroup(String organizationName, String spaceName, String securityGroupName);
 
-    void bindService(String appName, String serviceName);
+    void bindService(String applicationName, String serviceName);
 
     void bindStagingSecurityGroup(String securityGroupName);
 
-    void createApplication(String appName, Staging staging, Integer memory, List<String> uris, List<String> serviceNames);
+    void createApplication(String applicationName, Staging staging, Integer memory, List<String> uris, List<String> serviceNames);
 
-    void createApplication(String appName, Staging staging, Integer disk, Integer memory, List<String> uris, List<String> serviceNames,
+    void createApplication(String applicationName, Staging staging, Integer disk, Integer memory, List<String> uris, List<String> serviceNames,
         DockerInfo dockerInfo);
 
     // Service methods
@@ -113,13 +113,13 @@ public interface CloudControllerRestClient {
 
     void createUserProvidedService(CloudService service, Map<String, Object> credentials, String syslogDrainUrl);
 
-    void debugApplication(String appName, CloudApplication.DebugMode mode);
+    void debugApplication(String applicationName, CloudApplication.DebugMode mode);
 
     void deleteAllApplications();
 
     void deleteAllServices();
 
-    void deleteApplication(String appName);
+    void deleteApplication(String applicationName);
 
     void deleteDomain(String domainName);
 
@@ -141,25 +141,25 @@ public interface CloudControllerRestClient {
 
     void deleteSpace(String spaceName);
 
-    CloudApplication getApplication(String appName);
+    CloudApplication getApplication(String applicationName);
 
-    CloudApplication getApplication(String appName, boolean required);
+    CloudApplication getApplication(String applicationName, boolean required);
 
-    CloudApplication getApplication(UUID appGuid);
+    CloudApplication getApplication(UUID applicationGuid);
 
-    CloudApplication getApplication(UUID appGuid, boolean required);
+    CloudApplication getApplication(UUID applicationGuid, boolean required);
 
-    Map<String, Object> getApplicationEnvironment(UUID appGuid);
+    Map<String, Object> getApplicationEnvironment(UUID applicationGuid);
 
-    Map<String, Object> getApplicationEnvironment(String appName);
+    Map<String, Object> getApplicationEnvironment(String applicationName);
 
-    List<CloudEvent> getApplicationEvents(String appName);
+    List<CloudEvent> getApplicationEvents(String applicationName);
 
-    InstancesInfo getApplicationInstances(String appName);
+    InstancesInfo getApplicationInstances(String applicationName);
 
     InstancesInfo getApplicationInstances(CloudApplication app);
 
-    ApplicationStats getApplicationStats(String appName);
+    ApplicationStats getApplicationStats(String applicationName);
 
     List<CloudApplication> getApplications();
 
@@ -167,29 +167,29 @@ public interface CloudControllerRestClient {
 
     URL getCloudControllerUrl();
 
-    Map<String, String> getCrashLogs(String appName);
+    Map<String, String> getCrashLogs(String applicationName);
 
-    CrashesInfo getCrashes(String appName);
+    CrashesInfo getCrashes(String applicationName);
 
     CloudDomain getDefaultDomain();
 
     List<CloudDomain> getDomains();
 
-    List<CloudDomain> getDomainsForOrg();
+    List<CloudDomain> getDomainsForOrganization();
 
     List<CloudEvent> getEvents();
 
-    String getFile(String appName, int instanceIndex, String filePath, int startPosition, int endPosition);
+    String getFile(String applicationName, int instanceIndex, String filePath, int startPosition, int endPosition);
 
     CloudInfo getInfo();
 
-    Map<String, String> getLogs(String appName);
+    Map<String, String> getLogs(String applicationName);
 
-    CloudOrganization getOrganization(String orgName);
+    CloudOrganization getOrganization(String organizationName);
 
-    CloudOrganization getOrganization(String orgName, boolean required);
+    CloudOrganization getOrganization(String organizationName, boolean required);
 
-    Map<String, CloudUser> getOrganizationUsers(String orgName);
+    Map<String, CloudUser> getOrganizationUsers(String organizationName);
 
     List<CloudOrganization> getOrganizations();
 
@@ -201,7 +201,7 @@ public interface CloudControllerRestClient {
 
     List<CloudQuota> getQuotas();
 
-    List<ApplicationLog> getRecentLogs(String appName);
+    List<ApplicationLog> getRecentLogs(String applicationName);
 
     List<CloudRoute> getRoutes(String domainName);
 
@@ -241,17 +241,17 @@ public interface CloudControllerRestClient {
 
     CloudSpace getSpace(String spaceName, boolean required);
 
-    List<UUID> getSpaceAuditors(String orgName, String spaceName);
+    List<UUID> getSpaceAuditors(String organizationName, String spaceName);
 
     List<UUID> getSpaceAuditors(UUID spaceGuid);
 
-    List<UUID> getSpaceDevelopers(String orgName, String spaceName);
+    List<UUID> getSpaceDevelopers(String organizationName, String spaceName);
 
     List<UUID> getSpaceDevelopers(UUID spaceGuid);
 
     // Domains and routes management
 
-    List<UUID> getSpaceManagers(String orgName, String spaceName);
+    List<UUID> getSpaceManagers(String organizationName, String spaceName);
 
     List<UUID> getSpaceManagers(UUID spaceGuid);
 
@@ -273,7 +273,7 @@ public interface CloudControllerRestClient {
 
     void logout();
 
-    void openFile(String appName, int instanceIndex, String filePath, ClientHttpResponseCallback callback);
+    void openFile(String applicationName, int instanceIndex, String filePath, ClientHttpResponseCallback callback);
 
     void register(String email, String password);
 
@@ -283,49 +283,49 @@ public interface CloudControllerRestClient {
 
     void removeDomain(String domainName);
 
-    void rename(String appName, String newName);
+    void rename(String applicationName, String newName);
 
-    StartingInfo restartApplication(String appName);
+    StartingInfo restartApplication(String applicationName);
 
-    void setQuotaToOrg(String orgName, String quotaName);
+    void setQuotaToOrganization(String organizationName, String quotaName);
 
     void setResponseErrorHandler(ResponseErrorHandler errorHandler);
 
-    StartingInfo startApplication(String appName);
+    StartingInfo startApplication(String applicationName);
 
-    void stopApplication(String appName);
+    void stopApplication(String applicationName);
 
-    StreamingLogToken streamLogs(String appName, ApplicationLogListener listener);
+    StreamingLogToken streamLogs(String applicationName, ApplicationLogListener listener);
 
     void unRegisterRestLogListener(RestLogCallback callBack);
 
     void unbindRunningSecurityGroup(String securityGroupName);
 
-    void unbindSecurityGroup(String orgName, String spaceName, String securityGroupName);
+    void unbindSecurityGroup(String organizationName, String spaceName, String securityGroupName);
 
-    void unbindService(String appName, String serviceName);
+    void unbindService(String applicationName, String serviceName);
 
     void unbindStagingSecurityGroup(String securityGroupName);
 
     void unregister();
 
-    void updateApplicationDiskQuota(String appName, int disk);
+    void updateApplicationDiskQuota(String applicationName, int disk);
 
     // Security Group Operations
 
-    void updateApplicationEnv(String appName, Map<String, String> env);
+    void updateApplicationEnv(String applicationName, Map<String, String> env);
 
-    void updateApplicationEnv(String appName, List<String> env);
+    void updateApplicationEnv(String applicationName, List<String> env);
 
-    void updateApplicationInstances(String appName, int instances);
+    void updateApplicationInstances(String applicationName, int instances);
 
-    void updateApplicationMemory(String appName, int memory);
+    void updateApplicationMemory(String applicationName, int memory);
 
-    void updateApplicationServices(String appName, List<String> services);
+    void updateApplicationServices(String applicationName, List<String> services);
 
-    void updateApplicationStaging(String appName, Staging staging);
+    void updateApplicationStaging(String applicationName, Staging staging);
 
-    void updateApplicationUris(String appName, List<String> uris);
+    void updateApplicationUris(String applicationName, List<String> uris);
 
     void updatePassword(String newPassword);
 
@@ -341,15 +341,15 @@ public interface CloudControllerRestClient {
 
     void updateServicePlanVisibilityForBroker(String name, boolean visibility);
 
-    void uploadApplication(String appName, File file, UploadStatusCallback callback) throws IOException;
+    void uploadApplication(String applicationName, File file, UploadStatusCallback callback) throws IOException;
 
-    void uploadApplication(String appName, InputStream inputStream, UploadStatusCallback callback) throws IOException;
+    void uploadApplication(String applicationName, InputStream inputStream, UploadStatusCallback callback) throws IOException;
 
-    void uploadApplication(String appName, ApplicationArchive archive, UploadStatusCallback callback) throws IOException;
+    void uploadApplication(String applicationName, ApplicationArchive archive, UploadStatusCallback callback) throws IOException;
 
-    UploadToken asyncUploadApplication(String appName, File file, UploadStatusCallback callback) throws IOException;
+    UploadToken asyncUploadApplication(String applicationName, File file, UploadStatusCallback callback) throws IOException;
 
-    UploadToken asyncUploadApplication(String appName, ApplicationArchive archive, UploadStatusCallback callback) throws IOException;
+    UploadToken asyncUploadApplication(String applicationName, ApplicationArchive archive, UploadStatusCallback callback) throws IOException;
 
     Upload getUploadStatus(String uploadToken);
 
@@ -367,5 +367,5 @@ public interface CloudControllerRestClient {
 
     CloudBuild getBuild(UUID packageGuid);
 
-    void bindDropletToApp(UUID dropletGuid, UUID appGuid);
+    void bindDropletToApp(UUID dropletGuid, UUID applicationGuid);
 }
