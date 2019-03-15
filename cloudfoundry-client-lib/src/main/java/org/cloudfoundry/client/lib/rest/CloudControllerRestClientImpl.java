@@ -381,6 +381,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         serviceRequest.put("broker_url", serviceBroker.getUrl());
         serviceRequest.put("auth_username", serviceBroker.getUsername());
         serviceRequest.put("auth_password", serviceBroker.getPassword());
+        serviceRequest.put("space_guid", serviceBroker.getSpaceGuid());
         getRestTemplate().postForObject(getUrl("/v2/service_brokers"), serviceRequest, String.class);
     }
 
