@@ -1572,8 +1572,10 @@ public class CloudControllerClientTest {
         boolean pass = ensureApplicationRunning("haash-broker");
         assertTrue("haash-broker failed to start", pass);
 
-        CloudServiceBroker newBroker = new CloudServiceBroker(CloudEntity.Meta.defaultMeta(), "haash-broker",
-            "http://haash-broker.cf.deepsouthcloud.com", "warreng", "snoopdogg");
+        CloudServiceBroker newBroker = new CloudServiceBroker(CloudEntity.Meta.defaultMeta(), "haash-broker");
+        newBroker.setUsername("warreng");
+        newBroker.setPassword("snoopdogg");
+        newBroker.setUrl("http://haash-broker.cf.deepsouthcloud.com");
         connectedClient.createServiceBroker(newBroker);
 
         CloudServiceBroker broker = connectedClient.getServiceBroker("haash-broker");
@@ -1584,8 +1586,11 @@ public class CloudControllerClientTest {
         assertEquals("warreng", broker.getUsername());
         assertNull(broker.getPassword());
 
-        newBroker = new CloudServiceBroker(CloudEntity.Meta.defaultMeta(), "haash-broker", "http://haash-broker.cf" + ".deepsouthcloud.com",
-            "warreng", "snoopdogg");
+        newBroker = new CloudServiceBroker(CloudEntity.Meta.defaultMeta(), "haash-broker");
+        newBroker.setUsername("warreng");
+        newBroker.setPassword("snoopdogg");
+        newBroker.setUrl("http://haash-broker.cf" + ".deepsouthcloud.com");
+
         connectedClient.updateServiceBroker(newBroker);
 
         connectedClient.updateServicePlanVisibilityForBroker("haash-broker", true);

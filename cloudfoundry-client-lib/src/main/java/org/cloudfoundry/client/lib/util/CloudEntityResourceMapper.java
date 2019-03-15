@@ -547,9 +547,12 @@ public class CloudEntityResourceMapper {
     }
 
     private CloudServiceBroker mapServiceBrokerResource(Map<String, Object> resource) {
-        return new CloudServiceBroker(getV2Meta(resource), getAttributeOfV2Resource(resource, "name", String.class),
-            getAttributeOfV2Resource(resource, "broker_url", String.class),
-            getAttributeOfV2Resource(resource, "auth_username", String.class));
+        CloudServiceBroker serviceBroker = new CloudServiceBroker(getV2Meta(resource),
+            getAttributeOfV2Resource(resource, "name", String.class));
+        serviceBroker.setUrl(getAttributeOfV2Resource(resource, "broker_url", String.class));
+        serviceBroker.setUsername(getAttributeOfV2Resource(resource, "auth_username", String.class));
+        serviceBroker.setSpaceGuid(getAttributeOfV2Resource(resource, "space_guid", String.class));
+        return serviceBroker;
     }
 
     @SuppressWarnings("unchecked")
