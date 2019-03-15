@@ -16,16 +16,11 @@
 
 package org.cloudfoundry.client.lib.domain;
 
-import java.util.Map;
-
-import org.cloudfoundry.client.lib.util.CloudUtil;
-
 /**
  * @author Ramnivas Laddad
  * @author Dave Syer
  * @author Thomas Risberg
  */
-@SuppressWarnings("unused")
 public class CloudInfo {
 
     private boolean allowDebug;
@@ -38,7 +33,7 @@ public class CloudInfo {
 
     private Limits limits;
 
-    private String loggregatorEndpoint;
+    private String loggingEndpoint;
 
     private String name;
 
@@ -50,51 +45,12 @@ public class CloudInfo {
 
     private String version;
 
-    @SuppressWarnings("unchecked")
-    public CloudInfo(Map<String, Object> infoMap) {
-        name = CloudUtil.parse(String.class, infoMap.get("name"));
-        support = CloudUtil.parse(String.class, infoMap.get("support"));
-        build = CloudUtil.parse(String.class, infoMap.get("build"));
-        version = CloudUtil.parse(String.class, infoMap.get("version"));
-        if (version == null) {
-            Number iVersion = CloudUtil.parse(Number.class, infoMap.get("version"));
-            if (iVersion != null) {
-                version = iVersion.toString();
-            }
-        }
-        user = CloudUtil.parse(String.class, infoMap.get("user"));
-        description = CloudUtil.parse(String.class, infoMap.get("description"));
-        authorizationEndpoint = CloudUtil.parse(String.class, infoMap.get("authorization_endpoint"));
-        loggregatorEndpoint = CloudUtil.parse(String.class, infoMap.get("logging_endpoint"));
-
-        Object allowDebugValue = infoMap.get("allow_debug");
-        if (allowDebugValue != null) {
-            allowDebug = CloudUtil.parse(Boolean.class, allowDebugValue);
-        } else {
-            allowDebug = false; // default to false
-        }
-
-        Map<String, Object> limitsMap = CloudUtil.parse(Map.class, infoMap.get("limits"));
-        if (limitsMap != null) {
-            limits = new Limits(limitsMap);
-        } else {
-            limits = new Limits();
-        }
-
-        Map<String, Object> usageMap = CloudUtil.parse(Map.class, infoMap.get("usage"));
-        if (usageMap != null) {
-            usage = new Usage(usageMap);
-        } else {
-            usage = new Usage();
-        }
-    }
-
     public CloudInfo(String name, String support, String authorizationEndpoint, String build, String version, String user,
-        String description, Limits limits, Usage usage, boolean allowDebug, String loggregatorEndpoint) {
+        String description, Limits limits, Usage usage, boolean allowDebug, String loggingEndpoint) {
         this.name = name;
         this.support = support;
         this.authorizationEndpoint = authorizationEndpoint;
-        this.loggregatorEndpoint = loggregatorEndpoint;
+        this.loggingEndpoint = loggingEndpoint;
         this.build = build;
         this.version = version;
         this.user = user;
@@ -124,8 +80,8 @@ public class CloudInfo {
         return limits;
     }
 
-    public String getLoggregatorEndpoint() {
-        return loggregatorEndpoint;
+    public String getLoggingEndpoint() {
+        return loggingEndpoint;
     }
 
     public String getName() {
@@ -158,20 +114,6 @@ public class CloudInfo {
 
         private int maxUrisPerApp;
 
-        public Limits(Map<String, Object> limitMap) {
-            maxApps = CloudUtil.parse(Integer.class, limitMap.get("apps"));
-            maxTotalMemory = CloudUtil.parse(Integer.class, limitMap.get("memory"));
-            maxUrisPerApp = CloudUtil.parse(Integer.class, limitMap.get("app_uris"));
-            maxServices = CloudUtil.parse(Integer.class, limitMap.get("services"));
-        }
-
-        Limits() {
-            maxApps = Integer.MAX_VALUE;
-            maxTotalMemory = Integer.MAX_VALUE;
-            maxUrisPerApp = Integer.MAX_VALUE;
-            maxServices = Integer.MAX_VALUE;
-        }
-
         public int getMaxApps() {
             return maxApps;
         }
@@ -187,33 +129,31 @@ public class CloudInfo {
         public int getMaxUrisPerApp() {
             return maxUrisPerApp;
         }
+
+        public void setMaxApps(int maxApps) {
+            this.maxApps = maxApps;
+        }
+
+        public void setMaxServices(int maxServices) {
+            this.maxServices = maxServices;
+        }
+
+        public void setMaxTotalMemory(int maxTotalMemory) {
+            this.maxTotalMemory = maxTotalMemory;
+        }
+
+        public void setMaxUrisPerApp(int maxUrisPerApp) {
+            this.maxUrisPerApp = maxUrisPerApp;
+        }
+
     }
 
     public static class Usage {
 
         private int apps;
-
         private int services;
-
         private int totalMemory;
-
         private int urisPerApp;
-
-        public Usage(Map<String, Object> data) {
-            if (data != null && !data.isEmpty()) {
-                apps = CloudUtil.parse(Integer.class, data.get("apps"));
-                totalMemory = CloudUtil.parse(Integer.class, data.get("memory"));
-                urisPerApp = CloudUtil.parse(Integer.class, data.get("app_uris"));
-                services = CloudUtil.parse(Integer.class, data.get("services"));
-            }
-        }
-
-        Usage() {
-            apps = Integer.MAX_VALUE;
-            totalMemory = Integer.MAX_VALUE;
-            urisPerApp = Integer.MAX_VALUE;
-            services = Integer.MAX_VALUE;
-        }
 
         public int getApps() {
             return apps;
@@ -230,5 +170,22 @@ public class CloudInfo {
         public int getUrisPerApp() {
             return urisPerApp;
         }
+
+        public void setApps(int apps) {
+            this.apps = apps;
+        }
+
+        public void setServices(int services) {
+            this.services = services;
+        }
+
+        public void setTotalMemory(int totalMemory) {
+            this.totalMemory = totalMemory;
+        }
+
+        public void setUrisPerApp(int urisPerApp) {
+            this.urisPerApp = urisPerApp;
+        }
+
     }
 }
