@@ -753,10 +753,10 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         CloudInfo.Usage usage = null;
         boolean debug = false;
 
-        String loggregatorEndpoint = CloudUtil.parse(String.class, infoV2Map.get("logging_endpoint"));
+        String loggingEndpoint = CloudUtil.parse(String.class, infoV2Map.get("doppler_logging_endpoint"));
 
         return new CloudInfo(name, support, authorizationEndpoint, build, version, (String) userMap.get("user_name"), description, limits,
-            usage, debug, loggregatorEndpoint);
+            usage, debug, loggingEndpoint);
     }
 
     @Override
@@ -870,7 +870,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     public List<ApplicationLog> getRecentLogs(String applicationName) {
         UUID applicationGuid = getRequiredApplicationGuid(applicationName);
 
-        String endpoint = getInfo().getLoggregatorEndpoint();
+        String endpoint = getInfo().getLoggingEndpoint();
         String uri = loggregatorClient.getRecentHttpEndpoint(endpoint);
 
         ApplicationLogs logs = getRestTemplate().getForObject(uri + "?app={guid}", ApplicationLogs.class, applicationGuid);
@@ -2967,7 +2967,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
             }
         };
 
-        String endpoint = getInfo().getLoggregatorEndpoint();
+        String endpoint = getInfo().getLoggingEndpoint();
         String mode = recent ? "dump" : "tail";
         UUID applicationGuid = getRequiredApplicationGuid(applicationName);
         return loggregatorClient.connectToLoggregator(endpoint, mode, applicationGuid, listener, configurator);
