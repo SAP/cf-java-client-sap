@@ -1002,4 +1002,8 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         cc.bindDropletToApp(dropletGuid, applicationGuid);
     }
 
+    @Override
+    public List<CloudBuild> getBuildsForApplication(UUID applicationGuid) {
+        return cc.getBuildsForApplication(applicationGuid);
+    }
 }
