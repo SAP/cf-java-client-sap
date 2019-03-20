@@ -1368,4 +1368,6 @@ public interface CloudControllerClient {
     CloudBuild getBuild(UUID buildGuid);
 
     void bindDropletToApp(UUID dropletGuid, UUID applicationGuid);
+    
+    List<CloudBuild> getBuildsForApplication(UUID applicationGuid);
 }

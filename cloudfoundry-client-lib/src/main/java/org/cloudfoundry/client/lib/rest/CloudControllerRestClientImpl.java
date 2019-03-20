@@ -1790,6 +1790,13 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
+    public List<CloudBuild> getBuildsForApplication(UUID applicationGuid) {
+        Map<String, Object> urlVars = new HashMap<>();
+        urlVars.put("applicationGuid", applicationGuid);
+        return doGetResources("/v3/apps/{applicationGuid}/builds", urlVars, CloudBuild.class);
+    }
+
+    @Override
     public Upload getUploadStatus(String uploadToken) {
         CloudPackage cloudPackage = getCloudPackage(uploadToken);
         ErrorDetails errorDetails = new ErrorDetails(0, cloudPackage.getData()
@@ -1911,10 +1918,11 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         String resp = getRestTemplate().getForObject(getUrl(nextUrl), String.class);
         Map<String, Object> respMap = JsonUtil.convertJsonToMap(resp);
         List<Map<String, Object>> newResources = (List<Map<String, Object>>) respMap.get("resources");
-        if (newResources != null && newResources.size() > 0) {
+        if (newResources != null && !newResources.isEmpty()) {
             allResources.addAll(newResources);
         }
-        return (String) respMap.get("next_url");
+
+        return getNextUrl(respMap);
     }
 
     private void addStagingToRequest(Staging staging, HashMap<String, Object> appRequest) {
@@ -2567,7 +2575,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         }
         Map<String, Object> responseMap = JsonUtil.convertJsonToMap(response);
         List<Map<String, Object>> newResources = (List<Map<String, Object>>) responseMap.get("resources");
-        if (newResources != null && newResources.size() > 0) {
+        if (newResources != null && !newResources.isEmpty()) {
             allResources.addAll(newResources);
         }
         addAllRemainingResources(responseMap, allResources);
@@ -2575,10 +2583,32 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     private void addAllRemainingResources(Map<String, Object> responseMap, List<Map<String, Object>> allResources) {
-        String nextUrl = (String) responseMap.get("next_url");
-        while (nextUrl != null && nextUrl.length() > 0) {
+        String nextUrl = getNextUrl(responseMap);
+
+        while (nextUrl != null && !nextUrl.isEmpty()) {
             nextUrl = addPageOfResources(nextUrl, allResources);
         }
+    }
+
+    private String getNextUrl(Map<String, Object> responseMap) {
+        String nextUrl = getNextUrlValue(responseMap, "next_url");
+        if (nextUrl != null && !nextUrl.isEmpty()) {
+            return nextUrl;
+        }
+        Map<String, Object> paginationMap = getPaginationMap(responseMap);
+        if (paginationMap == null) {
+            return null;
+        }
+        return getNextUrlValue(paginationMap, "next");
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> getPaginationMap(Map<String, Object> responseMap) {
+        return (Map<String, Object>) responseMap.get("pagination");
+    }
+
+    private String getNextUrlValue(Map<String, Object> map, String nextUrlKey) {
+        return (String) map.get(nextUrlKey);
     }
 
     private UUID getRequiredApplicationGuid(String applicationName) {

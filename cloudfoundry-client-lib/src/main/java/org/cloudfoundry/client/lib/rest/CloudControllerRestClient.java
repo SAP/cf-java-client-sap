@@ -371,4 +371,6 @@ public interface CloudControllerRestClient {
     CloudBuild getBuild(UUID packageGuid);
 
     void bindDropletToApp(UUID dropletGuid, UUID applicationGuid);
+
+    List<CloudBuild> getBuildsForApplication(UUID applicationGuid);
 }
