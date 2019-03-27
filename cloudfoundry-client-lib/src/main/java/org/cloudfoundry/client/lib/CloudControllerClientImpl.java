@@ -52,6 +52,7 @@ import org.cloudfoundry.client.lib.domain.ServiceKey;
 import org.cloudfoundry.client.lib.domain.Staging;
 import org.cloudfoundry.client.lib.domain.Upload;
 import org.cloudfoundry.client.lib.domain.UploadToken;
+import org.cloudfoundry.client.lib.rest.ApplicationServicesUpdater;
 import org.cloudfoundry.client.lib.rest.CloudControllerRestClient;
 import org.cloudfoundry.client.lib.rest.CloudControllerRestClientFactory;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
@@ -862,7 +863,9 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     public List<String> updateApplicationServices(String applicationName,
         Map<String, Map<String, Object>> serviceNamesWithBindingParameters,
         ApplicationServicesUpdateCallback applicationServicesUpdateCallback) {
-        return cc.updateApplicationServices(applicationName, serviceNamesWithBindingParameters, applicationServicesUpdateCallback);
+        ApplicationServicesUpdater applicationServicesUpdater = new ApplicationServicesUpdater(this);
+        return applicationServicesUpdater.updateApplicationServices(applicationName, serviceNamesWithBindingParameters,
+            applicationServicesUpdateCallback);
     }
 
     @Override
