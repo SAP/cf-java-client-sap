@@ -189,8 +189,10 @@ public interface CloudControllerClient {
      * @param applicationName the application name
      * @param serviceName the service name
      * @param parameters the binding parameters
+     * @param applicationServicesUpdateCallback callback used for error handling
      */
-    void bindService(String applicationName, String serviceName, Map<String, Object> parameters);
+    void bindService(String applicationName, String serviceName, Map<String, Object> parameters,
+        ApplicationServicesUpdateCallback updateServicesCallback);
 
     /**
      * Bind a security group to the list of security groups to be used for staging applications.
@@ -1088,6 +1090,15 @@ public interface CloudControllerClient {
      *
      * @param applicationName the application name
      * @param serviceName the service name
+     * @param applicationServicesUpdateCallback callback used for error handling
+     */
+    void unbindService(String applicationName, String serviceName, ApplicationServicesUpdateCallback applicationServicesUpdateCallback);
+
+    /**
+     * Un-associate (unprovision) a service from an application.
+     *
+     * @param applicationName the application name
+     * @param serviceName the service name
      */
     void unbindService(String applicationName, String serviceName);
 
@@ -1149,8 +1160,12 @@ public interface CloudControllerClient {
      *
      * @param applicationName name of appplication
      * @param services list of services that should be bound to app
+     * @param serviceNamesWithBindingParameters map of service id to service binding parameters
+     * @param applicationServicesUpdateCallback callback used for error handling
+     * @return
      */
-    void updateApplicationServices(String applicationName, List<String> services);
+    List<String> updateApplicationServices(String applicationName, Map<String, Map<String, Object>> serviceNamesWithBindingParameters,
+        ApplicationServicesUpdateCallback applicationServicesUpdateCallback);
 
     /**
      * Update application staging information.

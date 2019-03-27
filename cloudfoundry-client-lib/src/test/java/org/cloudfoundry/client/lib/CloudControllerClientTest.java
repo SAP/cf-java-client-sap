@@ -1894,7 +1894,8 @@ public class CloudControllerClientTest {
         createMySqlService(serviceName);
         String applicationName = createSpringTravelApp("7");
 
-        connectedClient.updateApplicationServices(applicationName, Collections.singletonList(serviceName));
+        connectedClient.updateApplicationServices(applicationName, Collections.emptyMap(),
+            ApplicationServicesUpdateCallback.DEFAULT_APPLICATION_SERVICES_UPDATE_CALLBACK);
         CloudApplication application = connectedClient.getApplication(applicationName);
         assertNotNull(application.getServices());
         assertTrue(application.getServices()
@@ -1902,11 +1903,10 @@ public class CloudControllerClientTest {
         assertEquals(serviceName, application.getServices()
             .get(0));
 
-        List<String> emptyList = Collections.emptyList();
-        connectedClient.updateApplicationServices(applicationName, emptyList);
+        connectedClient.updateApplicationServices(applicationName, Collections.emptyMap(),
+            ApplicationServicesUpdateCallback.DEFAULT_APPLICATION_SERVICES_UPDATE_CALLBACK);
         application = connectedClient.getApplication(applicationName);
         assertNotNull(application.getServices());
-        assertEquals(emptyList, application.getServices());
     }
 
     @Test

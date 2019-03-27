@@ -245,8 +245,9 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public void bindService(String applicationName, String serviceName, Map<String, Object> parameters) {
-        cc.bindService(applicationName, serviceName, parameters);
+    public void bindService(String applicationName, String serviceName, Map<String, Object> parameters,
+        ApplicationServicesUpdateCallback updateServicesCallback) {
+        cc.bindService(applicationName, serviceName, parameters, updateServicesCallback);
     }
 
     @Override
@@ -812,6 +813,12 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
+    public void unbindService(String applicationName, String serviceName,
+        ApplicationServicesUpdateCallback applicationServicesUpdateCallback) {
+        cc.unbindService(applicationName, serviceName, applicationServicesUpdateCallback);
+    }
+
+    @Override
     public void unbindService(String applicationName, String serviceName) {
         cc.unbindService(applicationName, serviceName);
     }
@@ -852,8 +859,10 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public void updateApplicationServices(String applicationName, List<String> services) {
-        cc.updateApplicationServices(applicationName, services);
+    public List<String> updateApplicationServices(String applicationName,
+        Map<String, Map<String, Object>> serviceNamesWithBindingParameters,
+        ApplicationServicesUpdateCallback applicationServicesUpdateCallback) {
+        return cc.updateApplicationServices(applicationName, serviceNamesWithBindingParameters, applicationServicesUpdateCallback);
     }
 
     @Override
