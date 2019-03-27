@@ -33,12 +33,9 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import java.util.zip.ZipFile;
 
 import javax.websocket.ClientEndpointConfig;
@@ -76,7 +73,6 @@ import org.cloudfoundry.client.lib.domain.CloudResources;
 import org.cloudfoundry.client.lib.domain.CloudRoute;
 import org.cloudfoundry.client.lib.domain.CloudSecurityGroup;
 import org.cloudfoundry.client.lib.domain.CloudService;
-import org.cloudfoundry.client.lib.domain.CloudServiceBinding;
 import org.cloudfoundry.client.lib.domain.CloudServiceBroker;
 import org.cloudfoundry.client.lib.domain.CloudServiceInstance;
 import org.cloudfoundry.client.lib.domain.CloudServiceOffering;
@@ -1462,92 +1458,11 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     public List<String> updateApplicationServices(String applicationName,
         Map<String, Map<String, Object>> serviceNamesWithBindingParameters,
         ApplicationServicesUpdateCallback applicationServicesUpdateCallbaclk) {
-        CloudApplication application = getApplication(applicationName);
+        // No implementation here is needed because the logic is moved in ApplicationServicesUpdater in order to be used in other
+        // implementations of the client. Currently, the ApplicationServicesUpdater is used only in CloudControllerClientImpl. Check
+        // CloudControllerClientImpl.updateApplicationServices
+        throw new UnsupportedOperationException();
 
-        List<String> addServices = calculateServicesToAdd(serviceNamesWithBindingParameters.keySet(), application);
-
-        List<String> deleteServices = calculateServicesToDelete(serviceNamesWithBindingParameters.keySet(), application);
-
-        List<String> rebindServices = calculateServicesToRebind(serviceNamesWithBindingParameters.keySet(),
-            serviceNamesWithBindingParameters, application);
-
-        for (String serviceName : addServices) {
-            bindService(applicationName, serviceName, serviceNamesWithBindingParameters.get(serviceName),
-                applicationServicesUpdateCallbaclk);
-        }
-        for (String serviceName : deleteServices) {
-            unbindService(applicationName, serviceName, applicationServicesUpdateCallbaclk);
-        }
-        for (String serviceName : rebindServices) {
-            unbindService(applicationName, serviceName, applicationServicesUpdateCallbaclk);
-            bindService(applicationName, serviceName, serviceNamesWithBindingParameters.get(serviceName),
-                applicationServicesUpdateCallbaclk);
-        }
-
-        return getUpdatedServiceNames(addServices, deleteServices, rebindServices);
-
-    }
-
-    private List<String> getUpdatedServiceNames(List<String> addServices, List<String> deleteServices, List<String> rebindServices) {
-        List<String> result = new ArrayList<>();
-        result.addAll(addServices);
-        result.addAll(deleteServices);
-        result.addAll(rebindServices);
-        return result;
-    }
-
-    private List<String> calculateServicesToAdd(Set<String> services, CloudApplication application) {
-        return services.stream()
-            .filter(serviceName -> !application.getServices()
-                .contains(serviceName))
-            .collect(Collectors.toList());
-    }
-
-    private List<String> calculateServicesToDelete(Set<String> services, CloudApplication application) {
-        return application.getServices()
-            .stream()
-            .filter(serviceName -> !services.contains(serviceName))
-            .collect(Collectors.toList());
-    }
-
-    protected List<String> calculateServicesToRebind(Set<String> services,
-        Map<String, Map<String, Object>> serviceNamesWithBindingParameters, CloudApplication application) {
-        List<String> servicesToRebind = new ArrayList<>();
-        for (String serviceName : services) {
-            if (!application.getServices()
-                .contains(serviceName)) {
-                continue;
-            }
-
-            CloudServiceInstance cloudServiceInstance = getServiceInstance(serviceName);
-            Map<String, Object> newServiceBindings = getNewServiceBindings(serviceNamesWithBindingParameters, cloudServiceInstance);
-            if (hasServiceBindingsChanged(application, cloudServiceInstance.getBindings(), newServiceBindings)) {
-                servicesToRebind.add(cloudServiceInstance.getService()
-                    .getName());
-            }
-        }
-        return servicesToRebind;
-    }
-
-    private Map<String, Object> getNewServiceBindings(Map<String, Map<String, Object>> serviceNamesWithBindingParameters,
-        CloudServiceInstance serviceInstance) {
-        return serviceNamesWithBindingParameters.get(serviceInstance.getService()
-            .getName());
-    }
-
-    private boolean hasServiceBindingsChanged(CloudApplication application, List<CloudServiceBinding> existingServiceBindings,
-        Map<String, Object> newServiceBindings) {
-        CloudServiceBinding bindingForApplication = getServiceBindingsForApplication(application, existingServiceBindings);
-        return !Objects.equals(bindingForApplication.getBindingParameters(), newServiceBindings);
-    }
-
-    private CloudServiceBinding getServiceBindingsForApplication(CloudApplication application, List<CloudServiceBinding> serviceBindings) {
-        return serviceBindings.stream()
-            .filter(serviceBinding -> application.getMeta()
-                .getGuid()
-                .equals(serviceBinding.getApplicationGuid()))
-            .findFirst()
-            .orElse(null);
     }
 
     @Override
