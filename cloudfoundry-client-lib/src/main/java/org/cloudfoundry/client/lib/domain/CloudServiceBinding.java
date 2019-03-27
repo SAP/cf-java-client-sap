@@ -16,6 +16,8 @@ public class CloudServiceBinding extends CloudEntity {
 
     private Map<String, Object> credentials;
 
+    private Map<String, Object> bindingParameters;
+
     private String syslogDrainUrl;
 
     public CloudServiceBinding() {
@@ -50,6 +52,14 @@ public class CloudServiceBinding extends CloudEntity {
         this.credentials = credentials;
     }
 
+    public Map<String, Object> getBindingParameters() {
+        return bindingParameters;
+    }
+
+    public void setBindingParameters(Map<String, Object> bindingParameters) {
+        this.bindingParameters = bindingParameters;
+    }
+
     public String getSyslogDrainUrl() {
         return syslogDrainUrl;
     }
@@ -57,4 +67,5 @@ public class CloudServiceBinding extends CloudEntity {
     public void setSyslogDrainUrl(String syslogDrainUrl) {
         this.syslogDrainUrl = syslogDrainUrl;
     }
+
 }

@@ -542,6 +542,8 @@ public class CloudEntityResourceMapper {
         binding.setSyslogDrainUrl(getAttributeOfV2Resource(resource, "syslog_drain_url", String.class));
         binding.setCredentials(getAttributeOfV2Resource(resource, "credentials", Map.class));
         binding.setBindingOptions(getAttributeOfV2Resource(resource, "binding_options", Map.class));
+        Map<String, Object> bindingParameters = getAttributeOfV2Resource(resource, "service_binding_parameters", Map.class);
+        binding.setBindingParameters(bindingParameters == null ? Collections.emptyMap() : bindingParameters);
 
         return binding;
     }

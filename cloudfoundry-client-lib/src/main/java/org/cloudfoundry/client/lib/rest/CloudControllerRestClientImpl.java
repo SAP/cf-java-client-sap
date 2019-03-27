@@ -33,9 +33,12 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import java.util.zip.ZipFile;
 
 import javax.websocket.ClientEndpointConfig;
@@ -44,6 +47,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.cloudfoundry.client.lib.ApplicationLogListener;
+import org.cloudfoundry.client.lib.ApplicationServicesUpdateCallback;
 import org.cloudfoundry.client.lib.ClientHttpResponseCallback;
 import org.cloudfoundry.client.lib.CloudCredentials;
 import org.cloudfoundry.client.lib.CloudOperationException;
@@ -72,6 +76,7 @@ import org.cloudfoundry.client.lib.domain.CloudResources;
 import org.cloudfoundry.client.lib.domain.CloudRoute;
 import org.cloudfoundry.client.lib.domain.CloudSecurityGroup;
 import org.cloudfoundry.client.lib.domain.CloudService;
+import org.cloudfoundry.client.lib.domain.CloudServiceBinding;
 import org.cloudfoundry.client.lib.domain.CloudServiceBroker;
 import org.cloudfoundry.client.lib.domain.CloudServiceInstance;
 import org.cloudfoundry.client.lib.domain.CloudServiceOffering;
@@ -258,15 +263,20 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public void bindService(String applicationName, String serviceName) {
-        bindService(applicationName, serviceName, null);
+        bindService(applicationName, serviceName, null, ApplicationServicesUpdateCallback.DEFAULT_APPLICATION_SERVICES_UPDATE_CALLBACK);
     }
 
     @Override
-    public void bindService(String applicationName, String serviceName, Map<String, Object> parameters) {
-        UUID applicationGuid = getRequiredApplicationGuid(applicationName);
-        UUID serviceGuid = getService(serviceName).getMeta()
-            .getGuid();
-        doBindService(applicationGuid, serviceGuid, parameters);
+    public void bindService(String applicationName, String serviceName, Map<String, Object> parameters,
+        ApplicationServicesUpdateCallback updateServicesCallback) {
+        try {
+            UUID applicationGuid = getRequiredApplicationGuid(applicationName);
+            UUID serviceGuid = getService(serviceName).getMeta()
+                .getGuid();
+            doBindService(applicationGuid, serviceGuid, parameters);
+        } catch (CloudOperationException e) {
+            updateServicesCallback.onError(e, applicationName, serviceName);
+        }
     }
 
     @Override
@@ -314,7 +324,8 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
             .getGuid();
 
         if (serviceNames != null && serviceNames.size() > 0) {
-            updateApplicationServices(applicationName, serviceNames);
+            updateApplicationServices(applicationName, Collections.emptyMap(),
+                ApplicationServicesUpdateCallback.DEFAULT_APPLICATION_SERVICES_UPDATE_CALLBACK);
         }
 
         if (uris != null && uris.size() > 0) {
@@ -1367,10 +1378,20 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public void unbindService(String applicationName, String serviceName) {
-        UUID applicationGuid = getRequiredApplicationGuid(applicationName);
-        UUID serviceGuid = getService(serviceName).getMeta()
-            .getGuid();
-        doUnbindService(applicationGuid, serviceGuid);
+        unbindService(applicationName, serviceName, ApplicationServicesUpdateCallback.DEFAULT_APPLICATION_SERVICES_UPDATE_CALLBACK);
+    }
+
+    @Override
+    public void unbindService(String applicationName, String serviceName,
+        ApplicationServicesUpdateCallback applicationServicesUpdateCallback) {
+        try {
+            UUID applicationGuid = getRequiredApplicationGuid(applicationName);
+            UUID serviceGuid = getService(serviceName).getMeta()
+                .getGuid();
+            doUnbindService(applicationGuid, serviceGuid);
+        } catch (CloudOperationException e) {
+            applicationServicesUpdateCallback.onError(e, applicationName, serviceName);
+        }
     }
 
     @Override
@@ -1438,37 +1459,95 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public void updateApplicationServices(String applicationName, List<String> services) {
+    public List<String> updateApplicationServices(String applicationName,
+        Map<String, Map<String, Object>> serviceNamesWithBindingParameters,
+        ApplicationServicesUpdateCallback applicationServicesUpdateCallbaclk) {
         CloudApplication application = getApplication(applicationName);
-        List<UUID> addServices = new ArrayList<UUID>();
-        List<UUID> deleteServices = new ArrayList<UUID>();
-        // services to add
+
+        List<String> addServices = calculateServicesToAdd(serviceNamesWithBindingParameters.keySet(), application);
+
+        List<String> deleteServices = calculateServicesToDelete(serviceNamesWithBindingParameters.keySet(), application);
+
+        List<String> rebindServices = calculateServicesToRebind(serviceNamesWithBindingParameters.keySet(),
+            serviceNamesWithBindingParameters, application);
+
+        for (String serviceName : addServices) {
+            bindService(applicationName, serviceName, serviceNamesWithBindingParameters.get(serviceName),
+                applicationServicesUpdateCallbaclk);
+        }
+        for (String serviceName : deleteServices) {
+            unbindService(applicationName, serviceName, applicationServicesUpdateCallbaclk);
+        }
+        for (String serviceName : rebindServices) {
+            unbindService(applicationName, serviceName, applicationServicesUpdateCallbaclk);
+            bindService(applicationName, serviceName, serviceNamesWithBindingParameters.get(serviceName),
+                applicationServicesUpdateCallbaclk);
+        }
+
+        return getUpdatedServiceNames(addServices, deleteServices, rebindServices);
+
+    }
+
+    private List<String> getUpdatedServiceNames(List<String> addServices, List<String> deleteServices, List<String> rebindServices) {
+        List<String> result = new ArrayList<>();
+        result.addAll(addServices);
+        result.addAll(deleteServices);
+        result.addAll(rebindServices);
+        return result;
+    }
+
+    private List<String> calculateServicesToAdd(Set<String> services, CloudApplication application) {
+        return services.stream()
+            .filter(serviceName -> !application.getServices()
+                .contains(serviceName))
+            .collect(Collectors.toList());
+    }
+
+    private List<String> calculateServicesToDelete(Set<String> services, CloudApplication application) {
+        return application.getServices()
+            .stream()
+            .filter(serviceName -> !services.contains(serviceName))
+            .collect(Collectors.toList());
+    }
+
+    protected List<String> calculateServicesToRebind(Set<String> services,
+        Map<String, Map<String, Object>> serviceNamesWithBindingParameters, CloudApplication application) {
+        List<String> servicesToRebind = new ArrayList<>();
         for (String serviceName : services) {
             if (!application.getServices()
                 .contains(serviceName)) {
-                CloudService cloudService = getService(serviceName);
-                addServices.add(cloudService.getMeta()
-                    .getGuid());
+                continue;
+            }
+
+            CloudServiceInstance cloudServiceInstance = getServiceInstance(serviceName);
+            Map<String, Object> newServiceBindings = getNewServiceBindings(serviceNamesWithBindingParameters, cloudServiceInstance);
+            if (hasServiceBindingsChanged(application, cloudServiceInstance.getBindings(), newServiceBindings)) {
+                servicesToRebind.add(cloudServiceInstance.getService()
+                    .getName());
             }
         }
-        // services to delete
-        for (String serviceName : application.getServices()) {
-            if (!services.contains(serviceName)) {
-                CloudService cloudService = getService(serviceName, false);
-                if (cloudService != null) {
-                    deleteServices.add(cloudService.getMeta()
-                        .getGuid());
-                }
-            }
-        }
-        for (UUID serviceId : addServices) {
-            doBindService(application.getMeta()
-                .getGuid(), serviceId, null);
-        }
-        for (UUID serviceId : deleteServices) {
-            doUnbindService(application.getMeta()
-                .getGuid(), serviceId);
-        }
+        return servicesToRebind;
+    }
+
+    private Map<String, Object> getNewServiceBindings(Map<String, Map<String, Object>> serviceNamesWithBindingParameters,
+        CloudServiceInstance serviceInstance) {
+        return serviceNamesWithBindingParameters.get(serviceInstance.getService()
+            .getName());
+    }
+
+    private boolean hasServiceBindingsChanged(CloudApplication application, List<CloudServiceBinding> existingServiceBindings,
+        Map<String, Object> newServiceBindings) {
+        CloudServiceBinding bindingForApplication = getServiceBindingsForApplication(application, existingServiceBindings);
+        return !Objects.equals(bindingForApplication.getBindingParameters(), newServiceBindings);
+    }
+
+    private CloudServiceBinding getServiceBindingsForApplication(CloudApplication application, List<CloudServiceBinding> serviceBindings) {
+        return serviceBindings.stream()
+            .filter(serviceBinding -> application.getMeta()
+                .getGuid()
+                .equals(serviceBinding.getApplicationGuid()))
+            .findFirst()
+            .orElse(null);
     }
 
     @Override
@@ -2338,13 +2417,13 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         if (resources.size() > 0) {
             Map<String, Object> serviceResource = resources.get(0);
             if (hasEmbeddedResource(serviceResource, "service_plan")) {
-                fillInEmbeddedResource(serviceResource, "service_plan", "service");
+                fillInEmbeddedResource(serviceResource, false, "service_plan", "service");
             }
             // If the bindings are more than 50, then they will not be included in the response due to the way the 'inline-relations-depth'
             // parameter works. In this case, we have to make one additional request to the URL specified in the 'service_bindings_url'
             // field of the response.
             if (hasEmbeddedResource(serviceResource, "service_bindings")) {
-                fillInEmbeddedResource(serviceResource, "service_bindings");
+                fillInEmbeddedResource(serviceResource, true, "service_bindings", "service_binding_parameters");
             }
             return serviceResource;
         }
@@ -2408,8 +2487,12 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return orphanRoutes;
     }
 
-    @SuppressWarnings("unchecked")
     private void fillInEmbeddedResource(Map<String, Object> resource, String... resourcePath) {
+        fillInEmbeddedResource(resource, false, resourcePath);
+    }
+
+    @SuppressWarnings("unchecked")
+    private void fillInEmbeddedResource(Map<String, Object> resource, boolean isFailSafe, String... resourcePath) {
         if (resourcePath.length == 0) {
             return;
         }
@@ -2424,7 +2507,10 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         if (!entity.containsKey(headKey)) {
             String pathUrl = entity.get(headKey + "_url")
                 .toString();
-            Object response = getRestTemplate().getForObject(getUrl(pathUrl), Object.class);
+            Object response = retrieveResponse(getUrl(pathUrl), isFailSafe);
+            if (response == null) {
+                fillInEmbeddedResource(resource, isFailSafe, tailPath);
+            }
             if (response instanceof Map) {
                 Map<String, Object> responseMap = (Map<String, Object>) response;
                 List<Map<String, Object>> resources = (List<Map<String, Object>>) responseMap.get("resources");
@@ -2439,16 +2525,25 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
         if (embeddedResource instanceof Map) {
             Map<String, Object> embeddedResourceMap = (Map<String, Object>) embeddedResource;
-            // entity = (Map<String, Object>) embeddedResourceMap.get("entity");
-            fillInEmbeddedResource(embeddedResourceMap, tailPath);
+            fillInEmbeddedResource(embeddedResourceMap, isFailSafe, tailPath);
         } else if (embeddedResource instanceof List) {
             List<Object> embeddedResourcesList = (List<Object>) embeddedResource;
             for (Object r : embeddedResourcesList) {
-                fillInEmbeddedResource((Map<String, Object>) r, tailPath);
+                fillInEmbeddedResource((Map<String, Object>) r, isFailSafe, tailPath);
             }
         } else {
-            // no way to proceed
             return;
+        }
+    }
+
+    private Object retrieveResponse(String url, boolean isFailSafe) {
+        try {
+            return getRestTemplate().getForObject(url, Object.class);
+        } catch (CloudOperationException e) {
+            if (!isFailSafe) {
+                throw e;
+            }
+            return null;
         }
     }
 

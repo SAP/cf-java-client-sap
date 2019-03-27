@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.cloudfoundry.client.lib.ApplicationLogListener;
+import org.cloudfoundry.client.lib.ApplicationServicesUpdateCallback;
 import org.cloudfoundry.client.lib.ClientHttpResponseCallback;
 import org.cloudfoundry.client.lib.CloudCredentials;
 import org.cloudfoundry.client.lib.RestLogCallback;
@@ -86,7 +87,8 @@ public interface CloudControllerRestClient {
 
     void bindService(String applicationName, String serviceName);
 
-    void bindService(String applicationName, String serviceName, Map<String, Object> parameters);
+    void bindService(String applicationName, String serviceName, Map<String, Object> parameters,
+        ApplicationServicesUpdateCallback updateServicesCallback);
 
     void bindStagingSecurityGroup(String securityGroupName);
 
@@ -307,6 +309,8 @@ public interface CloudControllerRestClient {
 
     void unbindService(String applicationName, String serviceName);
 
+    void unbindService(String applicationName, String serviceName, ApplicationServicesUpdateCallback applicationServicesUpdateCallback);
+
     void unbindStagingSecurityGroup(String securityGroupName);
 
     void unregister();
@@ -323,7 +327,8 @@ public interface CloudControllerRestClient {
 
     void updateApplicationMemory(String applicationName, int memory);
 
-    void updateApplicationServices(String applicationName, List<String> services);
+    List<String> updateApplicationServices(String applicationName, Map<String, Map<String, Object>> serviceIdsWithBindingParameters,
+        ApplicationServicesUpdateCallback applicationServicesUpdateCallbaclk);
 
     void updateApplicationStaging(String applicationName, Staging staging);
 
