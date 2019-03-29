@@ -16,7 +16,6 @@
 
 package org.cloudfoundry.client.lib.archive;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -50,7 +49,7 @@ public class ZipApplicationArchive implements ApplicationArchive {
         Assert.notNull(zipFile, "ZipFile must not be null");
         this.zipFile = zipFile;
         this.entries = adaptZipEntries(zipFile);
-        this.fileName = new File(zipFile.getName()).getName();
+        this.fileName = zipFile.getName();
     }
 
     public Iterable<Entry> getEntries() {
