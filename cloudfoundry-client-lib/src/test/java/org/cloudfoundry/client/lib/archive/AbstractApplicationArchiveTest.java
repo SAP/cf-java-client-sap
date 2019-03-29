@@ -97,11 +97,6 @@ public abstract class AbstractApplicationArchiveTest {
         assertThat(digestString, is("677e1b9bca206d6534054348511bf41129744839"));
     }
 
-    @Test
-    public void shouldGetNameFromZipFileNameWithoutPath() throws Exception {
-        assertThat(archive.getFilename(), is("swf-booking-mvc.war"));
-    }
-
     @After
     public void tearDown() throws IOException {
         zipFile.close();

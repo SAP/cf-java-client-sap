@@ -34,6 +34,7 @@ import org.cloudfoundry.client.lib.domain.CloudEvent;
 import org.cloudfoundry.client.lib.domain.CloudInfo;
 import org.cloudfoundry.client.lib.domain.CloudOrganization;
 import org.cloudfoundry.client.lib.domain.CloudQuota;
+import org.cloudfoundry.client.lib.domain.CloudResources;
 import org.cloudfoundry.client.lib.domain.CloudRoute;
 import org.cloudfoundry.client.lib.domain.CloudSecurityGroup;
 import org.cloudfoundry.client.lib.domain.CloudService;
@@ -1351,6 +1352,20 @@ public interface CloudControllerClient {
 
     UploadToken asyncUploadApplication(String applicationName, File file, UploadStatusCallback callback) throws IOException;
 
+    /**
+     * Upload an application to Cloud Foundry passing application entries which exists in the controller cache. KnownRemoteResources could
+     * be get using getKnownRemoteResources method. These resources are used for optimized upload.
+     * 
+     * @param applicationName the application name
+     * @param file the application archive
+     * @param callback a callback interface used to provide progress information or <tt>null</tt>
+     * @param knownRemoteResources existing application entries in the controller cache
+     * @return UploadToken for async monitoring
+     * @throws IOException
+     */
+    UploadToken asyncUploadApplication(String applicationName, File file, UploadStatusCallback callback,
+        CloudResources knownRemoteResources) throws IOException;
+
     UploadToken asyncUploadApplication(String applicationName, ApplicationArchive archive) throws IOException;
 
     UploadToken asyncUploadApplication(String applicationName, ApplicationArchive archive, UploadStatusCallback callback)
@@ -1396,4 +1411,14 @@ public interface CloudControllerClient {
     void bindDropletToApp(UUID dropletGuid, UUID applicationGuid);
 
     List<CloudBuild> getBuildsForApplication(UUID applicationGuid);
+
+    /**
+     * This endpoint matches given resource SHA / file size pairs against the Cloud Controller cache, and reports the subset which describes
+     * already existing files. This is usually used to avoid uploading duplicate files when pushing an app which has only been partially
+     * changed.
+     * 
+     * @param applicationResources all application entries which will be uploaded to the controller
+     * @return entries which are already cached in the controller and does not need to be uploaded again
+     */
+    CloudResources getKnownRemoteResources(CloudResources applicationResources);
 }

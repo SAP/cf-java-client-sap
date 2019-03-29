@@ -18,8 +18,9 @@ package org.cloudfoundry.client.lib.domain;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Set;
 
 import org.cloudfoundry.client.lib.archive.ApplicationArchive;
 import org.cloudfoundry.client.lib.io.DynamicZipInputStream;
@@ -43,19 +44,14 @@ public class UploadApplicationPayload {
      * Create a new {@link UploadApplicationPayload}.
      *
      * @param archive the source archive
-     * @param knownRemoteResources resources that are already known on the remote server
-     * @throws IOException
      */
-    public UploadApplicationPayload(ApplicationArchive archive, CloudResources knownRemoteResources) {
+    public UploadApplicationPayload(ApplicationArchive archive) {
         this.archive = archive;
         this.totalUncompressedSize = 0;
-        Set<String> matches = knownRemoteResources.getFilenames();
         this.entriesToUpload = new ArrayList<>();
         for (ApplicationArchive.Entry entry : archive.getEntries()) {
-            if (entry.isDirectory() || !matches.contains(entry.getName())) {
-                entriesToUpload.add(new DynamicZipInputStreamEntryAdapter(entry));
-                totalUncompressedSize += entry.getSize();
-            }
+            entriesToUpload.add(new DynamicZipInputStreamEntryAdapter(entry));
+            totalUncompressedSize += entry.getSize();
         }
     }
 
@@ -72,9 +68,10 @@ public class UploadApplicationPayload {
      * Returns the payload data as an input stream.
      *
      * @return the payload data
+     * @throws IOException
      */
-    public InputStream getInputStream() {
-        return new DynamicZipInputStream(entriesToUpload);
+    public InputStream getInputStream() throws IOException {
+        return Files.newInputStream(Paths.get(archive.getFilename()));
     }
 
     /**
