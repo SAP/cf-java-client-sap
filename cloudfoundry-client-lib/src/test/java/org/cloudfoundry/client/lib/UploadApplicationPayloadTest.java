@@ -17,17 +17,17 @@
 package org.cloudfoundry.client.lib;
 
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 import java.io.ByteArrayOutputStream;
-import java.util.ArrayList;
-import java.util.List;
+import java.io.File;
+import java.nio.file.Files;
 import java.util.zip.ZipFile;
 
 import org.cloudfoundry.client.lib.archive.ApplicationArchive;
 import org.cloudfoundry.client.lib.archive.ZipApplicationArchive;
-import org.cloudfoundry.client.lib.domain.CloudResource;
-import org.cloudfoundry.client.lib.domain.CloudResources;
 import org.cloudfoundry.client.lib.domain.UploadApplicationPayload;
 import org.junit.Test;
 import org.springframework.util.FileCopyUtils;
@@ -40,20 +40,18 @@ import org.springframework.util.FileCopyUtils;
 public class UploadApplicationPayloadTest {
 
     @Test
-    public void shouldPackOnlyMissingResources() throws Exception {
-        ZipFile zipFile = new ZipFile(SampleProjects.springTravel());
+    public void verifyUploadContent() throws Exception {
+        File testFile = SampleProjects.springTravel();
+        ZipFile zipFile = new ZipFile(testFile);
         try {
             ApplicationArchive archive = new ZipApplicationArchive(zipFile);
-            CloudResources allResources = new CloudResources(archive);
-            List<CloudResource> resources = new ArrayList<CloudResource>(allResources.asList());
-            resources.remove(0);
-            CloudResources knownRemoteResources = new CloudResources(resources);
-            UploadApplicationPayload payload = new UploadApplicationPayload(archive, knownRemoteResources);
+            UploadApplicationPayload payload = new UploadApplicationPayload(archive);
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
             FileCopyUtils.copy(payload.getInputStream(), bos);
             assertThat(payload.getArchive(), is(archive));
-            assertThat(payload.getTotalUncompressedSize(), is(93));
-            assertThat(bos.toByteArray().length, is(2451));
+            assertTrue(payload.getNumEntries() > 0);
+            assertTrue(payload.getTotalUncompressedSize() > 0);
+            assertEquals(Files.size(testFile.toPath()), (long) bos.toByteArray().length);
         } finally {
             zipFile.close();
         }

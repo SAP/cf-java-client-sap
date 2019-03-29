@@ -50,6 +50,10 @@ public class CloudResources {
 
     private List<CloudResource> resources;
 
+    public CloudResources() {
+        this.resources = new ArrayList<>();
+    }
+
     /**
      * Create a new {@link CloudResources} instance for the specified resources.
      *
@@ -118,7 +122,7 @@ public class CloudResources {
      *
      * @return the filenames.
      */
-    public Set<String> getFilenames() {
+    public Set<String> getFileNames() {
         Set<String> filenames = new LinkedHashSet<>();
         for (CloudResource resource : resources) {
             filenames.add(resource.getFilename());

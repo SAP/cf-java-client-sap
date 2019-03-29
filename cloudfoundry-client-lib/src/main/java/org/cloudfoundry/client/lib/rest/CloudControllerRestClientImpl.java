@@ -1653,7 +1653,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public void uploadApplication(String applicationName, File file, UploadStatusCallback callback) throws IOException {
-        UploadToken uploadToken = startUpload(applicationName, file, callback);
+        UploadToken uploadToken = startUpload(applicationName, file, callback, null);
         processAsyncUpload(uploadToken.getToken(), callback);
     }
 
@@ -1678,13 +1678,21 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public void uploadApplication(String applicationName, ApplicationArchive archive, UploadStatusCallback callback) throws IOException {
-        UploadToken uploadToken = startUpload(applicationName, archive, callback);
+        UploadToken uploadToken = startUpload(applicationName, archive, callback, null);
         processAsyncUpload(uploadToken.getToken(), callback);
     }
 
     @Override
     public UploadToken asyncUploadApplication(String applicationName, File file, UploadStatusCallback callback) throws IOException {
-        UploadToken uploadToken = startUpload(applicationName, file, callback);
+        UploadToken uploadToken = startUpload(applicationName, file, callback, null);
+        processAsyncUploadInBackground(uploadToken.getToken(), callback);
+        return uploadToken;
+    }
+
+    @Override
+    public UploadToken asyncUploadApplication(String applicationName, File file, UploadStatusCallback callback,
+        CloudResources knownRemoteResources) throws IOException {
+        UploadToken uploadToken = startUpload(applicationName, file, callback, knownRemoteResources);
         processAsyncUploadInBackground(uploadToken.getToken(), callback);
         return uploadToken;
     }
@@ -1692,24 +1700,26 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     @Override
     public UploadToken asyncUploadApplication(String applicationName, ApplicationArchive archive, UploadStatusCallback callback)
         throws IOException {
-        UploadToken uploadToken = startUpload(applicationName, archive, callback);
+        UploadToken uploadToken = startUpload(applicationName, archive, callback, null);
         processAsyncUploadInBackground(uploadToken.getToken(), callback);
         return uploadToken;
     }
 
-    private UploadToken startUpload(String applicationName, File file, UploadStatusCallback callback) throws IOException {
+    private UploadToken startUpload(String applicationName, File file, UploadStatusCallback callback, CloudResources knownRemoteResources)
+        throws IOException {
         Assert.notNull(file, "File must not be null");
         if (file.isDirectory()) {
             ApplicationArchive archive = new DirectoryApplicationArchive(file);
-            return startUpload(applicationName, archive, callback);
+            return startUpload(applicationName, archive, callback, knownRemoteResources);
         }
         try (ZipFile zipFile = new ZipFile(file)) {
             ApplicationArchive archive = new ZipApplicationArchive(zipFile);
-            return startUpload(applicationName, archive, callback);
+            return startUpload(applicationName, archive, callback, knownRemoteResources);
         }
     }
 
-    private UploadToken startUpload(String applicationName, ApplicationArchive archive, UploadStatusCallback callback) throws IOException {
+    private UploadToken startUpload(String applicationName, ApplicationArchive archive, UploadStatusCallback callback,
+        CloudResources knownRemoteResources) throws IOException {
         Assert.notNull(applicationName, "AppName must not be null");
         Assert.notNull(archive, "Archive must not be null");
         UUID applicationGuid = getRequiredApplicationGuid(applicationName);
@@ -1717,10 +1727,12 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         if (callback == null) {
             callback = UploadStatusCallback.NONE;
         }
-        CloudResources knownRemoteResources = getKnownRemoteResources(archive);
+        if (knownRemoteResources == null) {
+            knownRemoteResources = new CloudResources();
+        }
         callback.onCheckResources();
-        callback.onMatchedFileNames(knownRemoteResources.getFilenames());
-        UploadApplicationPayload payload = new UploadApplicationPayload(archive, knownRemoteResources);
+        callback.onMatchedFileNames(knownRemoteResources.getFileNames());
+        UploadApplicationPayload payload = new UploadApplicationPayload(archive);
         callback.onProcessMatchedResources(payload.getTotalUncompressedSize());
         HttpEntity<?> entity = generatePartialResourceRequest(payload, knownRemoteResources);
 
@@ -2758,12 +2770,12 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         }
     }
 
-    private CloudResources getKnownRemoteResources(ApplicationArchive archive) throws IOException {
-        CloudResources archiveResources = new CloudResources(archive);
-        String json = JsonUtil.convertToJson(archiveResources);
+    @Override
+    public CloudResources getKnownRemoteResources(CloudResources applicationResources) {
+        String applicationResourcesJson = JsonUtil.convertToJson(applicationResources);
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(JsonUtil.JSON_MEDIA_TYPE);
-        HttpEntity<String> requestEntity = new HttpEntity<>(json, headers);
+        HttpEntity<String> requestEntity = new HttpEntity<>(applicationResourcesJson, headers);
         ResponseEntity<String> responseEntity = getRestTemplate().exchange(getUrl("/v2/resource_match"), HttpMethod.PUT, requestEntity,
             String.class);
         List<CloudResource> cloudResources = JsonUtil.convertJsonToCloudResourceList(responseEntity.getBody());

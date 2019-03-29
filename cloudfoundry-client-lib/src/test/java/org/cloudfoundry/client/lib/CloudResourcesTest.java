@@ -83,7 +83,7 @@ public class CloudResourcesTest {
         resources.add(new CloudResource("2", 93L, SHA));
         CloudResources o = new CloudResources(resources);
         Set<String> expected = new HashSet<String>(Arrays.asList("1", "2"));
-        assertThat(o.getFilenames(), is(expected));
+        assertThat(o.getFileNames(), is(expected));
     }
 
     @Test
