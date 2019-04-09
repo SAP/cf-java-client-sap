@@ -30,6 +30,7 @@ import org.cloudfoundry.client.lib.oauth2.OAuthClient;
 import org.cloudfoundry.client.lib.util.RestUtil;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.type.TypeReference;
+import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.web.client.RestTemplate;
 
 /**
@@ -42,69 +43,65 @@ public class CloudControllerRestClientFactory {
 
     private final HttpProxyConfiguration httpProxyConfiguration;
     private final Map<URL, Map<String, Object>> infoCache = new HashMap<>();
-    private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private final RestTemplate generalPurposeRestTemplate;
     private final RestUtil restUtil = new RestUtil();
     private final boolean trustSelfSignedCerts;
-    private OAuthClient oAuthClient;
+
+    public CloudControllerRestClientFactory(boolean trustSelfSignedCerts) {
+        this(null, trustSelfSignedCerts);
+    }
 
     public CloudControllerRestClientFactory(HttpProxyConfiguration httpProxyConfiguration, boolean trustSelfSignedCerts) {
-        this.restTemplate = restUtil.createRestTemplate(httpProxyConfiguration, trustSelfSignedCerts);
-
         this.httpProxyConfiguration = httpProxyConfiguration;
         this.trustSelfSignedCerts = trustSelfSignedCerts;
+        this.generalPurposeRestTemplate = restUtil.createRestTemplate(httpProxyConfiguration, trustSelfSignedCerts);
     }
 
-    public RestTemplate getRestTemplate() {
-        return restTemplate;
-    }
-
-    public OAuthClient getOAuthClient() {
-        return oAuthClient;
-    }
-
-    public CloudControllerRestClient createClient(URL controllerUrl, CloudCredentials credentials, CloudSpace target) {
-        this.oAuthClient = createOAuthClient(controllerUrl);
-        LoggregatorClient loggregatorClient = new LoggregatorClient(trustSelfSignedCerts);
-
-        return new CloudControllerRestClientImpl(controllerUrl, credentials, restTemplate, oAuthClient, loggregatorClient, target);
-    }
-
-    public CloudControllerRestClient createClient(URL controllerUrl, CloudCredentials credentials, CloudSpace target,
-        OAuthClient oAuthClient) {
-        this.oAuthClient = oAuthClient;
-        LoggregatorClient loggregatorClient = new LoggregatorClient(trustSelfSignedCerts);
-
-        return new CloudControllerRestClientImpl(controllerUrl, credentials, restTemplate, oAuthClient, loggregatorClient, target);
+    public CloudControllerRestClient createClient(URL controllerUrl, CloudCredentials credentials) {
+        return createClient(controllerUrl, credentials, null);
     }
 
     public CloudControllerRestClient createClient(URL controllerUrl, CloudCredentials credentials, String organizationName,
         String spaceName) {
-        this.oAuthClient = createOAuthClient(controllerUrl);
-        LoggregatorClient loggregatorClient = new LoggregatorClient(trustSelfSignedCerts);
-
-        return new CloudControllerRestClientImpl(controllerUrl, credentials, restTemplate, oAuthClient, loggregatorClient, organizationName,
-            spaceName);
+        return createClient(controllerUrl, credentials, organizationName, spaceName, createOAuthClient(controllerUrl));
     }
 
     public CloudControllerRestClient createClient(URL controllerUrl, CloudCredentials credentials, String organizationName,
         String spaceName, OAuthClient oAuthClient) {
-        this.oAuthClient = oAuthClient;
-        LoggregatorClient loggregatorClient = new LoggregatorClient(trustSelfSignedCerts);
+        RestTemplate restTemplate = createAuthorizationSettingRestTemplate(credentials, oAuthClient);
+        CloudControllerRestClientImpl clientWithoutTarget = new CloudControllerRestClientImpl(controllerUrl, credentials, restTemplate,
+            oAuthClient, null, null);
+        CloudSpace target = clientWithoutTarget.getSpace(organizationName, spaceName);
 
-        return new CloudControllerRestClientImpl(controllerUrl, credentials, restTemplate, oAuthClient, loggregatorClient,
-            organizationName, spaceName);
+        return createClient(controllerUrl, credentials, target, oAuthClient, restTemplate);
     }
 
-    private OAuthClient createOAuthClient(URL cloudControllerUrl) {
-        Map<String, Object> infoMap = getInfoMap(cloudControllerUrl);
+    public CloudControllerRestClient createClient(URL controllerUrl, CloudCredentials credentials, CloudSpace target) {
+        return createClient(controllerUrl, credentials, target, createOAuthClient(controllerUrl));
+    }
+
+    public CloudControllerRestClient createClient(URL controllerUrl, CloudCredentials credentials, CloudSpace target,
+        OAuthClient oAuthClient) {
+        return createClient(controllerUrl, credentials, target, oAuthClient,
+            createAuthorizationSettingRestTemplate(credentials, oAuthClient));
+    }
+
+    private CloudControllerRestClient createClient(URL controllerUrl, CloudCredentials credentials, CloudSpace target,
+        OAuthClient oAuthClient, RestTemplate restTemplate) {
+        LoggregatorClient loggregatorClient = new LoggregatorClient(trustSelfSignedCerts);
+
+        return new CloudControllerRestClientImpl(controllerUrl, credentials, restTemplate, oAuthClient, loggregatorClient, target);
+    }
+
+    private OAuthClient createOAuthClient(URL controllerUrl) {
+        Map<String, Object> infoMap = getInfoMap(controllerUrl);
         URL authorizationEndpoint = getAuthorizationEndpoint(infoMap);
         return restUtil.createOAuthClient(authorizationEndpoint, httpProxyConfiguration, trustSelfSignedCerts);
     }
 
     private URL getAuthorizationEndpoint(Map<String, Object> infoMap) {
         String authorizationEndpoint = (String) infoMap.get("authorization_endpoint");
-
         try {
             return new URL(authorizationEndpoint);
         } catch (MalformedURLException e) {
@@ -113,18 +110,32 @@ public class CloudControllerRestClientFactory {
         }
     }
 
-    private Map<String, Object> getInfoMap(URL cloudControllerUrl) {
-        if (infoCache.containsKey(cloudControllerUrl)) {
-            return infoCache.get(cloudControllerUrl);
+    private Map<String, Object> getInfoMap(URL controllerUrl) {
+        if (infoCache.containsKey(controllerUrl)) {
+            return infoCache.get(controllerUrl);
         }
 
-        String response = restTemplate.getForObject(cloudControllerUrl + "/v2/info", String.class);
-
+        String infoResponse = generalPurposeRestTemplate.getForObject(controllerUrl + "/v2/info", String.class);
         try {
-            return objectMapper.readValue(response, new TypeReference<Map<String, Object>>() {
+            return objectMapper.readValue(infoResponse, new TypeReference<Map<String, Object>>() {
             });
         } catch (IOException e) {
             throw new IllegalArgumentException("Error getting /v2/info from cloud controller.", e);
         }
     }
+
+    private RestTemplate createAuthorizationSettingRestTemplate(CloudCredentials credentials, OAuthClient oAuthClient) {
+        RestTemplate restTemplate = restUtil.createRestTemplate(httpProxyConfiguration, trustSelfSignedCerts);
+        oAuthClient.init(credentials);
+        setAuthorizingRequestFactory(restTemplate, credentials, oAuthClient);
+        return restTemplate;
+    }
+
+    private void setAuthorizingRequestFactory(RestTemplate restTemplate, CloudCredentials credentials, OAuthClient oAuthClient) {
+        ClientHttpRequestFactory requestFactory = restTemplate.getRequestFactory();
+        if (!(requestFactory instanceof CloudControllerRestClientHttpRequestFactory)) {
+            restTemplate.setRequestFactory(new CloudControllerRestClientHttpRequestFactory(requestFactory, credentials, oAuthClient));
+        }
+    }
+
 }
