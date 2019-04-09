@@ -169,7 +169,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
         initialize(controllerUrl, credentials, restTemplate, oAuthClient, loggregatorClient);
 
-        this.target = validateSpaceAndOrganization(spaceName, organizationName, tempClient);
+        this.target = tempClient.getSpace(organizationName, spaceName, true);
     }
 
     /**
@@ -578,18 +578,14 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public CloudApplication getApplication(UUID applicationGuid) {
-        return getApplication(applicationGuid, true);
-    }
-
-    @Override
-    public CloudApplication getApplication(UUID applicationGuid, boolean required) {
         Map<String, Object> resource = findApplicationResource(applicationGuid);
         CloudApplication application = null;
         if (resource != null) {
             application = mapCloudApplication(resource);
         }
-        if (application == null && required) {
-            throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Application " + applicationGuid + " not found.");
+        if (application == null) {
+            throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found",
+                "Application with GUID " + applicationGuid + " not found.");
         }
         return application;
     }
@@ -1031,21 +1027,40 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
+    public CloudSpace getSpace(UUID spaceGuid) {
+        Map<String, Object> resource = findSpaceResource(spaceGuid);
+        CloudSpace space = null;
+        if (resource != null) {
+            space = resourceMapper.mapResource(resource, CloudSpace.class);
+        }
+        if (space == null) {
+            throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Space with GUID " + spaceGuid + " not found.");
+        }
+        return space;
+    }
+
+    @Override
+    public CloudSpace getSpace(String organizationName, String spaceName) {
+        return getSpace(organizationName, spaceName, true);
+    }
+
+    @Override
+    public CloudSpace getSpace(String organizationName, String spaceName, boolean required) {
+        UUID organizationGuid = getOrganizationGuid(organizationName, required);
+        return getSpace(organizationGuid, spaceName, required);
+    }
+
+    @Override
     public CloudSpace getSpace(String spaceName) {
         return getSpace(spaceName, true);
     }
 
     @Override
     public CloudSpace getSpace(String spaceName, boolean required) {
-        Map<String, Object> resource = findSpaceResource(spaceName);
-        CloudSpace space = null;
-        if (resource != null) {
-            space = resourceMapper.mapResource(resource, CloudSpace.class);
-        }
-        if (space == null && required) {
-            throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Space " + spaceName + " not found.");
-        }
-        return space;
+        UUID organizationGuid = target.getOrganization()
+            .getMeta()
+            .getGuid();
+        return getSpace(organizationGuid, spaceName, required);
     }
 
     @Override
@@ -1086,13 +1101,13 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public List<CloudSpace> getSpaces() {
-        String urlPath = "/v2/spaces?inline-relations-depth=1";
-        List<Map<String, Object>> resourceList = getAllResources(urlPath);
-        List<CloudSpace> spaces = new ArrayList<>();
-        for (Map<String, Object> resource : resourceList) {
-            spaces.add(resourceMapper.mapResource(resource, CloudSpace.class));
-        }
-        return spaces;
+        return getSpacesByOrganizationGuid(null);
+    }
+
+    @Override
+    public List<CloudSpace> getSpaces(String organizationName) {
+        UUID organizationGuid = getOrganizationGuid(organizationName, true);
+        return getSpacesByOrganizationGuid(organizationGuid);
     }
 
     @Override
@@ -2503,15 +2518,35 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return null;
     }
 
-    private Map<String, Object> findSpaceResource(String spaceName) {
-        String urlPath = "/v2/spaces?inline-relations-depth=1&q=name:{name}";
-        Map<String, Object> spaceRequest = new HashMap<>();
-        spaceRequest.put("name", spaceName);
-        List<Map<String, Object>> resourceList = getAllResources(urlPath, spaceRequest);
+    private List<Map<String, Object>> findSpaceResources(UUID organizationGuid, String spaceName) {
+        String urlPath = "/v2/spaces?inline-relations-depth=1";
+        Map<String, Object> request = new HashMap<>();
+        if (organizationGuid != null) {
+            urlPath += "&q=organization_guid:{organization_guid}";
+            request.put("organization_guid", organizationGuid);
+        }
+        if (spaceName != null) {
+            urlPath += "&q=name:{name}";
+            request.put("name", spaceName);
+        }
+        return getAllResources(urlPath, request);
+    }
+
+    private Map<String, Object> findSpaceResource(UUID organizationGuid, String spaceName) {
+        List<Map<String, Object>> resourceList = findSpaceResources(organizationGuid, spaceName);
         if (!resourceList.isEmpty()) {
             return resourceList.get(0);
         }
         return null;
+    }
+
+    private Map<String, Object> findSpaceResource(UUID spaceGuid) {
+        String urlPath = "/v2/spaces/{space}?inline-relations-depth=1";
+        Map<String, Object> urlVars = new HashMap<>();
+        urlVars.put("space", spaceGuid);
+
+        String response = getRestTemplate().getForObject(getUrl(urlPath), String.class, urlVars);
+        return JsonUtil.convertJsonToMap(response);
     }
 
     private Map<String, Object> findStackResource(String name) {
@@ -2620,6 +2655,34 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         }
         Map<String, Object> applicationMeta = (Map<String, Object>) resource.get("metadata");
         return UUID.fromString(String.valueOf(applicationMeta.get("guid")));
+    }
+
+    private UUID getOrganizationGuid(String organizationName, boolean required) {
+        CloudOrganization organization = getOrganization(organizationName, required);
+        return organization != null ? organization.getMeta()
+            .getGuid() : null;
+    }
+
+    private CloudSpace getSpace(UUID organizationGuid, String spaceName, boolean required) {
+        Map<String, Object> resource = findSpaceResource(organizationGuid, spaceName);
+        CloudSpace space = null;
+        if (resource != null) {
+            space = resourceMapper.mapResource(resource, CloudSpace.class);
+        }
+        if (space == null && required) {
+            throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found",
+                "Space " + spaceName + " not found in organization with GUID " + organizationGuid + ".");
+        }
+        return space;
+    }
+
+    private List<CloudSpace> getSpacesByOrganizationGuid(UUID organizationGuid) {
+        List<Map<String, Object>> resourceList = findSpaceResources(organizationGuid, null);
+        List<CloudSpace> spaces = new ArrayList<>();
+        for (Map<String, Object> resource : resourceList) {
+            spaces.add(resourceMapper.mapResource(resource, CloudSpace.class));
+        }
+        return spaces;
     }
 
     @SuppressWarnings("unchecked")
@@ -2985,24 +3048,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
             bindVars.put("route", routeGuid);
             getRestTemplate().delete(getUrl(bindPath), bindVars);
         }
-    }
-
-    private CloudSpace validateSpaceAndOrganization(String spaceName, String organizationName, CloudControllerRestClientImpl client) {
-        List<CloudSpace> spaces = client.getSpaces();
-
-        for (CloudSpace space : spaces) {
-            if (space.getName()
-                .equals(spaceName)) {
-                CloudOrganization organization = space.getOrganization();
-                if (organizationName == null || organization.getName()
-                    .equals(organizationName)) {
-                    return space;
-                }
-            }
-        }
-
-        throw new IllegalArgumentException(
-            "No matching organization and space found for organization: " + organizationName + " space: " + "" + spaceName);
     }
 
     private static class ResponseExtractorWrapper implements ResponseExtractor {
