@@ -21,8 +21,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
-import java.net.Socket;
-import java.net.SocketException;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLDecoder;
@@ -109,9 +107,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.ClientHttpRequest;
-import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.ClientHttpResponse;
-import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
@@ -143,7 +139,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     private static final String AUTHORIZATION_HEADER_KEY = "Authorization";
     private static final long JOB_POLLING_PERIOD = TimeUnit.SECONDS.toMillis(5);
     private static final String LOGS_LOCATION = "logs";
-    private static final String PROXY_USER_HEADER_KEY = "Proxy-User";
 
     private final Log logger = LogFactory.getLog(getClass().getName());
     private CloudCredentials credentials;
@@ -154,29 +149,40 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     private RestTemplate restTemplate;
     private CloudSpace target;
 
-    public CloudControllerRestClientImpl(URL controllerUrl, CloudCredentials credentials, RestTemplate restTemplate,
-        OAuthClient oAuthClient, LoggregatorClient loggregatorClient, CloudSpace target) {
-
-        initialize(controllerUrl, credentials, restTemplate, oAuthClient, loggregatorClient);
-
-        this.target = target;
-    }
-
-    public CloudControllerRestClientImpl(URL controllerUrl, CloudCredentials credentials, RestTemplate restTemplate,
-        OAuthClient oAuthClient, LoggregatorClient loggregatorClient, String organizationName, String spaceName) {
-        CloudControllerRestClientImpl tempClient = new CloudControllerRestClientImpl(controllerUrl, credentials, restTemplate, oAuthClient,
-            loggregatorClient, null);
-
-        initialize(controllerUrl, credentials, restTemplate, oAuthClient, loggregatorClient);
-
-        this.target = tempClient.getSpace(organizationName, spaceName, true);
-    }
-
     /**
      * Only for unit tests. This works around the fact that the initialize method is called within the constructor and hence can not be
      * overloaded, making it impossible to write unit tests that don't trigger network calls.
      */
     protected CloudControllerRestClientImpl() {
+    }
+
+    public CloudControllerRestClientImpl(URL controllerUrl, CloudCredentials credentials, RestTemplate restTemplate,
+        OAuthClient oAuthClient, LoggregatorClient loggregatorClient) {
+        this(controllerUrl, credentials, restTemplate, oAuthClient, loggregatorClient, null);
+    }
+
+    public CloudControllerRestClientImpl(URL controllerUrl, CloudCredentials credentials, RestTemplate restTemplate,
+        OAuthClient oAuthClient, LoggregatorClient loggregatorClient, CloudSpace target) {
+        Assert.notNull(controllerUrl, "CloudControllerUrl cannot be null");
+        Assert.notNull(restTemplate, "RestTemplate cannot be null");
+        Assert.notNull(oAuthClient, "OAuthClient cannot be null");
+
+        this.controllerUrl = controllerUrl;
+        this.credentials = credentials;
+        this.restTemplate = restTemplate;
+        this.oAuthClient = oAuthClient;
+        this.loggregatorClient = loggregatorClient;
+        this.target = target;
+    }
+
+    @Override
+    public RestTemplate getRestTemplate() {
+        return restTemplate;
+    }
+
+    @Override
+    public OAuthClient getOAuthClient() {
+        return oAuthClient;
     }
 
     @Override
@@ -1799,13 +1805,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return new Upload(cloudPackage.getStatus(), errorDetails);
     }
 
-    protected void configureRequestFactory(RestTemplate restTemplate) {
-        ClientHttpRequestFactory requestFactory = restTemplate.getRequestFactory();
-        if (!(requestFactory instanceof CloudControllerRestClientHttpRequestFactory)) {
-            restTemplate.setRequestFactory(new CloudControllerRestClientHttpRequestFactory(requestFactory));
-        }
-    }
-
     protected String doGetFile(String urlPath, UUID applicationGuid, int instanceIndex, String filePath, int startPosition,
         int endPosition) {
         return doGetFile(urlPath, applicationGuid, String.valueOf(instanceIndex), filePath, startPosition, endPosition);
@@ -1892,10 +1891,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     protected String getFileUrlPath() {
         return "/v2/apps/{applicationGuid}/instances/{instance}/files/{filePath}";
-    }
-
-    protected RestTemplate getRestTemplate() {
-        return restTemplate;
     }
 
     protected String getUrl(CloudJob job) {
@@ -2927,22 +2922,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return entity.containsKey(resourceKey) || entity.containsKey(resourceKey + "_url");
     }
 
-    private void initialize(URL controllerUrl, CloudCredentials credentials, RestTemplate restTemplate, OAuthClient oAuthClient,
-        LoggregatorClient loggregatorClient) {
-        Assert.notNull(controllerUrl, "CloudControllerUrl cannot be null");
-        Assert.notNull(restTemplate, "RestTemplate cannot be null");
-        Assert.notNull(oAuthClient, "OAuthClient cannot be null");
-
-        this.credentials = credentials;
-        this.controllerUrl = controllerUrl;
-        this.restTemplate = restTemplate;
-        this.oAuthClient = oAuthClient;
-        this.loggregatorClient = loggregatorClient;
-
-        oAuthClient.init(credentials);
-        configureRequestFactory(restTemplate);
-    }
-
     private boolean isOrphanRoute(CloudRoute cloudRoute) {
         return cloudRoute.getAppsUsingRoute() == 0;
     }
@@ -3064,64 +3043,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
             return null;
         }
 
-    }
-
-    private class CloudControllerRestClientHttpRequestFactory implements ClientHttpRequestFactory {
-
-        private Integer defaultSocketTimeout = 0;
-
-        private ClientHttpRequestFactory delegate;
-
-        public CloudControllerRestClientHttpRequestFactory(ClientHttpRequestFactory delegate) {
-            this.delegate = delegate;
-            captureDefaultReadTimeout();
-        }
-
-        @Override
-        public ClientHttpRequest createRequest(URI uri, HttpMethod httpMethod) throws IOException {
-            ClientHttpRequest request = delegate.createRequest(uri, httpMethod);
-
-            String authorizationHeader = oAuthClient.getAuthorizationHeader();
-            if (authorizationHeader != null) {
-                request.getHeaders()
-                    .add(AUTHORIZATION_HEADER_KEY, authorizationHeader);
-            }
-
-            if (credentials != null && credentials.getProxyUser() != null) {
-                request.getHeaders()
-                    .add(PROXY_USER_HEADER_KEY, credentials.getProxyUser());
-            }
-
-            return request;
-        }
-
-        public void increaseReadTimeoutForStreamedTailedLogs(int timeout) {
-            // May temporary increase read timeout on other unrelated concurrent
-            // threads, but per-request read timeout don't seem easily
-            // accessible
-            if (delegate instanceof HttpComponentsClientHttpRequestFactory) {
-                HttpComponentsClientHttpRequestFactory httpRequestFactory = (HttpComponentsClientHttpRequestFactory) delegate;
-
-                if (timeout > 0) {
-                    httpRequestFactory.setReadTimeout(timeout);
-                } else {
-                    httpRequestFactory.setReadTimeout(defaultSocketTimeout);
-                }
-            }
-        }
-
-        private void captureDefaultReadTimeout() {
-            // As of HttpClient 4.3.x, obtaining the default parameters is deprecated and removed,
-            // so we fallback to java.net.Socket.
-
-            if (defaultSocketTimeout == null) {
-                try {
-                    defaultSocketTimeout = new Socket().getSoTimeout();
-                } catch (SocketException e) {
-                    defaultSocketTimeout = 0;
-                }
-            }
-        }
     }
 
 }

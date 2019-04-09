@@ -59,8 +59,10 @@ import org.cloudfoundry.client.lib.domain.ServiceKey;
 import org.cloudfoundry.client.lib.domain.Staging;
 import org.cloudfoundry.client.lib.domain.Upload;
 import org.cloudfoundry.client.lib.domain.UploadToken;
+import org.cloudfoundry.client.lib.oauth2.OAuthClient;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.web.client.ResponseErrorHandler;
+import org.springframework.web.client.RestTemplate;
 
 /**
  * Interface defining operations available for the cloud controller REST client implementations
@@ -384,5 +386,9 @@ public interface CloudControllerRestClient {
     void bindDropletToApp(UUID dropletGuid, UUID applicationGuid);
 
     List<CloudBuild> getBuildsForApplication(UUID applicationGuid);
+
+    RestTemplate getRestTemplate();
+
+    OAuthClient getOAuthClient();
 
 }

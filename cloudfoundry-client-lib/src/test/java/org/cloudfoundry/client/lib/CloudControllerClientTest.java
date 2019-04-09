@@ -1511,7 +1511,7 @@ public class CloudControllerClientTest {
 
         validateClientAccess(client);
 
-        OAuthClient oAuthClient = factory.getOAuthClient();
+        OAuthClient oAuthClient = client.getOAuthClient();
         OAuth2AccessToken token = oAuthClient.getToken();
         if (token instanceof DefaultOAuth2AccessToken) {
             // set the token expiration to "now", forcing the access token to be refreshed
