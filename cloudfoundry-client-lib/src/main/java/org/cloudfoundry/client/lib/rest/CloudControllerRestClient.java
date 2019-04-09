@@ -151,8 +151,6 @@ public interface CloudControllerRestClient {
 
     CloudApplication getApplication(UUID applicationGuid);
 
-    CloudApplication getApplication(UUID applicationGuid, boolean required);
-
     Map<String, Object> getApplicationEnvironment(UUID applicationGuid);
 
     Map<String, Object> getApplicationEnvironment(String applicationName);
@@ -241,6 +239,12 @@ public interface CloudControllerRestClient {
 
     // Space management
 
+    CloudSpace getSpace(UUID spaceGuid);
+
+    CloudSpace getSpace(String organizationName, String spaceName);
+
+    CloudSpace getSpace(String organizationName, String spaceName, boolean required);
+
     CloudSpace getSpace(String spaceName);
 
     CloudSpace getSpace(String spaceName, boolean required);
@@ -260,6 +264,8 @@ public interface CloudControllerRestClient {
     List<UUID> getSpaceManagers(UUID spaceGuid);
 
     List<CloudSpace> getSpaces();
+
+    List<CloudSpace> getSpaces(String organizationName);
 
     List<CloudSpace> getSpacesBoundToSecurityGroup(String securityGroupName);
 
@@ -378,4 +384,5 @@ public interface CloudControllerRestClient {
     void bindDropletToApp(UUID dropletGuid, UUID applicationGuid);
 
     List<CloudBuild> getBuildsForApplication(UUID applicationGuid);
+
 }

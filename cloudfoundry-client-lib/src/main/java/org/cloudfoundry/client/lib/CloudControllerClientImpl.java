@@ -392,11 +392,6 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public CloudApplication getApplication(UUID applicationGuid, boolean required) {
-        return cc.getApplication(applicationGuid, required);
-    }
-
-    @Override
     public Map<String, Object> getApplicationEnvironment(UUID applicationGuid) {
         return cc.getApplicationEnvironment(applicationGuid);
     }
@@ -643,6 +638,21 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
+    public CloudSpace getSpace(UUID spaceGuid) {
+        return cc.getSpace(spaceGuid);
+    }
+
+    @Override
+    public CloudSpace getSpace(String organizationName, String spaceName) {
+        return cc.getSpace(organizationName, spaceName);
+    }
+
+    @Override
+    public CloudSpace getSpace(String organizationName, String spaceName, boolean required) {
+        return cc.getSpace(organizationName, spaceName, required);
+    }
+
+    @Override
     public CloudSpace getSpace(String spaceName) {
         return cc.getSpace(spaceName);
     }
@@ -700,6 +710,11 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     @Override
     public List<CloudSpace> getSpaces() {
         return cc.getSpaces();
+    }
+
+    @Override
+    public List<CloudSpace> getSpaces(String organizationName) {
+        return cc.getSpaces(organizationName);
     }
 
     @Override
@@ -1017,4 +1032,5 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     public List<CloudBuild> getBuildsForApplication(UUID applicationGuid) {
         return cc.getBuildsForApplication(applicationGuid);
     }
+
 }

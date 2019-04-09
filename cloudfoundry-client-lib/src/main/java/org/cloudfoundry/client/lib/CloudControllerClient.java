@@ -439,15 +439,6 @@ public interface CloudControllerClient {
     CloudApplication getApplication(UUID guid);
 
     /**
-     * Get cloud application with the specified GUID.
-     *
-     * @param guid GUID of the app
-     * @param required if true, and organization is not found, throw an exception
-     * @return the cloud application
-     */
-    CloudApplication getApplication(UUID guid, boolean required);
-
-    /**
      * Get application environment variables for the app with the specified name.
      *
      * @param applicationName name of the app
@@ -828,19 +819,32 @@ public interface CloudControllerClient {
     List<CloudDomain> getSharedDomains();
 
     /**
+     * Get space name with the specified GUID.
+     * 
+     */
+    CloudSpace getSpace(UUID spaceGuid);
+
+    /**
      * Get space name with the specified name.
-     *
-     * @param spaceName name of the space
-     * @return the cloud space
+     * 
+     */
+    CloudSpace getSpace(String organizationName, String spaceName);
+
+    /**
+     * Get space name with the specified name.
+     * 
+     */
+    CloudSpace getSpace(String organizationName, String spaceName, boolean required);
+
+    /**
+     * Get space name with the specified name.
+     * 
      */
     CloudSpace getSpace(String spaceName);
 
     /**
      * Get space name with the specified name.
-     *
-     * @param spaceName name of the space
-     * @param required if true, and organization is not found, throw an exception
-     * @return the cloud space
+     * 
      */
     CloudSpace getSpace(String spaceName, boolean required);
 
@@ -907,6 +911,13 @@ public interface CloudControllerClient {
      * @return List of CloudSpace objects containing the space info
      */
     List<CloudSpace> getSpaces();
+
+    /**
+     * Get list of CloudSpaces for organization.
+     *
+     * @return List of CloudSpace objects containing the space info
+     */
+    List<CloudSpace> getSpaces(String organizationName);
 
     /**
      * Gets all the spaces that are bound to the given security group.
@@ -1383,6 +1394,6 @@ public interface CloudControllerClient {
     CloudBuild getBuild(UUID buildGuid);
 
     void bindDropletToApp(UUID dropletGuid, UUID applicationGuid);
-    
+
     List<CloudBuild> getBuildsForApplication(UUID applicationGuid);
 }
