@@ -169,7 +169,7 @@ public interface CloudControllerRestClient {
 
     List<CloudApplication> getApplications(boolean fetchAdditionalInfo);
 
-    URL getCloudControllerUrl();
+    URL getControllerUrl();
 
     Map<String, String> getCrashLogs(String applicationName);
 

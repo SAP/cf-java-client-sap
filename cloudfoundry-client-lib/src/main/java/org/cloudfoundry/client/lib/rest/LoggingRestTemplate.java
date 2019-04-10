@@ -40,7 +40,7 @@ import org.springframework.web.client.RestTemplate;
  */
 public class LoggingRestTemplate extends RestTemplate {
 
-    private Set<RestLogCallback> listeners = new LinkedHashSet<RestLogCallback>();
+    private Set<RestLogCallback> listeners = new LinkedHashSet<>();
 
     public void addLogMessage(HttpMethod method, URI url, String status, HttpStatus httpStatus, String message) {
         RestLogEntry logEntry = new RestLogEntry(method, url, status, httpStatus, message);

@@ -79,93 +79,92 @@ public class CloudControllerClientImpl implements CloudControllerClient {
      * Construct client for anonymous user. Useful only to get to the '/info' endpoint.
      */
 
-    public CloudControllerClientImpl(URL cloudControllerUrl) {
-        this(null, cloudControllerUrl, null, (HttpProxyConfiguration) null, false);
+    public CloudControllerClientImpl(URL controllerUrl) {
+        this(controllerUrl, null, null, (HttpProxyConfiguration) null, false);
     }
 
-    public CloudControllerClientImpl(URL cloudControllerUrl, boolean trustSelfSignedCerts) {
-        this(null, cloudControllerUrl, null, (HttpProxyConfiguration) null, trustSelfSignedCerts);
+    public CloudControllerClientImpl(URL controllerUrl, boolean trustSelfSignedCerts) {
+        this(controllerUrl, null, null, (HttpProxyConfiguration) null, trustSelfSignedCerts);
     }
 
-    public CloudControllerClientImpl(URL cloudControllerUrl, HttpProxyConfiguration httpProxyConfiguration) {
-        this(null, cloudControllerUrl, null, httpProxyConfiguration, false);
+    public CloudControllerClientImpl(URL controllerUrl, HttpProxyConfiguration httpProxyConfiguration) {
+        this(controllerUrl, null, null, httpProxyConfiguration, false);
     }
 
-    public CloudControllerClientImpl(URL cloudControllerUrl, HttpProxyConfiguration httpProxyConfiguration, boolean trustSelfSignedCerts) {
-        this(null, cloudControllerUrl, null, httpProxyConfiguration, trustSelfSignedCerts);
+    public CloudControllerClientImpl(URL controllerUrl, HttpProxyConfiguration httpProxyConfiguration, boolean trustSelfSignedCerts) {
+        this(controllerUrl, null, null, httpProxyConfiguration, trustSelfSignedCerts);
     }
 
     /**
      * Construct client without a default organization and space.
      */
 
-    public CloudControllerClientImpl(CloudCredentials credentials, URL cloudControllerUrl) {
-        this(credentials, cloudControllerUrl, null, (HttpProxyConfiguration) null, false);
+    public CloudControllerClientImpl(URL controllerUrl, CloudCredentials credentials) {
+        this(controllerUrl, credentials, null, (HttpProxyConfiguration) null, false);
     }
 
-    public CloudControllerClientImpl(CloudCredentials credentials, URL cloudControllerUrl, boolean trustSelfSignedCerts) {
-        this(credentials, cloudControllerUrl, null, (HttpProxyConfiguration) null, trustSelfSignedCerts);
+    public CloudControllerClientImpl(URL controllerUrl, CloudCredentials credentials, boolean trustSelfSignedCerts) {
+        this(controllerUrl, credentials, null, (HttpProxyConfiguration) null, trustSelfSignedCerts);
     }
 
-    public CloudControllerClientImpl(CloudCredentials credentials, URL cloudControllerUrl, HttpProxyConfiguration httpProxyConfiguration) {
-        this(credentials, cloudControllerUrl, null, httpProxyConfiguration, false);
+    public CloudControllerClientImpl(URL controllerUrl, CloudCredentials credentials, HttpProxyConfiguration httpProxyConfiguration) {
+        this(controllerUrl, credentials, null, httpProxyConfiguration, false);
     }
 
-    public CloudControllerClientImpl(CloudCredentials credentials, URL cloudControllerUrl, HttpProxyConfiguration httpProxyConfiguration,
+    public CloudControllerClientImpl(URL controllerUrl, CloudCredentials credentials, HttpProxyConfiguration httpProxyConfiguration,
         boolean trustSelfSignedCerts) {
-        this(credentials, cloudControllerUrl, null, httpProxyConfiguration, trustSelfSignedCerts);
+        this(controllerUrl, credentials, null, httpProxyConfiguration, trustSelfSignedCerts);
     }
 
     /**
      * Construct a client with a default CloudSpace.
      */
 
-    public CloudControllerClientImpl(CloudCredentials credentials, URL cloudControllerUrl, CloudSpace sessionSpace) {
-        this(credentials, cloudControllerUrl, sessionSpace, null, false);
+    public CloudControllerClientImpl(URL controllerUrl, CloudCredentials credentials, CloudSpace target) {
+        this(controllerUrl, credentials, target, null, false);
     }
 
-    public CloudControllerClientImpl(CloudCredentials credentials, URL cloudControllerUrl, CloudSpace sessionSpace,
-        boolean trustSelfSignedCerts) {
-        this(credentials, cloudControllerUrl, sessionSpace, null, trustSelfSignedCerts);
+    public CloudControllerClientImpl(URL controllerUrl, CloudCredentials credentials, CloudSpace target, boolean trustSelfSignedCerts) {
+        this(controllerUrl, credentials, target, null, trustSelfSignedCerts);
     }
 
-    public CloudControllerClientImpl(CloudCredentials credentials, URL cloudControllerUrl, CloudSpace sessionSpace,
+    public CloudControllerClientImpl(URL controllerUrl, CloudCredentials credentials, CloudSpace target,
         HttpProxyConfiguration httpProxyConfiguration) {
-        this(credentials, cloudControllerUrl, sessionSpace, httpProxyConfiguration, false);
+        this(controllerUrl, credentials, target, httpProxyConfiguration, false);
     }
 
-    public CloudControllerClientImpl(CloudCredentials credentials, URL cloudControllerUrl, CloudSpace sessionSpace,
+    public CloudControllerClientImpl(URL controllerUrl, CloudCredentials credentials, CloudSpace target,
         HttpProxyConfiguration httpProxyConfiguration, boolean trustSelfSignedCerts) {
-        Assert.notNull(cloudControllerUrl, "URL for cloud controller cannot be null");
+        Assert.notNull(controllerUrl, "URL for cloud controller cannot be null");
         CloudControllerRestClientFactory cloudControllerClientFactory = new CloudControllerRestClientFactory(httpProxyConfiguration,
             trustSelfSignedCerts);
-        this.cc = cloudControllerClientFactory.newCloudController(cloudControllerUrl, credentials, sessionSpace);
+        this.cc = cloudControllerClientFactory.createClient(controllerUrl, credentials, target);
     }
 
     /**
      * Construct a client with a default space name and organization name.
      */
 
-    public CloudControllerClientImpl(CloudCredentials credentials, URL cloudControllerUrl, String organizationName, String spaceName) {
-        this(credentials, cloudControllerUrl, organizationName, spaceName, null, false);
+    public CloudControllerClientImpl(URL controllerUrl, CloudCredentials credentials, String organizationName, String spaceName) {
+        this(controllerUrl, credentials, organizationName, spaceName, null, false);
     }
 
-    public CloudControllerClientImpl(CloudCredentials credentials, URL cloudControllerUrl, String organizationName, String spaceName,
+    public CloudControllerClientImpl(URL controllerUrl, CloudCredentials credentials, String organizationName, String spaceName,
         boolean trustSelfSignedCerts) {
-        this(credentials, cloudControllerUrl, organizationName, spaceName, null, trustSelfSignedCerts);
+        this(controllerUrl, credentials, organizationName, spaceName, null, trustSelfSignedCerts);
     }
 
-    public CloudControllerClientImpl(CloudCredentials credentials, URL cloudControllerUrl, String organizationName, String spaceName,
+    public CloudControllerClientImpl(URL controllerUrl, CloudCredentials credentials, String organizationName, String spaceName,
         HttpProxyConfiguration httpProxyConfiguration) {
-        this(credentials, cloudControllerUrl, organizationName, spaceName, httpProxyConfiguration, false);
+        this(controllerUrl, credentials, organizationName, spaceName, httpProxyConfiguration, false);
     }
 
-    public CloudControllerClientImpl(CloudCredentials credentials, URL cloudControllerUrl, String organizationName, String spaceName,
+    public CloudControllerClientImpl(URL controllerUrl, CloudCredentials credentials, String organizationName, String spaceName,
         HttpProxyConfiguration httpProxyConfiguration, boolean trustSelfSignedCerts) {
-        Assert.notNull(cloudControllerUrl, "URL for cloud controller cannot be null");
+        Assert.notNull(controllerUrl, "URL for cloud controller cannot be null");
         CloudControllerRestClientFactory cloudControllerClientFactory = new CloudControllerRestClientFactory(httpProxyConfiguration,
             trustSelfSignedCerts);
-        this.cc = cloudControllerClientFactory.newCloudController(cloudControllerUrl, credentials, organizationName, spaceName);
+        this.cc = cloudControllerClientFactory.createClient(controllerUrl, credentials, organizationName, spaceName);
     }
 
     /**
@@ -439,7 +438,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
 
     @Override
     public URL getCloudControllerUrl() {
-        return cc.getCloudControllerUrl();
+        return cc.getControllerUrl();
     }
 
     @Override

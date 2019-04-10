@@ -42,9 +42,7 @@ public class LoggregatorClient {
             ClientEndpointConfig config = buildClientConfig(configurator);
             Session session = container.connectToServer(new LoggregatorEndpoint(listener), config, loggregatorUri);
             return new StreamingLogTokenImpl(session);
-        } catch (DeploymentException e) {
-            throw new CloudException(e);
-        } catch (IOException e) {
+        } catch (DeploymentException | IOException e) {
             throw new CloudException(e);
         }
     }

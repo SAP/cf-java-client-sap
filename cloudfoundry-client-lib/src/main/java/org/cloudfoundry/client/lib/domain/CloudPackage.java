@@ -1,11 +1,9 @@
 package org.cloudfoundry.client.lib.domain;
 
 public class CloudPackage extends CloudEntity {
-    
+
     private Type type;
-
     private Data data;
-
     private Status status;
 
     public Type getType() {
@@ -31,33 +29,33 @@ public class CloudPackage extends CloudEntity {
     public void setStatus(Status state) {
         this.status = state;
     }
-    
+
     public static class Builder {
         private CloudPackage cloudPackage;
-        
+
         public Builder() {
             cloudPackage = new CloudPackage();
         }
-        
+
         public CloudPackage build() {
             return cloudPackage;
         }
-        
+
         public Builder type(Type type) {
             cloudPackage.type = type;
             return this;
         }
-        
+
         public Builder data(Data data) {
             cloudPackage.data = data;
             return this;
         }
-        
+
         public Builder status(Status status) {
             cloudPackage.status = status;
             return this;
         }
-        
+
         public Builder meta(Meta meta) {
             cloudPackage.setMeta(meta);
             return this;
@@ -119,7 +117,7 @@ public class CloudPackage extends CloudEntity {
         }
     }
 
-    public static enum Type {
+    public enum Type {
         BITS("bits"), DOCKER("docker");
 
         private final String type;

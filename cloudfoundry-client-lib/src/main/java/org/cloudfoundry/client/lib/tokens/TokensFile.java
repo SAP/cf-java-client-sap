@@ -61,7 +61,7 @@ public class TokensFile {
         HashMap<String, String> targetInfo = targetInfos.get(target);
 
         if (targetInfo == null) {
-            targetInfo = new LinkedHashMap<String, String>();
+            targetInfo = new LinkedHashMap<>();
         }
 
         targetInfos.putToken(targetInfo, token);

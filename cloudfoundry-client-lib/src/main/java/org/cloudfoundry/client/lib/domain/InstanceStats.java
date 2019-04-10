@@ -28,27 +28,16 @@ import java.util.Map;
 public class InstanceStats {
 
     private int cores;
-
     private long diskQuota;
-
     private int fdsQuota;
-
     private String host;
-
     private String id;
-
     private long memQuota;
-
     private String name;
-
     private int port;
-
     private InstanceState state;
-
     private double uptime;
-
     private List<String> uris;
-
     private Usage usage;
 
     @SuppressWarnings("unchecked")
@@ -125,15 +114,6 @@ public class InstanceStats {
         return usage;
     }
 
-    private static Date parseDate(String date) {
-        try {
-            // dates will be of the form 2011-04-07 09:11:50 +0000
-            return new SimpleDateFormat("yyyy-MM-dd hh:mm:ss ZZZZZ").parse(date);
-        } catch (ParseException e) {
-            return null;
-        }
-    }
-
     public static class Usage {
 
         private double cpu;
@@ -171,5 +151,15 @@ public class InstanceStats {
         public Date getTime() {
             return time;
         }
+
+        private static Date parseDate(String date) {
+            try {
+                // dates will be of the form 2011-04-07 09:11:50 +0000
+                return new SimpleDateFormat("yyyy-MM-dd hh:mm:ss ZZZZZ").parse(date);
+            } catch (ParseException e) {
+                return null;
+            }
+        }
+
     }
 }

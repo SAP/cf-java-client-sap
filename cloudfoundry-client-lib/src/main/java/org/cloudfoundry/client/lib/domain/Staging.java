@@ -26,21 +26,13 @@ package org.cloudfoundry.client.lib.domain;
 public class Staging {
 
     private String buildpackUrl;
-
     private String command;
-
     private String detectedBuildpack;
-
     private String stack;
-
     private Integer healthCheckTimeout;
-
     private String healthCheckType;
-
     private String healthCheckHttpEndpoint;
-
     private Boolean sshEnabled;
-    
     private DockerInfo dockerInfo;
 
     /**
@@ -72,7 +64,7 @@ public class Staging {
         private String healthCheckHttpEndpoint;
         private Boolean sshEnabled;
         private DockerInfo dockerInfo;
-        
+
         // @param command the application command; may be null
         public StagingBuilder command(String command) {
             this.command = command;
@@ -123,7 +115,7 @@ public class Staging {
             this.sshEnabled = sshEnabled;
             return this;
         }
-        
+
         // @param dockerInfo; may be null if a docker image is not used
         public StagingBuilder dockerInfo(DockerInfo dockerInfo) {
             this.dockerInfo = dockerInfo;
@@ -192,7 +184,7 @@ public class Staging {
     public String getStack() {
         return stack;
     }
-    
+
     /**
      * @return dockerInfo
      */

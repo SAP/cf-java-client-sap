@@ -22,7 +22,6 @@ package org.cloudfoundry.client.lib.domain;
 public class CloudOrganization extends CloudEntity {
 
     private boolean billingEnabled = false;
-
     private CloudQuota quota;
 
     public CloudOrganization(Meta meta, String name) {

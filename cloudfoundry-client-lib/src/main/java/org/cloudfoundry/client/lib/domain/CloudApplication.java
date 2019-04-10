@@ -31,39 +31,23 @@ import org.codehaus.jackson.annotate.JsonAutoDetect.Visibility;
 public class CloudApplication extends CloudEntity {
 
     private static final String BUILDPACK_URL_KEY = "buildpack";
-
     private static final String COMMAND_KEY = "command";
-
     private static final String DETECTED_BUILDPACK_KEY = "detected_buildpack";
-
     private static final String DISK_KEY = "disk_quota";
-
     private static final String MEMORY_KEY = "memory";
 
     private DebugMode debug;
-
     private int diskQuota;
-
-    private List<String> env = new ArrayList<String>();
-
+    private List<String> env = new ArrayList<>();
     private int instances;
-
     private int memory;
-
     private int runningInstances;
-
     private List<String> services;
-
     private CloudSpace space;
-
     private Staging staging;
-
     private PackageState packageState;
-
     private String stagingError;
-
     private AppState state;
-
     private List<String> uris;
 
     public CloudApplication(Meta meta, String name) {
@@ -153,7 +137,7 @@ public class CloudApplication extends CloudEntity {
     }
 
     public void setEnv(Map<Object, Object> env) {
-        List<String> joined = new ArrayList<String>();
+        List<String> joined = new ArrayList<>();
         for (Map.Entry<Object, Object> entry : env.entrySet()) {
             // skip this environment variable if the key is null
             if (null == entry.getKey()) {
@@ -177,7 +161,7 @@ public class CloudApplication extends CloudEntity {
     }
 
     public Map<String, String> getEnvAsMap() {
-        Map<String, String> envMap = new HashMap<String, String>();
+        Map<String, String> envMap = new HashMap<>();
         for (String nameAndValue : env) {
             String[] parts = nameAndValue.split("=", 2);
             envMap.put(parts[0], parts.length == 2 && parts[1].length() > 0 ? parts[1] : null);
@@ -203,7 +187,7 @@ public class CloudApplication extends CloudEntity {
 
     // for backward compatibility
     public Map<String, Integer> getResources() {
-        Map<String, Integer> resources = new HashMap<String, Integer>();
+        Map<String, Integer> resources = new HashMap<>();
         resources.put(MEMORY_KEY, memory);
         resources.put(DISK_KEY, diskQuota);
         return resources;

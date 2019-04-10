@@ -29,13 +29,9 @@ import org.springframework.http.HttpStatus;
 public class RestLogEntry {
 
     private HttpStatus httpStatus;
-
     private String message;
-
     private HttpMethod method;
-
     private String status;
-
     private URI uri;
 
     public RestLogEntry(HttpMethod method, URI uri, String status, HttpStatus httpStatus, String message) {

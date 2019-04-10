@@ -19,7 +19,7 @@ public class LoggregatorMessageParser {
         return createApplicationLog(message);
     }
 
-    public ApplicationLog parseMessage(String messageString) throws InvalidProtocolBufferException, TextFormat.ParseException {
+    public ApplicationLog parseMessage(String messageString) throws TextFormat.ParseException {
         LogMessages.Message.Builder builder = LogMessages.Message.newBuilder();
         TextFormat.merge(messageString, builder);
         LogMessages.Message message = builder.build();

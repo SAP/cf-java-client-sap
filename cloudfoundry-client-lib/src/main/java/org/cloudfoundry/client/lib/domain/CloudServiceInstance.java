@@ -27,15 +27,10 @@ import java.util.Map;
 public class CloudServiceInstance extends CloudEntity {
 
     private List<CloudServiceBinding> bindings;
-
     private Map<String, Object> credentials;
-
     private String dashboardUrl;
-
     private CloudService service;
-
     private CloudServicePlan servicePlan;
-
     private String type;
 
     public CloudServiceInstance() {

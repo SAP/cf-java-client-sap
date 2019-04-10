@@ -46,11 +46,11 @@ public class UploadApplicationPayload {
      * @param knownRemoteResources resources that are already known on the remote server
      * @throws IOException
      */
-    public UploadApplicationPayload(ApplicationArchive archive, CloudResources knownRemoteResources) throws IOException {
+    public UploadApplicationPayload(ApplicationArchive archive, CloudResources knownRemoteResources) {
         this.archive = archive;
         this.totalUncompressedSize = 0;
         Set<String> matches = knownRemoteResources.getFilenames();
-        this.entriesToUpload = new ArrayList<DynamicZipInputStream.Entry>();
+        this.entriesToUpload = new ArrayList<>();
         for (ApplicationArchive.Entry entry : archive.getEntries()) {
             if (entry.isDirectory() || !matches.contains(entry.getName())) {
                 entriesToUpload.add(new DynamicZipInputStreamEntryAdapter(entry));

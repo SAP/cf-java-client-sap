@@ -11,13 +11,9 @@ import java.util.UUID;
 public class CloudServiceBinding extends CloudEntity {
 
     private UUID applicationGuid;
-
     private Map<String, Object> bindingOptions;
-
     private Map<String, Object> credentials;
-
     private Map<String, Object> bindingParameters;
-
     private String syslogDrainUrl;
 
     public CloudServiceBinding() {

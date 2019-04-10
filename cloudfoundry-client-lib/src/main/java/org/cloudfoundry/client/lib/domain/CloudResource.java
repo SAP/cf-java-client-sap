@@ -30,9 +30,7 @@ public class CloudResource {
 
     @JsonProperty("fn")
     private String filename;
-
     private String sha1;
-
     private long size;
 
     public CloudResource(String filename, long size, String sha1) {

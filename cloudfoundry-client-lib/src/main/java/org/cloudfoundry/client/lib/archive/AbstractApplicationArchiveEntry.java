@@ -28,11 +28,9 @@ import java.security.MessageDigest;
 public abstract class AbstractApplicationArchiveEntry implements ApplicationArchive.Entry {
 
     protected static final int UNDEFINED_SIZE = -1;
-
     private static final int BUFFER_SIZE = 4096;
 
     private byte[] sha1Digest;
-
     private long size = UNDEFINED_SIZE;
 
     public byte[] getSha1Digest() {

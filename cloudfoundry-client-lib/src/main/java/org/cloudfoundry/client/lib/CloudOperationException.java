@@ -21,7 +21,7 @@ import org.springframework.http.HttpStatus;
 @SuppressWarnings("serial")
 public class CloudOperationException extends RuntimeException {
 
-    private HttpStatus statusCode;
+    private final HttpStatus statusCode;
     private final String statusText;
     private final String description;
 

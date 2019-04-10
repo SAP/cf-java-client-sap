@@ -28,7 +28,6 @@ import java.util.Set;
 import org.cloudfoundry.client.lib.archive.ApplicationArchive;
 import org.codehaus.jackson.JsonGenerator;
 import org.codehaus.jackson.JsonParser;
-import org.codehaus.jackson.JsonProcessingException;
 import org.codehaus.jackson.map.DeserializationContext;
 import org.codehaus.jackson.map.JsonDeserializer;
 import org.codehaus.jackson.map.JsonSerializer;
@@ -58,7 +57,7 @@ public class CloudResources {
      */
     public CloudResources(Collection<? extends CloudResource> resources) {
         Assert.notNull(resources, "Resources must not be null");
-        this.resources = new ArrayList<CloudResource>(resources);
+        this.resources = new ArrayList<>(resources);
     }
 
     /**
@@ -68,7 +67,7 @@ public class CloudResources {
      */
     public CloudResources(Iterator<? extends CloudResource> resources) {
         Assert.notNull(resources, "Resources must not be null");
-        this.resources = new ArrayList<CloudResource>();
+        this.resources = new ArrayList<>();
         while (resources.hasNext()) {
             this.resources.add(resources.next());
         }
@@ -79,9 +78,9 @@ public class CloudResources {
      *
      * @param archive the application archive
      */
-    public CloudResources(ApplicationArchive archive) throws IOException {
+    public CloudResources(ApplicationArchive archive) {
         Assert.notNull(archive, "Archive must not be null");
-        this.resources = new ArrayList<CloudResource>();
+        this.resources = new ArrayList<>();
         for (ApplicationArchive.Entry entry : archive.getEntries()) {
             if (!entry.isDirectory()) {
                 String name = entry.getName();
@@ -120,7 +119,7 @@ public class CloudResources {
      * @return the filenames.
      */
     public Set<String> getFilenames() {
-        Set<String> filenames = new LinkedHashSet<String>();
+        Set<String> filenames = new LinkedHashSet<>();
         for (CloudResource resource : resources) {
             filenames.add(resource.getFilename());
         }
@@ -134,7 +133,7 @@ public class CloudResources {
 
         @SuppressWarnings("unchecked")
         @Override
-        public CloudResources deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException, JsonProcessingException {
+        public CloudResources deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException {
             TypeReference<List<CloudResource>> ref = new TypeReference<List<CloudResource>>() {
             };
             return new CloudResources((Collection<? extends CloudResource>) jp.readValueAs(ref));
@@ -147,8 +146,7 @@ public class CloudResources {
     public static class Serializer extends JsonSerializer<CloudResources> {
 
         @Override
-        public void serialize(CloudResources value, JsonGenerator jgen, SerializerProvider provider)
-            throws IOException, JsonProcessingException {
+        public void serialize(CloudResources value, JsonGenerator jgen, SerializerProvider provider) throws IOException {
             jgen.writeObject(value.asList());
         }
     }
