@@ -28,7 +28,6 @@ public class CloudEntity {
 
     @JsonIgnore
     private Meta meta;
-
     private String name;
 
     public CloudEntity() {

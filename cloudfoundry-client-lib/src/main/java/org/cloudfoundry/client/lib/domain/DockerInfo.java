@@ -5,7 +5,6 @@ import java.util.Objects;
 public class DockerInfo {
 
     private String image;
-
     private DockerCredentials dockerCredentials;
 
     public DockerInfo(String image) {

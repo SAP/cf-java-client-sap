@@ -315,9 +315,7 @@ public class CloudEntityResourceMapper {
     private CloudBuild.Package getPackage(Map<String, Object> resource) {
         Map<String, Object> packageMap = getAttributeOfV3Resource(resource, "package", Map.class);
         String packageGuid = getAttributeOfV3Resource(packageMap, "guid", String.class);
-        CloudBuild.Package packageInfo = new CloudBuild.Package(packageGuid);
-
-        return packageInfo;
+        return new CloudBuild.Package(packageGuid);
     }
 
     @SuppressWarnings("unchecked")
@@ -386,7 +384,7 @@ public class CloudEntityResourceMapper {
         }
 
         Map envMap = getAttributeOfV2Resource(resource, "environment_json", Map.class);
-        if (envMap.size() > 0) {
+        if (!envMap.isEmpty()) {
             app.setEnv(envMap);
         }
         app.setMemory(getAttributeOfV2Resource(resource, "memory", Integer.class));
@@ -409,7 +407,7 @@ public class CloudEntityResourceMapper {
         if (serviceBindings == null) {
             return Collections.emptyList();
         }
-        List<String> applicationServices = new ArrayList<String>();
+        List<String> applicationServices = new ArrayList<>();
         for (Map<String, Object> binding : serviceBindings) {
             Map<String, Object> service = getAttributeOfV2Resource(binding, "service_instance", Map.class);
             String serviceName = getNameOfV2Resource(service);
@@ -604,10 +602,8 @@ public class CloudEntityResourceMapper {
 
     @SuppressWarnings("unchecked")
     private ServiceKey mapServiceKeyResource(Map<String, Object> resource) {
-        ServiceKey serviceKey = new ServiceKey(getV2Meta(resource), getAttributeOfV2Resource(resource, "name", String.class), null,
+        return new ServiceKey(getV2Meta(resource), getAttributeOfV2Resource(resource, "name", String.class), null,
             getAttributeOfV2Resource(resource, "credentials", Map.class), null);
-
-        return serviceKey;
     }
 
     private CloudServicePlan mapServicePlanResource(Map<String, Object> servicePlanResource) {

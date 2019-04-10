@@ -24,11 +24,8 @@ package org.cloudfoundry.client.lib.domain;
 public class CloudService extends CloudEntity {
 
     private String label;
-
     private String plan;
-
     private String provider;
-
     private String version;
 
     public CloudService() {

@@ -22,26 +22,16 @@ import java.util.List;
 public class CloudServiceOffering extends CloudEntity {
 
     private boolean active;
-
     private boolean bindable;
-
-    private List<CloudServicePlan> cloudServicePlans = new ArrayList<CloudServicePlan>();
-
+    private List<CloudServicePlan> cloudServicePlans = new ArrayList<>();
     private String description;
-
     private String docUrl;
-
     private String extra;
-
     private String infoUrl;
-
     // Note name is used for label
     private String provider;
-
     private String uniqueId;
-
     private String url;
-
     private String version;
 
     public CloudServiceOffering(Meta meta, String name) {

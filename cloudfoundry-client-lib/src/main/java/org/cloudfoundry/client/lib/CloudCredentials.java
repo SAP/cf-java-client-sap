@@ -26,17 +26,11 @@ import org.springframework.security.oauth2.common.OAuth2AccessToken;
 public class CloudCredentials {
 
     private String clientId = "cf";
-
     private String clientSecret = "";
-
     private String email;
-
     private String password;
-
     private String proxyUser;
-
     private boolean refreshable = true;
-
     private OAuth2AccessToken token;
 
     /**

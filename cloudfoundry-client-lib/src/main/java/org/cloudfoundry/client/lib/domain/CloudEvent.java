@@ -14,19 +14,12 @@ import org.codehaus.jackson.annotate.JsonAutoDetect.Visibility;
 public class CloudEvent extends CloudEntity {
 
     private String actee;
-
     private String actee_name;
-
     private String actee_type;
-
     private String actor;
-
     private String actor_name;
-
     private String actor_type;
-
     private Date timestamp;
-
     private String type;
 
     public CloudEvent(Meta meta, String name) {

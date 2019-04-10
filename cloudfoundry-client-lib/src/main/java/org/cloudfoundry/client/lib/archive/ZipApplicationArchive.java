@@ -62,7 +62,7 @@ public class ZipApplicationArchive implements ApplicationArchive {
     }
 
     private List<Entry> adaptZipEntries(ZipFile zipFile) {
-        List<Entry> entries = new ArrayList<Entry>();
+        List<Entry> entries = new ArrayList<>();
         Enumeration<? extends ZipEntry> zipEntries = zipFile.entries();
         while (zipEntries.hasMoreElements()) {
             entries.add(new EntryAdapter(zipEntries.nextElement()));
@@ -89,6 +89,7 @@ public class ZipApplicationArchive implements ApplicationArchive {
             return entry.getName();
         }
 
+        @Override
         public long getSize() {
             return entry.getSize();
         }

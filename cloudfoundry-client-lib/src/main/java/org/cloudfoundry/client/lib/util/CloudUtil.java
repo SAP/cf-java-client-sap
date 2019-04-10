@@ -40,16 +40,11 @@ import org.cloudfoundry.client.lib.domain.DockerCredentials;
 public class CloudUtil {
 
     public static final int BUFFER_SIZE = 16 * 1024;
-
     private static final char EXTENSION_SEPARATOR = '.';
-
     private static final String HEX_CHARS = "0123456789ABCDEF";
-
-    private static Double DEFAULT_DOUBLE = new Double(0.0);
-
-    private static Integer DEFAULT_INTEGER = new Integer(0);
-
-    private static Long DEFAULT_LONG = new Long(0);
+    private static final Double DEFAULT_DOUBLE = 0.0;
+    private static final Integer DEFAULT_INTEGER = 0;
+    private static final Long DEFAULT_LONG = 0L;
 
     private CloudUtil() {
         throw new AssertionError("Helper class should not be instantiated.");
@@ -60,7 +55,7 @@ public class CloudUtil {
         try {
             digest = MessageDigest.getInstance("SHA-1");
         } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
+            throw new IllegalStateException(e);
         }
 
         byte[] buffer = new byte[CloudUtil.BUFFER_SIZE];
@@ -129,9 +124,7 @@ public class CloudUtil {
             }
 
             return clazz.cast(object);
-        } catch (ClassCastException e) {
-            // ignore
-        } catch (ParseException e) {
+        } catch (ClassCastException | ParseException e) {
             // ignore
         }
         return defaultValue;

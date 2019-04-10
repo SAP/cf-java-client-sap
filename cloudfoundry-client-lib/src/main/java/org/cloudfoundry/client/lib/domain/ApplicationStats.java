@@ -26,7 +26,7 @@ public class ApplicationStats {
     private final List<InstanceStats> records;
 
     public ApplicationStats(Map<String, Object> attributes) {
-        List<InstanceStats> records = new ArrayList<InstanceStats>(attributes.size());
+        List<InstanceStats> records = new ArrayList<>(attributes.size());
         for (Map.Entry<String, Object> entry : attributes.entrySet()) {
             @SuppressWarnings("unchecked")
             InstanceStats record = new InstanceStats(entry.getKey(), (Map<String, Object>) entry.getValue());

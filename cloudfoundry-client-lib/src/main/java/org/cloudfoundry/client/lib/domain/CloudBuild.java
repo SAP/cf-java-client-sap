@@ -6,17 +6,12 @@ import java.util.UUID;
 public class CloudBuild extends CloudEntity {
 
     private CreatedBy createdBy;
-    
     private Droplet droplet;
-    
     private String error;
-    
     private Lifecycle lifecycle;
-    
     private Package packageInfo;
-    
     private BuildState state;
-    
+
     public CreatedBy getCreatedBy() {
         return createdBy;
     }
@@ -64,56 +59,56 @@ public class CloudBuild extends CloudEntity {
     public void setState(BuildState state) {
         this.state = state;
     }
-    
+
     public static class Builder {
-        
+
         private CloudBuild cloudBuild;
-        
+
         public Builder() {
             cloudBuild = new CloudBuild();
         }
-        
+
         public Builder meta(Meta meta) {
             cloudBuild.setMeta(meta);
             return this;
         }
-        
+
         public Builder createdBy(CreatedBy createdBy) {
             cloudBuild.createdBy = createdBy;
             return this;
         }
-        
+
         public Builder droplet(Droplet droplet) {
             cloudBuild.droplet = droplet;
             return this;
         }
-        
+
         public Builder error(String error) {
             cloudBuild.error = error;
             return this;
         }
-        
+
         public Builder lifecycle(Lifecycle lifecycle) {
             cloudBuild.lifecycle = lifecycle;
             return this;
         }
-        
+
         public Builder packageInfo(Package packageInfo) {
             cloudBuild.packageInfo = packageInfo;
             return this;
         }
-        
+
         public Builder buildState(BuildState state) {
             cloudBuild.state = state;
             return this;
         }
-        
+
         public CloudBuild build() {
             return cloudBuild;
         }
     }
 
-    public static enum BuildState {
+    public enum BuildState {
         FAILED("FAILED"), STAGED("STAGED"), STAGING("STAGING");
 
         private String status;

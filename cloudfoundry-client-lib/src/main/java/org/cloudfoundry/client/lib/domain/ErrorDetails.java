@@ -3,9 +3,7 @@ package org.cloudfoundry.client.lib.domain;
 public class ErrorDetails {
 
     private long code;
-
     private String description;
-
     private String errorCode;
 
     public ErrorDetails(long code, String description, String errorCode) {

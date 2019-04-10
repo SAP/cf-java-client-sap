@@ -12,7 +12,7 @@ import java.util.UUID;
 
 import org.cloudfoundry.client.lib.CloudCredentials;
 import org.cloudfoundry.client.lib.HttpProxyConfiguration;
-import org.cloudfoundry.client.lib.oauth2.OauthClient;
+import org.cloudfoundry.client.lib.oauth2.OAuthClient;
 import org.cloudfoundry.client.lib.util.RestUtil;
 import org.junit.Assert;
 import org.junit.Before;
@@ -44,7 +44,7 @@ public class CloudControllerRestClientImplTest {
     private LoggregatorClient loggregatorClient;
 
     @Mock
-    private OauthClient oauthClient;
+    private OAuthClient oAuthClient;
 
     @Mock
     private RestTemplate restTemplate;
@@ -111,14 +111,14 @@ public class CloudControllerRestClientImplTest {
     public void setUpWithNonEmptyConstructorWithoutLuck() throws Exception {
         restUtil = mock(RestUtil.class);
         when(restUtil.createRestTemplate(any(HttpProxyConfiguration.class), false)).thenReturn(restTemplate);
-        when(restUtil.createOauthClient(any(URL.class), any(HttpProxyConfiguration.class), false)).thenReturn(oauthClient);
+        when(restUtil.createOAuthClient(any(URL.class), any(HttpProxyConfiguration.class), false)).thenReturn(oAuthClient);
         when(restTemplate.getRequestFactory()).thenReturn(clientHttpRequestFactory);
 
         restUtil.createRestTemplate(null, false);
-        restUtil.createOauthClient(new URL(CCNG_API_URL), null, false);
+        restUtil.createOAuthClient(new URL(CCNG_API_URL), null, false);
 
-        controllerClient = new CloudControllerRestClientImpl(new URL("http://api.dummyendpoint.com/login"), restTemplate, oauthClient,
-            loggregatorClient, new CloudCredentials(CCNG_USER_EMAIL, CCNG_USER_PASS), CCNG_USER_ORG, CCNG_USER_SPACE);
+        controllerClient = new CloudControllerRestClientImpl(new URL("http://api.dummyendpoint.com/login"), new CloudCredentials(CCNG_USER_EMAIL, CCNG_USER_PASS), restTemplate,
+            oAuthClient, loggregatorClient, CCNG_USER_ORG, CCNG_USER_SPACE);
     }
 
 }

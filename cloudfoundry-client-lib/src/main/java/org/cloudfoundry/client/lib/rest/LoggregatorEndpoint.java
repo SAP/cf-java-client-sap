@@ -26,6 +26,7 @@ public class LoggregatorEndpoint extends Endpoint {
         }
     }
 
+    @Override
     public void onError(Session session, Throwable throwable) {
         listener.onError(throwable);
     }

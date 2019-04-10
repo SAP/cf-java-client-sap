@@ -6,13 +6,8 @@ package org.cloudfoundry.client.lib.domain;
 public class CloudUser extends CloudEntity {
 
     private boolean active;
-
     private boolean admin;
-
     private String defaultSpaceGuid;
-
-    private CloudOrganization organization;
-
     private String username;
 
     public CloudUser(Meta meta, String username, boolean admin, boolean active, String defaultSpaceGuid) {
@@ -22,15 +17,10 @@ public class CloudUser extends CloudEntity {
         this.active = active;
 
         this.defaultSpaceGuid = defaultSpaceGuid;
-        // this.organization = organization;
     }
 
     public String getDefaultSpaceGuid() {
         return defaultSpaceGuid;
-    }
-
-    public CloudOrganization getOrganization() {
-        return organization;
     }
 
     public String getUsername() {

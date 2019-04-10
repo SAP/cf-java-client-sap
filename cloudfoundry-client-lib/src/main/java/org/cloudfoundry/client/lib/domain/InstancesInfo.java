@@ -26,7 +26,7 @@ public class InstancesInfo {
     private final List<InstanceInfo> instances;
 
     public InstancesInfo(List<Map<String, Object>> attributes) {
-        List<InstanceInfo> instances = new ArrayList<InstanceInfo>(attributes.size());
+        List<InstanceInfo> instances = new ArrayList<>(attributes.size());
         for (Map<String, Object> data : attributes) {
             instances.add(new InstanceInfo(data));
         }

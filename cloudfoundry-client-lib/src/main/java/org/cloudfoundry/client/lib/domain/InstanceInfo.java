@@ -24,11 +24,8 @@ import org.cloudfoundry.client.lib.util.CloudUtil;
 public class InstanceInfo {
 
     private final String debugIp;
-
     private final int debugPort;
-
     private final int index;
-
     private final Date since;
 
     private final InstanceState state;

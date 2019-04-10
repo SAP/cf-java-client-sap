@@ -43,7 +43,7 @@ public class DirectoryApplicationArchive implements ApplicationArchive {
         Assert.notNull(directory, "Directory must not be null");
         Assert.isTrue(directory.isDirectory(), "File must reference a directory");
         this.directory = directory;
-        List<Entry> entries = new ArrayList<Entry>();
+        List<Entry> entries = new ArrayList<>();
         collectEntries(entries, directory);
         this.entries = Collections.unmodifiableList(entries);
     }

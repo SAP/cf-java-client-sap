@@ -26,15 +26,10 @@ package org.cloudfoundry.client.lib.domain;
 public class SecurityGroupRule {
 
     private final Integer code;
-
     private final String destination;
-
     private final Boolean log;
-
     private final String ports;
-
     private final String protocol;
-
     private final Integer type;
 
     public SecurityGroupRule(String protocol, String ports, String destination) {

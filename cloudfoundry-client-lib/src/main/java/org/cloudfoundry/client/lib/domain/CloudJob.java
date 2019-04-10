@@ -22,7 +22,6 @@ package org.cloudfoundry.client.lib.domain;
 public class CloudJob extends CloudEntity {
 
     private final ErrorDetails errorDetails;
-
     private final Status status;
 
     public CloudJob(Meta meta, Status status) {

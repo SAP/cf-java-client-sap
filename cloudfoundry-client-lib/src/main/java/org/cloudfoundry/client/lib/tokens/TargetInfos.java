@@ -11,13 +11,9 @@ import org.springframework.security.oauth2.common.OAuth2RefreshToken;
 public class TargetInfos extends HashMap<String, HashMap<String, String>> {
 
     private static final String ACCESS_TOKEN_KEY = ":token";
-
     private static final String ORG_KEY = ":organization";
-
     private static final String REFRESH_TOKEN_KEY = ":refresh_token";
-
     private static final String SPACE_KEY = ":space";
-
     private static final String VERSION_KEY = ":version";
 
     public HashMap<String, String> get(URI target) {

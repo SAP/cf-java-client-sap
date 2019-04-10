@@ -64,7 +64,7 @@ import org.cloudfoundry.client.lib.domain.InstanceStats;
 import org.cloudfoundry.client.lib.domain.InstancesInfo;
 import org.cloudfoundry.client.lib.domain.SecurityGroupRule;
 import org.cloudfoundry.client.lib.domain.Staging;
-import org.cloudfoundry.client.lib.oauth2.OauthClient;
+import org.cloudfoundry.client.lib.oauth2.OAuthClient;
 import org.cloudfoundry.client.lib.rest.CloudControllerRestClient;
 import org.cloudfoundry.client.lib.rest.CloudControllerRestClientFactory;
 import org.cloudfoundry.client.lib.util.RestUtil;
@@ -1505,14 +1505,14 @@ public class CloudControllerClientTest {
         CloudCredentials credentials = new CloudCredentials(CCNG_USER_EMAIL, CCNG_USER_PASS);
 
         CloudControllerRestClientFactory factory = new CloudControllerRestClientFactory(httpProxyConfiguration, CCNG_API_SSL);
-        CloudControllerRestClient client = factory.newCloudController(cloudControllerUrl, credentials, CCNG_USER_ORG, CCNG_USER_SPACE);
+        CloudControllerRestClient client = factory.createClient(cloudControllerUrl, credentials, CCNG_USER_ORG, CCNG_USER_SPACE);
 
         client.login();
 
         validateClientAccess(client);
 
-        OauthClient oauthClient = factory.getOauthClient();
-        OAuth2AccessToken token = oauthClient.getToken();
+        OAuthClient oAuthClient = factory.getOAuthClient();
+        OAuth2AccessToken token = oAuthClient.getToken();
         if (token instanceof DefaultOAuth2AccessToken) {
             // set the token expiration to "now", forcing the access token to be refreshed
             ((DefaultOAuth2AccessToken) token).setExpiration(new Date());
@@ -1737,7 +1737,7 @@ public class CloudControllerClientTest {
         URL cloudControllerUrl;
 
         cloudControllerUrl = new URL(CCNG_API_URL);
-        connectedClient = new CloudControllerClientImpl(new CloudCredentials(CCNG_USER_EMAIL, CCNG_USER_PASS), cloudControllerUrl,
+        connectedClient = new CloudControllerClientImpl(cloudControllerUrl, new CloudCredentials(CCNG_USER_EMAIL, CCNG_USER_PASS),
             CCNG_USER_ORG, CCNG_USER_SPACE, httpProxyConfiguration, CCNG_API_SSL);
         connectedClient.login();
         defaultDomainName = connectedClient.getDefaultDomain()
@@ -1940,7 +1940,7 @@ public class CloudControllerClientTest {
         String newPassword = "newPass123";
         connectedClient.updatePassword(newPassword);
         CloudControllerClientImpl clientWithChangedPassword = new CloudControllerClientImpl(
-            new CloudCredentials(CCNG_USER_EMAIL, newPassword), new URL(CCNG_API_URL), httpProxyConfiguration);
+            new URL(CCNG_API_URL), new CloudCredentials(CCNG_USER_EMAIL, newPassword), httpProxyConfiguration);
         clientWithChangedPassword.login();
 
         // Revert

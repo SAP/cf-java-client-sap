@@ -31,10 +31,8 @@ import java.util.List;
  */
 public class CloudSecurityGroup extends CloudEntity {
 
-    private final List<SecurityGroupRule> rules = new ArrayList<SecurityGroupRule>();
-
+    private final List<SecurityGroupRule> rules = new ArrayList<>();
     private final boolean runningDefault;
-
     private final boolean stagingDefault;
 
     public CloudSecurityGroup(String name, List<SecurityGroupRule> rules) {

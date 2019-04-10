@@ -24,13 +24,9 @@ package org.cloudfoundry.client.lib;
 public class HttpProxyConfiguration {
 
     private boolean authRequired;
-
     private String password;
-
     private String proxyHost;
-
     private int proxyPort;
-
     private String username;
 
     public HttpProxyConfiguration(String proxyHost, int proxyPort) {

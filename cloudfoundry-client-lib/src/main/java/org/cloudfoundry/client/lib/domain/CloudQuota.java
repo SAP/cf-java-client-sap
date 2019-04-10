@@ -6,11 +6,8 @@ package org.cloudfoundry.client.lib.domain;
 public class CloudQuota extends CloudEntity {
 
     private long memoryLimit;
-
     private boolean nonBasicServicesAllowed = false;
-
     private int totalRoutes;
-
     private int totalServices;
 
     public CloudQuota(Meta meta, String name, boolean nonBasicServicesAllowed, int totalServices, int totalRoutes, long memoryLimit) {

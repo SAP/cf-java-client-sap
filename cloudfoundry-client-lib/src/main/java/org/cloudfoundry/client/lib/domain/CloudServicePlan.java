@@ -19,15 +19,10 @@ package org.cloudfoundry.client.lib.domain;
 public class CloudServicePlan extends CloudEntity {
 
     private boolean _public;
-
     private String description;
-
     private String extra;
-
     private boolean free;
-
     private CloudServiceOffering serviceOffering;
-
     private String uniqueId;
 
     public CloudServicePlan() {

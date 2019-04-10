@@ -5,15 +5,10 @@ import java.util.Date;
 public class ApplicationLog implements Comparable<ApplicationLog> {
 
     private String applicationGuid;
-
     private String message;
-
     private MessageType messageType;
-
     private String sourceId;
-
     private String sourceName;
-
     private Date timestamp;
 
     public ApplicationLog(String applicationGuid, String message, Date timestamp, MessageType messageType, String sourceName,
@@ -26,6 +21,7 @@ public class ApplicationLog implements Comparable<ApplicationLog> {
         this.sourceId = sourceId;
     }
 
+    @Override
     public int compareTo(ApplicationLog o) {
         return timestamp.compareTo(o.timestamp);
     }

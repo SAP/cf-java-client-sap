@@ -22,9 +22,7 @@ package org.cloudfoundry.client.lib.domain;
 public class CloudRoute extends CloudEntity {
 
     private int appsUsingRoute;
-
     private CloudDomain domain;
-
     private String host;
 
     public CloudRoute(Meta meta, String host, CloudDomain domain, int appsUsingRoute) {

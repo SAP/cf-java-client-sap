@@ -24,25 +24,15 @@ package org.cloudfoundry.client.lib.domain;
 public class CloudInfo {
 
     private boolean allowDebug;
-
     private String authorizationEndpoint;
-
     private String build;
-
     private String description;
-
     private Limits limits;
-
     private String loggingEndpoint;
-
     private String name;
-
     private String support;
-
     private Usage usage;
-
     private String user;
-
     private String version;
 
     public CloudInfo(String name, String support, String authorizationEndpoint, String build, String version, String user,

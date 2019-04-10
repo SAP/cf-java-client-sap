@@ -26,7 +26,7 @@ public class CrashesInfo {
     private final List<CrashInfo> crashes;
 
     public CrashesInfo(List<Map<String, Object>> attributes) {
-        List<CrashInfo> crashes = new ArrayList<CrashInfo>(attributes.size());
+        List<CrashInfo> crashes = new ArrayList<>(attributes.size());
         for (Map<String, Object> data : attributes) {
             crashes.add(new CrashInfo(data));
         }

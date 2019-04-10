@@ -18,7 +18,7 @@ package org.cloudfoundry.client.lib.util;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -41,14 +41,14 @@ import org.springframework.http.MediaType;
 public class JsonUtil {
 
     public static final MediaType JSON_MEDIA_TYPE = new MediaType(MediaType.APPLICATION_JSON.getType(),
-        MediaType.APPLICATION_JSON.getSubtype(), Charset.forName("UTF-8"));
+        MediaType.APPLICATION_JSON.getSubtype(), StandardCharsets.UTF_8);
 
     protected static final Log logger = LogFactory.getLog(JsonUtil.class);
 
-    private final static ObjectMapper mapper = new ObjectMapper();
+    private static final ObjectMapper mapper = new ObjectMapper();
 
     public static List<CloudResource> convertJsonToCloudResourceList(String json) {
-        List<CloudResource> retList = new ArrayList<CloudResource>();
+        List<CloudResource> retList = new ArrayList<>();
         if (json != null) {
             try {
                 retList = mapper.readValue(json, new TypeReference<List<CloudResource>>() {
@@ -61,7 +61,7 @@ public class JsonUtil {
     }
 
     public static List<String> convertJsonToList(String json) {
-        List<String> retList = new ArrayList<String>();
+        List<String> retList = new ArrayList<>();
         if (json != null) {
             try {
                 retList = mapper.readValue(json, new TypeReference<List<String>>() {
@@ -74,7 +74,7 @@ public class JsonUtil {
     }
 
     public static Map<String, Object> convertJsonToMap(String json) {
-        Map<String, Object> retMap = new HashMap<String, Object>();
+        Map<String, Object> retMap = new HashMap<>();
         if (json != null) {
             try {
                 retMap = mapper.readValue(json, new TypeReference<Map<String, Object>>() {
@@ -104,10 +104,7 @@ public class JsonUtil {
     public static List<Map<String, Object>> convertToJsonList(InputStream jsonInputStream) {
         try {
             return mapper.readValue(jsonInputStream, List.class);
-        } catch (JsonParseException e) {
-            logger.error("Unable to parse JSON from InputStream", e);
-            throw new IllegalArgumentException("Unable to parse JSON from InputStream", e);
-        } catch (JsonMappingException e) {
+        } catch (JsonParseException | JsonMappingException e) {
             logger.error("Unable to parse JSON from InputStream", e);
             throw new IllegalArgumentException("Unable to parse JSON from InputStream", e);
         } catch (IOException e) {

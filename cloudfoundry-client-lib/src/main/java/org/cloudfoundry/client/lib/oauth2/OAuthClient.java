@@ -44,18 +44,16 @@ import org.springframework.web.client.RestTemplate;
  * @author Dave Syer
  * @author Thomas Risberg
  */
-public class OauthClient {
+public class OAuthClient {
 
     private static final String AUTHORIZATION_HEADER_KEY = "Authorization";
 
     private URL authorizationUrl;
-
     private RestTemplate restTemplate;
-
     protected OAuth2AccessToken token;
     private CloudCredentials credentials;
 
-    public OauthClient(URL authorizationUrl, RestTemplate restTemplate) {
+    public OAuthClient(URL authorizationUrl, RestTemplate restTemplate) {
         this.authorizationUrl = authorizationUrl;
         this.restTemplate = restTemplate;
     }
@@ -82,14 +80,10 @@ public class OauthClient {
         if (token == null) {
             return null;
         }
-
-        if (this.credentials.isRefreshable()) {
-            if (token.getExpiresIn() < 50) { // 50 seconds before expiration? Then refresh it.
-                token = refreshToken(token, credentials.getEmail(), credentials.getPassword(), credentials.getClientId(),
-                    credentials.getClientSecret());
-            }
+        if (credentials.isRefreshable() && token.getExpiresIn() < 50) { // 50 seconds before expiration? Then refresh it.
+            token = refreshToken(token, credentials.getEmail(), credentials.getPassword(), credentials.getClientId(),
+                credentials.getClientSecret());
         }
-
         return token;
     }
 
@@ -132,11 +126,11 @@ public class OauthClient {
         ResponseEntity<String> response = restTemplate.exchange(authorizationUrl + "/userinfo", HttpMethod.GET, info, String.class);
         Map<String, Object> responseMap = JsonUtil.convertJsonToMap(response.getBody());
         String userId = (String) responseMap.get("user_id");
-        Map<String, Object> body = new HashMap<String, Object>();
+        Map<String, Object> body = new HashMap<>();
         body.put("schemas", new String[] { "urn:scim:schemas:core:1.0" });
         body.put("password", newPassword);
         body.put("oldPassword", oldPassword);
-        HttpEntity<Map> httpEntity = new HttpEntity<Map>(body, headers);
+        HttpEntity<Map> httpEntity = new HttpEntity<>(body, headers);
         restTemplate.put(authorizationUrl + "/User/{id}/password", httpEntity, userId);
     }
 
@@ -147,8 +141,7 @@ public class OauthClient {
     }
 
     private AccessTokenRequest createAccessTokenRequest(String username, String password) {
-        AccessTokenRequest request = new DefaultAccessTokenRequest();
-        return request;
+        return new DefaultAccessTokenRequest();
     }
 
     private OAuth2ProtectedResourceDetails getResourceDetails(String username, String password, String clientId, String clientSecret) {
