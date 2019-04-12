@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <artifactId>cloudfoundry-client-lib</artifactId>
     <packaging>jar</packaging>
@@ -20,6 +21,7 @@
         <tomcat.version>8.0.52</tomcat.version>
         <jetty.version>8.1.12.v20130726</jetty.version>
         <byteman.version>2.1.3</byteman.version>
+        <cloudfoundry.v3.client.version>3.15.0.RELEASE</cloudfoundry.v3.client.version>
     </properties>
 
     <profiles>
@@ -310,6 +312,17 @@
             <artifactId>byteman-bmunit</artifactId>
             <version>${byteman.version}</version>
             <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.cloudfoundry</groupId>
+            <artifactId>cloudfoundry-client-reactor</artifactId>
+            <version>${cloudfoundry.v3.client.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.cloudfoundry</groupId>
+            <artifactId>cloudfoundry-operations</artifactId>
+            <version>${cloudfoundry.v3.client.version}</version>
         </dependency>
     </dependencies>
 

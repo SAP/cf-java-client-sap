@@ -1939,8 +1939,8 @@ public class CloudControllerClientTest {
 
         String newPassword = "newPass123";
         connectedClient.updatePassword(newPassword);
-        CloudControllerClientImpl clientWithChangedPassword = new CloudControllerClientImpl(
-            new URL(CCNG_API_URL), new CloudCredentials(CCNG_USER_EMAIL, newPassword), httpProxyConfiguration);
+        CloudControllerClientImpl clientWithChangedPassword = new CloudControllerClientImpl(new URL(CCNG_API_URL),
+            new CloudCredentials(CCNG_USER_EMAIL, newPassword), httpProxyConfiguration);
         clientWithChangedPassword.login();
 
         // Revert
