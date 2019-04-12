@@ -35,6 +35,7 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 import java.util.zip.ZipFile;
 
 import javax.websocket.ClientEndpointConfig;
@@ -42,6 +43,8 @@ import javax.websocket.ClientEndpointConfig;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.cloudfoundry.AbstractCloudFoundryException;
+import org.cloudfoundry.client.CloudFoundryClient;
 import org.cloudfoundry.client.lib.ApplicationLogListener;
 import org.cloudfoundry.client.lib.ApplicationServicesUpdateCallback;
 import org.cloudfoundry.client.lib.ClientHttpResponseCallback;
@@ -51,6 +54,7 @@ import org.cloudfoundry.client.lib.RestLogCallback;
 import org.cloudfoundry.client.lib.StartingInfo;
 import org.cloudfoundry.client.lib.StreamingLogToken;
 import org.cloudfoundry.client.lib.UploadStatusCallback;
+import org.cloudfoundry.client.lib.adapters.CloudControllerV3ClientFactory;
 import org.cloudfoundry.client.lib.archive.ApplicationArchive;
 import org.cloudfoundry.client.lib.archive.DirectoryApplicationArchive;
 import org.cloudfoundry.client.lib.archive.ZipApplicationArchive;
@@ -98,6 +102,8 @@ import org.cloudfoundry.client.lib.oauth2.OAuthClient;
 import org.cloudfoundry.client.lib.util.CloudEntityResourceMapper;
 import org.cloudfoundry.client.lib.util.CloudUtil;
 import org.cloudfoundry.client.lib.util.JsonUtil;
+import org.cloudfoundry.operations.CloudFoundryOperations;
+import org.cloudfoundry.operations.services.BindServiceInstanceRequest;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
@@ -149,6 +155,12 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     private RestTemplate restTemplate;
     private CloudSpace target;
 
+    // Both of these will be utilized in a future commit:
+    @SuppressWarnings("unused")
+    private CloudFoundryOperations v3OperationsClient;
+    @SuppressWarnings("unused")
+    private CloudFoundryClient v3Client;
+
     /**
      * Only for unit tests. This works around the fact that the initialize method is called within the constructor and hence can not be
      * overloaded, making it impossible to write unit tests that don't trigger network calls.
@@ -157,12 +169,14 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     public CloudControllerRestClientImpl(URL controllerUrl, CloudCredentials credentials, RestTemplate restTemplate,
-        OAuthClient oAuthClient, LoggregatorClient loggregatorClient) {
-        this(controllerUrl, credentials, restTemplate, oAuthClient, loggregatorClient, null);
+        OAuthClient oAuthClient, LoggregatorClient loggregatorClient, CloudFoundryOperations v3OperationsClient,
+        CloudFoundryClient v3Client) {
+        this(controllerUrl, credentials, restTemplate, oAuthClient, loggregatorClient, v3OperationsClient, v3Client, null);
     }
 
     public CloudControllerRestClientImpl(URL controllerUrl, CloudCredentials credentials, RestTemplate restTemplate,
-        OAuthClient oAuthClient, LoggregatorClient loggregatorClient, CloudSpace target) {
+        OAuthClient oAuthClient, LoggregatorClient loggregatorClient, CloudFoundryOperations v3OperationsClient,
+        CloudFoundryClient v3Client, CloudSpace target) {
         Assert.notNull(controllerUrl, "CloudControllerUrl cannot be null");
         Assert.notNull(restTemplate, "RestTemplate cannot be null");
         Assert.notNull(oAuthClient, "OAuthClient cannot be null");
@@ -173,6 +187,9 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         this.oAuthClient = oAuthClient;
         this.loggregatorClient = loggregatorClient;
         this.target = target;
+
+        this.v3OperationsClient = v3OperationsClient;
+        this.v3Client = v3Client;
     }
 
     @Override
