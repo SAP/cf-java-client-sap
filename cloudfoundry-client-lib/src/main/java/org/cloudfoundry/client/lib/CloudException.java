@@ -7,7 +7,12 @@ public class CloudException extends RuntimeException {
         super(cause);
     }
 
+    public CloudException(String message, Throwable cause) {
+        super(message, cause);
+    }
+
     public CloudException(String message) {
         super(message);
     }
+
 }

@@ -19,7 +19,7 @@ package org.cloudfoundry.client.lib;
 import org.springframework.http.HttpStatus;
 
 @SuppressWarnings("serial")
-public class CloudOperationException extends RuntimeException {
+public class CloudOperationException extends CloudException {
 
     private final HttpStatus statusCode;
     private final String statusText;
