@@ -49,12 +49,12 @@ import org.cloudfoundry.client.lib.ApplicationLogListener;
 import org.cloudfoundry.client.lib.ApplicationServicesUpdateCallback;
 import org.cloudfoundry.client.lib.ClientHttpResponseCallback;
 import org.cloudfoundry.client.lib.CloudCredentials;
+import org.cloudfoundry.client.lib.CloudException;
 import org.cloudfoundry.client.lib.CloudOperationException;
 import org.cloudfoundry.client.lib.RestLogCallback;
 import org.cloudfoundry.client.lib.StartingInfo;
 import org.cloudfoundry.client.lib.StreamingLogToken;
 import org.cloudfoundry.client.lib.UploadStatusCallback;
-import org.cloudfoundry.client.lib.adapters.CloudControllerV3ClientFactory;
 import org.cloudfoundry.client.lib.archive.ApplicationArchive;
 import org.cloudfoundry.client.lib.archive.DirectoryApplicationArchive;
 import org.cloudfoundry.client.lib.archive.ZipApplicationArchive;
@@ -155,8 +155,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     private RestTemplate restTemplate;
     private CloudSpace target;
 
-    // Both of these will be utilized in a future commit:
-    @SuppressWarnings("unused")
     private CloudFoundryOperations v3OperationsClient;
     @SuppressWarnings("unused")
     private CloudFoundryClient v3Client;
@@ -280,10 +278,13 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     public void bindService(String applicationName, String serviceName, Map<String, Object> parameters,
         ApplicationServicesUpdateCallback updateServicesCallback) {
         try {
-            UUID applicationGuid = getRequiredApplicationGuid(applicationName);
-            UUID serviceGuid = getService(serviceName).getMeta()
-                .getGuid();
-            doBindService(applicationGuid, serviceGuid, parameters);
+            convertV3ClientExceptions(() -> v3OperationsClient.services()
+                .bind(BindServiceInstanceRequest.builder()
+                    .applicationName(applicationName)
+                    .serviceInstanceName(serviceName)
+                    .parameters(parameters)
+                    .build())
+                .block());
         } catch (CloudOperationException e) {
             updateServicesCallback.onError(e, applicationName, serviceName);
         }
@@ -2076,16 +2077,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
             .getGuid();
     }
 
-    private void doBindService(UUID applicationGuid, UUID serviceId, Map<String, Object> parameters) {
-        Map<String, Object> serviceRequest = new HashMap<>();
-        serviceRequest.put("service_instance_guid", serviceId);
-        serviceRequest.put("app_guid", applicationGuid);
-        if (parameters != null) {
-            serviceRequest.put("parameters", parameters);
-        }
-        getRestTemplate().postForObject(getUrl("/v2/service_bindings"), serviceRequest, String.class);
-    }
-
     private UUID doCreateDomain(String domainName) {
         String urlPath = "/v2/private_domains";
         Map<String, Object> domainRequest = new HashMap<>();
@@ -3043,6 +3034,20 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
             bindVars.put("application", applicationGuid);
             bindVars.put("route", routeGuid);
             getRestTemplate().delete(getUrl(bindPath), bindVars);
+        }
+    }
+
+    private <T> T convertV3ClientExceptions(Supplier<T> runnable) {
+        try {
+            return runnable.get();
+        } catch (AbstractCloudFoundryException e) {
+            HttpStatus httpStatus = HttpStatus.valueOf(e.getStatusCode());
+            throw new CloudOperationException(httpStatus, httpStatus.getReasonPhrase(), e.getMessage(), e);
+        } catch (IllegalArgumentException e) { // Usually, the operations client throws such exceptions when an entity cannot be found. See
+                                               // org.cloudfoundry.util.ExceptionUtils.
+            throw new CloudOperationException(HttpStatus.NOT_FOUND, HttpStatus.NOT_FOUND.getReasonPhrase(), e.getMessage(), e);
+        } catch (IllegalStateException e) {
+            throw new CloudException(e.getMessage(), e);
         }
     }
 
