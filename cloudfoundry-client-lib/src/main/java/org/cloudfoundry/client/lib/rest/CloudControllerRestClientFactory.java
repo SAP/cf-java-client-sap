@@ -91,12 +91,11 @@ public class CloudControllerRestClientFactory {
     public CloudControllerRestClient createClient(URL controllerUrl, CloudCredentials credentials, CloudSpace target,
         OAuthClient oAuthClient) {
         RestTemplate restTemplate = createAuthorizationSettingRestTemplate(credentials, oAuthClient);
-        LoggregatorClient loggregatorClient = new LoggregatorClient(trustSelfSignedCerts);
         CloudFoundryOperations v3OperationsClient = v3ClientFactory.createOperationsClient(controllerUrl, oAuthClient, target);
         CloudFoundryClient v3Client = v3ClientFactory.createClient(controllerUrl, oAuthClient);
 
-        return new CloudControllerRestClientImpl(controllerUrl, credentials, restTemplate, oAuthClient, loggregatorClient,
-            v3OperationsClient, v3Client, target);
+        return new CloudControllerRestClientImpl(controllerUrl, credentials, restTemplate, oAuthClient, v3OperationsClient, v3Client,
+            target);
     }
 
     private OAuthClient createOAuthClient(URL controllerUrl) {

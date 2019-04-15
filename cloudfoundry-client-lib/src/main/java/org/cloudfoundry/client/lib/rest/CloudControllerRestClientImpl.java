@@ -20,25 +20,19 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URL;
-import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.zip.ZipFile;
-
-import javax.websocket.ClientEndpointConfig;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
@@ -59,7 +53,6 @@ import org.cloudfoundry.client.lib.archive.ApplicationArchive;
 import org.cloudfoundry.client.lib.archive.DirectoryApplicationArchive;
 import org.cloudfoundry.client.lib.archive.ZipApplicationArchive;
 import org.cloudfoundry.client.lib.domain.ApplicationLog;
-import org.cloudfoundry.client.lib.domain.ApplicationLogs;
 import org.cloudfoundry.client.lib.domain.ApplicationStats;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.cloudfoundry.client.lib.domain.CloudBuild;
@@ -84,14 +77,13 @@ import org.cloudfoundry.client.lib.domain.CloudSpace;
 import org.cloudfoundry.client.lib.domain.CloudStack;
 import org.cloudfoundry.client.lib.domain.CloudTask;
 import org.cloudfoundry.client.lib.domain.CloudUser;
-import org.cloudfoundry.client.lib.domain.CrashInfo;
 import org.cloudfoundry.client.lib.domain.CrashesInfo;
+import org.cloudfoundry.client.lib.domain.DockerCredentials;
 import org.cloudfoundry.client.lib.domain.DockerInfo;
 import org.cloudfoundry.client.lib.domain.ErrorDetails;
 import org.cloudfoundry.client.lib.domain.InstanceState;
 import org.cloudfoundry.client.lib.domain.InstanceStats;
 import org.cloudfoundry.client.lib.domain.InstancesInfo;
-import org.cloudfoundry.client.lib.domain.SecurityGroupRule;
 import org.cloudfoundry.client.lib.domain.ServiceKey;
 import org.cloudfoundry.client.lib.domain.Staging;
 import org.cloudfoundry.client.lib.domain.Status;
@@ -102,8 +94,41 @@ import org.cloudfoundry.client.lib.oauth2.OAuthClient;
 import org.cloudfoundry.client.lib.util.CloudEntityResourceMapper;
 import org.cloudfoundry.client.lib.util.CloudUtil;
 import org.cloudfoundry.client.lib.util.JsonUtil;
+import org.cloudfoundry.client.v2.Metadata;
+import org.cloudfoundry.client.v2.Resource;
+import org.cloudfoundry.client.v2.applications.AssociateApplicationRouteRequest;
+import org.cloudfoundry.client.v2.applications.CreateApplicationRequest;
+import org.cloudfoundry.client.v2.applications.CreateApplicationResponse;
+import org.cloudfoundry.client.v2.applications.DeleteApplicationRequest;
+import org.cloudfoundry.client.v2.applications.ListApplicationServiceBindingsRequest;
+import org.cloudfoundry.client.v2.applications.RemoveApplicationRouteRequest;
+import org.cloudfoundry.client.v2.applications.UpdateApplicationRequest;
+import org.cloudfoundry.client.v2.domains.CreateDomainRequest;
+import org.cloudfoundry.client.v2.domains.DomainResource;
+import org.cloudfoundry.client.v2.domains.ListDomainsRequest;
+import org.cloudfoundry.client.v2.privatedomains.DeletePrivateDomainRequest;
+import org.cloudfoundry.client.v2.routes.CreateRouteRequest;
+import org.cloudfoundry.client.v2.routes.CreateRouteResponse;
+import org.cloudfoundry.client.v2.routes.DeleteRouteRequest;
+import org.cloudfoundry.client.v2.routes.RouteResource;
+import org.cloudfoundry.client.v2.servicebindings.CreateServiceBindingRequest;
+import org.cloudfoundry.client.v2.servicebindings.DeleteServiceBindingRequest;
+import org.cloudfoundry.client.v2.servicebindings.ServiceBindingResource;
+import org.cloudfoundry.client.v2.servicebrokers.CreateServiceBrokerRequest;
+import org.cloudfoundry.client.v2.servicebrokers.DeleteServiceBrokerRequest;
+import org.cloudfoundry.client.v2.servicebrokers.UpdateServiceBrokerRequest;
+import org.cloudfoundry.client.v2.serviceinstances.CreateServiceInstanceRequest;
+import org.cloudfoundry.client.v2.serviceinstances.DeleteServiceInstanceRequest;
+import org.cloudfoundry.client.v2.serviceinstances.ListServiceInstanceServiceBindingsRequest;
+import org.cloudfoundry.client.v2.servicekeys.CreateServiceKeyRequest;
+import org.cloudfoundry.client.v2.servicekeys.DeleteServiceKeyRequest;
+import org.cloudfoundry.client.v2.spaces.ListSpaceRoutesRequest;
+import org.cloudfoundry.client.v2.userprovidedserviceinstances.CreateUserProvidedServiceInstanceRequest;
+import org.cloudfoundry.client.v2.userprovidedserviceinstances.ListUserProvidedServiceInstanceServiceBindingsRequest;
+import org.cloudfoundry.client.v3.Relationship;
+import org.cloudfoundry.client.v3.applications.SetApplicationCurrentDropletRequest;
 import org.cloudfoundry.operations.CloudFoundryOperations;
-import org.cloudfoundry.operations.services.BindServiceInstanceRequest;
+import org.cloudfoundry.util.PaginationUtils;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
@@ -120,12 +145,13 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.FileCopyUtils;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
-import org.springframework.util.StringUtils;
 import org.springframework.web.client.RequestCallback;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.ResponseExtractor;
 import org.springframework.web.client.RestTemplate;
+
+import reactor.core.publisher.Flux;
 
 /**
  * Abstract implementation of the CloudControllerClient intended to serve as the base.
@@ -140,23 +166,22 @@ import org.springframework.web.client.RestTemplate;
  */
 public class CloudControllerRestClientImpl implements CloudControllerRestClient {
 
+    private static final String MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED = "Feature is not yet implemented.";
     private static final String DEFAULT_HOST_DOMAIN_SEPARATOR = "\\.";
     private static final String DEFAULT_PATH_SEPARATOR = "/";
-    private static final String AUTHORIZATION_HEADER_KEY = "Authorization";
     private static final long JOB_POLLING_PERIOD = TimeUnit.SECONDS.toMillis(5);
     private static final String LOGS_LOCATION = "logs";
 
     private final Log logger = LogFactory.getLog(getClass().getName());
     private CloudCredentials credentials;
     private URL controllerUrl;
-    private LoggregatorClient loggregatorClient;
     private OAuthClient oAuthClient;
     private CloudEntityResourceMapper resourceMapper = new CloudEntityResourceMapper();
     private RestTemplate restTemplate;
     private CloudSpace target;
 
-    private CloudFoundryOperations v3OperationsClient;
     @SuppressWarnings("unused")
+    private CloudFoundryOperations v3OperationsClient;
     private CloudFoundryClient v3Client;
 
     /**
@@ -167,14 +192,12 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     public CloudControllerRestClientImpl(URL controllerUrl, CloudCredentials credentials, RestTemplate restTemplate,
-        OAuthClient oAuthClient, LoggregatorClient loggregatorClient, CloudFoundryOperations v3OperationsClient,
-        CloudFoundryClient v3Client) {
-        this(controllerUrl, credentials, restTemplate, oAuthClient, loggregatorClient, v3OperationsClient, v3Client, null);
+        OAuthClient oAuthClient, CloudFoundryOperations v3OperationsClient, CloudFoundryClient v3Client) {
+        this(controllerUrl, credentials, restTemplate, oAuthClient, v3OperationsClient, v3Client, null);
     }
 
     public CloudControllerRestClientImpl(URL controllerUrl, CloudCredentials credentials, RestTemplate restTemplate,
-        OAuthClient oAuthClient, LoggregatorClient loggregatorClient, CloudFoundryOperations v3OperationsClient,
-        CloudFoundryClient v3Client, CloudSpace target) {
+        OAuthClient oAuthClient, CloudFoundryOperations v3OperationsClient, CloudFoundryClient v3Client, CloudSpace target) {
         Assert.notNull(controllerUrl, "CloudControllerUrl cannot be null");
         Assert.notNull(restTemplate, "RestTemplate cannot be null");
         Assert.notNull(oAuthClient, "OAuthClient cannot be null");
@@ -183,7 +206,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         this.credentials = credentials;
         this.restTemplate = restTemplate;
         this.oAuthClient = oAuthClient;
-        this.loggregatorClient = loggregatorClient;
         this.target = target;
 
         this.v3OperationsClient = v3OperationsClient;
@@ -218,55 +240,32 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     public void addRoute(String host, String domainName) {
         assertSpaceProvided("add route for domain");
         UUID domainGuid = getDomainGuid(domainName, true);
-        Map<String, String> uriInfo = new HashMap<>();
-        uriInfo.put("host", host);
-        doAddRoute(uriInfo, domainGuid);
+        doAddRoute(domainGuid, host, null);
     }
 
     @Override
     public void associateAuditorWithSpace(String organizationName, String spaceName, String userGuid) {
-        String urlPath = "/v2/spaces/{guid}/auditors/{userGuid}";
-        associateRoleWithSpace(organizationName, spaceName, userGuid, urlPath);
+        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
     }
 
     @Override
     public void associateDeveloperWithSpace(String organizationName, String spaceName, String userGuid) {
-        String urlPath = "/v2/spaces/{guid}/developers/{userGuid}";
-        associateRoleWithSpace(organizationName, spaceName, userGuid, urlPath);
+        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
     }
 
     @Override
     public void associateManagerWithSpace(String organizationName, String spaceName, String userGuid) {
-        String urlPath = "/v2/spaces/{guid}/managers/{userGuid}";
-        associateRoleWithSpace(organizationName, spaceName, userGuid, urlPath);
+        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
     }
 
     @Override
     public void bindRunningSecurityGroup(String securityGroupName) {
-        CloudSecurityGroup group = getSecurityGroup(securityGroupName);
-
-        String path = "/v2/config/running_security_groups/{guid}";
-
-        Map<String, Object> pathVariables = new HashMap<>();
-        pathVariables.put("guid", group.getMeta()
-            .getGuid());
-
-        getRestTemplate().put(getUrl(path), null, pathVariables);
+        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
     }
 
     @Override
     public void bindSecurityGroup(String organizationName, String spaceName, String securityGroupName) {
-        UUID spaceGuid = getSpaceGuid(organizationName, spaceName);
-        CloudSecurityGroup group = getSecurityGroup(securityGroupName);
-
-        String path = "/v2/security_groups/{group_guid}/spaces/{space_guid}";
-
-        Map<String, Object> pathVariables = new HashMap<>();
-        pathVariables.put("group_guid", group.getMeta()
-            .getGuid());
-        pathVariables.put("space_guid", spaceGuid);
-
-        getRestTemplate().put(getUrl(path), null, pathVariables);
+        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
     }
 
     @Override
@@ -278,10 +277,13 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     public void bindService(String applicationName, String serviceName, Map<String, Object> parameters,
         ApplicationServicesUpdateCallback updateServicesCallback) {
         try {
-            convertV3ClientExceptions(() -> v3OperationsClient.services()
-                .bind(BindServiceInstanceRequest.builder()
-                    .applicationName(applicationName)
-                    .serviceInstanceName(serviceName)
+            UUID applicationGuid = getRequiredApplicationGuid(applicationName);
+            UUID serviceGuid = getService(serviceName).getMeta()
+                .getGuid();
+            convertV3ClientExceptions(() -> v3Client.serviceBindingsV2()
+                .create(CreateServiceBindingRequest.builder()
+                    .applicationId(applicationGuid.toString())
+                    .serviceInstanceId(serviceGuid.toString())
                     .parameters(parameters)
                     .build())
                 .block());
@@ -292,32 +294,24 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public void bindStagingSecurityGroup(String securityGroupName) {
-        CloudSecurityGroup group = getSecurityGroup(securityGroupName);
-
-        String path = "/v2/config/staging_security_groups/{guid}";
-
-        Map<String, Object> pathVariables = new HashMap<>();
-        pathVariables.put("guid", group.getMeta()
-            .getGuid());
-
-        getRestTemplate().put(getUrl(path), null, pathVariables);
+        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
     }
 
     @Override
-    public void createApplication(String applicationName, Staging staging, Integer memory, List<String> uris, List<String> serviceNames) {
-        createApplication(applicationName, staging, null, memory, uris, serviceNames, null);
+    public void createApplication(String name, Staging staging, Integer memory, List<String> uris, List<String> serviceNames) {
+        createApplication(name, staging, null, memory, uris, serviceNames, null);
     }
 
     @Override
-    public void createApplication(String applicationName, Staging staging, Integer disk, Integer memory, List<String> uris,
+    public void createApplication(String name, Staging staging, Integer diskQuota, Integer memory, List<String> uris,
         List<String> serviceNames, DockerInfo dockerInfo) {
         Map<String, Object> appRequest = new HashMap<>();
         appRequest.put("space_guid", target.getMeta()
             .getGuid());
-        appRequest.put("name", applicationName);
+        appRequest.put("name", name);
         appRequest.put("memory", memory);
-        if (disk != null) {
-            appRequest.put("disk_quota", disk);
+        if (diskQuota != null) {
+            appRequest.put("disk_quota", diskQuota);
         }
         if (dockerInfo != null) {
             appRequest.put("docker_image", dockerInfo.getImage());
@@ -335,7 +329,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
             .getGuid();
 
         if (!CollectionUtils.isEmpty(serviceNames)) {
-            updateApplicationServices(applicationName, Collections.emptyMap(),
+            updateApplicationServices(name, Collections.emptyMap(),
                 ApplicationServicesUpdateCallback.DEFAULT_APPLICATION_SERVICES_UPDATE_CALLBACK);
         }
 
@@ -344,83 +338,66 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         }
     }
 
-    /**
-     * Create quota from a CloudQuota instance (Quota Plan)
-     *
-     * @param quota
-     */
     @Override
     public void createQuota(CloudQuota quota) {
-        String setPath = "/v2/quota_definitions";
-        Map<String, Object> setRequest = new HashMap<>();
-        setRequest.put("name", quota.getName());
-        setRequest.put("memory_limit", quota.getMemoryLimit());
-        setRequest.put("total_routes", quota.getTotalRoutes());
-        setRequest.put("total_services", quota.getTotalServices());
-        setRequest.put("non_basic_services_allowed", quota.isNonBasicServicesAllowed());
-        getRestTemplate().postForObject(getUrl(setPath), setRequest, String.class);
+        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
     }
 
     @Override
     public void createSecurityGroup(CloudSecurityGroup securityGroup) {
-        doCreateSecurityGroup(securityGroup.getName(), convertToList(securityGroup.getRules()));
+        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
     }
 
     @Override
     public void createSecurityGroup(String name, InputStream jsonRulesFile) {
-        doCreateSecurityGroup(name, JsonUtil.convertToJsonList(jsonRulesFile));
+        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
     }
 
     @Override
     public void createService(CloudService service) {
         assertSpaceProvided("create service");
-        Assert.notNull(service, "Service must not be null");
-        Assert.notNull(service.getName(), "Service name must not be null");
-        Assert.notNull(service.getLabel(), "Service label must not be null");
-        Assert.notNull(service.getPlan(), "Service plan must not be null");
+        Assert.notNull(service, "Service must not be null.");
 
-        CloudServicePlan cloudServicePlan = findPlanForService(service);
-
-        Map<String, Object> serviceRequest = new HashMap<>();
-        serviceRequest.put("space_guid", target.getMeta()
-            .getGuid());
-        serviceRequest.put("name", service.getName());
-        serviceRequest.put("service_plan_guid", cloudServicePlan.getMeta()
-            .getGuid());
-        getRestTemplate().postForObject(getUrl("/v2/service_instances"), serviceRequest, String.class);
+        CloudServicePlan servicePlan = findPlanForService(service);
+        UUID servicePlanGuid = servicePlan.getMeta()
+            .getGuid();
+        convertV3ClientExceptions(() -> v3Client.serviceInstances()
+            .create(CreateServiceInstanceRequest.builder()
+                .spaceId(getTargetSpaceId())
+                .name(service.getName())
+                .servicePlanId(servicePlanGuid.toString())
+                .build())
+            .block());
     }
 
     @Override
     public void createServiceBroker(CloudServiceBroker serviceBroker) {
-        Assert.notNull(serviceBroker, "Service Broker must not be null");
-        Assert.notNull(serviceBroker.getName(), "Service Broker name must not be null");
-        Assert.notNull(serviceBroker.getUrl(), "Service Broker URL must not be null");
-        Assert.notNull(serviceBroker.getUsername(), "Service Broker username must not be null");
-        Assert.notNull(serviceBroker.getPassword(), "Service Broker password must not be null");
+        Assert.notNull(serviceBroker, "Service broker must not be null.");
 
-        Map<String, Object> serviceRequest = new HashMap<>();
-        serviceRequest.put("name", serviceBroker.getName());
-        serviceRequest.put("broker_url", serviceBroker.getUrl());
-        serviceRequest.put("auth_username", serviceBroker.getUsername());
-        serviceRequest.put("auth_password", serviceBroker.getPassword());
-        serviceRequest.put("space_guid", serviceBroker.getSpaceGuid());
-        getRestTemplate().postForObject(getUrl("/v2/service_brokers"), serviceRequest, String.class);
+        convertV3ClientExceptions(() -> v3Client.serviceBrokers()
+            .create(CreateServiceBrokerRequest.builder()
+                .name(serviceBroker.getName())
+                .brokerUrl(serviceBroker.getUrl())
+                .authenticationUsername(serviceBroker.getUsername())
+                .authenticationPassword(serviceBroker.getPassword())
+                .spaceId(serviceBroker.getSpaceGuid())
+                .build())
+            .block());
     }
 
     @Override
-    public void createServiceKey(String serviceName, String serviceKeyName, Map<String, Object> parameters) {
-        Assert.notNull(serviceName, "Service name must not be null");
-        Assert.notNull(serviceKeyName, "Service Key name must not be null");
-        Assert.notNull(parameters, "Parameters must not be null");
+    public void createServiceKey(String serviceName, String name, Map<String, Object> parameters) {
         CloudService service = getService(serviceName);
+        UUID serviceGuid = service.getMeta()
+            .getGuid();
 
-        Map<String, Object> serviceKeyRequest = new HashMap<>();
-        serviceKeyRequest.put("service_instance_guid", service.getMeta()
-            .getGuid()
-            .toString());
-        serviceKeyRequest.put("name", serviceKeyName);
-        serviceKeyRequest.put("parameters", parameters);
-        getRestTemplate().postForObject(getUrl("/v2/service_keys"), serviceKeyRequest, String.class);
+        convertV3ClientExceptions(() -> v3Client.serviceKeys()
+            .create(CreateServiceKeyRequest.builder()
+                .serviceInstanceId(serviceGuid.toString())
+                .name(name)
+                .parameters(parameters)
+                .build())
+            .block());
     }
 
     @Override
@@ -437,39 +414,56 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public void createUserProvidedService(CloudService service, Map<String, Object> credentials) {
-        createUserProvidedServiceDelegate(service, credentials, "");
+        createUserProvidedService(service, credentials, "");
     }
 
     @Override
     public void createUserProvidedService(CloudService service, Map<String, Object> credentials, String syslogDrainUrl) {
-        createUserProvidedServiceDelegate(service, credentials, syslogDrainUrl);
+        assertSpaceProvided("create service");
+        Assert.notNull(service, "Service must not be null.");
+
+        convertV3ClientExceptions(() -> v3Client.userProvidedServiceInstances()
+            .create(CreateUserProvidedServiceInstanceRequest.builder()
+                .spaceId(getTargetSpaceId())
+                .name(service.getName())
+                .credentials(credentials)
+                .build())
+            .block());
     }
 
     @Override
     public void debugApplication(String applicationName, CloudApplication.DebugMode mode) {
-        throw new UnsupportedOperationException("Feature is not yet implemented.");
+        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
     }
 
     @Override
     public void deleteAllApplications() {
-        List<CloudApplication> cloudApps = getApplications();
-        for (CloudApplication cloudApp : cloudApps) {
-            deleteApplication(cloudApp.getName());
+        List<CloudApplication> applications = getApplications();
+        for (CloudApplication application : applications) {
+            deleteApplication(application.getName());
         }
     }
 
     @Override
     public void deleteAllServices() {
-        List<CloudService> cloudServices = getServices();
-        for (CloudService cloudService : cloudServices) {
-            doDeleteService(cloudService);
+        List<CloudService> services = getServices();
+        for (CloudService service : services) {
+            doDeleteService(service);
         }
     }
 
     @Override
     public void deleteApplication(String applicationName) {
         UUID applicationGuid = getRequiredApplicationGuid(applicationName);
-        getRestTemplate().delete(getUrl("/v2/apps/{guid}?recursive=true"), applicationGuid);
+        List<UUID> serviceBindingGuids = getServiceBindingGuids(applicationGuid);
+        for (UUID serviceBindingGuid : serviceBindingGuids) {
+            doUnbindService(serviceBindingGuid);
+        }
+        convertV3ClientExceptions(() -> v3Client.applicationsV2()
+            .delete(DeleteApplicationRequest.builder()
+                .applicationId(applicationGuid.toString())
+                .build())
+            .block());
     }
 
     @Override
@@ -491,37 +485,28 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     @Override
     public List<CloudRoute> deleteOrphanedRoutes() {
         List<CloudRoute> orphanRoutes = new ArrayList<>();
-        for (CloudDomain cloudDomain : getDomainsForOrganization()) {
-            orphanRoutes.addAll(fetchOrphanRoutes(cloudDomain.getName()));
+        for (CloudDomain domain : getDomainsForOrganization()) {
+            orphanRoutes.addAll(fetchOrphanRoutes(domain.getName()));
         }
 
-        List<CloudRoute> deletedCloudRoutes = new ArrayList<>();
+        List<CloudRoute> deletedRoutes = new ArrayList<>();
         for (CloudRoute orphanRoute : orphanRoutes) {
             deleteRoute(orphanRoute.getHost(), orphanRoute.getDomain()
                 .getName());
-            deletedCloudRoutes.add(orphanRoute);
+            deletedRoutes.add(orphanRoute);
         }
-
-        return deletedCloudRoutes;
+        return deletedRoutes;
     }
 
     @Override
     public void deleteQuota(String quotaName) {
-        CloudQuota quota = getQuota(quotaName);
-        String setPath = "/v2/quota_definitions/{quotaGuid}";
-        Map<String, Object> setVars = new HashMap<>();
-        setVars.put("quotaGuid", quota.getMeta()
-            .getGuid());
-        getRestTemplate().delete(getUrl(setPath), setVars);
+        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
     }
 
     @Override
     public void deleteRoute(String host, String domainName) {
         assertSpaceProvided("delete route for domain");
-        UUID domainGuid = getDomainGuid(domainName, true);
-        Map<String, String> uriInfo = new HashMap<>();
-        uriInfo.put("host", host);
-        UUID routeGuid = getRouteGuid(uriInfo, domainGuid);
+        UUID routeGuid = getRouteGuid(getDomainGuid(domainName, true), host, null);
         if (routeGuid == null) {
             throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found",
                 "Host " + host + " not found for domain " + domainName + ".");
@@ -531,43 +516,47 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public void deleteSecurityGroup(String securityGroupName) {
-        CloudSecurityGroup group = getSecurityGroup(securityGroupName);
-
-        String path = "/v2/security_groups/{guid}";
-        Map<String, Object> pathVariables = new HashMap<>();
-        pathVariables.put("guid", group.getMeta()
-            .getGuid());
-
-        getRestTemplate().delete(getUrl(path), pathVariables);
+        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
     }
 
     @Override
     public void deleteService(String serviceName) {
-        CloudService cloudService = getService(serviceName);
-        doDeleteService(cloudService);
+        CloudService service = getService(serviceName);
+        doDeleteService(service);
     }
 
     @Override
     public void deleteServiceBroker(String name) {
-        CloudServiceBroker existingBroker = getServiceBroker(name);
-        getRestTemplate().delete(getUrl("/v2/service_brokers/{guid}"), existingBroker.getMeta()
-            .getGuid());
+        CloudServiceBroker broker = getServiceBroker(name);
+        UUID guid = broker.getMeta()
+            .getGuid();
+        convertV3ClientExceptions(() -> v3Client.serviceBrokers()
+            .delete(DeleteServiceBrokerRequest.builder()
+                .serviceBrokerId(guid.toString())
+                .build())
+            .block());
     }
 
     @Override
-    public void deleteServiceKey(String serviceName, final String serviceKeyName) {
+    public void deleteServiceKey(String serviceName, String serviceKeyName) {
         List<ServiceKey> serviceKeys = getServiceKeys(serviceName);
-
         for (ServiceKey serviceKey : serviceKeys) {
             if (serviceKey.getName()
                 .equals(serviceKeyName)) {
-                getRestTemplate().delete(getUrl("/v2/service_keys/{guid}"), serviceKey.getMeta()
+                doDeleteServiceKey(serviceKey.getMeta()
                     .getGuid());
                 return;
             }
         }
-
         throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Service key " + serviceKeyName + " not found.");
+    }
+
+    private void doDeleteServiceKey(UUID guid) {
+        convertV3ClientExceptions(() -> v3Client.serviceKeys()
+            .delete(DeleteServiceKeyRequest.builder()
+                .serviceKeyId(guid.toString())
+                .build())
+            .block());
     }
 
     @Override
@@ -688,30 +677,12 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public Map<String, String> getCrashLogs(String applicationName) {
-        String urlPath = getFileUrlPath();
-        CrashesInfo crashes = getCrashes(applicationName);
-        if (crashes.getCrashes()
-            .isEmpty()) {
-            return Collections.emptyMap();
-        }
-        TreeMap<Date, String> crashInstances = new TreeMap<>();
-        for (CrashInfo crash : crashes.getCrashes()) {
-            crashInstances.put(crash.getSince(), crash.getInstance());
-        }
-        String instance = crashInstances.get(crashInstances.lastKey());
-        return doGetLogs(urlPath, applicationName, instance);
+        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public CrashesInfo getCrashes(String applicationName) {
-        UUID applicationGuid = getRequiredApplicationGuid(applicationName);
-        Map<String, Object> urlVars = new HashMap<>();
-        urlVars.put("guid", applicationGuid);
-        String response = getRestTemplate().getForObject(getUrl("/v2/apps/{guid}/crashes"), String.class, urlVars);
-        Map<String, Object> resource = JsonUtil.convertJsonToMap("{ \"crashes\" : " + response + " }");
-        List<Map<String, Object>> attributes = (List<Map<String, Object>>) resource.get("crashes");
-        return new CrashesInfo(attributes);
+        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
     }
 
     @Override
@@ -743,9 +714,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public String getFile(String applicationName, int instanceIndex, String filePath, int startPosition, int endPosition) {
-        String urlPath = getFileUrlPath();
-        UUID applicationGuid = getRequiredApplicationGuid(applicationName);
-        return doGetFile(urlPath, applicationGuid, instanceIndex, filePath, startPosition, endPosition);
+        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
     }
 
     @Override
@@ -774,9 +743,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public Map<String, String> getLogs(String applicationName) {
-        String urlPath = getFileUrlPath();
-        String instance = String.valueOf(0);
-        return doGetLogs(urlPath, applicationName, instance);
+        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
     }
 
     @Override
@@ -811,21 +778,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public Map<String, CloudUser> getOrganizationUsers(String organizationName) {
-        String urlPath = "/v2/organizations/{guid}/users";
-        CloudOrganization organization = getOrganization(organizationName);
-
-        UUID organizationGuid = organization.getMeta()
-            .getGuid();
-        Map<String, Object> urlVars = new HashMap<>();
-        urlVars.put("guid", organizationGuid);
-
-        List<Map<String, Object>> resourceList = getAllResources(urlPath, urlVars);
-        Map<String, CloudUser> orgUsers = new HashMap<>();
-        for (Map<String, Object> resource : resourceList) {
-            CloudUser user = resourceMapper.mapResource(resource, CloudUser.class);
-            orgUsers.put(user.getUsername(), user);
-        }
-        return orgUsers;
+        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
     }
 
     @Override
@@ -846,51 +799,22 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public CloudQuota getQuota(String quotaName) {
-        return getQuota(quotaName, true);
+        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
     }
 
     @Override
     public CloudQuota getQuota(String quotaName, boolean required) {
-        Map<String, Object> urlVars = new HashMap<>();
-        String urlPath = "/v2/quota_definitions?q=name:{name}";
-        urlVars.put("name", quotaName);
-        CloudQuota quota = null;
-        List<Map<String, Object>> resourceList = getAllResources(urlPath, urlVars);
-        if (!resourceList.isEmpty()) {
-            Map<String, Object> resource = resourceList.get(0);
-            quota = resourceMapper.mapResource(resource, CloudQuota.class);
-        }
-
-        if (quota == null && required) {
-            throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Quota " + quotaName + " not found.");
-        }
-
-        return quota;
+        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
     }
 
     @Override
     public List<CloudQuota> getQuotas() {
-        String urlPath = "/v2/quota_definitions";
-        List<Map<String, Object>> resourceList = getAllResources(urlPath);
-        List<CloudQuota> quotas = new ArrayList<>();
-        for (Map<String, Object> resource : resourceList) {
-            quotas.add(resourceMapper.mapResource(resource, CloudQuota.class));
-        }
-        return quotas;
+        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
     }
 
     @Override
     public List<ApplicationLog> getRecentLogs(String applicationName) {
-        UUID applicationGuid = getRequiredApplicationGuid(applicationName);
-
-        String endpoint = getInfo().getLoggingEndpoint();
-        String uri = loggregatorClient.getRecentHttpEndpoint(endpoint);
-
-        ApplicationLogs logs = getRestTemplate().getForObject(uri + "?app={guid}", ApplicationLogs.class, applicationGuid);
-
-        Collections.sort(logs);
-
-        return logs;
+        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
     }
 
     @Override
@@ -902,42 +826,22 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public List<CloudSecurityGroup> getRunningSecurityGroups() {
-        String urlPath = "/v2/config/running_security_groups";
-        List<Map<String, Object>> resourceList = getAllResources(urlPath);
-        List<CloudSecurityGroup> groups = new ArrayList<>();
-        for (Map<String, Object> resource : resourceList) {
-            groups.add(resourceMapper.mapResource(resource, CloudSecurityGroup.class));
-        }
-        return groups;
+        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
     }
 
     @Override
     public CloudSecurityGroup getSecurityGroup(String securityGroupName) {
-        return getSecurityGroup(securityGroupName, true);
+        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
     }
 
     @Override
     public CloudSecurityGroup getSecurityGroup(String securityGroupName, boolean required) {
-        Map<String, Object> resource = findSecurityGroupResource(securityGroupName);
-        CloudSecurityGroup securityGroup = null;
-        if (resource != null) {
-            securityGroup = resourceMapper.mapResource(resource, CloudSecurityGroup.class);
-        }
-        if (securityGroup == null && required) {
-            throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Security group " + securityGroupName + " not found.");
-        }
-        return securityGroup;
+        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
     }
 
     @Override
     public List<CloudSecurityGroup> getSecurityGroups() {
-        String urlPath = "/v2/security_groups";
-        List<Map<String, Object>> resourceList = getAllResources(urlPath);
-        List<CloudSecurityGroup> groups = new ArrayList<>();
-        for (Map<String, Object> resource : resourceList) {
-            groups.add(resourceMapper.mapResource(resource, CloudSecurityGroup.class));
-        }
-        return groups;
+        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
     }
 
     @Override
@@ -1136,24 +1040,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public List<CloudSpace> getSpacesBoundToSecurityGroup(String securityGroupName) {
-        Map<String, Object> urlVars = new HashMap<>();
-        // Need to go a few levels out to get the Organization that Spaces needs
-        String urlPath = "/v2/security_groups?q=name:{name}&inline-relations-depth=2";
-        urlVars.put("name", securityGroupName);
-        List<Map<String, Object>> resourceList = getAllResources(urlPath, urlVars);
-        List<CloudSpace> spaces = new ArrayList<>();
-        if (!resourceList.isEmpty()) {
-            Map<String, Object> resource = resourceList.get(0);
-
-            Map<String, Object> securityGroupResource = CloudEntityResourceMapper.getEntity(resource);
-            List<Map<String, Object>> spaceResources = CloudEntityResourceMapper.getEmbeddedResourceList(securityGroupResource, "spaces");
-            for (Map<String, Object> spaceResource : spaceResources) {
-                spaces.add(resourceMapper.mapResource(spaceResource, CloudSpace.class));
-            }
-        } else {
-            throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Security group " + securityGroupName + " not found.");
-        }
-        return spaces;
+        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
     }
 
     @Override
@@ -1233,13 +1120,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public List<CloudSecurityGroup> getStagingSecurityGroups() {
-        String urlPath = "/v2/config/staging_security_groups";
-        List<Map<String, Object>> resourceList = getAllResources(urlPath);
-        List<CloudSecurityGroup> groups = new ArrayList<>();
-        for (Map<String, Object> resource : resourceList) {
-            groups.add(resourceMapper.mapResource(resource, CloudSecurityGroup.class));
-        }
-        return groups;
+        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
     }
 
     @Override
@@ -1255,14 +1136,12 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public void openFile(String applicationName, int instanceIndex, String filePath, ClientHttpResponseCallback callback) {
-        String urlPath = getFileUrlPath();
-        UUID applicationGuid = getRequiredApplicationGuid(applicationName);
-        doOpenFile(urlPath, applicationGuid, instanceIndex, filePath, callback);
+        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
     }
 
     @Override
     public void register(String email, String password) {
-        throw new UnsupportedOperationException("Feature is not yet implemented.");
+        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
     }
 
     @Override
@@ -1280,9 +1159,12 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     @Override
     public void rename(String applicationName, String newName) {
         UUID applicationGuid = getRequiredApplicationGuid(applicationName);
-        Map<String, Object> appRequest = new HashMap<>();
-        appRequest.put("name", newName);
-        getRestTemplate().put(getUrl("/v2/apps/{guid}"), appRequest, applicationGuid);
+        convertV3ClientExceptions(() -> v3Client.applicationsV2()
+            .update(UpdateApplicationRequest.builder()
+                .applicationId(applicationGuid.toString())
+                .name(newName)
+                .build())
+            .block());
     }
 
     @Override
@@ -1291,21 +1173,9 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return startApplication(applicationName);
     }
 
-    /**
-     * Set quota to organization
-     *
-     * @param organizationName
-     * @param quotaName
-     */
     @Override
     public void setQuotaToOrganization(String organizationName, String quotaName) {
-        CloudQuota quota = getQuota(quotaName);
-        CloudOrganization organization = getOrganization(organizationName);
-
-        doSetQuotaToOrg(organization.getMeta()
-            .getGuid(),
-            quota.getMeta()
-                .getGuid());
+        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
     }
 
     @Override
@@ -1316,51 +1186,39 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     @Override
     public StartingInfo startApplication(String applicationName) {
         CloudApplication application = getApplication(applicationName);
-        if (application.getState() != CloudApplication.AppState.STARTED) {
-            Map<String, Object> appRequest = new HashMap<>();
-            appRequest.put("state", CloudApplication.AppState.STARTED);
-
-            HttpEntity<Object> requestEntity = new HttpEntity<>(appRequest);
-            ResponseEntity<String> entity = getRestTemplate().exchange(getUrl("/v2/apps/{guid}?stage_async=true"), HttpMethod.PUT,
-                requestEntity, String.class, application.getMeta()
-                    .getGuid());
-
-            HttpHeaders headers = entity.getHeaders();
-
-            // Return a starting info, even with a null staging log value, as a non-null starting info
-            // indicates that the response entity did have headers. The API contract is to return starting info
-            // if there are headers in the response, null otherwise.
-            if (headers != null && !headers.isEmpty()) {
-                String stagingFile = headers.getFirst("x-app-staging-log");
-
-                if (stagingFile != null) {
-                    try {
-                        stagingFile = URLDecoder.decode(stagingFile, "UTF-8");
-                    } catch (UnsupportedEncodingException e) {
-                        logger.error("unexpected inability to UTF-8 decode", e);
-                    }
-                }
-                // Return the starting info even if decoding failed or staging file is null
-                return new StartingInfo(stagingFile);
-            }
+        if (application.getState() == CloudApplication.AppState.STARTED) {
+            return null;
         }
+        UUID applicationGuid = application.getMeta()
+            .getGuid();
+        convertV3ClientExceptions(() -> v3Client.applicationsV2()
+            .update(UpdateApplicationRequest.builder()
+                .applicationId(applicationGuid.toString())
+                .state(CloudApplication.AppState.STARTED.toString())
+                .build())
+            .block());
         return null;
     }
 
     @Override
     public void stopApplication(String applicationName) {
         CloudApplication application = getApplication(applicationName);
-        if (application.getState() != CloudApplication.AppState.STOPPED) {
-            Map<String, Object> appRequest = new HashMap<>();
-            appRequest.put("state", CloudApplication.AppState.STOPPED);
-            getRestTemplate().put(getUrl("/v2/apps/{guid}"), appRequest, application.getMeta()
-                .getGuid());
+        if (application.getState() == CloudApplication.AppState.STOPPED) {
+            return;
         }
+        UUID applicationGuid = application.getMeta()
+            .getGuid();
+        convertV3ClientExceptions(() -> v3Client.applicationsV2()
+            .update(UpdateApplicationRequest.builder()
+                .applicationId(applicationGuid.toString())
+                .state(CloudApplication.AppState.STOPPED.toString())
+                .build())
+            .block());
     }
 
     @Override
     public StreamingLogToken streamLogs(String applicationName, ApplicationLogListener listener) {
-        return streamLoggregatorLogs(applicationName, listener, false);
+        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
     }
 
     @Override
@@ -1372,28 +1230,12 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public void unbindRunningSecurityGroup(String securityGroupName) {
-        CloudSecurityGroup group = getSecurityGroup(securityGroupName);
-
-        Map<String, Object> urlVars = new HashMap<>();
-        String urlPath = "/v2/config/running_security_groups/{guid}";
-        urlVars.put("guid", group.getMeta()
-            .getGuid());
-        getRestTemplate().delete(getUrl(urlPath), urlVars);
+        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
     }
 
     @Override
     public void unbindSecurityGroup(String organizationName, String spaceName, String securityGroupName) {
-        UUID spaceGuid = getSpaceGuid(organizationName, spaceName);
-        CloudSecurityGroup group = getSecurityGroup(securityGroupName);
-
-        String path = "/v2/security_groups/{group_guid}/spaces/{space_guid}";
-
-        Map<String, Object> pathVariables = new HashMap<>();
-        pathVariables.put("group_guid", group.getMeta()
-            .getGuid());
-        pathVariables.put("space_guid", spaceGuid);
-
-        getRestTemplate().delete(getUrl(path), pathVariables);
+        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
     }
 
     @Override
@@ -1416,46 +1258,46 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public void unbindStagingSecurityGroup(String securityGroupName) {
-        CloudSecurityGroup group = getSecurityGroup(securityGroupName);
-
-        Map<String, Object> urlVars = new HashMap<>();
-        String urlPath = "/v2/config/staging_security_groups/{guid}";
-        urlVars.put("guid", group.getMeta()
-            .getGuid());
-        getRestTemplate().delete(getUrl(urlPath), urlVars);
+        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
     }
 
     @Override
     public void unregister() {
-        throw new UnsupportedOperationException("Feature is not yet implemented.");
+        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
     }
 
     @Override
-    public void updateApplicationDiskQuota(String applicationName, int disk) {
+    public void updateApplicationDiskQuota(String applicationName, int diskQuota) {
         UUID applicationGuid = getRequiredApplicationGuid(applicationName);
-        Map<String, Object> appRequest = new HashMap<>();
-        appRequest.put("disk_quota", disk);
-        getRestTemplate().put(getUrl("/v2/apps/{guid}"), appRequest, applicationGuid);
+        convertV3ClientExceptions(() -> v3Client.applicationsV2()
+            .update(UpdateApplicationRequest.builder()
+                .applicationId(applicationGuid.toString())
+                .diskQuota(diskQuota)
+                .build())
+            .block());
     }
 
     @Override
     public void updateApplicationEnv(String applicationName, Map<String, String> env) {
         UUID applicationGuid = getRequiredApplicationGuid(applicationName);
-        Map<String, Object> appRequest = new HashMap<>();
-        appRequest.put("environment_json", env);
-        getRestTemplate().put(getUrl("/v2/apps/{guid}"), appRequest, applicationGuid);
+        convertV3ClientExceptions(() -> v3Client.applicationsV2()
+            .update(UpdateApplicationRequest.builder()
+                .applicationId(applicationGuid.toString())
+                .environmentJsons(env)
+                .build())
+            .block());
     }
 
     @Override
     public void updateApplicationEnv(String applicationName, List<String> env) {
         Map<String, String> envHash = new HashMap<>();
-        for (String s : env) {
-            if (!s.contains("=")) {
-                throw new IllegalArgumentException("Environment setting without '=' is invalid: " + s);
+        for (String envVariable : env) {
+            if (!envVariable.contains("=")) {
+                throw new IllegalArgumentException("Environment setting without '=' is invalid: " + envVariable);
             }
-            String key = s.substring(0, s.indexOf('='))
+            String key = envVariable.substring(0, envVariable.indexOf('='))
                 .trim();
-            String value = s.substring(s.indexOf('=') + 1)
+            String value = envVariable.substring(envVariable.indexOf('=') + 1)
                 .trim();
             envHash.put(key, value);
         }
@@ -1465,17 +1307,23 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     @Override
     public void updateApplicationInstances(String applicationName, int instances) {
         UUID applicationGuid = getRequiredApplicationGuid(applicationName);
-        Map<String, Object> appRequest = new HashMap<>();
-        appRequest.put("instances", instances);
-        getRestTemplate().put(getUrl("/v2/apps/{guid}"), appRequest, applicationGuid);
+        convertV3ClientExceptions(() -> v3Client.applicationsV2()
+            .update(UpdateApplicationRequest.builder()
+                .applicationId(applicationGuid.toString())
+                .instances(instances)
+                .build())
+            .block());
     }
 
     @Override
     public void updateApplicationMemory(String applicationName, int memory) {
         UUID applicationGuid = getRequiredApplicationGuid(applicationName);
-        Map<String, Object> appRequest = new HashMap<>();
-        appRequest.put("memory", memory);
-        getRestTemplate().put(getUrl("/v2/apps/{guid}"), appRequest, applicationGuid);
+        convertV3ClientExceptions(() -> v3Client.applicationsV2()
+            .update(UpdateApplicationRequest.builder()
+                .applicationId(applicationGuid.toString())
+                .memory(memory)
+                .build())
+            .block());
     }
 
     @Override
@@ -1485,16 +1333,31 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         // No implementation here is needed because the logic is moved in ApplicationServicesUpdater in order to be used in other
         // implementations of the client. Currently, the ApplicationServicesUpdater is used only in CloudControllerClientImpl. Check
         // CloudControllerClientImpl.updateApplicationServices
-        throw new UnsupportedOperationException();
-
+        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
     }
 
     @Override
     public void updateApplicationStaging(String applicationName, Staging staging) {
         UUID applicationGuid = getRequiredApplicationGuid(applicationName);
-        Map<String, Object> appRequest = new HashMap<>();
-        addStagingToRequest(staging, appRequest);
-        getRestTemplate().put(getUrl("/v2/apps/{guid}"), appRequest, applicationGuid);
+        UpdateApplicationRequest.Builder requestBuilder = UpdateApplicationRequest.builder();
+        requestBuilder.applicationId(applicationGuid.toString());
+        if (staging != null) {
+            requestBuilder.buildpack(staging.getBuildpackUrl())
+                .command(staging.getCommand())
+                .healthCheckHttpEndpoint(staging.getHealthCheckHttpEndpoint())
+                .healthCheckTimeout(staging.getHealthCheckTimeout())
+                .healthCheckType(staging.getHealthCheckType())
+                .enableSsh(staging.isSshEnabled());
+            String stackName = staging.getStack();
+            if (stackName != null) {
+                UUID stackGuid = getStack(stackName).getMeta()
+                    .getGuid();
+                requestBuilder.stackId(stackGuid.toString());
+            }
+        }
+        convertV3ClientExceptions(() -> v3Client.applicationsV2()
+            .update(requestBuilder.build())
+            .block());
     }
 
     @Override
@@ -1528,53 +1391,36 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public void updateQuota(CloudQuota quota, String name) {
-        CloudQuota oldQuota = getQuota(name);
-
-        String setPath = "/v2/quota_definitions/{quotaGuid}";
-
-        Map<String, Object> setVars = new HashMap<>();
-        setVars.put("quotaGuid", oldQuota.getMeta()
-            .getGuid());
-
-        Map<String, Object> setRequest = new HashMap<>();
-        setRequest.put("name", quota.getName());
-        setRequest.put("memory_limit", quota.getMemoryLimit());
-        setRequest.put("total_routes", quota.getTotalRoutes());
-        setRequest.put("total_services", quota.getTotalServices());
-        setRequest.put("non_basic_services_allowed", quota.isNonBasicServicesAllowed());
-
-        getRestTemplate().put(getUrl(setPath), setRequest, setVars);
+        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
     }
 
     @Override
     public void updateSecurityGroup(CloudSecurityGroup securityGroup) {
-        CloudSecurityGroup oldGroup = getSecurityGroup(securityGroup.getName());
-        doUpdateSecurityGroup(oldGroup, securityGroup.getName(), convertToList(securityGroup.getRules()));
+        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
     }
 
     @Override
     public void updateSecurityGroup(String name, InputStream jsonRulesFile) {
-        CloudSecurityGroup oldGroup = getSecurityGroup(name);
-        doUpdateSecurityGroup(oldGroup, name, JsonUtil.convertToJsonList(jsonRulesFile));
+        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
     }
 
     @Override
     public void updateServiceBroker(CloudServiceBroker serviceBroker) {
-        Assert.notNull(serviceBroker, "Service Broker must not be null");
-        Assert.notNull(serviceBroker.getName(), "Service Broker name must not be null");
-        Assert.notNull(serviceBroker.getUrl(), "Service Broker URL must not be null");
-        Assert.notNull(serviceBroker.getUsername(), "Service Broker username must not be null");
-        Assert.notNull(serviceBroker.getPassword(), "Service Broker password must not be null");
+        Assert.notNull(serviceBroker, "Service broker must not be null.");
 
         CloudServiceBroker existingBroker = getServiceBroker(serviceBroker.getName());
+        UUID brokerGuid = existingBroker.getMeta()
+            .getGuid();
 
-        Map<String, Object> serviceRequest = new HashMap<>();
-        serviceRequest.put("name", serviceBroker.getName());
-        serviceRequest.put("broker_url", serviceBroker.getUrl());
-        serviceRequest.put("auth_username", serviceBroker.getUsername());
-        serviceRequest.put("auth_password", serviceBroker.getPassword());
-        getRestTemplate().put(getUrl("/v2/service_brokers/{guid}"), serviceRequest, existingBroker.getMeta()
-            .getGuid());
+        convertV3ClientExceptions(() -> v3Client.serviceBrokers()
+            .update(UpdateServiceBrokerRequest.builder()
+                .serviceBrokerId(brokerGuid.toString())
+                .name(serviceBroker.getName())
+                .authenticationUsername(serviceBroker.getUsername())
+                .authenticationPassword(serviceBroker.getPassword())
+                .brokerUrl(serviceBroker.getUrl())
+                .build())
+            .block());
     }
 
     @Override
@@ -1801,13 +1647,14 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public void bindDropletToApp(UUID dropletGuid, UUID applicationGuid) {
-        Map<String, Object> bindDropletRequest = new HashMap<>();
-        Map<String, Object> dataMap = new HashMap<>();
-        dataMap.put("guid", dropletGuid);
-        bindDropletRequest.put("data", dataMap);
-
-        getRestTemplate().patchForObject(getUrl("/v3/apps/{applicationGuid}/relationships/current_droplet"), bindDropletRequest,
-            String.class, applicationGuid);
+        convertV3ClientExceptions(() -> v3Client.applicationsV3()
+            .setCurrentDroplet(SetApplicationCurrentDropletRequest.builder()
+                .applicationId(applicationGuid.toString())
+                .data(Relationship.builder()
+                    .id(dropletGuid.toString())
+                    .build())
+                .build())
+            .block());
     }
 
     @Override
@@ -1984,7 +1831,9 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
             Map<String, String> uriInfo = new HashMap<>(2);
             extractUriInfo(domains, uri, uriInfo);
             UUID domainGuid = domains.get(uriInfo.get("domainName"));
-            bindRoute(uriInfo, domainGuid, applicationGuid);
+            String host = uriInfo.get("host");
+            String path = uriInfo.get("path");
+            bindRoute(domainGuid, host, path, applicationGuid);
         }
     }
 
@@ -1992,56 +1841,22 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         Assert.notNull(target, "Unable to " + operation + " without specifying organization and space to use.");
     }
 
-    private void associateRoleWithSpace(String organizationName, String spaceName, String userGuid, String urlPath) {
-        assertSpaceProvided("associate roles");
-
-        CloudOrganization organization = (organizationName == null ? target.getOrganization() : getOrganization(organizationName));
-        UUID organizationGuid = organization.getMeta()
-            .getGuid();
-
-        UUID spaceGuid = getSpaceGuid(spaceName, organizationGuid);
-        Map<String, Object> spaceRequest = new HashMap<>();
-        spaceRequest.put("guid", spaceGuid);
-
-        String userId = (userGuid == null ? getCurrentUserId() : userGuid);
-
-        getRestTemplate().put(getUrl(urlPath), spaceRequest, spaceGuid, userId);
+    private void bindRoute(UUID domainGuid, String host, String path, UUID applicationGuid) {
+        UUID routeGuid = getOrAddRoute(domainGuid, host, path);
+        convertV3ClientExceptions(() -> v3Client.applicationsV2()
+            .associateRoute(AssociateApplicationRouteRequest.builder()
+                .applicationId(applicationGuid.toString())
+                .routeId(routeGuid.toString())
+                .build())
+            .block());
     }
 
-    private void bindRoute(Map<String, String> uriInfo, UUID domainGuid, UUID applicationGuid) {
-        UUID routeGuid = getRouteGuid(uriInfo, domainGuid);
+    private UUID getOrAddRoute(UUID domainGuid, String host, String path) {
+        UUID routeGuid = getRouteGuid(domainGuid, host, path);
         if (routeGuid == null) {
-            routeGuid = doAddRoute(uriInfo, domainGuid);
+            routeGuid = doAddRoute(domainGuid, host, path);
         }
-        String bindPath = "/v2/apps/{application}/routes/{route}";
-        Map<String, Object> bindVars = new HashMap<>();
-        bindVars.put("application", applicationGuid);
-        bindVars.put("route", routeGuid);
-        Map<String, Object> bindRequest = new HashMap<>();
-        getRestTemplate().put(getUrl(bindPath), bindRequest, bindVars);
-    }
-
-    private List<Map<String, Object>> convertToList(List<SecurityGroupRule> rules) {
-        List<Map<String, Object>> ruleList = new ArrayList<>();
-        for (SecurityGroupRule rule : rules) {
-            Map<String, Object> ruleMap = new HashMap<>();
-            ruleMap.put("protocol", rule.getProtocol());
-            ruleMap.put("destination", rule.getDestination());
-            if (rule.getPorts() != null) {
-                ruleMap.put("ports", rule.getPorts());
-            }
-            if (rule.getLog() != null) {
-                ruleMap.put("log", rule.getLog());
-            }
-            if (rule.getType() != null) {
-                ruleMap.put("type", rule.getType());
-            }
-            if (rule.getCode() != null) {
-                ruleMap.put("code", rule.getCode());
-            }
-            ruleList.add(ruleMap);
-        }
-        return ruleList;
+        return routeGuid;
     }
 
     private File createTemporaryUploadFile(InputStream inputStream) throws IOException {
@@ -2052,62 +1867,28 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return file;
     }
 
-    private void createUserProvidedServiceDelegate(CloudService service, Map<String, Object> credentials, String syslogDrainUrl) {
-        assertSpaceProvided("create service");
-        Assert.notNull(credentials, "Service credentials must not be null");
-        Assert.notNull(service, "Service must not be null");
-        Assert.notNull(service.getName(), "Service name must not be null");
-        Assert.isNull(service.getLabel(), "Service label is not valid for user-provided services");
-        Assert.isNull(service.getProvider(), "Service provider is not valid for user-provided services");
-        Assert.isNull(service.getVersion(), "Service version is not valid for user-provided services");
-        Assert.isNull(service.getPlan(), "Service plan is not valid for user-provided services");
-
-        Map<String, Object> serviceRequest = new HashMap<>();
-        serviceRequest.put("space_guid", target.getMeta()
-            .getGuid());
-        serviceRequest.put("name", service.getName());
-        serviceRequest.put("credentials", credentials);
-        if (syslogDrainUrl != null && !syslogDrainUrl.equals("")) {
-            serviceRequest.put("syslog_drain_url", syslogDrainUrl);
-        }
-
-        getRestTemplate().postForObject(getUrl("/v2/user_provided_service_instances"), serviceRequest, String.class);
-    }
-
-    private UUID doAddRoute(Map<String, String> uriInfo, UUID domainGuid) {
+    private UUID doAddRoute(UUID domainGuid, String host, String path) {
         assertSpaceProvided("add route");
-
-        Map<String, Object> routeRequest = new HashMap<>();
-        routeRequest.put("host", uriInfo.get("host"));
-        routeRequest.put("path", uriInfo.get("path"));
-        routeRequest.put("domain_guid", domainGuid);
-        routeRequest.put("space_guid", target.getMeta()
-            .getGuid());
-        String routeResp = getRestTemplate().postForObject(getUrl("/v2/routes"), routeRequest, String.class);
-        Map<String, Object> routeEntity = JsonUtil.convertJsonToMap(routeResp);
-        return CloudEntityResourceMapper.getV2Meta(routeEntity)
-            .getGuid();
+        CreateRouteResponse response = convertV3ClientExceptions(() -> v3Client.routes()
+            .create(CreateRouteRequest.builder()
+                .domainId(domainGuid.toString())
+                .host(host)
+                .path(path)
+                .spaceId(getTargetSpaceId())
+                .build())
+            .block());
+        return UUID.fromString(response.getMetadata()
+            .getId());
     }
 
-    private UUID doCreateDomain(String domainName) {
-        String urlPath = "/v2/private_domains";
-        Map<String, Object> domainRequest = new HashMap<>();
-        domainRequest.put("owning_organization_guid", target.getOrganization()
-            .getMeta()
-            .getGuid());
-        domainRequest.put("name", domainName);
-        domainRequest.put("wildcard", true);
-        String response = getRestTemplate().postForObject(getUrl(urlPath), domainRequest, String.class);
-        Map<String, Object> resource = JsonUtil.convertJsonToMap(response);
-        return resourceMapper.getGuidOfV2Resource(resource);
-    }
-
-    private void doCreateSecurityGroup(String name, List<Map<String, Object>> rules) {
-        String path = "/v2/security_groups";
-        Map<String, Object> request = new HashMap<>();
-        request.put("name", name);
-        request.put("rules", rules);
-        getRestTemplate().postForObject(getUrl(path), request, String.class);
+    private void doCreateDomain(String name) {
+        convertV3ClientExceptions(() -> v3Client.domains()
+            .create(CreateDomainRequest.builder()
+                .wildcard(true)
+                .owningOrganizationId(getTargetOrganizationGuid())
+                .name(name)
+                .build())
+            .block());
     }
 
     private UUID doCreateSpace(String spaceName, UUID organizationGuid) {
@@ -2121,31 +1902,34 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     private void doDeleteDomain(UUID domainGuid) {
-        Map<String, Object> urlVars = new HashMap<>();
-        String urlPath = "/v2/private_domains/{domain}";
-        urlVars.put("domain", domainGuid);
-        getRestTemplate().delete(getUrl(urlPath), urlVars);
+        convertV3ClientExceptions(() -> v3Client.privateDomains()
+            .delete(DeletePrivateDomainRequest.builder()
+                .privateDomainId(domainGuid.toString())
+                .build())
+            .block());
     }
 
     private void doDeleteRoute(UUID routeGuid) {
-        Map<String, Object> urlVars = new HashMap<>();
-        String urlPath = "/v2/routes/{route}";
-        urlVars.put("route", routeGuid);
-        getRestTemplate().delete(getUrl(urlPath), urlVars);
+        convertV3ClientExceptions(() -> v3Client.routes()
+            .delete(DeleteRouteRequest.builder()
+                .routeId(routeGuid.toString())
+                .build())
+            .block());
     }
 
-    private void doDeleteService(CloudService cloudService) {
-        List<UUID> applicationGuids = getApplicationsBoundToService(cloudService);
-        if (!applicationGuids.isEmpty()) {
-            for (UUID applicationGuid : applicationGuids) {
-                doUnbindService(applicationGuid, cloudService.getMeta()
-                    .getGuid());
-            }
+    private void doDeleteService(CloudService service) {
+        List<UUID> serviceBindingGuids = getServiceBindingGuids(service);
+        for (UUID serviceBindingGuid : serviceBindingGuids) {
+            doUnbindService(serviceBindingGuid);
         }
-        getRestTemplate().exchange(getUrl("/v2/service_instances/{guid}?accepts_incomplete=true"), HttpMethod.DELETE, HttpEntity.EMPTY,
-            new ParameterizedTypeReference<Map<String, Object>>() {
-            }, cloudService.getMeta()
-                .getGuid());
+        UUID serviceGuid = service.getMeta()
+            .getGuid();
+        convertV3ClientExceptions(() -> v3Client.serviceInstances()
+            .delete(DeleteServiceInstanceRequest.builder()
+                .acceptsIncomplete(true)
+                .serviceInstanceId(serviceGuid.toString())
+                .build())
+            .block());
     }
 
     private void doDeleteSpace(UUID spaceGuid) {
@@ -2317,17 +2101,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return routes;
     }
 
-    private Map<String, Object> findSecurityGroupResource(String securityGroupName) {
-        Map<String, Object> urlVars = new HashMap<>();
-        String urlPath = "/v2/security_groups?q=name:{name}";
-        urlVars.put("name", securityGroupName);
-        List<Map<String, Object>> resourceList = getAllResources(urlPath, urlVars);
-        if (!resourceList.isEmpty()) {
-            return resourceList.get(0);
-        }
-        return null;
-    }
-
     private Map<String, Object> doGetServiceInstance(String serviceName, int inlineDepth) {
         String urlPath = "/v2";
         Map<String, Object> urlVars = new HashMap<>();
@@ -2375,45 +2148,26 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return serviceKeys;
     }
 
-    private void doSetQuotaToOrg(UUID organizationGuid, UUID quotaGuid) {
-        String setPath = "/v2/organizations/{organization}";
-        Map<String, Object> setVars = new HashMap<>();
-        setVars.put("organization", organizationGuid);
-        Map<String, Object> setRequest = new HashMap<>();
-        setRequest.put("quota_definition_guid", quotaGuid);
-
-        getRestTemplate().put(getUrl(setPath), setRequest, setVars);
+    private void doUnbindService(UUID applicationGuid, UUID serviceGuid) {
+        UUID serviceBindingGuid = getServiceBindingGuid(applicationGuid, serviceGuid);
+        doUnbindService(serviceBindingGuid);
     }
 
-    private void doUnbindService(UUID applicationGuid, UUID serviceId) {
-        UUID serviceBindingId = getServiceBindingId(applicationGuid, serviceId);
-        getRestTemplate().delete(getUrl("/v2/service_bindings/{guid}"), serviceBindingId);
-    }
-
-    private void doUpdateSecurityGroup(CloudSecurityGroup currentGroup, String name, List<Map<String, Object>> rules) {
-        String path = "/v2/security_groups/{guid}";
-
-        Map<String, Object> pathVariables = new HashMap<>();
-        pathVariables.put("guid", currentGroup.getMeta()
-            .getGuid());
-
-        Map<String, Object> request = new HashMap<>();
-        request.put("name", name);
-        request.put("rules", rules);
-        // Updates of bindings to spaces and default staging/running groups must be done
-        // through explicit calls to those methods and not through this generic update
-
-        getRestTemplate().put(getUrl(path), request, pathVariables);
+    private void doUnbindService(UUID serviceBindingGuid) {
+        convertV3ClientExceptions(() -> v3Client.serviceBindingsV2()
+            .delete(DeleteServiceBindingRequest.builder()
+                .serviceBindingId(serviceBindingGuid.toString())
+                .build())
+            .block());
     }
 
     private List<CloudRoute> fetchOrphanRoutes(String domainName) {
         List<CloudRoute> orphanRoutes = new ArrayList<>();
-        for (CloudRoute cloudRoute : getRoutes(domainName)) {
-            if (isOrphanRoute(cloudRoute)) {
-                orphanRoutes.add(cloudRoute);
+        for (CloudRoute route : getRoutes(domainName)) {
+            if (isOrphanRoute(route)) {
+                orphanRoutes.add(route);
             }
         }
-
         return orphanRoutes;
     }
 
@@ -2700,53 +2454,78 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return spaces;
     }
 
-    @SuppressWarnings("unchecked")
-    private List<UUID> getApplicationsBoundToService(CloudService cloudService) {
-        List<UUID> applicationGuids = new ArrayList<>();
-        String urlPath = "/v2";
-        Map<String, Object> urlVars = new HashMap<>();
-        if (target != null) {
-            urlVars.put("space", target.getMeta()
-                .getGuid());
-            urlPath = urlPath + "/spaces/{space}";
-        }
-        urlVars.put("q", "name:" + cloudService.getName());
-        urlPath = urlPath + "/service_instances?q={q}";
-        List<Map<String, Object>> resourceList = getAllResources(urlPath, urlVars);
-        for (Map<String, Object> resource : resourceList) {
-            fillInEmbeddedResource(resource, "service_bindings");
-            List<Map<String, Object>> bindings = CloudEntityResourceMapper.getAttributeOfV2Resource(resource, "service_bindings",
-                List.class);
-            for (Map<String, Object> binding : bindings) {
-                String applicationGuid = CloudEntityResourceMapper.getAttributeOfV2Resource(binding, "app_guid", String.class);
-                if (applicationGuid != null) {
-                    applicationGuids.add(UUID.fromString(applicationGuid));
-                }
-            }
-        }
-        return applicationGuids;
+    private List<UUID> getServiceBindingGuids(UUID applicationGuid) {
+        Flux<ServiceBindingResource> bindings = convertV3ClientExceptions(
+            () -> getServiceBindingResourceByApplicationGuid(applicationGuid));
+        return getGuids(bindings);
     }
 
-    private String getCurrentUserId() {
-        String username = getInfo().getUser();
-        Map<String, Object> userMap = getUserInfo(username);
-        return (String) userMap.get("user_id");
+    private Flux<ServiceBindingResource> getServiceBindingResourceByApplicationGuid(UUID applicationGuid) {
+        return convertV3ClientExceptions(() -> PaginationUtils.requestClientV2Resources(page -> v3Client.applicationsV2()
+            .listServiceBindings(ListApplicationServiceBindingsRequest.builder()
+                .applicationId(applicationGuid.toString())
+                .page(page)
+                .build())));
     }
 
-    private UUID getDomainGuid(String domainName, boolean required) {
-        Map<String, Object> urlVars = new HashMap<>();
-        String urlPath = "/v2/domains?inline-relations-depth=1&q=name:{name}";
-        urlVars.put("name", domainName);
-        List<Map<String, Object>> resourceList = getAllResources(urlPath, urlVars);
-        UUID domainGuid = null;
-        if (!resourceList.isEmpty()) {
-            Map<String, Object> resource = resourceList.get(0);
-            domainGuid = resourceMapper.getGuidOfV2Resource(resource);
+    private List<UUID> getServiceBindingGuids(CloudService service) {
+        Flux<ServiceBindingResource> serviceBindings = getServiceBindingResources(service);
+        return getGuids(serviceBindings);
+    }
+
+    private Flux<ServiceBindingResource> getServiceBindingResources(CloudService service) {
+        UUID serviceGuid = service.getMeta()
+            .getGuid();
+        if (service.isUserProvided()) {
+            return getUserProvidedServiceBindingResources(serviceGuid);
         }
-        if (domainGuid == null && required) {
-            throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Domain " + domainName + " not found.");
+        return getServiceBindingResources(serviceGuid);
+    }
+
+    private Flux<ServiceBindingResource> getUserProvidedServiceBindingResources(UUID serviceGuid) {
+        return convertV3ClientExceptions(() -> PaginationUtils.requestClientV2Resources(page -> v3Client.userProvidedServiceInstances()
+            .listServiceBindings(ListUserProvidedServiceInstanceServiceBindingsRequest.builder()
+                .userProvidedServiceInstanceId(serviceGuid.toString())
+                .page(page)
+                .build())));
+    }
+
+    private Flux<ServiceBindingResource> getServiceBindingResources(UUID serviceGuid) {
+        return convertV3ClientExceptions(() -> PaginationUtils.requestClientV2Resources(page -> v3Client.serviceInstances()
+            .listServiceBindings(ListServiceInstanceServiceBindingsRequest.builder()
+                .serviceInstanceId(serviceGuid.toString())
+                .page(page)
+                .build())));
+    }
+
+    private List<UUID> getGuids(Flux<? extends Resource<?>> resources) {
+        return resources.map(Resource::getMetadata)
+            .map(Metadata::getId)
+            .map(UUID::fromString)
+            .collectList()
+            .block();
+    }
+
+    private UUID getDomainGuid(String name, boolean required) {
+        List<DomainResource> domains = convertV3ClientExceptions(() -> getDomainResources(name)).collectList()
+            .block();
+        if (!domains.isEmpty()) {
+            DomainResource domain = domains.get(0);
+            return UUID.fromString(domain.getMetadata()
+                .getId());
         }
-        return domainGuid;
+        if (required) {
+            throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Domain " + name + " not found.");
+        }
+        return null;
+    }
+
+    private Flux<DomainResource> getDomainResources(String name) {
+        return PaginationUtils.requestClientV2Resources(page -> v3Client.domains()
+            .list(ListDomainsRequest.builder()
+                .name(name)
+                .page(page)
+                .build()));
     }
 
     private Map<String, UUID> getDomainGuids() {
@@ -2790,29 +2569,32 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return new CloudResources(cloudResources);
     }
 
-    private UUID getRouteGuid(Map<String, String> uriInfo, UUID domainGuid) {
-        Map<String, Object> urlVars = new HashMap<>();
-        String urlPath = "/v2";
-        urlPath = urlPath + "/routes?inline-relations-depth=0&q=host:{host}";
-        urlVars.put("host", uriInfo.get("host"));
-        String path = uriInfo.get("path");
-        if (!StringUtils.isEmpty(path)) {
-            urlPath = urlPath + "&q=path:{path}";
-            urlVars.put("path", path);
+    private UUID getRouteGuid(UUID domainGuid, String host, String path) {
+        List<RouteResource> routes = convertV3ClientExceptions(() -> getRouteResources(domainGuid, host, path).collectList()
+            .block());
+
+        if (!routes.isEmpty()) {
+            RouteResource route = routes.get(0);
+            return UUID.fromString(route.getMetadata()
+                .getId());
         }
-        List<Map<String, Object>> allRoutes = getAllResources(urlPath, urlVars);
-        UUID routeGuid = null;
-        for (Map<String, Object> route : allRoutes) {
-            UUID routeSpace = CloudEntityResourceMapper.getAttributeOfV2Resource(route, "space_guid", UUID.class);
-            UUID routeDomain = CloudEntityResourceMapper.getAttributeOfV2Resource(route, "domain_guid", UUID.class);
-            if (target.getMeta()
-                .getGuid()
-                .equals(routeSpace) && domainGuid.equals(routeDomain)) {
-                routeGuid = CloudEntityResourceMapper.getV2Meta(route)
-                    .getGuid();
-            }
+        return null;
+    }
+
+    private Flux<RouteResource> getRouteResources(UUID domainGuid, String host, String path) {
+        ListSpaceRoutesRequest.Builder requestBuilder = ListSpaceRoutesRequest.builder();
+        if (host != null) {
+            requestBuilder.host(host);
         }
-        return routeGuid;
+        if (path != null) {
+            requestBuilder.path(path);
+        }
+        requestBuilder.spaceId(getTargetSpaceId())
+            .domainId(domainGuid.toString());
+
+        return PaginationUtils.requestClientV2Resources(page -> v3Client.spaces()
+            .listRoutes(requestBuilder.page(page)
+                .build()));
     }
 
     private int getRunningInstances(UUID applicationGuid, CloudApplication.AppState appState) {
@@ -2831,7 +2613,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     // Security Group operations
 
     @SuppressWarnings("unchecked")
-    private UUID getServiceBindingId(UUID applicationGuid, UUID serviceId) {
+    private UUID getServiceBindingGuid(UUID applicationGuid, UUID serviceId) {
         Map<String, Object> urlVars = new HashMap<>();
         urlVars.put("guid", applicationGuid);
         List<Map<String, Object>> resourceList = getAllResources("/v2/apps/{guid}/service_bindings", urlVars);
@@ -2875,12 +2657,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
             return resourceMapper.getGuidOfV2Resource(resource);
         }
         return null;
-    }
-
-    private UUID getSpaceGuid(String organizationName, String spaceName) {
-        CloudOrganization organization = getOrganization(organizationName);
-        return getSpaceGuid(spaceName, organization.getMeta()
-            .getGuid());
     }
 
     private List<UUID> getSpaceUserGuids(String organizationName, String spaceName, String urlPath) {
@@ -3017,36 +2793,23 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
             Map<String, String> uriInfo = new HashMap<>(2);
             extractUriInfo(domains, uri, uriInfo);
             UUID domainGuid = domains.get(uriInfo.get("domainName"));
-            unbindRoute(uriInfo, domainGuid, applicationGuid);
+            String host = uriInfo.get("host");
+            String path = uriInfo.get("path");
+            unbindRoute(domainGuid, host, path, applicationGuid);
         }
     }
 
-    private StreamingLogToken streamLoggregatorLogs(String applicationName, ApplicationLogListener listener, boolean recent) {
-        ClientEndpointConfig.Configurator configurator = new ClientEndpointConfig.Configurator() {
-            @Override
-            public void beforeRequest(Map<String, List<String>> headers) {
-                String authorizationHeader = oAuthClient.getAuthorizationHeader();
-                if (authorizationHeader != null) {
-                    headers.put(AUTHORIZATION_HEADER_KEY, Arrays.asList(authorizationHeader));
-                }
-            }
-        };
-
-        String endpoint = getInfo().getLoggingEndpoint();
-        String mode = recent ? "dump" : "tail";
-        UUID applicationGuid = getRequiredApplicationGuid(applicationName);
-        return loggregatorClient.connectToLoggregator(endpoint, mode, applicationGuid, listener, configurator);
-    }
-
-    private void unbindRoute(Map<String, String> uriInfo, UUID domainGuid, UUID applicationGuid) {
-        UUID routeGuid = getRouteGuid(uriInfo, domainGuid);
-        if (routeGuid != null) {
-            String bindPath = "/v2/apps/{application}/routes/{route}";
-            Map<String, Object> bindVars = new HashMap<>();
-            bindVars.put("application", applicationGuid);
-            bindVars.put("route", routeGuid);
-            getRestTemplate().delete(getUrl(bindPath), bindVars);
+    private void unbindRoute(UUID domainGuid, String host, String path, UUID applicationGuid) {
+        UUID routeGuid = getRouteGuid(domainGuid, host, path);
+        if (routeGuid == null) {
+            return;
         }
+        convertV3ClientExceptions(() -> v3Client.applicationsV2()
+            .removeRoute(RemoveApplicationRouteRequest.builder()
+                .applicationId(applicationGuid.toString())
+                .routeId(routeGuid.toString())
+                .build())
+            .block());
     }
 
     private <T> T convertV3ClientExceptions(Supplier<T> runnable) {
@@ -3061,6 +2824,19 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         } catch (IllegalStateException e) {
             throw new CloudException(e.getMessage(), e);
         }
+    }
+
+    private String getTargetOrganizationGuid() {
+        return target.getOrganization()
+            .getMeta()
+            .getGuid()
+            .toString();
+    }
+
+    private String getTargetSpaceId() {
+        return target.getMeta()
+            .getGuid()
+            .toString();
     }
 
     private static class ResponseExtractorWrapper implements ResponseExtractor {
