@@ -9,7 +9,7 @@
     <parent>
         <groupId>com.sap.cloud.lm.sl</groupId>
         <artifactId>cf-java-client</artifactId>
-        <version>1.8.0</version>
+        <version>1.8.1</version>
     </parent>
 
     <properties>
