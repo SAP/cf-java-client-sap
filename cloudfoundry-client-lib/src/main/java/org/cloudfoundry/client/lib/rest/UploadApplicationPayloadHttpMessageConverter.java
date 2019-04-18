@@ -16,11 +16,7 @@
 
 package org.cloudfoundry.client.lib.rest;
 
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.Collections;
 import java.util.List;
 
@@ -66,8 +62,6 @@ public class UploadApplicationPayloadHttpMessageConverter implements HttpMessage
         FileCopyUtils.copy(t.getInputStream(), outputMessage.getBody());
         outputMessage.getBody()
             .flush();
-
-        writeApplicationZipToFile(t.getInputStream());
     }
 
     private void setOutputContentType(MediaType contentType, HttpOutputMessage outputMessage) {
@@ -77,22 +71,6 @@ public class UploadApplicationPayloadHttpMessageConverter implements HttpMessage
         }
         if (contentType != null) {
             headers.setContentType(contentType);
-        }
-    }
-
-    private void writeApplicationZipToFile(InputStream inputStream) {
-        // for testing/debugging purposes, write the zip file being uploaded to a path specified
-        // in the following environment variable
-        String uploadFilePath = System.getenv("CF_APP_UPLOAD_FILE");
-        if (uploadFilePath != null) {
-            try {
-                File outputFile = new File(uploadFilePath);
-                BufferedOutputStream outputStream = new BufferedOutputStream(new FileOutputStream(outputFile));
-                FileCopyUtils.copy(inputStream, outputStream);
-                outputStream.close();
-            } catch (IOException e) {
-                System.err.println("Error writing application upload to file: " + e);
-            }
         }
     }
 
