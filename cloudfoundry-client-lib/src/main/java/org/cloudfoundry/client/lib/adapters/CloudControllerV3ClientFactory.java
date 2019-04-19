@@ -1,8 +1,8 @@
 package org.cloudfoundry.client.lib.adapters;
 
 import java.net.URL;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.cloudfoundry.client.CloudFoundryClient;
 import org.cloudfoundry.client.lib.domain.CloudOrganization;
@@ -21,7 +21,7 @@ public class CloudControllerV3ClientFactory {
     private static final int DEFAULT_CLIENT_CONNECTION_POOL_SIZE = 75;
     private static final int DEFAULT_CLIENT_THREAD_POOL_SIZE = 75;
 
-    private final Map<String, ConnectionContext> connectionContextCache = new HashMap<>();
+    private final Map<String, ConnectionContext> connectionContextCache = new ConcurrentHashMap<>();
     private final int clientCoonectionPoolSize;
     private final int clientThreadPoolSize;
 
