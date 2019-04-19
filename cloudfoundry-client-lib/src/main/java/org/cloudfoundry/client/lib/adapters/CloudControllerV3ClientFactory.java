@@ -1,6 +1,8 @@
 package org.cloudfoundry.client.lib.adapters;
 
 import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.cloudfoundry.client.CloudFoundryClient;
 import org.cloudfoundry.client.lib.domain.CloudOrganization;
@@ -15,6 +17,22 @@ import org.cloudfoundry.reactor.client.ReactorCloudFoundryClient;
 import org.springframework.util.Assert;
 
 public class CloudControllerV3ClientFactory {
+
+    private static final int DEFAULT_CLIENT_CONNECTION_POOL_SIZE = 75;
+    private static final int DEFAULT_CLIENT_THREAD_POOL_SIZE = 75;
+
+    private final Map<String, ConnectionContext> connectionContextCache = new HashMap<>();
+    private final int clientCoonectionPoolSize;
+    private final int clientThreadPoolSize;
+
+    public CloudControllerV3ClientFactory() {
+        this(DEFAULT_CLIENT_CONNECTION_POOL_SIZE, DEFAULT_CLIENT_THREAD_POOL_SIZE);
+    }
+
+    public CloudControllerV3ClientFactory(int clientCoonectionPoolSize, int clientThreadPoolSize) {
+        this.clientCoonectionPoolSize = clientCoonectionPoolSize;
+        this.clientThreadPoolSize = clientThreadPoolSize;
+    }
 
     public CloudFoundryOperations createOperationsClient(URL controllerUrl, OAuthClient oAuthClient, CloudSpace target) {
         DefaultCloudFoundryOperations.Builder builder = DefaultCloudFoundryOperations.builder()
@@ -44,14 +62,20 @@ public class CloudControllerV3ClientFactory {
 
     public CloudFoundryClient createClient(URL controllerUrl, OAuthClient oAuthClient) {
         return ReactorCloudFoundryClient.builder()
-            .connectionContext(createConnectionContext(controllerUrl))
+            .connectionContext(getOrCreateConnectionContext(controllerUrl.getHost()))
             .tokenProvider(createTokenProvider(oAuthClient))
             .build();
     }
 
-    private ConnectionContext createConnectionContext(URL controllerUrl) {
+    private ConnectionContext getOrCreateConnectionContext(String controllerApiHost) {
+        return connectionContextCache.computeIfAbsent(controllerApiHost, this::createConnectionContext);
+    }
+
+    private ConnectionContext createConnectionContext(String controllerApiHost) {
         return DefaultConnectionContext.builder()
-            .apiHost(controllerUrl.getHost())
+            .apiHost(controllerApiHost)
+            .threadPoolSize(clientThreadPoolSize)
+            .connectionPoolSize(clientCoonectionPoolSize)
             .build();
     }
 

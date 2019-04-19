@@ -50,17 +50,32 @@ public class CloudControllerRestClientFactory {
     private final RestTemplate generalPurposeRestTemplate;
     private final RestUtil restUtil = new RestUtil();
     private final boolean trustSelfSignedCerts;
-
-    private final CloudControllerV3ClientFactory v3ClientFactory = new CloudControllerV3ClientFactory();
+    private final CloudControllerV3ClientFactory v3ClientFactory;
 
     public CloudControllerRestClientFactory(boolean trustSelfSignedCerts) {
-        this(null, trustSelfSignedCerts);
+        this(trustSelfSignedCerts, null);
     }
 
-    public CloudControllerRestClientFactory(HttpProxyConfiguration httpProxyConfiguration, boolean trustSelfSignedCerts) {
+    public CloudControllerRestClientFactory(boolean trustSelfSignedCerts, HttpProxyConfiguration httpProxyConfiguration) {
+        this(new CloudControllerV3ClientFactory(), trustSelfSignedCerts, httpProxyConfiguration);
+    }
+
+    public CloudControllerRestClientFactory(int clientConnectionPoolSize, int clientThreadPoolSize, boolean trustSelfSignedCerts) {
+        this(clientConnectionPoolSize, clientThreadPoolSize, trustSelfSignedCerts, null);
+    }
+
+    public CloudControllerRestClientFactory(int clientConnectionPoolSize, int clientThreadPoolSize, boolean trustSelfSignedCerts,
+        HttpProxyConfiguration httpProxyConfiguration) {
+        this(new CloudControllerV3ClientFactory(clientConnectionPoolSize, clientThreadPoolSize), trustSelfSignedCerts,
+            httpProxyConfiguration);
+    }
+
+    private CloudControllerRestClientFactory(CloudControllerV3ClientFactory v3ClientFactory, boolean trustSelfSignedCerts,
+        HttpProxyConfiguration httpProxyConfiguration) {
         this.httpProxyConfiguration = httpProxyConfiguration;
         this.trustSelfSignedCerts = trustSelfSignedCerts;
         this.generalPurposeRestTemplate = restUtil.createRestTemplate(httpProxyConfiguration, trustSelfSignedCerts);
+        this.v3ClientFactory = v3ClientFactory;
     }
 
     public CloudControllerRestClient createClient(URL controllerUrl, CloudCredentials credentials) {
