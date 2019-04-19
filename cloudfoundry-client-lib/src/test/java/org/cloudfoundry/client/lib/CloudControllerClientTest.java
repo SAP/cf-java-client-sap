@@ -1504,7 +1504,7 @@ public class CloudControllerClientTest {
         URL cloudControllerUrl = new URL(CCNG_API_URL);
         CloudCredentials credentials = new CloudCredentials(CCNG_USER_EMAIL, CCNG_USER_PASS);
 
-        CloudControllerRestClientFactory factory = new CloudControllerRestClientFactory(httpProxyConfiguration, CCNG_API_SSL);
+        CloudControllerRestClientFactory factory = new CloudControllerRestClientFactory(CCNG_API_SSL, httpProxyConfiguration);
         CloudControllerRestClient client = factory.createClient(cloudControllerUrl, credentials, CCNG_USER_ORG, CCNG_USER_SPACE);
 
         client.login();

@@ -137,8 +137,8 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     public CloudControllerClientImpl(URL controllerUrl, CloudCredentials credentials, CloudSpace target,
         HttpProxyConfiguration httpProxyConfiguration, boolean trustSelfSignedCerts) {
         Assert.notNull(controllerUrl, "URL for cloud controller cannot be null");
-        CloudControllerRestClientFactory cloudControllerClientFactory = new CloudControllerRestClientFactory(httpProxyConfiguration,
-            trustSelfSignedCerts);
+        CloudControllerRestClientFactory cloudControllerClientFactory = new CloudControllerRestClientFactory(trustSelfSignedCerts,
+            httpProxyConfiguration);
         this.cc = cloudControllerClientFactory.createClient(controllerUrl, credentials, target);
     }
 
@@ -163,8 +163,8 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     public CloudControllerClientImpl(URL controllerUrl, CloudCredentials credentials, String organizationName, String spaceName,
         HttpProxyConfiguration httpProxyConfiguration, boolean trustSelfSignedCerts) {
         Assert.notNull(controllerUrl, "URL for cloud controller cannot be null");
-        CloudControllerRestClientFactory cloudControllerClientFactory = new CloudControllerRestClientFactory(httpProxyConfiguration,
-            trustSelfSignedCerts);
+        CloudControllerRestClientFactory cloudControllerClientFactory = new CloudControllerRestClientFactory(trustSelfSignedCerts,
+            httpProxyConfiguration);
         this.cc = cloudControllerClientFactory.createClient(controllerUrl, credentials, organizationName, spaceName);
     }
 
