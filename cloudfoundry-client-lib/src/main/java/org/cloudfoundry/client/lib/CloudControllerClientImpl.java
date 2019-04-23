@@ -27,7 +27,6 @@ import java.util.UUID;
 import org.cloudfoundry.client.lib.domain.ApplicationLog;
 import org.cloudfoundry.client.lib.domain.ApplicationStats;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
-import org.cloudfoundry.client.lib.domain.CloudApplication.DebugMode;
 import org.cloudfoundry.client.lib.domain.CloudBuild;
 import org.cloudfoundry.client.lib.domain.CloudDomain;
 import org.cloudfoundry.client.lib.domain.CloudEvent;
@@ -308,11 +307,6 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     @Override
     public void createUserProvidedService(CloudService service, Map<String, Object> credentials, String syslogDrainUrl) {
         cc.createUserProvidedService(service, credentials, syslogDrainUrl);
-    }
-
-    @Override
-    public void debugApplication(String applicationName, DebugMode mode) {
-        cc.debugApplication(applicationName, mode);
     }
 
     @Override
@@ -858,11 +852,6 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public void updateApplicationEnv(String applicationName, List<String> env) {
-        cc.updateApplicationEnv(applicationName, env);
-    }
-
-    @Override
     public void updateApplicationInstances(String applicationName, int instances) {
         cc.updateApplicationInstances(applicationName, instances);
     }
@@ -1010,4 +999,5 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     public List<CloudBuild> getBuildsForApplication(UUID applicationGuid) {
         return cc.getBuildsForApplication(applicationGuid);
     }
+
 }
