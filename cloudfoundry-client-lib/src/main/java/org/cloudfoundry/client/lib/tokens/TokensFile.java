@@ -67,11 +67,11 @@ public class TokensFile {
         targetInfos.putToken(targetInfo, token);
         targetInfos.putRefreshToken(targetInfo, token.getRefreshToken());
         targetInfos.putVersion(targetInfo, cloudInfo.getVersion());
-        targetInfos.putSpace(targetInfo, space.getMeta()
+        targetInfos.putSpace(targetInfo, space.getMetadata()
             .getGuid()
             .toString());
         targetInfos.putOrganization(targetInfo, space.getOrganization()
-            .getMeta()
+            .getMetadata()
             .getGuid()
             .toString());
 

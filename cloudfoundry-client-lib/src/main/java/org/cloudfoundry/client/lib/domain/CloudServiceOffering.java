@@ -1,117 +1,48 @@
-/*
- * Copyright 2009-2012 the original author or authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package org.cloudfoundry.client.lib.domain;
 
-import java.util.ArrayList;
 import java.util.List;
 
-public class CloudServiceOffering extends CloudEntity {
+import org.cloudfoundry.client.lib.domain.annotation.Nullable;
+import org.immutables.value.Value;
 
-    private boolean active;
-    private boolean bindable;
-    private List<CloudServicePlan> cloudServicePlans = new ArrayList<>();
-    private String description;
-    private String docUrl;
-    private String extra;
-    private String infoUrl;
-    // Note name is used for label
-    private String provider;
-    private String uniqueId;
-    private String url;
-    private String version;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
-    // Required by Jackson.
-    public CloudServiceOffering() {
-    }
-    
-    public CloudServiceOffering(Meta meta, String name) {
-        super(meta, name);
-    }
+@Value.Immutable
+@JsonSerialize(as = ImmutableCloudServiceOffering.class)
+@JsonDeserialize(as = ImmutableCloudServiceOffering.class)
+public interface CloudServiceOffering extends CloudEntity {
 
-    public CloudServiceOffering(Meta meta, String name, String provider, String version) {
-        super(meta, name);
-        this.provider = provider;
-        this.version = version;
-    }
+    @Nullable
+    Boolean isActive();
 
-    public CloudServiceOffering(Meta meta, String name, String provider, String version, String description, boolean active,
-        boolean bindable, String url, String infoUrl, String uniqueId, String extra, String docUrl) {
-        super(meta, name);
-        this.provider = provider;
-        this.version = version;
-        this.description = description;
-        this.active = active;
-        this.bindable = bindable;
-        this.url = url;
-        this.infoUrl = infoUrl;
-        this.uniqueId = uniqueId;
-        this.extra = extra;
-        this.docUrl = docUrl;
-    }
+    @Nullable
+    Boolean isBindable();
 
-    public void addCloudServicePlan(CloudServicePlan cloudServicePlan) {
-        this.cloudServicePlans.add(cloudServicePlan);
-    }
+    List<CloudServicePlan> getCloudServicePlans();
 
-    public List<CloudServicePlan> getCloudServicePlans() {
-        return cloudServicePlans;
-    }
+    @Nullable
+    String getDescription();
 
-    public String getDescription() {
-        return description;
-    }
+    @Nullable
+    String getDocUrl();
 
-    public String getDocumentationUrl() {
-        return docUrl;
-    }
+    @Nullable
+    String getExtra();
 
-    public String getExtra() {
-        return extra;
-    }
+    @Nullable
+    String getInfoUrl();
 
-    public String getInfoUrl() {
-        return infoUrl;
-    }
+    @Nullable
+    String getProvider();
 
-    public String getLabel() {
-        return getName();
-    }
+    @Nullable
+    String getUniqueId();
 
-    public String getProvider() {
-        return provider;
-    }
+    @Nullable
+    String getUrl();
 
-    public String getUniqueId() {
-        return uniqueId;
-    }
+    @Nullable
+    String getVersion();
 
-    public String getUrl() {
-        return url;
-    }
-
-    public String getVersion() {
-        return version;
-    }
-
-    public boolean isActive() {
-        return active;
-    }
-
-    public boolean isBindable() {
-        return bindable;
-    }
 }

@@ -1,19 +1,17 @@
 package org.cloudfoundry.client.lib.domain;
 
-public class CloudStack extends CloudEntity {
+import org.cloudfoundry.client.lib.domain.annotation.Nullable;
+import org.immutables.value.Value;
 
-    private String description;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
-    // Required by Jackson.
-    public CloudStack() {
-    }
-    
-    public CloudStack(Meta meta, String name, String description) {
-        super(meta, name);
-        this.description = description;
-    }
+@Value.Immutable
+@JsonSerialize(as = ImmutableCloudStack.class)
+@JsonDeserialize(as = ImmutableCloudStack.class)
+public interface CloudStack extends CloudEntity {
 
-    public String getDescription() {
-        return description;
-    }
+    @Nullable
+    String getDescription();
+
 }

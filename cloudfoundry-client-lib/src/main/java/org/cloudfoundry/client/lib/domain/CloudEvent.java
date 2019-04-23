@@ -3,111 +3,45 @@ package org.cloudfoundry.client.lib.domain;
 import java.util.Date;
 import java.util.UUID;
 
-/**
- * @author Mark Seidenstricker
- */
+import org.cloudfoundry.client.lib.domain.ImmutableCloudEvent.ImmutableParticipant;
+import org.cloudfoundry.client.lib.domain.annotation.Nullable;
+import org.immutables.value.Value;
 
-import org.codehaus.jackson.annotate.JsonAutoDetect;
-import org.codehaus.jackson.annotate.JsonAutoDetect.Visibility;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
-@JsonAutoDetect(fieldVisibility = Visibility.ANY, getterVisibility = Visibility.NONE, creatorVisibility = Visibility.NONE)
-public class CloudEvent extends CloudEntity {
+@Value.Enclosing
+@Value.Immutable
+@JsonSerialize(as = ImmutableCloudEvent.class)
+@JsonDeserialize(as = ImmutableCloudEvent.class)
+public interface CloudEvent extends CloudEntity {
 
-    private String actee;
-    private String actee_name;
-    private String actee_type;
-    private String actor;
-    private String actor_name;
-    private String actor_type;
-    private Date timestamp;
-    private String type;
+    @Nullable
+    String getType();
 
-    // Required by Jackson.
-    public CloudEvent() {
-    }
+    @Nullable
+    Participant getActor();
 
-    public CloudEvent(Meta meta, String name) {
-        super(meta, name);
-    }
+    @Nullable
+    Participant getActee();
 
-    public String getActee() {
-        return actee;
-    }
+    @Nullable
+    Date getTimestamp();
 
-    public void setActee(String actee) {
-        this.actee = actee;
-    }
+    @Value.Immutable
+    @JsonSerialize(as = ImmutableParticipant.class)
+    @JsonDeserialize(as = ImmutableParticipant.class)
+    interface Participant {
 
-    public UUID getActeeGuid() {
-        try {
-            return UUID.fromString(actee);
-        } catch (IllegalArgumentException e) {
-            return null;
-        }
-    }
+        @Nullable
+        UUID getGuid();
 
-    public String getActeeName() {
-        return actee_name;
-    }
+        @Nullable
+        String getName();
 
-    public void setActeeName(String acteeName) {
-        this.actee_name = acteeName;
-    }
+        @Nullable
+        String getType();
 
-    public String getActeeType() {
-        return actee_type;
-    }
-
-    public void setActeeType(String acteeType) {
-        this.actee_type = acteeType;
-    }
-
-    public String getActor() {
-        return actor;
-    }
-
-    public void setActor(String actor) {
-        this.actor = actor;
-    }
-
-    public UUID getActorGuid() {
-        try {
-            return UUID.fromString(actor);
-        } catch (IllegalArgumentException e) {
-            return null;
-        }
-    }
-
-    public String getActorName() {
-        return actor_name;
-    }
-
-    public void setActorName(String actorName) {
-        this.actor_name = actorName;
-    }
-
-    public String getActorType() {
-        return actor_type;
-    }
-
-    public void setActorType(String actorType) {
-        this.actor_type = actorType;
-    }
-
-    public Date getTimestamp() {
-        return timestamp;
-    }
-
-    public void setTimestamp(Date timestamp) {
-        this.timestamp = timestamp;
-    }
-
-    public String getType() {
-        return type;
-    }
-
-    public void setType(String type) {
-        this.type = type;
     }
 
 }

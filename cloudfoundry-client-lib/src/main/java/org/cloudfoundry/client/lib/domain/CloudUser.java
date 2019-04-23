@@ -1,42 +1,23 @@
 package org.cloudfoundry.client.lib.domain;
 
-/**
- * @author Olivier Orand
- */
-public class CloudUser extends CloudEntity {
+import org.cloudfoundry.client.lib.domain.annotation.Nullable;
+import org.immutables.value.Value;
 
-    private boolean active;
-    private boolean admin;
-    private String defaultSpaceGuid;
-    private String username;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
-    // Required by Jackson.
-    public CloudUser() {
-    }
+@Value.Immutable
+@JsonSerialize(as = ImmutableCloudUser.class)
+@JsonDeserialize(as = ImmutableCloudUser.class)
+public interface CloudUser extends CloudEntity {
 
-    public CloudUser(Meta meta, String username, boolean admin, boolean active, String defaultSpaceGuid) {
-        super(meta, username);
-        this.username = username;
-        this.admin = admin;
-        this.active = active;
+    @Nullable
+    String getDefaultSpaceGuid();
 
-        this.defaultSpaceGuid = defaultSpaceGuid;
-    }
+    @Nullable
+    Boolean isActive();
 
-    public String getDefaultSpaceGuid() {
-        return defaultSpaceGuid;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public boolean isActive() {
-        return active;
-    }
-
-    public boolean isAdmin() {
-        return admin;
-    }
+    @Nullable
+    Boolean isAdmin();
 
 }

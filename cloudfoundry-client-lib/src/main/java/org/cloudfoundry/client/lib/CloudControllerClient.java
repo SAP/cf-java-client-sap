@@ -46,7 +46,7 @@ import org.cloudfoundry.client.lib.domain.CloudUser;
 import org.cloudfoundry.client.lib.domain.CrashesInfo;
 import org.cloudfoundry.client.lib.domain.DockerInfo;
 import org.cloudfoundry.client.lib.domain.InstancesInfo;
-import org.cloudfoundry.client.lib.domain.ServiceKey;
+import org.cloudfoundry.client.lib.domain.CloudServiceKey;
 import org.cloudfoundry.client.lib.domain.Staging;
 import org.cloudfoundry.client.lib.domain.Upload;
 import org.cloudfoundry.client.lib.domain.UploadToken;
@@ -786,7 +786,7 @@ public interface CloudControllerClient {
      * @param service name containing service keys
      * @return the service keys info
      */
-    List<ServiceKey> getServiceKeys(String serviceName);
+    List<CloudServiceKey> getServiceKeys(String serviceName);
 
     /**
      * Get all service offerings.

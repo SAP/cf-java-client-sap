@@ -95,7 +95,7 @@ public class ApplicationServicesUpdater {
 
     private CloudServiceBinding getServiceBindingsForApplication(CloudApplication application, List<CloudServiceBinding> serviceBindings) {
         return serviceBindings.stream()
-            .filter(serviceBinding -> application.getMeta()
+            .filter(serviceBinding -> application.getMetadata()
                 .getGuid()
                 .equals(serviceBinding.getApplicationGuid()))
             .findFirst()

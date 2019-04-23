@@ -3,65 +3,29 @@ package org.cloudfoundry.client.lib.domain;
 import java.util.Map;
 import java.util.UUID;
 
-/**
- * Class representing the binding of a service instance.
- *
- * @author Scott Frederick
- */
-public class CloudServiceBinding extends CloudEntity {
+import org.cloudfoundry.client.lib.domain.annotation.Nullable;
+import org.immutables.value.Value;
 
-    private UUID applicationGuid;
-    private Map<String, Object> bindingOptions;
-    private Map<String, Object> credentials;
-    private Map<String, Object> bindingParameters;
-    private String syslogDrainUrl;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
-    // Required by Jackson.
-    public CloudServiceBinding() {
-    }
+@Value.Immutable
+@JsonSerialize(as = ImmutableCloudServiceBinding.class)
+@JsonDeserialize(as = ImmutableCloudServiceBinding.class)
+public interface CloudServiceBinding extends CloudEntity {
 
-    public CloudServiceBinding(Meta meta, String name) {
-        super(meta, name);
-    }
+    UUID getApplicationGuid();
 
-    public UUID getApplicationGuid() {
-        return applicationGuid;
-    }
+    @Nullable
+    Map<String, Object> getBindingOptions();
 
-    public void setApplicationGuid(UUID applicationGuid) {
-        this.applicationGuid = applicationGuid;
-    }
+    @Nullable
+    Map<String, Object> getCredentials();
 
-    public Map<String, Object> getBindingOptions() {
-        return bindingOptions;
-    }
+    @Nullable
+    Map<String, Object> getBindingParameters();
 
-    public void setBindingOptions(Map<String, Object> bindingOptions) {
-        this.bindingOptions = bindingOptions;
-    }
-
-    public Map<String, Object> getCredentials() {
-        return credentials;
-    }
-
-    public void setCredentials(Map<String, Object> credentials) {
-        this.credentials = credentials;
-    }
-
-    public Map<String, Object> getBindingParameters() {
-        return bindingParameters;
-    }
-
-    public void setBindingParameters(Map<String, Object> bindingParameters) {
-        this.bindingParameters = bindingParameters;
-    }
-
-    public String getSyslogDrainUrl() {
-        return syslogDrainUrl;
-    }
-
-    public void setSyslogDrainUrl(String syslogDrainUrl) {
-        this.syslogDrainUrl = syslogDrainUrl;
-    }
+    @Nullable
+    String getSyslogDrainUrl();
 
 }

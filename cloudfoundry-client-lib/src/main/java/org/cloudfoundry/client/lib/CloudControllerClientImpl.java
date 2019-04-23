@@ -46,7 +46,7 @@ import org.cloudfoundry.client.lib.domain.CloudUser;
 import org.cloudfoundry.client.lib.domain.CrashesInfo;
 import org.cloudfoundry.client.lib.domain.DockerInfo;
 import org.cloudfoundry.client.lib.domain.InstancesInfo;
-import org.cloudfoundry.client.lib.domain.ServiceKey;
+import org.cloudfoundry.client.lib.domain.CloudServiceKey;
 import org.cloudfoundry.client.lib.domain.Staging;
 import org.cloudfoundry.client.lib.domain.Upload;
 import org.cloudfoundry.client.lib.domain.UploadToken;
@@ -611,7 +611,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public List<ServiceKey> getServiceKeys(String serviceName) {
+    public List<CloudServiceKey> getServiceKeys(String serviceName) {
         return cc.getServiceKeys(serviceName);
     }
 
