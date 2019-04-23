@@ -76,6 +76,7 @@ import org.cloudfoundry.client.lib.domain.CloudStack;
 import org.cloudfoundry.client.lib.domain.CloudTask;
 import org.cloudfoundry.client.lib.domain.CloudUser;
 import org.cloudfoundry.client.lib.domain.CrashesInfo;
+import org.cloudfoundry.client.lib.domain.DockerCredentials;
 import org.cloudfoundry.client.lib.domain.DockerInfo;
 import org.cloudfoundry.client.lib.domain.ErrorDetails;
 import org.cloudfoundry.client.lib.domain.ImmutableCloudApplication;
@@ -95,6 +96,8 @@ import org.cloudfoundry.client.lib.util.JsonUtil;
 import org.cloudfoundry.client.v2.Metadata;
 import org.cloudfoundry.client.v2.Resource;
 import org.cloudfoundry.client.v2.applications.AssociateApplicationRouteRequest;
+import org.cloudfoundry.client.v2.applications.CreateApplicationRequest;
+import org.cloudfoundry.client.v2.applications.CreateApplicationResponse;
 import org.cloudfoundry.client.v2.applications.DeleteApplicationRequest;
 import org.cloudfoundry.client.v2.applications.ListApplicationServiceBindingsRequest;
 import org.cloudfoundry.client.v2.applications.RemoveApplicationRouteRequest;
@@ -305,28 +308,44 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     @Override
     public void createApplication(String name, Staging staging, Integer diskQuota, Integer memory, List<String> uris,
                                   List<String> serviceNames, DockerInfo dockerInfo) {
-        Map<String, Object> appRequest = new HashMap<>();
-        appRequest.put("space_guid", target.getMetadata()
-                                           .getGuid());
-        appRequest.put("name", name);
-        appRequest.put("memory", memory);
-        if (diskQuota != null) {
-            appRequest.put("disk_quota", diskQuota);
-        }
+        CreateApplicationRequest.Builder requestBuilder = CreateApplicationRequest.builder()
+                                                                                  .spaceId(getTargetSpaceId())
+                                                                                  .name(name)
+                                                                                  .memory(memory)
+                                                                                  .diskQuota(diskQuota)
+                                                                                  .instances(1)
+                                                                                  .state(CloudApplication.State.STOPPED.toString());
         if (dockerInfo != null) {
-            appRequest.put("docker_image", dockerInfo.getImage());
-            if (dockerInfo.getDockerCredentials() != null) {
-                appRequest.put("docker_credentials", dockerInfo.getDockerCredentials());
+            requestBuilder.dockerImage(dockerInfo.getImage());
+            DockerCredentials dockerCredentials = dockerInfo.getDockerCredentials();
+            if (dockerCredentials != null) {
+                requestBuilder.dockerCredentials(org.cloudfoundry.client.v2.applications.DockerCredentials.builder()
+                                                                                                          .username(dockerCredentials.getUsername())
+                                                                                                          .password(dockerCredentials.getPassword())
+                                                                                                          .build());
             }
         }
-        appRequest.put("instances", 1);
-        addStagingToRequest(staging, appRequest);
-        appRequest.put("state", CloudApplication.State.STOPPED);
+        if (staging != null) {
+            requestBuilder.buildpack(staging.getBuildpack())
+                          .command(staging.getCommand())
+                          .healthCheckHttpEndpoint(staging.getHealthCheckHttpEndpoint())
+                          .healthCheckTimeout(staging.getHealthCheckTimeout())
+                          .healthCheckType(staging.getHealthCheckType())
+                          .enableSsh(staging.isSshEnabled());
+            String stackName = staging.getStack();
+            if (stackName != null) {
+                CloudStack stack = getStack(stackName);
+                UUID stackGuid = stack.getMetadata()
+                                      .getGuid();
+                requestBuilder.stackId(stackGuid.toString());
+            }
+        }
 
-        String appResp = getRestTemplate().postForObject(getUrl("/v2/apps"), appRequest, String.class);
-        Map<String, Object> appEntity = JsonUtil.convertJsonToMap(appResp);
-        UUID newAppGuid = CloudEntityResourceMapper.getV2Metadata(appEntity)
-                                                   .getGuid();
+        CreateApplicationResponse response = convertV3ClientExceptions(() -> v3Client.applicationsV2()
+                                                                                     .create(requestBuilder.build())
+                                                                                     .block());
+        UUID newAppGuid = UUID.fromString(response.getMetadata()
+                                                  .getId());
 
         if (shouldUpdateWithV3Buildpacks(staging)) {
             updateBuildpacks(newAppGuid, staging.getBuildpacks());
@@ -1828,40 +1847,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
             allResources.addAll(newResources);
         }
         return getNextUrl(respMap);
-    }
-
-    private void addStagingToRequest(Staging staging, Map<String, Object> appRequest) {
-        if (staging.getBuildpack() != null) {
-            appRequest.put("buildpack", staging.getBuildpack());
-        }
-        if (staging.getCommand() != null) {
-            appRequest.put("command", staging.getCommand());
-        }
-        if (staging.getStack() != null) {
-            appRequest.put("stack_guid", getStack(staging.getStack()).getMetadata()
-                                                                     .getGuid());
-        }
-        if (staging.getHealthCheckTimeout() != null) {
-            appRequest.put("health_check_timeout", staging.getHealthCheckTimeout());
-        }
-        if (staging.getHealthCheckType() != null) {
-            appRequest.put("health_check_type", staging.getHealthCheckType());
-        }
-        if (staging.getHealthCheckHttpEndpoint() != null) {
-            appRequest.put("health_check_http_endpoint", staging.getHealthCheckHttpEndpoint());
-        }
-        if (staging.isSshEnabled() != null) {
-            appRequest.put("enable_ssh", staging.isSshEnabled());
-        }
-        if (staging.getDockerInfo() != null) {
-            appRequest.put("docker_image", staging.getDockerInfo()
-                                                  .getImage());
-            if (staging.getDockerInfo()
-                       .getDockerCredentials() != null) {
-                appRequest.put("docker_credentials", staging.getDockerInfo()
-                                                            .getDockerCredentials());
-            }
-        }
     }
 
     private void addUris(List<String> uris, UUID applicationGuid) {
