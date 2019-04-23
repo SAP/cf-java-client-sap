@@ -322,14 +322,6 @@ public interface CloudControllerClient {
     void createUserProvidedService(CloudService service, Map<String, Object> credentials, String syslogDrainUrl);
 
     /**
-     * Debug application.
-     *
-     * @param applicationName name of application
-     * @param mode debug mode info
-     */
-    void debugApplication(String applicationName, CloudApplication.DebugMode mode);
-
-    /**
      * Delete all applications.
      */
     void deleteAllApplications();
@@ -1140,14 +1132,6 @@ public interface CloudControllerClient {
      * @param env map of environment settings
      */
     void updateApplicationEnv(String applicationName, Map<String, String> env);
-
-    /**
-     * Update application env using a list of strings each with one environment setting.
-     *
-     * @param applicationName name of application
-     * @param env list of environment settings
-     */
-    void updateApplicationEnv(String applicationName, List<String> env);
 
     /**
      * Update application instances.

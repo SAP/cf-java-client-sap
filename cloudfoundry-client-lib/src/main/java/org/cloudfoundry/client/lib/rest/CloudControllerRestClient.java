@@ -118,8 +118,6 @@ public interface CloudControllerRestClient {
 
     void createUserProvidedService(CloudService service, Map<String, Object> credentials, String syslogDrainUrl);
 
-    void debugApplication(String applicationName, CloudApplication.DebugMode mode);
-
     void deleteAllApplications();
 
     void deleteAllServices();

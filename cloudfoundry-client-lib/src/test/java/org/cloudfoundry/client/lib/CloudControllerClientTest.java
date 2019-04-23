@@ -669,7 +669,7 @@ public class CloudControllerClientTest {
 
         CloudApplication application = connectedClient.getApplication(applicationName);
         assertNotNull(application);
-        assertEquals(CloudApplication.AppState.STOPPED, application.getState());
+        assertEquals(CloudApplication.State.STOPPED, application.getState());
 
         assertEquals(buildpackUrl, application.getStaging()
             .getBuildpackUrl());
@@ -717,7 +717,7 @@ public class CloudControllerClientTest {
 
         CloudApplication application = connectedClient.getApplication(applicationName);
         assertNotNull(application);
-        assertEquals(CloudApplication.AppState.STOPPED, application.getState());
+        assertEquals(CloudApplication.State.STOPPED, application.getState());
 
         assertEquals(2, application.getStaging()
             .getHealthCheckTimeout()
@@ -746,7 +746,7 @@ public class CloudControllerClientTest {
 
         CloudApplication application = connectedClient.getApplication(applicationName);
         assertNotNull(application);
-        assertEquals(CloudApplication.AppState.STOPPED, application.getState());
+        assertEquals(CloudApplication.State.STOPPED, application.getState());
 
         assertEquals(DEFAULT_STACK_NAME, application.getStaging()
             .getStack());
@@ -975,7 +975,7 @@ public class CloudControllerClientTest {
         connectedClient.startApplication(applicationName);
         CloudApplication application = connectedClient.getApplication(applicationName);
 
-        assertEquals(CloudApplication.AppState.STARTED, application.getState());
+        assertEquals(CloudApplication.State.STARTED, application.getState());
 
         waitForStatsAvailable(applicationName, instanceCount);
 
@@ -1618,27 +1618,6 @@ public class CloudControllerClientTest {
      */
 
     @Test
-    public void setEnvironmentThroughList() throws IOException {
-        String applicationName = createSpringTravelApp("env1");
-        CloudApplication application = connectedClient.getApplication(applicationName);
-        assertTrue(application.getEnv()
-            .isEmpty());
-
-        connectedClient.updateApplicationEnv(applicationName, asList("foo=bar", "bar=baz"));
-        application = connectedClient.getApplication(application.getName());
-        assertEquals(arrayToHashSet("foo=bar", "bar=baz"), listToHashSet(application.getEnv()));
-
-        connectedClient.updateApplicationEnv(applicationName, asList("foo=baz", "baz=bong"));
-        application = connectedClient.getApplication(application.getName());
-        assertEquals(arrayToHashSet("foo=baz", "baz=bong"), listToHashSet(application.getEnv()));
-
-        connectedClient.updateApplicationEnv(applicationName, new ArrayList<String>());
-        application = connectedClient.getApplication(application.getName());
-        assertTrue(application.getEnv()
-            .isEmpty());
-    }
-
-    @Test
     public void setEnvironmentThroughMap() throws IOException {
         String applicationName = createSpringTravelApp("env3");
         CloudApplication application = connectedClient.getApplication(applicationName);
@@ -1650,8 +1629,7 @@ public class CloudControllerClientTest {
         env1.put("bar", "baz");
         connectedClient.updateApplicationEnv(applicationName, env1);
         application = connectedClient.getApplication(application.getName());
-        assertEquals(env1, application.getEnvAsMap());
-        assertEquals(arrayToHashSet("foo=bar", "bar=baz"), listToHashSet(application.getEnv()));
+        assertEquals(env1, application.getEnv());
 
         Map<String, String> env2 = new HashMap<String, String>();
         env2.put("foo", "baz");
@@ -1659,16 +1637,11 @@ public class CloudControllerClientTest {
         connectedClient.updateApplicationEnv(applicationName, env2);
         application = connectedClient.getApplication(application.getName());
 
-        // Test the unparsed list first
-        assertEquals(arrayToHashSet("foo=baz", "baz=bong"), listToHashSet(application.getEnv()));
-
-        assertEquals(env2, application.getEnvAsMap());
+        assertEquals(env2, application.getEnv());
 
         connectedClient.updateApplicationEnv(applicationName, new HashMap<String, String>());
         application = connectedClient.getApplication(application.getName());
         assertTrue(application.getEnv()
-            .isEmpty());
-        assertTrue(application.getEnvAsMap()
             .isEmpty());
     }
 
@@ -1684,27 +1657,12 @@ public class CloudControllerClientTest {
         connectedClient.updateApplicationEnv(applicationName, env1);
         application = connectedClient.getApplication(application.getName());
 
-        // Test the unparsed list first
-        assertEquals(arrayToHashSet("key=foo=bar,fu=baz"), listToHashSet(application.getEnv()));
-
-        assertEquals(env1, application.getEnvAsMap());
+        assertEquals(env1, application.getEnv());
 
         connectedClient.updateApplicationEnv(applicationName, new HashMap<String, String>());
         application = connectedClient.getApplication(application.getName());
         assertTrue(application.getEnv()
             .isEmpty());
-        assertTrue(application.getEnvAsMap()
-            .isEmpty());
-    }
-
-    @Test
-    public void setEnvironmentWithoutEquals() throws IOException {
-        thrown.expect(IllegalArgumentException.class);
-        String applicationName = createSpringTravelApp("env2");
-        CloudApplication application = connectedClient.getApplication(applicationName);
-        assertTrue(application.getEnv()
-            .isEmpty());
-        connectedClient.updateApplicationEnv(applicationName, asList("foo:bar", "bar=baz"));
     }
 
     @Test
@@ -1777,7 +1735,7 @@ public class CloudControllerClientTest {
         createAndUploadExplodedSpringTestApp(applicationName);
         connectedClient.startApplication(applicationName);
         CloudApplication application = connectedClient.getApplication(applicationName);
-        assertEquals(CloudApplication.AppState.STARTED, application.getState());
+        assertEquals(CloudApplication.State.STARTED, application.getState());
     }
 
     @Test
@@ -1785,7 +1743,7 @@ public class CloudControllerClientTest {
         String applicationName = createSpringTravelApp("upload-start-stop");
         CloudApplication application = uploadSpringTravelApp(applicationName);
         assertNotNull(application);
-        assertEquals(CloudApplication.AppState.STOPPED, application.getState());
+        assertEquals(CloudApplication.State.STOPPED, application.getState());
 
         String url = computeApplicationUrlNoProtocol(applicationName);
         assertEquals(url, application.getUris()
@@ -1793,13 +1751,13 @@ public class CloudControllerClientTest {
 
         StartingInfo info = connectedClient.startApplication(applicationName);
         application = connectedClient.getApplication(applicationName);
-        assertEquals(CloudApplication.AppState.STARTED, application.getState());
+        assertEquals(CloudApplication.State.STARTED, application.getState());
         assertNotNull(info);
         assertNotNull(info.getStagingFile());
 
         connectedClient.stopApplication(applicationName);
         application = connectedClient.getApplication(applicationName);
-        assertEquals(CloudApplication.AppState.STOPPED, application.getState());
+        assertEquals(CloudApplication.State.STOPPED, application.getState());
     }
 
     @Test
@@ -1957,7 +1915,7 @@ public class CloudControllerClientTest {
         connectedClient.startApplication(applicationName);
         CloudApplication application = connectedClient.getApplication(applicationName);
         assertNotNull(application);
-        assertEquals(CloudApplication.AppState.STARTED, application.getState());
+        assertEquals(CloudApplication.State.STARTED, application.getState());
         assertEquals(uris, application.getUris());
         assertEquals("ruby simple.rb", application.getStaging()
             .getCommand());
@@ -1985,7 +1943,7 @@ public class CloudControllerClientTest {
         connectedClient.uploadApplication(applicationName, inputStream);
         connectedClient.startApplication(applicationName);
         CloudApplication env = connectedClient.getApplication(applicationName);
-        assertEquals(CloudApplication.AppState.STARTED, env.getState());
+        assertEquals(CloudApplication.State.STARTED, env.getState());
     }
 
     @Test
@@ -2002,13 +1960,13 @@ public class CloudControllerClientTest {
 
         CloudApplication application = connectedClient.getApplication(applicationName);
         assertNotNull(application);
-        assertEquals(CloudApplication.AppState.STOPPED, application.getState());
+        assertEquals(CloudApplication.State.STOPPED, application.getState());
 
         connectedClient.startApplication(applicationName);
 
         application = connectedClient.getApplication(applicationName);
         assertNotNull(application);
-        assertEquals(CloudApplication.AppState.STARTED, application.getState());
+        assertEquals(CloudApplication.State.STARTED, application.getState());
 
         connectedClient.deleteApplication(applicationName);
     }
@@ -2021,7 +1979,7 @@ public class CloudControllerClientTest {
         NonUnsubscribingUploadStatusCallback callback = new NonUnsubscribingUploadStatusCallback();
         connectedClient.uploadApplication(applicationName, file, callback);
         CloudApplication env = connectedClient.getApplication(applicationName);
-        assertEquals(CloudApplication.AppState.STOPPED, env.getState());
+        assertEquals(CloudApplication.State.STOPPED, env.getState());
         assertTrue(callback.progressCount >= 1); // must have taken at least 10 seconds
     }
 
@@ -2033,7 +1991,7 @@ public class CloudControllerClientTest {
         UnsubscribingUploadStatusCallback callback = new UnsubscribingUploadStatusCallback();
         connectedClient.uploadApplication(applicationName, file, callback);
         CloudApplication env = connectedClient.getApplication(applicationName);
-        assertEquals(CloudApplication.AppState.STOPPED, env.getState());
+        assertEquals(CloudApplication.State.STOPPED, env.getState());
         assertTrue(callback.progressCount == 1);
     }
 
@@ -2050,7 +2008,7 @@ public class CloudControllerClientTest {
         createAndUploadExplodedTestApp(applicationName, explodedDir, staging);
         connectedClient.startApplication(applicationName);
         CloudApplication env = connectedClient.getApplication(applicationName);
-        assertEquals(CloudApplication.AppState.STARTED, env.getState());
+        assertEquals(CloudApplication.State.STARTED, env.getState());
     }
 
     @Test
@@ -2062,7 +2020,7 @@ public class CloudControllerClientTest {
         connectedClient.startApplication(applicationName);
         CloudApplication application = connectedClient.getApplication(applicationName);
         assertNotNull(application);
-        assertEquals(CloudApplication.AppState.STARTED, application.getState());
+        assertEquals(CloudApplication.State.STARTED, application.getState());
         assertEquals(uris, application.getUris());
     }
 
@@ -2080,7 +2038,7 @@ public class CloudControllerClientTest {
         connectedClient.startApplication(applicationName);
         CloudApplication application = connectedClient.getApplication(applicationName);
         assertNotNull(application);
-        assertEquals(CloudApplication.AppState.STARTED, application.getState());
+        assertEquals(CloudApplication.State.STARTED, application.getState());
         assertEquals(Collections.singletonList(computeApplicationUrlNoProtocol(applicationName)), application.getUris());
     }
 

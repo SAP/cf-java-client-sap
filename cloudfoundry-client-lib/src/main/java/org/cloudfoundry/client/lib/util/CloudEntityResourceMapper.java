@@ -335,9 +335,7 @@ public class CloudEntityResourceMapper {
         CloudApplication app = new CloudApplication(getV2Meta(resource), getNameOfV2Resource(resource));
         app.setInstances(getAttributeOfV2Resource(resource, "instances", Integer.class));
         app.setServices(new ArrayList<String>());
-        app.setState(CloudApplication.AppState.valueOf(getAttributeOfV2Resource(resource, "state", String.class)));
-        // TODO: debug
-        app.setDebug(null);
+        app.setState(CloudApplication.State.valueOf(getAttributeOfV2Resource(resource, "state", String.class)));
 
         Integer runningInstancesAttribute = getAttributeOfV2Resource(resource, "running_instances", Integer.class);
         if (runningInstancesAttribute != null) {

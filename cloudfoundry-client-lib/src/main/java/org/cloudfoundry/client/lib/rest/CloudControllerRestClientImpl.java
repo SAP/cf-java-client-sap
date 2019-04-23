@@ -308,7 +308,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         }
         appRequest.put("instances", 1);
         addStagingToRequest(staging, appRequest);
-        appRequest.put("state", CloudApplication.AppState.STOPPED);
+        appRequest.put("state", CloudApplication.State.STOPPED);
 
         String appResp = getRestTemplate().postForObject(getUrl("/v2/apps"), appRequest, String.class);
         Map<String, Object> appEntity = JsonUtil.convertJsonToMap(appResp);
@@ -416,11 +416,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                 .credentials(credentials)
                 .build())
             .block());
-    }
-
-    @Override
-    public void debugApplication(String applicationName, CloudApplication.DebugMode mode) {
-        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
     }
 
     @Override
@@ -623,7 +618,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     @Override
     public InstancesInfo getApplicationInstances(CloudApplication application) {
         if (application.getState()
-            .equals(CloudApplication.AppState.STARTED)) {
+            .equals(CloudApplication.State.STARTED)) {
             return doGetApplicationInstances(application.getMeta()
                 .getGuid());
         }
@@ -1173,7 +1168,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     @Override
     public StartingInfo startApplication(String applicationName) {
         CloudApplication application = getApplication(applicationName);
-        if (application.getState() == CloudApplication.AppState.STARTED) {
+        if (application.getState() == CloudApplication.State.STARTED) {
             return null;
         }
         UUID applicationGuid = application.getMeta()
@@ -1181,7 +1176,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         convertV3ClientExceptions(() -> v3Client.applicationsV2()
             .update(UpdateApplicationRequest.builder()
                 .applicationId(applicationGuid.toString())
-                .state(CloudApplication.AppState.STARTED.toString())
+                .state(CloudApplication.State.STARTED.toString())
                 .build())
             .block());
         return null;
@@ -1190,7 +1185,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     @Override
     public void stopApplication(String applicationName) {
         CloudApplication application = getApplication(applicationName);
-        if (application.getState() == CloudApplication.AppState.STOPPED) {
+        if (application.getState() == CloudApplication.State.STOPPED) {
             return;
         }
         UUID applicationGuid = application.getMeta()
@@ -1198,7 +1193,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         convertV3ClientExceptions(() -> v3Client.applicationsV2()
             .update(UpdateApplicationRequest.builder()
                 .applicationId(applicationGuid.toString())
-                .state(CloudApplication.AppState.STOPPED.toString())
+                .state(CloudApplication.State.STOPPED.toString())
                 .build())
             .block());
     }
@@ -1898,9 +1893,9 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @SuppressWarnings("unchecked")
-    private ApplicationStats doGetApplicationStats(UUID applicationGuid, CloudApplication.AppState appState) {
+    private ApplicationStats doGetApplicationStats(UUID applicationGuid, CloudApplication.State appState) {
         List<InstanceStats> instanceList = new ArrayList<>();
-        if (appState.equals(CloudApplication.AppState.STARTED)) {
+        if (appState.equals(CloudApplication.State.STARTED)) {
             Map<String, Object> respMap = getInstanceInfoForApp(applicationGuid, "stats");
             if (!CollectionUtils.isEmpty(respMap)) {
                 for (String instanceId : respMap.keySet()) {
@@ -2516,7 +2511,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                 .build()));
     }
 
-    private int getRunningInstances(UUID applicationGuid, CloudApplication.AppState appState) {
+    private int getRunningInstances(UUID applicationGuid, CloudApplication.State appState) {
         int running = 0;
         ApplicationStats applicationStats = doGetApplicationStats(applicationGuid, appState);
         if (applicationStats.getRecords() != null) {
@@ -2647,7 +2642,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         CloudApplication cloudApp = null;
         if (resource != null) {
             int running = getRunningInstances(applicationGuid,
-                CloudApplication.AppState.valueOf(CloudEntityResourceMapper.getAttributeOfV2Resource(resource, "state", String.class)));
+                CloudApplication.State.valueOf(CloudEntityResourceMapper.getAttributeOfV2Resource(resource, "state", String.class)));
             ((Map<String, Object>) resource.get("entity")).put("running_instances", running);
             cloudApp = resourceMapper.mapResource(resource, CloudApplication.class);
             cloudApp.setUris(findApplicationUris(cloudApp.getMeta()

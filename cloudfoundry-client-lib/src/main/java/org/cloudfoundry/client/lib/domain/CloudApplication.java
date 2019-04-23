@@ -16,11 +16,7 @@
 
 package org.cloudfoundry.client.lib.domain;
 
-import static org.cloudfoundry.client.lib.util.CloudUtil.parse;
-
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -30,25 +26,18 @@ import org.codehaus.jackson.annotate.JsonAutoDetect.Visibility;
 @JsonAutoDetect(fieldVisibility = Visibility.ANY, getterVisibility = Visibility.NONE, creatorVisibility = Visibility.NONE)
 public class CloudApplication extends CloudEntity {
 
-    private static final String BUILDPACK_URL_KEY = "buildpack";
-    private static final String COMMAND_KEY = "command";
-    private static final String DETECTED_BUILDPACK_KEY = "detected_buildpack";
-    private static final String DISK_KEY = "disk_quota";
-    private static final String MEMORY_KEY = "memory";
-
-    private DebugMode debug;
-    private int diskQuota;
-    private List<String> env = new ArrayList<>();
-    private int instances;
     private int memory;
+    private int diskQuota;
+    private int instances;
     private int runningInstances;
-    private List<String> services;
-    private CloudSpace space;
+    private State state;
     private Staging staging;
     private PackageState packageState;
     private String stagingError;
-    private AppState state;
     private List<String> uris;
+    private List<String> services;
+    private Map<String, String> env = new LinkedHashMap<>();
+    private CloudSpace space;
 
     // Required by Jackson.
     public CloudApplication() {
@@ -59,7 +48,7 @@ public class CloudApplication extends CloudEntity {
     }
 
     public CloudApplication(String name, String command, String buildpackUrl, int memory, int instances, List<String> uris,
-        List<String> serviceNames, AppState state) {
+        List<String> serviceNames, State state) {
         super(CloudEntity.Meta.defaultMeta(), name);
         this.staging = new Staging.StagingBuilder().command(command)
             .buildpackUrl(buildpackUrl)
@@ -71,63 +60,6 @@ public class CloudApplication extends CloudEntity {
         this.state = state;
     }
 
-    @SuppressWarnings("unchecked")
-    public CloudApplication(Map<String, Object> attributes) {
-        super(CloudEntity.Meta.defaultMeta(), parse(attributes.get("name")));
-        instances = (Integer) attributes.get("instances");
-        Integer runningInstancesAttribute = (Integer) attributes.get("runningInstances");
-        if (runningInstancesAttribute != null) {
-            runningInstances = runningInstancesAttribute;
-        }
-        uris = (List<String>) attributes.get("uris");
-        services = (List<String>) attributes.get("services");
-        state = AppState.valueOf((String) attributes.get("state"));
-        if (attributes.containsKey("memory")) {
-            memory = (Integer) attributes.get("memory");
-        }
-        if (attributes.containsKey("disk_quota")) {
-            diskQuota = (Integer) attributes.get("disk_quota");
-        }
-        env = (List<String>) attributes.get("env");
-
-        Map<String, Object> metaValue = parse(Map.class, attributes.get("meta"));
-        if (metaValue != null) {
-            String debugAttribute = (String) metaValue.get("debug");
-            if (debugAttribute != null) {
-                debug = DebugMode.valueOf(debugAttribute);
-            }
-            long created = parse(Long.class, metaValue.get("created"));
-            Date createdDate = created != 0 ? new Date(created * 1000) : null;
-            setMeta(new Meta(null, createdDate, null));
-
-            String command = null;
-            if (metaValue.containsKey(COMMAND_KEY)) {
-                command = (String) metaValue.get(COMMAND_KEY);
-            }
-            String buildpackUrl = null;
-            if (metaValue.containsKey(BUILDPACK_URL_KEY)) {
-                buildpackUrl = (String) metaValue.get(BUILDPACK_URL_KEY);
-            }
-            String detectedBuildpack = null;
-            if (metaValue.containsKey(DETECTED_BUILDPACK_KEY)) {
-                detectedBuildpack = (String) metaValue.get(DETECTED_BUILDPACK_KEY);
-            }
-
-            setStaging(new Staging.StagingBuilder().command(command)
-                .buildpackUrl(buildpackUrl)
-                .detectedBuildpack(detectedBuildpack)
-                .build());
-        }
-    }
-
-    public DebugMode getDebug() {
-        return debug;
-    }
-
-    public void setDebug(DebugMode debug) {
-        this.debug = debug;
-    }
-
     public int getDiskQuota() {
         return diskQuota;
     }
@@ -136,41 +68,12 @@ public class CloudApplication extends CloudEntity {
         this.diskQuota = diskQuota;
     }
 
-    public List<String> getEnv() {
+    public Map<String, String> getEnv() {
         return env;
     }
 
-    public void setEnv(Map<Object, Object> env) {
-        List<String> joined = new ArrayList<>();
-        for (Map.Entry<Object, Object> entry : env.entrySet()) {
-            // skip this environment variable if the key is null
-            if (null == entry.getKey()) {
-                continue;
-            }
-
-            String value;
-            // check that there is a value. If it is null, the value should be an empty string
-            if (null == entry.getValue()) {
-                value = "";
-            } else {
-                value = entry.getValue()
-                    .toString();
-            }
-
-            joined.add(entry.getKey()
-                .toString() + '=' + value);
-        }
-
-        this.env = joined;
-    }
-
-    public Map<String, String> getEnvAsMap() {
-        Map<String, String> envMap = new HashMap<>();
-        for (String nameAndValue : env) {
-            String[] parts = nameAndValue.split("=", 2);
-            envMap.put(parts[0], parts.length == 2 && parts[1].length() > 0 ? parts[1] : null);
-        }
-        return envMap;
+    public void setEnv(Map<String, String> env) {
+        this.env = env;
     }
 
     public int getInstances() {
@@ -187,14 +90,6 @@ public class CloudApplication extends CloudEntity {
 
     public void setMemory(int memory) {
         this.memory = memory;
-    }
-
-    // for backward compatibility
-    public Map<String, Integer> getResources() {
-        Map<String, Integer> resources = new HashMap<>();
-        resources.put(MEMORY_KEY, memory);
-        resources.put(DISK_KEY, diskQuota);
-        return resources;
     }
 
     public int getRunningInstances() {
@@ -245,11 +140,11 @@ public class CloudApplication extends CloudEntity {
         this.packageState = packageState;
     }
 
-    public AppState getState() {
+    public State getState() {
         return state;
     }
 
-    public void setState(AppState state) {
+    public void setState(State state) {
         this.state = state;
     }
 
@@ -264,15 +159,12 @@ public class CloudApplication extends CloudEntity {
     @Override
     public String toString() {
         return "CloudApplication [staging=" + staging + ", instances=" + instances + ", name=" + getName() + ", memory=" + memory
-            + ", diskQuota=" + diskQuota + ", state=" + state + ", debug=" + debug + ", uris=" + uris + ", services=" + services + ", env="
-            + env + ", space=" + space.getName() + "]";
+            + ", diskQuota=" + diskQuota + ", state=" + state + ", uris=" + uris + ", services=" + services + ", env=" + env + ", space="
+            + space.getName() + "]";
     }
 
-    public enum AppState {
+    public enum State {
         UPDATING, STARTED, STOPPED
     }
 
-    public enum DebugMode {
-        run, suspend
-    }
 }
