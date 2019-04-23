@@ -54,7 +54,7 @@ import org.cloudfoundry.client.lib.domain.CloudUser;
 import org.cloudfoundry.client.lib.domain.CrashesInfo;
 import org.cloudfoundry.client.lib.domain.DockerInfo;
 import org.cloudfoundry.client.lib.domain.InstancesInfo;
-import org.cloudfoundry.client.lib.domain.ServiceKey;
+import org.cloudfoundry.client.lib.domain.CloudServiceKey;
 import org.cloudfoundry.client.lib.domain.Staging;
 import org.cloudfoundry.client.lib.domain.Upload;
 import org.cloudfoundry.client.lib.domain.UploadToken;
@@ -228,7 +228,7 @@ public interface CloudControllerRestClient {
 
     CloudServiceInstance getServiceInstance(String serviceName, boolean required);
 
-    List<ServiceKey> getServiceKeys(String serviceName);
+    List<CloudServiceKey> getServiceKeys(String serviceName);
 
     List<CloudServiceOffering> getServiceOfferings();
 

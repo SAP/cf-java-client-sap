@@ -2,95 +2,53 @@ package org.cloudfoundry.client.lib.domain;
 
 import java.util.Map;
 
-public class CloudTask extends CloudEntity {
+import org.cloudfoundry.client.lib.domain.ImmutableCloudTask.ImmutableResult;
+import org.cloudfoundry.client.lib.domain.annotation.Nullable;
+import org.immutables.value.Value;
 
-    public enum State {
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
+@Value.Enclosing
+@Value.Immutable
+@JsonSerialize(as = ImmutableCloudTask.class)
+@JsonDeserialize(as = ImmutableCloudTask.class)
+public interface CloudTask extends CloudEntity {
+
+    @Nullable
+    String getCommand();
+
+    /**
+     * Only relevant for XSA.
+     * 
+     */
+    @Nullable
+    Map<String, String> getEnvironmentVariables();
+
+    @Nullable
+    Integer getMemory();
+
+    @Nullable
+    Integer getDiskQuota();
+
+    @Nullable
+    Result getResult();
+
+    @Nullable
+    State getState();
+
+    enum State {
         PENDING, RUNNING, SUCCEEDED, CANCELING, FAILED;
     }
 
-    public static class Result {
+    @Value.Immutable
+    @JsonSerialize(as = ImmutableResult.class)
+    @JsonDeserialize(as = ImmutableResult.class)
+    interface Result {
 
-        private String failureReason;
+        @Nullable
+        String getFailureReason();
 
-        public Result() {
-        }
-
-        public Result(String failureReason) {
-            this.failureReason = failureReason;
-        }
-
-        public String getFailureReason() {
-            return failureReason;
-        }
-
-        public void setFailureReason(String failureReason) {
-            this.failureReason = failureReason;
-        }
-
-    }
-
-    private String command;
-    // Used in XSA:
-    private Map<String, String> environmentVariables;
-    private Integer memory;
-    private Integer diskQuota;
-    private Result result;
-    private State state;
-
-    // Required by Jackson.
-    public CloudTask() {
-    }
-
-    public CloudTask(Meta meta, String name) {
-        super(meta, name);
-    }
-
-    public String getCommand() {
-        return command;
-    }
-
-    public Map<String, String> getEnvironmentVariables() {
-        return environmentVariables;
-    }
-
-    public Integer getMemory() {
-        return memory;
-    }
-
-    public Integer getDiskQuota() {
-        return diskQuota;
-    }
-
-    public Result getResult() {
-        return result;
-    }
-
-    public State getState() {
-        return state;
-    }
-
-    public void setCommand(String command) {
-        this.command = command;
-    }
-
-    public void setEnvironmentVariables(Map<String, String> environmentVariables) {
-        this.environmentVariables = environmentVariables;
-    }
-
-    public void setMemory(Integer memory) {
-        this.memory = memory;
-    }
-
-    public void setDiskQuota(Integer diskQuota) {
-        this.diskQuota = diskQuota;
-    }
-
-    public void setResult(Result result) {
-        this.result = result;
-    }
-
-    public void setState(State state) {
-        this.state = state;
     }
 
 }

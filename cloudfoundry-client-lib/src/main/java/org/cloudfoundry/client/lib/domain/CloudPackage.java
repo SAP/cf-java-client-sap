@@ -1,145 +1,56 @@
 package org.cloudfoundry.client.lib.domain;
 
-public class CloudPackage extends CloudEntity {
+import org.cloudfoundry.client.lib.domain.ImmutableCloudPackage.ImmutableChecksum;
+import org.cloudfoundry.client.lib.domain.ImmutableCloudPackage.ImmutableData;
+import org.cloudfoundry.client.lib.domain.annotation.Nullable;
+import org.immutables.value.Value;
 
-    private Type type;
-    private Data data;
-    private Status status;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
-    public Type getType() {
-        return type;
+@Value.Enclosing
+@Value.Immutable
+@JsonSerialize(as = ImmutableCloudPackage.class)
+@JsonDeserialize(as = ImmutableCloudPackage.class)
+public interface CloudPackage extends CloudEntity {
+
+    @Nullable
+    Type getType();
+
+    @Nullable
+    Data getData();
+
+    @Nullable
+    Status getStatus();
+
+    enum Type {
+        BITS, DOCKER,
     }
 
-    public void setType(Type type) {
-        this.type = type;
+    @Value.Immutable
+    @JsonSerialize(as = ImmutableData.class)
+    @JsonDeserialize(as = ImmutableData.class)
+    interface Data {
+
+        @Nullable
+        Checksum getChecksum();
+
+        @Nullable
+        String getError();
+
     }
 
-    public Data getData() {
-        return data;
-    }
+    @Value.Immutable
+    @JsonSerialize(as = ImmutableChecksum.class)
+    @JsonDeserialize(as = ImmutableChecksum.class)
+    interface Checksum {
 
-    public void setData(Data data) {
-        this.data = data;
-    }
+        @Nullable
+        String getAlgorithm();
 
-    public Status getStatus() {
-        return status;
-    }
+        @Nullable
+        String getValue();
 
-    public void setStatus(Status state) {
-        this.status = state;
-    }
-
-    public static class Builder {
-        private CloudPackage cloudPackage;
-
-        public Builder() {
-            cloudPackage = new CloudPackage();
-        }
-
-        public CloudPackage build() {
-            return cloudPackage;
-        }
-
-        public Builder type(Type type) {
-            cloudPackage.type = type;
-            return this;
-        }
-
-        public Builder data(Data data) {
-            cloudPackage.data = data;
-            return this;
-        }
-
-        public Builder status(Status status) {
-            cloudPackage.status = status;
-            return this;
-        }
-
-        public Builder meta(Meta meta) {
-            cloudPackage.setMeta(meta);
-            return this;
-        }
-    }
-
-    public static class Data {
-
-        private Checksum checksum;
-        private String error;
-
-        public Data(Checksum checksum, String error) {
-            this.checksum = checksum;
-            this.error = error;
-        }
-
-        public Checksum getChecksum() {
-            return checksum;
-        }
-
-        public void setChecksum(Checksum checksum) {
-            this.checksum = checksum;
-        }
-
-        public String getError() {
-            return error;
-        }
-
-        public void setError(String error) {
-            this.error = error;
-        }
-
-        public static class Checksum {
-
-            private String type;
-
-            private String value;
-
-            public Checksum(String type, String value) {
-                this.type = type;
-                this.value = value;
-            }
-
-            public String getType() {
-                return type;
-            }
-
-            public void setType(String type) {
-                this.type = type;
-            }
-
-            public String getValue() {
-                return value;
-            }
-
-            public void setValue(String value) {
-                this.value = value;
-            }
-        }
-    }
-
-    public enum Type {
-        BITS("bits"), DOCKER("docker");
-
-        private final String type;
-
-        Type(String status) {
-            this.type = status;
-        }
-
-        public static Type getEnum(String status) {
-            for (Type value : Type.values()) {
-                if (value.type.equals(status)) {
-                    return value;
-                }
-            }
-
-            throw new IllegalArgumentException("Invalid Status value: " + status);
-        }
-
-        @Override
-        public String toString() {
-            return type;
-        }
     }
 
 }

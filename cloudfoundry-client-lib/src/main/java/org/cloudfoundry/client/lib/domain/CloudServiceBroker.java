@@ -1,50 +1,26 @@
 package org.cloudfoundry.client.lib.domain;
 
-public class CloudServiceBroker extends CloudEntity {
+import org.cloudfoundry.client.lib.domain.annotation.Nullable;
+import org.immutables.value.Value;
 
-    private String username;
-    private String password;
-    private String url;
-    private String spaceGuid;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
-    // Required by Jackson.
-    public CloudServiceBroker() {
-    }
+@Value.Immutable
+@JsonSerialize(as = ImmutableCloudServiceBroker.class)
+@JsonDeserialize(as = ImmutableCloudServiceBroker.class)
+public interface CloudServiceBroker extends CloudEntity {
 
-    public CloudServiceBroker(Meta meta, String name) {
-        super(meta, name);
-    }
+    @Nullable
+    String getUsername();
 
-    public String getUsername() {
-        return username;
-    }
+    @Nullable
+    String getPassword();
 
-    public void setUsername(String username) {
-        this.username = username;
-    }
+    @Nullable
+    String getUrl();
 
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
-    }
-
-    public String getUrl() {
-        return url;
-    }
-
-    public void setUrl(String url) {
-        this.url = url;
-    }
-
-    public String getSpaceGuid() {
-        return spaceGuid;
-    }
-
-    public void setSpaceGuid(String spaceGuid) {
-        this.spaceGuid = spaceGuid;
-    }
+    @Nullable
+    String getSpaceGuid();
 
 }

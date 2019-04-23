@@ -16,103 +16,14 @@
 
 package org.cloudfoundry.client.lib.domain;
 
-import java.util.Date;
-import java.util.UUID;
+import org.cloudfoundry.client.lib.domain.annotation.Nullable;
 
-import org.codehaus.jackson.annotate.JsonIgnore;
+public interface CloudEntity {
 
-/**
- * @author Thomas Risberg
- */
-public class CloudEntity {
+    @Nullable
+    CloudMetadata getMetadata();
 
-    @JsonIgnore
-    private Meta meta;
-    private String name;
+    @Nullable
+    String getName();
 
-    public CloudEntity() {
-    }
-
-    public CloudEntity(Meta meta) {
-        this(meta, null);
-    }
-
-    public CloudEntity(Meta meta, String name) {
-        if (meta != null) {
-            this.meta = meta;
-        } else {
-            this.meta = Meta.defaultMeta();
-        }
-        this.name = name;
-    }
-
-    public Meta getMeta() {
-        return meta;
-    }
-
-    public void setMeta(Meta meta) {
-        this.meta = meta;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    @Override
-    public String toString() {
-        return this.getClass()
-            .getSimpleName() + ": (" + (meta == null || meta.getGuid() == null ? "-" : meta.getGuid()) + ") " + getName();
-    }
-
-    public static class Meta {
-
-        private Date created;
-
-        private UUID guid;
-
-        private Date updated;
-
-        private String url;
-
-        // Required by Jackson.
-        public Meta() {
-        }
-        
-        public Meta(UUID guid, Date created, Date updated) {
-            this.guid = guid;
-            this.created = created;
-            this.updated = updated;
-        }
-
-        public Meta(UUID guid, Date created, Date updated, String url) {
-            this.guid = guid;
-            this.created = created;
-            this.updated = updated;
-            this.url = url;
-        }
-
-        public static Meta defaultMeta() {
-            return new Meta(null, null, null);
-        }
-
-        public Date getCreated() {
-            return created;
-        }
-
-        public UUID getGuid() {
-            return guid;
-        }
-
-        public Date getUpdated() {
-            return updated;
-        }
-
-        public String getUrl() {
-            return url;
-        }
-    }
 }

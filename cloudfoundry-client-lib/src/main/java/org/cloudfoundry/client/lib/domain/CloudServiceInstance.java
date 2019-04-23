@@ -1,91 +1,33 @@
-/*
- * Copyright 2009-2012 the original author or authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package org.cloudfoundry.client.lib.domain;
 
 import java.util.List;
 import java.util.Map;
 
-/**
- * Class representing a service instance.
- *
- * @author Scott Frederick
- */
-public class CloudServiceInstance extends CloudEntity {
+import org.cloudfoundry.client.lib.domain.annotation.Nullable;
+import org.immutables.value.Value;
 
-    private List<CloudServiceBinding> bindings;
-    private Map<String, Object> credentials;
-    private String dashboardUrl;
-    private CloudService service;
-    private CloudServicePlan servicePlan;
-    private String type;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
-    // Required by Jackson.
-    public CloudServiceInstance() {
-    }
+@Value.Immutable
+@JsonSerialize(as = ImmutableCloudServiceInstance.class)
+@JsonDeserialize(as = ImmutableCloudServiceInstance.class)
+public interface CloudServiceInstance extends CloudEntity {
 
-    public CloudServiceInstance(Meta meta, String name) {
-        super(meta, name);
-    }
+    List<CloudServiceBinding> getBindings();
 
-    public List<CloudServiceBinding> getBindings() {
-        return bindings;
-    }
+    Map<String, Object> getCredentials();
 
-    public void setBindings(List<CloudServiceBinding> bindings) {
-        this.bindings = bindings;
-    }
+    @Nullable
+    String getDashboardUrl();
 
-    public Map<String, Object> getCredentials() {
-        return credentials;
-    }
+    @Nullable
+    CloudService getService();
 
-    public void setCredentials(Map<String, Object> credentials) {
-        this.credentials = credentials;
-    }
+    @Nullable
+    CloudServicePlan getServicePlan();
 
-    public String getDashboardUrl() {
-        return dashboardUrl;
-    }
+    @Nullable
+    String getType();
 
-    public void setDashboardUrl(String dashboardUrl) {
-        this.dashboardUrl = dashboardUrl;
-    }
-
-    public CloudService getService() {
-        return service;
-    }
-
-    public void setService(CloudService service) {
-        this.service = service;
-    }
-
-    public CloudServicePlan getServicePlan() {
-        return servicePlan;
-    }
-
-    public void setServicePlan(CloudServicePlan servicePlan) {
-        this.servicePlan = servicePlan;
-    }
-
-    public String getType() {
-        return type;
-    }
-
-    public void setType(String type) {
-        this.type = type;
-    }
 }

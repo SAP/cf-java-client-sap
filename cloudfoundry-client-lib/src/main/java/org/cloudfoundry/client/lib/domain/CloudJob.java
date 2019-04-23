@@ -1,72 +1,46 @@
-/*
- * Copyright 2009-2012 the original author or authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package org.cloudfoundry.client.lib.domain;
 
-/**
- * @author Scott Frederick
- */
-public class CloudJob extends CloudEntity {
+import org.cloudfoundry.client.lib.domain.annotation.Nullable;
+import org.immutables.value.Value;
 
-    private ErrorDetails errorDetails;
-    private Status status;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
-    // Required by Jackson.
-    public CloudJob() {
-    }
+@Value.Immutable
+@JsonSerialize(as = ImmutableCloudJob.class)
+@JsonDeserialize(as = ImmutableCloudJob.class)
+public interface CloudJob extends CloudEntity {
 
-    public CloudJob(Meta meta, Status status) {
-        this(meta, status, null);
-    }
+    @Nullable
+    Status getStatus();
 
-    public CloudJob(Meta meta, Status status, ErrorDetails errorDetails) {
-        super(meta);
-        this.status = status;
-        this.errorDetails = errorDetails;
-    }
+    @Nullable
+    ErrorDetails getErrorDetails();
 
-    public ErrorDetails getErrorDetails() {
-        return errorDetails;
-    }
+    enum Status {
 
-    public Status getStatus() {
-        return status;
-    }
-
-    public enum Status {
         FAILED("failed"), FINISHED("finished"), QUEUED("queued"), RUNNING("running");
 
-        private final String status;
+        private final String value;
 
-        Status(String status) {
-            this.status = status;
+        Status(String value) {
+            this.value = value;
         }
 
-        public static Status getEnum(String status) {
-            for (Status value : Status.values()) {
-                if (value.status.equals(status)) {
-                    return value;
+        public static Status fromString(String value) {
+            for (Status status : Status.values()) {
+                if (status.value.equals(value)) {
+                    return status;
                 }
             }
-            throw new IllegalArgumentException("Invalid Status value: " + status);
+            throw new IllegalArgumentException("Invalid job status: " + value);
         }
 
         @Override
         public String toString() {
-            return status;
+            return value;
         }
+
     }
+
 }

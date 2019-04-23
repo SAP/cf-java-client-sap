@@ -8,7 +8,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -40,7 +39,6 @@ import org.cloudfoundry.client.lib.domain.ApplicationLog;
 import org.cloudfoundry.client.lib.domain.ApplicationStats;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.cloudfoundry.client.lib.domain.CloudDomain;
-import org.cloudfoundry.client.lib.domain.CloudEntity;
 import org.cloudfoundry.client.lib.domain.CloudEvent;
 import org.cloudfoundry.client.lib.domain.CloudInfo;
 import org.cloudfoundry.client.lib.domain.CloudOrganization;
@@ -58,6 +56,10 @@ import org.cloudfoundry.client.lib.domain.CloudStack;
 import org.cloudfoundry.client.lib.domain.CloudUser;
 import org.cloudfoundry.client.lib.domain.CrashInfo;
 import org.cloudfoundry.client.lib.domain.CrashesInfo;
+import org.cloudfoundry.client.lib.domain.ImmutableCloudMetadata;
+import org.cloudfoundry.client.lib.domain.ImmutableCloudSecurityGroup;
+import org.cloudfoundry.client.lib.domain.ImmutableCloudService;
+import org.cloudfoundry.client.lib.domain.ImmutableCloudServiceBroker;
 import org.cloudfoundry.client.lib.domain.InstanceInfo;
 import org.cloudfoundry.client.lib.domain.InstanceState;
 import org.cloudfoundry.client.lib.domain.InstanceStats;
@@ -131,8 +133,6 @@ public class CloudControllerClientTest {
 
     // Pass -Dccng.target=http://api.cloudfoundry.com, vcap.me, or your own cloud -- must point to a v2 cloud controller
     private static final String CCNG_API_URL = System.getProperty("ccng.target", "http://api.run.pivotal.io");
-
-    private static final String CCNG_QUOTA_NAME_TEST = System.getProperty("ccng.quota", "test_quota");
 
     private static final String CCNG_SECURITY_GROUP_NAME_TEST = System.getProperty("ccng.securityGroup", "test_security_group");
 
@@ -290,29 +290,6 @@ public class CloudControllerClientTest {
     }
 
     @Test
-    public void CRUDQuota() throws Exception {
-        assumeTrue(CCNG_USER_IS_ADMIN);
-
-        // create quota
-        CloudQuota cloudQuota = new CloudQuota(null, CCNG_QUOTA_NAME_TEST);
-        connectedClient.createQuota(cloudQuota);
-
-        CloudQuota afterCreate = connectedClient.getQuota(CCNG_QUOTA_NAME_TEST, true);
-        assertNotNull(afterCreate);
-
-        // change quota mem to 10240
-        afterCreate.setMemoryLimit(10240);
-        connectedClient.updateQuota(afterCreate, CCNG_QUOTA_NAME_TEST);
-        CloudQuota afterUpdate = connectedClient.getQuota(CCNG_QUOTA_NAME_TEST, true);
-        assertEquals(10240, afterUpdate.getMemoryLimit());
-
-        // delete the quota
-        connectedClient.deleteQuota(CCNG_QUOTA_NAME_TEST);
-        CloudQuota afterDelete = connectedClient.getQuota(CCNG_QUOTA_NAME_TEST, false);
-        assertNull(afterDelete);
-    }
-
-    @Test
     public void accessRandomApplicationUrl() throws Exception {
         String applicationName = UUID.randomUUID()
             .toString();
@@ -391,12 +368,12 @@ public class CloudControllerClientTest {
         List<CloudRoute> routes = connectedClient.getRoutes(TEST_DOMAIN);
         assertNotNull(getRouteWithHost("my_route3", routes));
         assertEquals(1, getRouteWithHost("my_route3", routes).getAppsUsingRoute());
-        assertTrue(getRouteWithHost("my_route3", routes).inUse());
+        assertTrue(getRouteWithHost("my_route3", routes).isUsed());
 
         List<CloudRoute> defaultDomainRoutes = connectedClient.getRoutes(defaultDomainName);
         assertNotNull(getRouteWithHost(applicationName, defaultDomainRoutes));
         assertEquals(1, getRouteWithHost(applicationName, defaultDomainRoutes).getAppsUsingRoute());
-        assertTrue(getRouteWithHost(applicationName, defaultDomainRoutes).inUse());
+        assertTrue(getRouteWithHost(applicationName, defaultDomainRoutes).isUsed());
     }
 
     //
@@ -413,7 +390,7 @@ public class CloudControllerClientTest {
         String username = CCNG_USER_EMAIL;
         CloudUser user = orgUsers.get(username);
         assertNotNull("Retrieved user should not be null", user);
-        String userGuid = user.getMeta()
+        String userGuid = user.getMetadata()
             .getGuid()
             .toString();
 
@@ -649,14 +626,14 @@ public class CloudControllerClientTest {
         assertNotNull(application);
         assertEquals(applicationName, application.getName());
 
-        assertNotNull(application.getMeta()
+        assertNotNull(application.getMetadata()
             .getGuid());
 
         final Calendar now = Calendar.getInstance();
         now.setTime(new Date());
         final Calendar createdDate = Calendar.getInstance();
-        createdDate.setTime(application.getMeta()
-            .getCreated());
+        createdDate.setTime(application.getMetadata()
+            .getCreatedAt());
 
         assertEquals(now.get(Calendar.DATE), createdDate.get(Calendar.DATE));
     }
@@ -785,7 +762,10 @@ public class CloudControllerClientTest {
         rules.add(rule);
         rule = new SecurityGroupRule("icmp", null, "0.0.0.0/0", true, 0, 1);
         rules.add(rule);
-        CloudSecurityGroup securityGroup = new CloudSecurityGroup(CCNG_SECURITY_GROUP_NAME_TEST, rules);
+        CloudSecurityGroup securityGroup = ImmutableCloudSecurityGroup.builder()
+            .name(CCNG_SECURITY_GROUP_NAME_TEST)
+            .rules(rules)
+            .build();
 
         // Create
         connectedClient.createSecurityGroup(securityGroup);
@@ -801,7 +781,10 @@ public class CloudControllerClientTest {
         rules = new ArrayList<SecurityGroupRule>();
         rule = new SecurityGroupRule("all", null, "0.0.0.0-255.255.255.255");
         rules.add(rule);
-        securityGroup = new CloudSecurityGroup(CCNG_SECURITY_GROUP_NAME_TEST, rules);
+        securityGroup = ImmutableCloudSecurityGroup.builder()
+            .name(CCNG_SECURITY_GROUP_NAME_TEST)
+            .rules(rules)
+            .build();
         connectedClient.updateSecurityGroup(securityGroup);
 
         // Verify update
@@ -884,7 +867,7 @@ public class CloudControllerClientTest {
     public void getApplicationByGuid() {
         String applicationName = createSpringTravelApp("3");
         CloudApplication application = connectedClient.getApplication(applicationName);
-        CloudApplication guidApplication = connectedClient.getApplication(application.getMeta()
+        CloudApplication guidApplication = connectedClient.getApplication(application.getMetadata()
             .getGuid());
         assertEquals(application.getName(), guidApplication.getName());
     }
@@ -924,7 +907,7 @@ public class CloudControllerClientTest {
         connectedClient.createApplication(applicationName, staging, DEFAULT_MEMORY, uris, null);
         connectedClient.updateApplicationEnv(applicationName, Collections.singletonMap("testKey", "testValue"));
         CloudApplication application = connectedClient.getApplication(applicationName);
-        Map<String, Object> env = connectedClient.getApplicationEnvironment(application.getMeta()
+        Map<String, Object> env = connectedClient.getApplicationEnvironment(application.getMetadata()
             .getGuid());
         assertAppEnvironment(env);
     }
@@ -1028,8 +1011,8 @@ public class CloudControllerClientTest {
 
         CloudApplication application = apps.get(0);
         assertEquals(applicationName, application.getName());
-        assertNotNull(application.getMeta());
-        assertNotNull(application.getMeta()
+        assertNotNull(application.getMetadata());
+        assertNotNull(application.getMetadata()
             .getGuid());
 
         assertEquals(1, application.getServices()
@@ -1056,21 +1039,21 @@ public class CloudControllerClientTest {
             .getInstances());
         assertEquals(application.getMemory(), applications.get(0)
             .getMemory());
-        assertEquals(application.getMeta()
+        assertEquals(application.getMetadata()
             .getGuid(),
             applications.get(0)
-                .getMeta()
+                .getMetadata()
                 .getGuid());
-        assertEquals(application.getMeta()
-            .getCreated(),
+        assertEquals(application.getMetadata()
+            .getCreatedAt(),
             applications.get(0)
-                .getMeta()
-                .getCreated());
-        assertEquals(application.getMeta()
-            .getUpdated(),
+                .getMetadata()
+                .getCreatedAt());
+        assertEquals(application.getMetadata()
+            .getUpdatedAt(),
             applications.get(0)
-                .getMeta()
-                .getUpdated());
+                .getMetadata()
+                .getUpdatedAt());
         assertEquals(application.getUris(), applications.get(0)
             .getUris());
     }
@@ -1123,8 +1106,8 @@ public class CloudControllerClientTest {
         CloudService service = connectedClient.getService(serviceName);
         assertNotNull(service);
         assertEquals(serviceName, service.getName());
-        assertTimeWithinRange("Creation time should be very recent", service.getMeta()
-            .getCreated()
+        assertTimeWithinRange("Creation time should be very recent", service.getMetadata()
+            .getCreatedAt()
             .getTime(), FIVE_MINUTES);
 
         connectedClient.deleteService(serviceName);
@@ -1221,7 +1204,7 @@ public class CloudControllerClientTest {
         assertNotNull(brokers);
         assertTrue(brokers.size() >= 1);
         CloudServiceBroker broker0 = brokers.get(0);
-        assertNotNull(broker0.getMeta());
+        assertNotNull(broker0.getMetadata());
         assertNotNull(broker0.getName());
         assertNotNull(broker0.getUrl());
         assertNotNull(broker0.getUsername());
@@ -1254,7 +1237,7 @@ public class CloudControllerClientTest {
         assertNotNull(bindings);
         assertEquals(1, bindings.size());
         CloudServiceBinding binding = bindings.get(0);
-        assertEquals(application.getMeta()
+        assertEquals(application.getMetadata()
             .getGuid(), binding.getApplicationGuid());
         assertNotNull(binding.getCredentials());
         assertTrue(binding.getCredentials()
@@ -1274,20 +1257,19 @@ public class CloudControllerClientTest {
 
         CloudServiceOffering offering = null;
         for (CloudServiceOffering so : offerings) {
-            if (so.getLabel()
+            if (so.getName()
                 .equals(MYSQL_SERVICE_LABEL)) {
                 offering = so;
                 break;
             }
         }
         assertNotNull(offering);
-        assertEquals(MYSQL_SERVICE_LABEL, offering.getLabel());
+        assertNotNull(offering.getName());
+        assertEquals(MYSQL_SERVICE_LABEL, offering.getName());
         assertNotNull(offering.getCloudServicePlans());
         assertTrue(offering.getCloudServicePlans()
             .size() > 0);
-        assertNotNull(offering.getName());
         assertNotNull(offering.getDescription());
-        assertNotNull(offering.getLabel());
         assertNotNull(offering.getUniqueId());
         assertNotNull(offering.getExtra());
 
@@ -1296,7 +1278,6 @@ public class CloudControllerClientTest {
         assertNotNull(plan.getName());
         assertNotNull(plan.getUniqueId());
         assertNotNull(plan.getDescription());
-        assertSame(offering, plan.getServiceOffering());
     }
 
     @Test
@@ -1329,7 +1310,7 @@ public class CloudControllerClientTest {
     public void getStack() throws Exception {
         CloudStack stack = connectedClient.getStack(DEFAULT_STACK_NAME);
         assertNotNull(stack);
-        assertNotNull(stack.getMeta()
+        assertNotNull(stack.getMetadata()
             .getGuid());
         assertEquals(DEFAULT_STACK_NAME, stack.getName());
         assertNotNull(stack.getDescription());
@@ -1347,7 +1328,7 @@ public class CloudControllerClientTest {
             }
         }
         assertNotNull(stack);
-        assertNotNull(stack.getMeta()
+        assertNotNull(stack.getMetadata()
             .getGuid());
         assertEquals(DEFAULT_STACK_NAME, stack.getName());
         assertNotNull(stack.getDescription());
@@ -1429,24 +1410,6 @@ public class CloudControllerClientTest {
         assertNotNull(info.getSupport());
 
         assertEquals(CCNG_USER_EMAIL, info.getUser());
-        assertNotNull(info.getLimits());
-        // Just ensure that we got back some sensible values
-        assertTrue(info.getLimits()
-            .getMaxApps() > 0
-            && info.getLimits()
-                .getMaxApps() < 1000);
-        assertTrue(info.getLimits()
-            .getMaxServices() > 0
-            && info.getLimits()
-                .getMaxServices() < 1000);
-        assertTrue(info.getLimits()
-            .getMaxTotalMemory() > 0
-            && info.getLimits()
-                .getMaxTotalMemory() < 100000);
-        assertTrue(info.getLimits()
-            .getMaxUrisPerApp() > 0
-            && info.getLimits()
-                .getMaxUrisPerApp() < 100);
     }
 
     @Test
@@ -1572,24 +1535,23 @@ public class CloudControllerClientTest {
         boolean pass = ensureApplicationRunning("haash-broker");
         assertTrue("haash-broker failed to start", pass);
 
-        CloudServiceBroker newBroker = new CloudServiceBroker(CloudEntity.Meta.defaultMeta(), "haash-broker");
-        newBroker.setUsername("warreng");
-        newBroker.setPassword("snoopdogg");
-        newBroker.setUrl("http://haash-broker.cf.deepsouthcloud.com");
+        CloudServiceBroker newBroker = ImmutableCloudServiceBroker.builder()
+            .metadata(ImmutableCloudMetadata.builder()
+                .build())
+            .name("haash-broker")
+            .username("warreng")
+            .password("snoopdogg")
+            .url("http://haash-broker.cf.deepsouthcloud.com")
+            .build();
         connectedClient.createServiceBroker(newBroker);
 
         CloudServiceBroker broker = connectedClient.getServiceBroker("haash-broker");
         assertNotNull(broker);
-        assertNotNull(broker.getMeta());
+        assertNotNull(broker.getMetadata());
         assertEquals("haash-broker", broker.getName());
         assertEquals("http://haash-broker.cf.deepsouthcloud.com", broker.getUrl());
         assertEquals("warreng", broker.getUsername());
         assertNull(broker.getPassword());
-
-        newBroker = new CloudServiceBroker(CloudEntity.Meta.defaultMeta(), "haash-broker");
-        newBroker.setUsername("warreng");
-        newBroker.setPassword("snoopdogg");
-        newBroker.setUrl("http://haash-broker.cf" + ".deepsouthcloud.com");
 
         connectedClient.updateServiceBroker(newBroker);
 
@@ -1663,31 +1625,6 @@ public class CloudControllerClientTest {
         application = connectedClient.getApplication(application.getName());
         assertTrue(application.getEnv()
             .isEmpty());
-    }
-
-    @Test
-    public void setQuotaToOrg() throws Exception {
-        assumeTrue(CCNG_USER_IS_ADMIN);
-
-        // get old quota to restore after test
-        CloudOrganization organization = connectedClient.getOrganization(CCNG_USER_ORG, true);
-        CloudQuota oldQuota = organization.getQuota();
-
-        // create and set test_quota to organization
-        CloudQuota cloudQuota = new CloudQuota(null, CCNG_QUOTA_NAME_TEST);
-        connectedClient.createQuota(cloudQuota);
-        connectedClient.setQuotaToOrganization(CCNG_USER_ORG, CCNG_QUOTA_NAME_TEST);
-
-        // get the bound quota of organization
-        organization = connectedClient.getOrganization(CCNG_USER_ORG, true);
-        CloudQuota newQuota = organization.getQuota();
-
-        // bound quota should be equals to test_quota
-        assertEquals(CCNG_QUOTA_NAME_TEST, newQuota.getName());
-
-        // restore organization to default quota
-        connectedClient.setQuotaToOrganization(CCNG_USER_ORG, oldQuota.getName());
-        connectedClient.deleteQuota(CCNG_QUOTA_NAME_TEST);
     }
 
     @Before
@@ -2079,11 +2016,19 @@ public class CloudControllerClientTest {
 
         for (CloudEvent event : events) {
             assertNotNull(event.getActee());
-            assertNotNull(event.getActeeType());
-            assertNotNull(event.getActeeName());
+            assertNotNull(event.getActee()
+                .getGuid());
+            assertNotNull(event.getActee()
+                .getName());
+            assertNotNull(event.getActee()
+                .getType());
             assertNotNull(event.getActor());
-            assertNotNull(event.getActorType());
-            assertNotNull(event.getActorName());
+            assertNotNull(event.getActor()
+                .getGuid());
+            assertNotNull(event.getActor()
+                .getName());
+            assertNotNull(event.getActor()
+                .getType());
         }
     }
 
@@ -2297,9 +2242,13 @@ public class CloudControllerClientTest {
     //
 
     private CloudService createMySqlService(String serviceName) {
-        CloudService service = new CloudService(CloudEntity.Meta.defaultMeta(), serviceName);
-        service.setLabel(MYSQL_SERVICE_LABEL);
-        service.setPlan(MYSQL_SERVICE_PLAN);
+        CloudService service = ImmutableCloudService.builder()
+            .metadata(ImmutableCloudMetadata.builder()
+                .build())
+            .name(serviceName)
+            .label(MYSQL_SERVICE_LABEL)
+            .plan(MYSQL_SERVICE_PLAN)
+            .build();
 
         connectedClient.createService(service);
 
@@ -2309,11 +2258,15 @@ public class CloudControllerClientTest {
     private CloudService createMySqlServiceWithVersionAndProvider(String serviceName) {
         CloudServiceOffering databaseServiceOffering = getCloudServiceOffering(MYSQL_SERVICE_LABEL);
 
-        CloudService service = new CloudService(CloudEntity.Meta.defaultMeta(), serviceName);
-        service.setProvider(databaseServiceOffering.getProvider());
-        service.setLabel(databaseServiceOffering.getLabel());
-        service.setVersion(databaseServiceOffering.getVersion());
-        service.setPlan(MYSQL_SERVICE_PLAN);
+        CloudService service = ImmutableCloudService.builder()
+            .metadata(ImmutableCloudMetadata.builder()
+                .build())
+            .name(serviceName)
+            .provider(databaseServiceOffering.getProvider())
+            .label(databaseServiceOffering.getName())
+            .version(databaseServiceOffering.getVersion())
+            .plan(MYSQL_SERVICE_PLAN)
+            .build();
 
         connectedClient.createService(service);
 
@@ -2373,7 +2326,11 @@ public class CloudControllerClientTest {
     }
 
     private CloudService createUserProvidedService(String serviceName) {
-        CloudService service = new CloudService(CloudEntity.Meta.defaultMeta(), serviceName);
+        CloudService service = ImmutableCloudService.builder()
+            .metadata(ImmutableCloudMetadata.builder()
+                .build())
+            .name(serviceName)
+            .build();
 
         Map<String, Object> credentials = new HashMap<String, Object>();
         credentials.put("host", "example.com");
@@ -2586,7 +2543,7 @@ public class CloudControllerClientTest {
     private CloudServiceOffering getCloudServiceOffering(String label) {
         List<CloudServiceOffering> serviceOfferings = connectedClient.getServiceOfferings();
         for (CloudServiceOffering so : serviceOfferings) {
-            if (so.getLabel()
+            if (so.getName()
                 .equals(label)) {
                 return so;
             }
