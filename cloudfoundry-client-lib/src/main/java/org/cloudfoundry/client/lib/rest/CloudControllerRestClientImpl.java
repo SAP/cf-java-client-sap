@@ -49,9 +49,6 @@ import org.cloudfoundry.client.lib.RestLogCallback;
 import org.cloudfoundry.client.lib.StartingInfo;
 import org.cloudfoundry.client.lib.StreamingLogToken;
 import org.cloudfoundry.client.lib.UploadStatusCallback;
-import org.cloudfoundry.client.lib.archive.ApplicationArchive;
-import org.cloudfoundry.client.lib.archive.DirectoryApplicationArchive;
-import org.cloudfoundry.client.lib.archive.ZipApplicationArchive;
 import org.cloudfoundry.client.lib.domain.ApplicationLog;
 import org.cloudfoundry.client.lib.domain.ApplicationStats;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
@@ -87,7 +84,6 @@ import org.cloudfoundry.client.lib.domain.ServiceKey;
 import org.cloudfoundry.client.lib.domain.Staging;
 import org.cloudfoundry.client.lib.domain.Status;
 import org.cloudfoundry.client.lib.domain.Upload;
-import org.cloudfoundry.client.lib.domain.UploadApplicationPayload;
 import org.cloudfoundry.client.lib.domain.UploadToken;
 import org.cloudfoundry.client.lib.oauth2.OAuthClient;
 import org.cloudfoundry.client.lib.util.CloudEntityResourceMapper;
@@ -127,13 +123,11 @@ import org.cloudfoundry.client.v3.applications.SetApplicationCurrentDropletReque
 import org.cloudfoundry.client.v3.packages.UploadPackageRequest;
 import org.cloudfoundry.operations.CloudFoundryOperations;
 import org.cloudfoundry.util.PaginationUtils;
-import org.codehaus.jackson.map.ObjectMapper;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.ClientHttpRequest;
 import org.springframework.http.client.ClientHttpResponse;
@@ -141,8 +135,6 @@ import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.FileCopyUtils;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RequestCallback;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.ResponseErrorHandler;
@@ -1527,21 +1519,13 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         ZipFile zipFile = null;
         try {
             file = createTemporaryUploadFile(inputStream);
-            zipFile = new ZipFile(file);
-            ApplicationArchive archive = new ZipApplicationArchive(zipFile);
-            uploadApplication(applicationName, archive, callback);
+            uploadApplication(applicationName, file, callback);
         } finally {
             IOUtils.closeQuietly(zipFile);
             if (file != null) {
                 file.delete();
             }
         }
-    }
-
-    @Override
-    public void uploadApplication(String applicationName, ApplicationArchive archive, UploadStatusCallback callback) throws IOException {
-        UploadToken uploadToken = startUpload(applicationName, archive, callback, null);
-        processAsyncUpload(uploadToken.getToken(), callback);
     }
 
     @Override
@@ -1559,31 +1543,10 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return uploadToken;
     }
 
-    @Override
-    public UploadToken asyncUploadApplication(String applicationName, ApplicationArchive archive, UploadStatusCallback callback)
-        throws IOException {
-        UploadToken uploadToken = startUpload(applicationName, archive, callback, null);
-        processAsyncUploadInBackground(uploadToken.getToken(), callback);
-        return uploadToken;
-    }
-
     private UploadToken startUpload(String applicationName, File file, UploadStatusCallback callback, CloudResources knownRemoteResources)
         throws IOException {
-        Assert.notNull(file, "File must not be null");
-        if (file.isDirectory()) {
-            ApplicationArchive archive = new DirectoryApplicationArchive(file);
-            return startUpload(applicationName, archive, callback, knownRemoteResources);
-        }
-        try (ZipFile zipFile = new ZipFile(file)) {
-            ApplicationArchive archive = new ZipApplicationArchive(zipFile);
-            return startUpload(applicationName, archive, callback, knownRemoteResources);
-        }
-    }
-
-    private UploadToken startUpload(String applicationName, ApplicationArchive archive, UploadStatusCallback callback,
-        CloudResources knownRemoteResources) throws IOException {
         Assert.notNull(applicationName, "AppName must not be null");
-        Assert.notNull(archive, "Archive must not be null");
+        Assert.notNull(file, "File must not be null");
 
         if (callback == null) {
             callback = UploadStatusCallback.NONE;
@@ -1594,7 +1557,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
         v3Client.packages()
             .upload(UploadPackageRequest.builder()
-                .bits(archive.getPath())
+                .bits(file.toPath())
                 .packageId(packageGuid.toString())
                 .build())
             .block();
@@ -2332,18 +2295,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
             }
         }
         throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Service plan " + service.getPlan() + " not found.");
-    }
-
-    private HttpEntity<MultiValueMap<String, ?>> generatePartialResourceRequest(UploadApplicationPayload application,
-        CloudResources knownRemoteResources) throws IOException {
-        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>(2);
-        body.add("bits", application);
-        ObjectMapper mapper = new ObjectMapper();
-        String knownRemoteResourcesPayload = mapper.writeValueAsString(knownRemoteResources);
-        body.add("resources", knownRemoteResourcesPayload);
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-        return new HttpEntity<>(body, headers);
     }
 
     private List<Map<String, Object>> getAllResources(String urlPath) {

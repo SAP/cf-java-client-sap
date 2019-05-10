@@ -25,7 +25,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.cloudfoundry.client.lib.archive.ApplicationArchive;
 import org.codehaus.jackson.JsonGenerator;
 import org.codehaus.jackson.JsonParser;
 import org.codehaus.jackson.map.DeserializationContext;
@@ -75,37 +74,6 @@ public class CloudResources {
         while (resources.hasNext()) {
             this.resources.add(resources.next());
         }
-    }
-
-    /**
-     * Create a new {@link CloudResources} instance for the specified {@link ApplicationArchive}.
-     *
-     * @param archive the application archive
-     */
-    public CloudResources(ApplicationArchive archive) {
-        Assert.notNull(archive, "Archive must not be null");
-        this.resources = new ArrayList<>();
-        for (ApplicationArchive.Entry entry : archive.getEntries()) {
-            if (!entry.isDirectory()) {
-                String name = entry.getName();
-                long size = entry.getSize();
-                String sha1 = bytesToHex(entry.getSha1Digest());
-                CloudResource resource = new CloudResource(name, size, sha1);
-                resources.add(resource);
-            }
-        }
-    }
-
-    private static String bytesToHex(byte[] bytes) {
-        if (bytes == null) {
-            return null;
-        }
-        final StringBuilder hex = new StringBuilder(2 * bytes.length);
-        for (final byte b : bytes) {
-            hex.append(HEX_CHARS.charAt((b & 0xF0) >> 4))
-                .append(HEX_CHARS.charAt((b & 0x0F)));
-        }
-        return hex.toString();
     }
 
     /**

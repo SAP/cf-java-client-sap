@@ -28,10 +28,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
-import java.util.zip.ZipFile;
 
-import org.cloudfoundry.client.lib.archive.ApplicationArchive;
-import org.cloudfoundry.client.lib.archive.ZipApplicationArchive;
 import org.cloudfoundry.client.lib.domain.CloudResource;
 import org.cloudfoundry.client.lib.domain.CloudResources;
 import org.codehaus.jackson.JsonParseException;
@@ -84,21 +81,6 @@ public class CloudResourcesTest {
         CloudResources o = new CloudResources(resources);
         Set<String> expected = new HashSet<String>(Arrays.asList("1", "2"));
         assertThat(o.getFileNames(), is(expected));
-    }
-
-    @Test
-    public void shouldGetFromArchive() throws Exception {
-        ZipFile zipFile = new ZipFile(SampleProjects.springTravel());
-        try {
-            ApplicationArchive archive = new ZipApplicationArchive(zipFile);
-            CloudResources o = new CloudResources(archive);
-            List<CloudResource> l = o.asList();
-            assertThat(l.size(), is(96));
-            assertThat(l.get(0)
-                .getFilename(), is("index.html"));
-        } finally {
-            zipFile.close();
-        }
     }
 
     @Test
