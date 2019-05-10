@@ -78,7 +78,6 @@ import org.cloudfoundry.client.lib.domain.CloudStack;
 import org.cloudfoundry.client.lib.domain.CloudTask;
 import org.cloudfoundry.client.lib.domain.CloudUser;
 import org.cloudfoundry.client.lib.domain.CrashesInfo;
-import org.cloudfoundry.client.lib.domain.DockerCredentials;
 import org.cloudfoundry.client.lib.domain.DockerInfo;
 import org.cloudfoundry.client.lib.domain.ErrorDetails;
 import org.cloudfoundry.client.lib.domain.InstanceState;
@@ -97,8 +96,6 @@ import org.cloudfoundry.client.lib.util.JsonUtil;
 import org.cloudfoundry.client.v2.Metadata;
 import org.cloudfoundry.client.v2.Resource;
 import org.cloudfoundry.client.v2.applications.AssociateApplicationRouteRequest;
-import org.cloudfoundry.client.v2.applications.CreateApplicationRequest;
-import org.cloudfoundry.client.v2.applications.CreateApplicationResponse;
 import org.cloudfoundry.client.v2.applications.DeleteApplicationRequest;
 import org.cloudfoundry.client.v2.applications.ListApplicationServiceBindingsRequest;
 import org.cloudfoundry.client.v2.applications.RemoveApplicationRouteRequest;
@@ -127,6 +124,7 @@ import org.cloudfoundry.client.v2.userprovidedserviceinstances.CreateUserProvide
 import org.cloudfoundry.client.v2.userprovidedserviceinstances.ListUserProvidedServiceInstanceServiceBindingsRequest;
 import org.cloudfoundry.client.v3.Relationship;
 import org.cloudfoundry.client.v3.applications.SetApplicationCurrentDropletRequest;
+import org.cloudfoundry.client.v3.packages.UploadPackageRequest;
 import org.cloudfoundry.operations.CloudFoundryOperations;
 import org.cloudfoundry.util.PaginationUtils;
 import org.codehaus.jackson.map.ObjectMapper;
@@ -1586,31 +1584,22 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         CloudResources knownRemoteResources) throws IOException {
         Assert.notNull(applicationName, "AppName must not be null");
         Assert.notNull(archive, "Archive must not be null");
-        UUID applicationGuid = getRequiredApplicationGuid(applicationName);
 
         if (callback == null) {
             callback = UploadStatusCallback.NONE;
         }
-        if (knownRemoteResources == null) {
-            knownRemoteResources = new CloudResources();
-        }
-        callback.onCheckResources();
-        callback.onMatchedFileNames(knownRemoteResources.getFileNames());
-        UploadApplicationPayload payload = new UploadApplicationPayload(archive);
-        callback.onProcessMatchedResources(payload.getTotalUncompressedSize());
-        HttpEntity<?> entity = generatePartialResourceRequest(payload, knownRemoteResources);
 
+        UUID applicationGuid = getRequiredApplicationGuid(applicationName);
         UUID packageGuid = createPackageForApplication(applicationGuid);
 
-        ResponseEntity<Map<String, Object>> responseEntity = getRestTemplate().exchange(getUrl("/v3/packages/{packageGuid}/upload"),
-            HttpMethod.POST, entity, new ParameterizedTypeReference<Map<String, Object>>() {
-            }, packageGuid);
+        v3Client.packages()
+            .upload(UploadPackageRequest.builder()
+                .bits(archive.getPath())
+                .packageId(packageGuid.toString())
+                .build())
+            .block();
 
-        CloudPackage cloudPackage = resourceMapper.mapResource(responseEntity.getBody(), CloudPackage.class);
-
-        return new UploadToken(getUrl("/v3/packages/" + cloudPackage.getMeta()
-            .getGuid()), cloudPackage.getMeta()
-                .getGuid());
+        return new UploadToken(getUrl("/v3/packages/" + packageGuid), packageGuid);
     }
 
     private UUID createPackageForApplication(UUID applicationGuid) {

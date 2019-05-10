@@ -18,6 +18,7 @@ package org.cloudfoundry.client.lib.archive;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Path;
 
 /**
  * Interface that represents an application archive (for example a WAR file) that can be uploaded to Cloud Foundry. Archives consist of a
@@ -40,6 +41,13 @@ public interface ApplicationArchive {
      * @return the filename (for example myproject.war)
      */
     String getFilename();
+
+    /**
+     * Returns the Path of the archive.
+     *
+     * @return the path (for example /some/dir/myproject.war)
+     */
+    Path getPath();
 
     /**
      * A single entry contained within an {@link ApplicationArchive}. Entries are used to represent both files and directories.

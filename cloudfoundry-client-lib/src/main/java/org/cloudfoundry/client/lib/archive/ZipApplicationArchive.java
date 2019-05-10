@@ -18,6 +18,8 @@ package org.cloudfoundry.client.lib.archive;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -36,9 +38,9 @@ public class ZipApplicationArchive implements ApplicationArchive {
 
     private List<Entry> entries;
 
-    private String fileName;
-
     private ZipFile zipFile;
+
+    private Path path;
 
     /**
      * Create a new {@link ZipApplicationArchive} instance for the given <tt>zipFile</tt>.
@@ -49,7 +51,7 @@ public class ZipApplicationArchive implements ApplicationArchive {
         Assert.notNull(zipFile, "ZipFile must not be null");
         this.zipFile = zipFile;
         this.entries = adaptZipEntries(zipFile);
-        this.fileName = zipFile.getName();
+        this.path = Paths.get(zipFile.getName());
     }
 
     public Iterable<Entry> getEntries() {
@@ -57,7 +59,12 @@ public class ZipApplicationArchive implements ApplicationArchive {
     }
 
     public String getFilename() {
-        return fileName;
+        return path.getFileName()
+            .toString();
+    }
+
+    public Path getPath() {
+        return path;
     }
 
     private List<Entry> adaptZipEntries(ZipFile zipFile) {

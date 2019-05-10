@@ -19,7 +19,6 @@ package org.cloudfoundry.client.lib.domain;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 
 import org.cloudfoundry.client.lib.archive.ApplicationArchive;
@@ -71,7 +70,7 @@ public class UploadApplicationPayload {
      * @throws IOException
      */
     public InputStream getInputStream() throws IOException {
-        return Files.newInputStream(Paths.get(archive.getFilename()));
+        return Files.newInputStream(archive.getPath());
     }
 
     /**
