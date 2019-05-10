@@ -20,6 +20,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -54,6 +55,10 @@ public class DirectoryApplicationArchive implements ApplicationArchive {
 
     public String getFilename() {
         return directory.getName();
+    }
+
+    public Path getPath() {
+        return directory.toPath();
     }
 
     private void collectEntries(List<Entry> entries, File directory) {
