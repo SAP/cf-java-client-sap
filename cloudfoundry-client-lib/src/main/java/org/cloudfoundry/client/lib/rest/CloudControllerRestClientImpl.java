@@ -32,7 +32,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
-import java.util.zip.ZipFile;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
@@ -61,8 +60,6 @@ import org.cloudfoundry.client.lib.domain.CloudJob;
 import org.cloudfoundry.client.lib.domain.CloudOrganization;
 import org.cloudfoundry.client.lib.domain.CloudPackage;
 import org.cloudfoundry.client.lib.domain.CloudQuota;
-import org.cloudfoundry.client.lib.domain.CloudResource;
-import org.cloudfoundry.client.lib.domain.CloudResources;
 import org.cloudfoundry.client.lib.domain.CloudRoute;
 import org.cloudfoundry.client.lib.domain.CloudSecurityGroup;
 import org.cloudfoundry.client.lib.domain.CloudService;
@@ -1507,7 +1504,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public void uploadApplication(String applicationName, File file, UploadStatusCallback callback) throws IOException {
-        UploadToken uploadToken = startUpload(applicationName, file, callback, null);
+        UploadToken uploadToken = startUpload(applicationName, file, callback);
         processAsyncUpload(uploadToken.getToken(), callback);
     }
 
@@ -1516,12 +1513,11 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         Assert.notNull(inputStream, "InputStream must not be null");
 
         File file = null;
-        ZipFile zipFile = null;
         try {
             file = createTemporaryUploadFile(inputStream);
             uploadApplication(applicationName, file, callback);
         } finally {
-            IOUtils.closeQuietly(zipFile);
+            IOUtils.closeQuietly(inputStream);
             if (file != null) {
                 file.delete();
             }
@@ -1530,21 +1526,12 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public UploadToken asyncUploadApplication(String applicationName, File file, UploadStatusCallback callback) throws IOException {
-        UploadToken uploadToken = startUpload(applicationName, file, callback, null);
+        UploadToken uploadToken = startUpload(applicationName, file, callback);
         processAsyncUploadInBackground(uploadToken.getToken(), callback);
         return uploadToken;
     }
 
-    @Override
-    public UploadToken asyncUploadApplication(String applicationName, File file, UploadStatusCallback callback,
-        CloudResources knownRemoteResources) throws IOException {
-        UploadToken uploadToken = startUpload(applicationName, file, callback, knownRemoteResources);
-        processAsyncUploadInBackground(uploadToken.getToken(), callback);
-        return uploadToken;
-    }
-
-    private UploadToken startUpload(String applicationName, File file, UploadStatusCallback callback, CloudResources knownRemoteResources)
-        throws IOException {
+    private UploadToken startUpload(String applicationName, File file, UploadStatusCallback callback) throws IOException {
         Assert.notNull(applicationName, "AppName must not be null");
         Assert.notNull(file, "File must not be null");
 
@@ -2495,18 +2482,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
             }
             throw e;
         }
-    }
-
-    @Override
-    public CloudResources getKnownRemoteResources(CloudResources applicationResources) {
-        String applicationResourcesJson = JsonUtil.convertToJson(applicationResources);
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(JsonUtil.JSON_MEDIA_TYPE);
-        HttpEntity<String> requestEntity = new HttpEntity<>(applicationResourcesJson, headers);
-        ResponseEntity<String> responseEntity = getRestTemplate().exchange(getUrl("/v2/resource_match"), HttpMethod.PUT, requestEntity,
-            String.class);
-        List<CloudResource> cloudResources = JsonUtil.convertJsonToCloudResourceList(responseEntity.getBody());
-        return new CloudResources(cloudResources);
     }
 
     private UUID getRouteGuid(UUID domainGuid, String host, String path) {

@@ -34,7 +34,6 @@ import org.cloudfoundry.client.lib.domain.CloudEvent;
 import org.cloudfoundry.client.lib.domain.CloudInfo;
 import org.cloudfoundry.client.lib.domain.CloudOrganization;
 import org.cloudfoundry.client.lib.domain.CloudQuota;
-import org.cloudfoundry.client.lib.domain.CloudResources;
 import org.cloudfoundry.client.lib.domain.CloudRoute;
 import org.cloudfoundry.client.lib.domain.CloudSecurityGroup;
 import org.cloudfoundry.client.lib.domain.CloudService;
@@ -963,12 +962,6 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public UploadToken asyncUploadApplication(String applicationName, File file, UploadStatusCallback callback,
-        CloudResources knownRemoteResources) throws IOException {
-        return cc.asyncUploadApplication(applicationName, file, callback, knownRemoteResources);
-    }
-
-    @Override
     public Upload getUploadStatus(String uploadToken) {
         return cc.getUploadStatus(uploadToken);
     }
@@ -1016,10 +1009,5 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     @Override
     public List<CloudBuild> getBuildsForApplication(UUID applicationGuid) {
         return cc.getBuildsForApplication(applicationGuid);
-    }
-
-    @Override
-    public CloudResources getKnownRemoteResources(CloudResources applicationResources) {
-        return cc.getKnownRemoteResources(applicationResources);
     }
 }

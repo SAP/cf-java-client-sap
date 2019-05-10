@@ -41,7 +41,6 @@ import org.cloudfoundry.client.lib.domain.CloudEvent;
 import org.cloudfoundry.client.lib.domain.CloudInfo;
 import org.cloudfoundry.client.lib.domain.CloudOrganization;
 import org.cloudfoundry.client.lib.domain.CloudQuota;
-import org.cloudfoundry.client.lib.domain.CloudResources;
 import org.cloudfoundry.client.lib.domain.CloudRoute;
 import org.cloudfoundry.client.lib.domain.CloudSecurityGroup;
 import org.cloudfoundry.client.lib.domain.CloudService;
@@ -362,9 +361,6 @@ public interface CloudControllerRestClient {
 
     UploadToken asyncUploadApplication(String applicationName, File file, UploadStatusCallback callback) throws IOException;
 
-    UploadToken asyncUploadApplication(String applicationName, File file, UploadStatusCallback callback,
-        CloudResources knownRemoteResources) throws IOException;
-
     Upload getUploadStatus(String uploadToken);
 
     boolean areTasksSupported();
@@ -384,8 +380,6 @@ public interface CloudControllerRestClient {
     void bindDropletToApp(UUID dropletGuid, UUID applicationGuid);
 
     List<CloudBuild> getBuildsForApplication(UUID applicationGuid);
-
-    CloudResources getKnownRemoteResources(CloudResources applicationResources);
 
     RestTemplate getRestTemplate();
 
