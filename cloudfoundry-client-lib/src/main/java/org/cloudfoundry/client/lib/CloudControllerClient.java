@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import org.cloudfoundry.client.lib.archive.ApplicationArchive;
 import org.cloudfoundry.client.lib.domain.ApplicationLog;
 import org.cloudfoundry.client.lib.domain.ApplicationStats;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
@@ -1329,25 +1328,6 @@ public interface CloudControllerClient {
      */
     void uploadApplication(String applicationName, InputStream inputStream, UploadStatusCallback callback) throws IOException;
 
-    /**
-     * Upload an application to Cloud Foundry.
-     *
-     * @param applicationName the application name
-     * @param archive the application archive
-     * @throws java.io.IOException
-     */
-    void uploadApplication(String applicationName, ApplicationArchive archive) throws IOException;
-
-    /**
-     * Upload an application to Cloud Foundry.
-     *
-     * @param applicationName the application name
-     * @param archive the application archive
-     * @param callback a callback interface used to provide progress information or <tt>null</tt>
-     * @throws java.io.IOException
-     */
-    void uploadApplication(String applicationName, ApplicationArchive archive, UploadStatusCallback callback) throws IOException;
-
     UploadToken asyncUploadApplication(String applicationName, File file) throws IOException;
 
     UploadToken asyncUploadApplication(String applicationName, File file, UploadStatusCallback callback) throws IOException;
@@ -1365,11 +1345,6 @@ public interface CloudControllerClient {
      */
     UploadToken asyncUploadApplication(String applicationName, File file, UploadStatusCallback callback,
         CloudResources knownRemoteResources) throws IOException;
-
-    UploadToken asyncUploadApplication(String applicationName, ApplicationArchive archive) throws IOException;
-
-    UploadToken asyncUploadApplication(String applicationName, ApplicationArchive archive, UploadStatusCallback callback)
-        throws IOException;
 
     Upload getUploadStatus(String uploadToken);
 

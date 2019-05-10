@@ -32,7 +32,6 @@ import org.cloudfoundry.client.lib.RestLogCallback;
 import org.cloudfoundry.client.lib.StartingInfo;
 import org.cloudfoundry.client.lib.StreamingLogToken;
 import org.cloudfoundry.client.lib.UploadStatusCallback;
-import org.cloudfoundry.client.lib.archive.ApplicationArchive;
 import org.cloudfoundry.client.lib.domain.ApplicationLog;
 import org.cloudfoundry.client.lib.domain.ApplicationStats;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
@@ -361,15 +360,10 @@ public interface CloudControllerRestClient {
 
     void uploadApplication(String applicationName, InputStream inputStream, UploadStatusCallback callback) throws IOException;
 
-    void uploadApplication(String applicationName, ApplicationArchive archive, UploadStatusCallback callback) throws IOException;
-
     UploadToken asyncUploadApplication(String applicationName, File file, UploadStatusCallback callback) throws IOException;
 
     UploadToken asyncUploadApplication(String applicationName, File file, UploadStatusCallback callback,
         CloudResources knownRemoteResources) throws IOException;
-
-    UploadToken asyncUploadApplication(String applicationName, ApplicationArchive archive, UploadStatusCallback callback)
-        throws IOException;
 
     Upload getUploadStatus(String uploadToken);
 
@@ -391,7 +385,7 @@ public interface CloudControllerRestClient {
 
     List<CloudBuild> getBuildsForApplication(UUID applicationGuid);
 
-	CloudResources getKnownRemoteResources(CloudResources applicationResources);
+    CloudResources getKnownRemoteResources(CloudResources applicationResources);
 
     RestTemplate getRestTemplate();
 

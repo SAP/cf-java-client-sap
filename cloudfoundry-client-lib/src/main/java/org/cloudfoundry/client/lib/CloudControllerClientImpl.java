@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import org.cloudfoundry.client.lib.archive.ApplicationArchive;
 import org.cloudfoundry.client.lib.domain.ApplicationLog;
 import org.cloudfoundry.client.lib.domain.ApplicationStats;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
@@ -954,16 +953,6 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public void uploadApplication(String applicationName, ApplicationArchive archive) throws IOException {
-        cc.uploadApplication(applicationName, archive, null);
-    }
-
-    @Override
-    public void uploadApplication(String applicationName, ApplicationArchive archive, UploadStatusCallback callback) throws IOException {
-        cc.uploadApplication(applicationName, archive, callback);
-    }
-
-    @Override
     public UploadToken asyncUploadApplication(String applicationName, File file) throws IOException {
         return cc.asyncUploadApplication(applicationName, file, null);
     }
@@ -977,17 +966,6 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     public UploadToken asyncUploadApplication(String applicationName, File file, UploadStatusCallback callback,
         CloudResources knownRemoteResources) throws IOException {
         return cc.asyncUploadApplication(applicationName, file, callback, knownRemoteResources);
-    }
-
-    @Override
-    public UploadToken asyncUploadApplication(String applicationName, ApplicationArchive archive) throws IOException {
-        return cc.asyncUploadApplication(applicationName, archive, null);
-    }
-
-    @Override
-    public UploadToken asyncUploadApplication(String applicationName, ApplicationArchive archive, UploadStatusCallback callback)
-        throws IOException {
-        return cc.asyncUploadApplication(applicationName, archive, callback);
     }
 
     @Override
@@ -1040,8 +1018,8 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         return cc.getBuildsForApplication(applicationGuid);
     }
 
-	@Override
+    @Override
     public CloudResources getKnownRemoteResources(CloudResources applicationResources) {
         return cc.getKnownRemoteResources(applicationResources);
-	}
+    }
 }
