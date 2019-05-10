@@ -26,7 +26,6 @@ import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.cloudfoundry.client.lib.domain.CloudResource;
 import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
@@ -46,19 +45,6 @@ public class JsonUtil {
     protected static final Log logger = LogFactory.getLog(JsonUtil.class);
 
     private static final ObjectMapper mapper = new ObjectMapper();
-
-    public static List<CloudResource> convertJsonToCloudResourceList(String json) {
-        List<CloudResource> retList = new ArrayList<>();
-        if (json != null) {
-            try {
-                retList = mapper.readValue(json, new TypeReference<List<CloudResource>>() {
-                });
-            } catch (IOException e) {
-                logger.warn("Error while reading Java List from JSON response: " + json, e);
-            }
-        }
-        return retList;
-    }
 
     public static List<String> convertJsonToList(String json) {
         List<String> retList = new ArrayList<>();
