@@ -1542,12 +1542,12 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         UUID applicationGuid = getRequiredApplicationGuid(applicationName);
         UUID packageGuid = createPackageForApplication(applicationGuid);
 
-        v3Client.packages()
+        convertV3ClientExceptions(() -> v3Client.packages()
             .upload(UploadPackageRequest.builder()
                 .bits(file.toPath())
                 .packageId(packageGuid.toString())
                 .build())
-            .block();
+            .block());
 
         return new UploadToken(getUrl("/v3/packages/" + packageGuid), packageGuid);
     }
