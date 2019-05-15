@@ -1720,13 +1720,12 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @SuppressWarnings("unchecked")
     private String addPageOfResources(String nextUrl, List<Map<String, Object>> allResources) {
-        String response = getRestTemplate().getForObject(getUrl(nextUrl), String.class);
+        String response = getRestTemplate().getForObject(nextUrl, String.class);
         Map<String, Object> respMap = JsonUtil.convertJsonToMap(response);
         List<Map<String, Object>> newResources = (List<Map<String, Object>>) respMap.get("resources");
         if (newResources != null && !newResources.isEmpty()) {
             allResources.addAll(newResources);
         }
-
         return getNextUrl(respMap);
     }
 
@@ -2315,15 +2314,15 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     private String getNextUrl(Map<String, Object> responseMap) {
-        String nextUrl = getNextUrlValue(responseMap, "next_url");
+        String nextUrl = getNextUrlValue(responseMap);
         if (nextUrl != null && !nextUrl.isEmpty()) {
-            return nextUrl;
+            return getUrl(nextUrl);
         }
         Map<String, Object> paginationMap = getPaginationMap(responseMap);
         if (paginationMap == null) {
             return null;
         }
-        return getNextUrlValue(paginationMap, "next");
+        return getNextUrlValueV3(paginationMap);
     }
 
     @SuppressWarnings("unchecked")
@@ -2331,8 +2330,13 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return (Map<String, Object>) responseMap.get("pagination");
     }
 
-    private String getNextUrlValue(Map<String, Object> map, String nextUrlKey) {
-        return (String) map.get(nextUrlKey);
+    private String getNextUrlValue(Map<String, Object> map) {
+        return (String) map.get("next_url");
+    }
+
+    private String getNextUrlValueV3(Map<String, Object> map) {
+        Map<String, Object> next = (Map<String, Object>) map.get("next");
+        return next == null ? null : (String) next.get("href");
     }
 
     private UUID getRequiredApplicationGuid(String applicationName) {
