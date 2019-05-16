@@ -28,8 +28,8 @@ public class CloudService extends CloudEntity {
     private String provider;
     private String version;
 
+    // Required by Jackson.
     public CloudService() {
-        super();
     }
 
     public CloudService(Meta meta, String name) {

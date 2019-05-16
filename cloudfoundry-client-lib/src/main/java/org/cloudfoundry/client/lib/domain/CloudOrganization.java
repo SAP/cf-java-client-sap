@@ -24,6 +24,10 @@ public class CloudOrganization extends CloudEntity {
     private boolean billingEnabled = false;
     private CloudQuota quota;
 
+    // Required by Jackson.
+    public CloudOrganization() {
+    }
+
     public CloudOrganization(Meta meta, String name) {
         this(meta, name, false);
     }

@@ -33,8 +33,8 @@ public class CloudServiceInstance extends CloudEntity {
     private CloudServicePlan servicePlan;
     private String type;
 
+    // Required by Jackson.
     public CloudServiceInstance() {
-        super();
     }
 
     public CloudServiceInstance(Meta meta, String name) {

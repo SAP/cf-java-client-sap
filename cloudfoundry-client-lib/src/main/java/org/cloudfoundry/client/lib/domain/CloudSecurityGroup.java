@@ -31,9 +31,13 @@ import java.util.List;
  */
 public class CloudSecurityGroup extends CloudEntity {
 
-    private final List<SecurityGroupRule> rules = new ArrayList<>();
-    private final boolean runningDefault;
-    private final boolean stagingDefault;
+    private List<SecurityGroupRule> rules = new ArrayList<>();
+    private boolean runningDefault;
+    private boolean stagingDefault;
+
+    // Required by Jackson.
+    public CloudSecurityGroup() {
+    }
 
     public CloudSecurityGroup(String name, List<SecurityGroupRule> rules) {
         this(CloudEntity.Meta.defaultMeta(), name, rules);

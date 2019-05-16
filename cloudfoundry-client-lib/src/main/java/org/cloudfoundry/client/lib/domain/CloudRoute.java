@@ -25,6 +25,10 @@ public class CloudRoute extends CloudEntity {
     private CloudDomain domain;
     private String host;
 
+    // Required by Jackson.
+    public CloudRoute() {
+    }
+    
     public CloudRoute(Meta meta, String host, CloudDomain domain, int appsUsingRoute) {
         super(meta, host + "." + domain.getName());
         this.host = host;

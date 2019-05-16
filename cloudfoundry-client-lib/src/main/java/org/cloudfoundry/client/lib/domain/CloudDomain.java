@@ -23,6 +23,10 @@ public class CloudDomain extends CloudEntity {
 
     private CloudOrganization owner;
 
+    // Required by Jackson.
+    public CloudDomain() {
+    }
+
     public CloudDomain(Meta meta, String name, CloudOrganization owner) {
         super(meta, name);
         this.owner = owner;

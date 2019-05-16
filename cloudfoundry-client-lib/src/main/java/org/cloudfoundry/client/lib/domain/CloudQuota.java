@@ -10,6 +10,10 @@ public class CloudQuota extends CloudEntity {
     private int totalRoutes;
     private int totalServices;
 
+    // Required by Jackson.
+    public CloudQuota() {
+    }
+
     public CloudQuota(Meta meta, String name, boolean nonBasicServicesAllowed, int totalServices, int totalRoutes, long memoryLimit) {
         super(meta, name);
         this.totalServices = totalServices;

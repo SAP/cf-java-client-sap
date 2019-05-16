@@ -37,6 +37,10 @@ public class CloudTask extends CloudEntity {
     private Result result;
     private State state;
 
+    // Required by Jackson.
+    public CloudTask() {
+    }
+
     public CloudTask(Meta meta, String name) {
         super(meta, name);
     }

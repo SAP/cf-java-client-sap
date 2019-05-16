@@ -21,8 +21,12 @@ package org.cloudfoundry.client.lib.domain;
  */
 public class CloudJob extends CloudEntity {
 
-    private final ErrorDetails errorDetails;
-    private final Status status;
+    private ErrorDetails errorDetails;
+    private Status status;
+
+    // Required by Jackson.
+    public CloudJob() {
+    }
 
     public CloudJob(Meta meta, Status status) {
         this(meta, status, null);

@@ -5,13 +5,12 @@ import java.util.UUID;
 public class UploadToken {
 
     private String token;
-    
     private UUID packageGuid;
-   
+
+    // Required by Jackson.
     public UploadToken() {
-        
     }
-    
+
     public UploadToken(String token, UUID packageGuid) {
         this.token = token;
         this.packageGuid = packageGuid;
@@ -32,6 +31,5 @@ public class UploadToken {
     public void setPackageGuid(UUID packageGuid) {
         this.packageGuid = packageGuid;
     }
-    
-    
+
 }

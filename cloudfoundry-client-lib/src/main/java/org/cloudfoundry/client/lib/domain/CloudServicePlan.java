@@ -25,6 +25,7 @@ public class CloudServicePlan extends CloudEntity {
     private CloudServiceOffering serviceOffering;
     private String uniqueId;
 
+    // Required by Jackson.
     public CloudServicePlan() {
     }
 

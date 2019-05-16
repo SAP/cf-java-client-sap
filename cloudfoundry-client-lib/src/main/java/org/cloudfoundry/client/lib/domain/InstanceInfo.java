@@ -23,12 +23,16 @@ import org.cloudfoundry.client.lib.util.CloudUtil;
 
 public class InstanceInfo {
 
-    private final String debugIp;
-    private final int debugPort;
-    private final int index;
-    private final Date since;
+    private String debugIp;
+    private int debugPort;
+    private int index;
+    private Date since;
 
-    private final InstanceState state;
+    private InstanceState state;
+
+    // Required by Jackson.
+    public InstanceInfo() {
+    }
 
     public InstanceInfo(Map<String, Object> infoMap) {
         since = new Date(CloudUtil.parse(Long.class, infoMap.get("since")) * 1000);
