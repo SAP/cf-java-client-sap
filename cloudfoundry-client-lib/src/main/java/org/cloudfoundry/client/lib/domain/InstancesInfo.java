@@ -23,8 +23,12 @@ import java.util.Map;
 
 public class InstancesInfo {
 
-    private final List<InstanceInfo> instances;
+    private List<InstanceInfo> instances;
 
+    // Required by Jackson.
+    public InstancesInfo() {
+    }
+    
     public InstancesInfo(List<Map<String, Object>> attributes) {
         List<InstanceInfo> instances = new ArrayList<>(attributes.size());
         for (Map<String, Object> data : attributes) {

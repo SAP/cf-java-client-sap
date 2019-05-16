@@ -40,6 +40,10 @@ public class InstanceStats {
     private List<String> uris;
     private Usage usage;
 
+    // Required by Jackson.
+    public InstanceStats() {
+    }
+
     @SuppressWarnings("unchecked")
     public InstanceStats(String id, Map<String, Object> attributes) {
         this.id = id;

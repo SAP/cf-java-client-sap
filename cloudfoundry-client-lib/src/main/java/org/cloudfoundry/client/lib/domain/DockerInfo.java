@@ -7,6 +7,10 @@ public class DockerInfo {
     private String image;
     private DockerCredentials dockerCredentials;
 
+    // Required by Jackson.
+    public DockerInfo() {
+    }
+
     public DockerInfo(String image) {
         this.image = image;
     }

@@ -24,7 +24,11 @@ package org.cloudfoundry.client.lib;
  */
 public class StartingInfo {
 
-    private final String stagingFile;
+    private String stagingFile;
+
+    // Required by Jackson.
+    protected StartingInfo() {
+    }
 
     public StartingInfo(String stagingFile) {
         this.stagingFile = stagingFile;

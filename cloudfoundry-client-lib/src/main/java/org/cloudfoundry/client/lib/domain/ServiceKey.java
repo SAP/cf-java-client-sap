@@ -8,6 +8,10 @@ public class ServiceKey extends CloudEntity {
     private Map<String, Object> credentials;
     private CloudService service;
 
+    // Required by Jackson.
+    public ServiceKey() {
+    }
+
     public ServiceKey(Meta meta, String name) {
         super(meta, name);
     }
