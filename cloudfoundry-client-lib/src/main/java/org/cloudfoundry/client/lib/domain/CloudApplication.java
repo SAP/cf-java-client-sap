@@ -50,6 +50,10 @@ public class CloudApplication extends CloudEntity {
     private AppState state;
     private List<String> uris;
 
+    // Required by Jackson.
+    public CloudApplication() {
+    }
+
     public CloudApplication(Meta meta, String name) {
         super(meta, name);
     }

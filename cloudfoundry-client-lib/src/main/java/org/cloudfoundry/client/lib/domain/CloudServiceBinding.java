@@ -16,8 +16,8 @@ public class CloudServiceBinding extends CloudEntity {
     private Map<String, Object> bindingParameters;
     private String syslogDrainUrl;
 
+    // Required by Jackson.
     public CloudServiceBinding() {
-        super();
     }
 
     public CloudServiceBinding(Meta meta, String name) {

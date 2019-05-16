@@ -6,6 +6,10 @@ public class ErrorDetails {
     private String description;
     private String errorCode;
 
+    // Required by Jackson.
+    public ErrorDetails() {
+    }
+
     public ErrorDetails(long code, String description, String errorCode) {
         this.code = code;
         this.description = description;

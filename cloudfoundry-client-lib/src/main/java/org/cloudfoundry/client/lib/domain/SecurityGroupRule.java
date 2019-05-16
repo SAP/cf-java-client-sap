@@ -25,12 +25,16 @@ package org.cloudfoundry.client.lib.domain;
  */
 public class SecurityGroupRule {
 
-    private final Integer code;
-    private final String destination;
-    private final Boolean log;
-    private final String ports;
-    private final String protocol;
-    private final Integer type;
+    private Integer code;
+    private String destination;
+    private Boolean log;
+    private String ports;
+    private String protocol;
+    private Integer type;
+
+    // Required by Jackson.
+    public SecurityGroupRule() {
+    }
 
     public SecurityGroupRule(String protocol, String ports, String destination) {
         this(protocol, ports, destination, null);

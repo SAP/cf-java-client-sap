@@ -78,6 +78,10 @@ public class CloudEntity {
 
         private String url;
 
+        // Required by Jackson.
+        public Meta() {
+        }
+        
         public Meta(UUID guid, Date created, Date updated) {
             this.guid = guid;
             this.created = created;

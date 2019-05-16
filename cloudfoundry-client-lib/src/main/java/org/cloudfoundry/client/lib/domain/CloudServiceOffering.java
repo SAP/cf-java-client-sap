@@ -34,6 +34,10 @@ public class CloudServiceOffering extends CloudEntity {
     private String url;
     private String version;
 
+    // Required by Jackson.
+    public CloudServiceOffering() {
+    }
+    
     public CloudServiceOffering(Meta meta, String name) {
         super(meta, name);
     }

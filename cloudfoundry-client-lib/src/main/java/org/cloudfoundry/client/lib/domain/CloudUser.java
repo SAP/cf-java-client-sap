@@ -10,6 +10,10 @@ public class CloudUser extends CloudEntity {
     private String defaultSpaceGuid;
     private String username;
 
+    // Required by Jackson.
+    public CloudUser() {
+    }
+
     public CloudUser(Meta meta, String username, boolean admin, boolean active, String defaultSpaceGuid) {
         super(meta, username);
         this.username = username;

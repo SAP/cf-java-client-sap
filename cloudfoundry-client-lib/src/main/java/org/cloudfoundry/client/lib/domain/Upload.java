@@ -2,8 +2,12 @@ package org.cloudfoundry.client.lib.domain;
 
 public class Upload {
 
-    private final Status status;
-    private final ErrorDetails errorDetails;
+    private Status status;
+    private ErrorDetails errorDetails;
+
+    // Required by Jackson.
+    public Upload() {
+    }
 
     public Upload(Status status, ErrorDetails errorDetails) {
         this.status = status;

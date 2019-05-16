@@ -22,6 +22,10 @@ public class CloudEvent extends CloudEntity {
     private Date timestamp;
     private String type;
 
+    // Required by Jackson.
+    public CloudEvent() {
+    }
+
     public CloudEvent(Meta meta, String name) {
         super(meta, name);
     }

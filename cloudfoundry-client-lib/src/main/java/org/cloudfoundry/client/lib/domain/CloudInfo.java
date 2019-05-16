@@ -35,6 +35,10 @@ public class CloudInfo {
     private String user;
     private String version;
 
+    // Required by Jackson.
+    public CloudInfo() {
+    }
+
     public CloudInfo(String name, String support, String authorizationEndpoint, String build, String version, String user,
         String description, Limits limits, Usage usage, boolean allowDebug, String loggingEndpoint) {
         this.name = name;

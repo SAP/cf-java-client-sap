@@ -7,8 +7,8 @@ public class CloudServiceBroker extends CloudEntity {
     private String url;
     private String spaceGuid;
 
+    // Required by Jackson.
     public CloudServiceBroker() {
-        super();
     }
 
     public CloudServiceBroker(Meta meta, String name) {

@@ -7,6 +7,10 @@ public class DockerCredentials {
     private String username;
     private String password;
 
+    // Required by Jackson.
+    public DockerCredentials() {
+    }
+
     public DockerCredentials(String username, String password) {
         this.username = username;
         this.password = password;

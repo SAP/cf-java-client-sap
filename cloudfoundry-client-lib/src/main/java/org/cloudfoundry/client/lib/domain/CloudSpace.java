@@ -23,6 +23,10 @@ public class CloudSpace extends CloudEntity {
 
     private CloudOrganization organization;
 
+    // Required by Jackson.
+    public CloudSpace() {
+    }
+    
     public CloudSpace(Meta meta, String name, CloudOrganization organization) {
         super(meta, name);
         this.organization = organization;
