@@ -5,6 +5,7 @@ import java.util.Map;
 
 import org.cloudfoundry.AllowNulls;
 import org.cloudfoundry.client.lib.domain.annotation.Nullable;
+import org.cloudfoundry.client.v3.Metadata;
 import org.immutables.value.Value;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -60,6 +61,9 @@ public interface CloudApplication extends CloudEntity, Derivable<CloudApplicatio
 
     @Nullable
     CloudSpace getSpace();
+
+    @Nullable
+    Metadata getV3Metadata();
 
     @Override
     default CloudApplication derive() {

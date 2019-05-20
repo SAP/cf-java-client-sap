@@ -1,6 +1,7 @@
 package org.cloudfoundry.client.lib.domain;
 
 import org.cloudfoundry.client.lib.domain.annotation.Nullable;
+import org.cloudfoundry.client.v3.Metadata;
 import org.immutables.value.Value;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -22,6 +23,9 @@ public interface CloudService extends CloudEntity, Derivable<CloudService> {
 
     @Nullable
     String getVersion();
+
+    @Nullable
+    Metadata getV3Metadata();
 
     default boolean isUserProvided() {
         return getPlan() == null && getProvider() == null && getVersion() == null;

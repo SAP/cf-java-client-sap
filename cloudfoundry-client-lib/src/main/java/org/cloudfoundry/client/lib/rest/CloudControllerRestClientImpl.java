@@ -25,6 +25,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -195,6 +196,9 @@ import org.cloudfoundry.client.v3.packages.GetPackageRequest;
 import org.cloudfoundry.client.v3.packages.PackageRelationships;
 import org.cloudfoundry.client.v3.packages.PackageType;
 import org.cloudfoundry.client.v3.packages.UploadPackageRequest;
+import org.cloudfoundry.client.v3.serviceInstances.ListServiceInstancesRequest;
+import org.cloudfoundry.client.v3.serviceInstances.ListServiceInstancesResponse;
+import org.cloudfoundry.client.v3.serviceInstances.ServiceInstanceResource;
 import org.cloudfoundry.client.v3.tasks.CancelTaskRequest;
 import org.cloudfoundry.client.v3.tasks.CreateTaskRequest;
 import org.cloudfoundry.client.v3.tasks.GetTaskRequest;
@@ -657,6 +661,14 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
+    public List<CloudApplication> getApplicationsByMetadata(String labelSelector) {
+       Mono<ListApplicationsResponse> monoApplicationResponses = v3Client.applicationsV3().list(ListApplicationsRequest.builder().labelSelector(labelSelector).build());
+       Flux<ApplicationResource> fluxApplicationResources = PaginationUtils.requestClientV3Resources(page -> monoApplicationResponses);
+       List<ApplicationResource> applicationResources = fluxApplicationResources.collect(Collectors.toList()).block();
+       return applicationResources.stream().map(this::v3AppToV2App).collect(Collectors.toList());
+    }
+
+    @Override
     public Map<String, String> getCrashLogs(String applicationName) {
         throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
     }
@@ -861,6 +873,13 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     @Override
     public List<CloudService> getServices() {
         return fetchListWithAuxiliaryContent(this::getServiceInstanceResources, this::zipWithAuxiliaryServiceContent);
+    }
+
+    @Override
+    public List<CloudService> getServicesByMetadata(String labelSelector) {
+        Mono<ListServiceInstancesResponse> monoServicesResponse = v3Client.serviceInstancesV3().list(ListServiceInstancesRequest.builder().labelSelector(labelSelector).build());
+        Flux<ServiceInstanceResource> fluxServicesResources = PaginationUtils.requestClientV3Resources(page -> monoServicesResponse);
+        return fluxServicesResources.map(this::v3ServiceToV2Service).collect(Collectors.toList()).block();
     }
 
     @Override
@@ -1203,6 +1222,16 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
+    public void updateApplicationMetadata(UUID guid, org.cloudfoundry.client.v3.Metadata metadata) {
+        v3Client.applicationsV3()
+                .update(org.cloudfoundry.client.v3.applications.UpdateApplicationRequest.builder()
+                                                                                        .applicationId(guid.toString())
+                                                                                        .metadata(metadata)
+                                                                                        .build())
+                .block();
+    }
+
+    @Override
     public void updateApplicationMemory(String applicationName, int memory) {
         UUID applicationGuid = getRequiredApplicationGuid(applicationName);
         v3Client.applicationsV2()
@@ -1288,6 +1317,16 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     @Override
     public void updateSecurityGroup(String name, InputStream jsonRulesFile) {
         throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
+    }
+
+    @Override
+    public void updateServiceMetadata(UUID guid, org.cloudfoundry.client.v3.Metadata metadata) {
+        v3Client.serviceInstancesV3()
+                .update(UpdateServiceInstanceRequest.builder()
+                        .serviceInstanceId(guid.toString())
+                        .metadata(metadata)
+                        .build())
+                .block();
     }
 
     @Override
@@ -2721,5 +2760,4 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                .map(resourceMapper)
                                .map(Derivable::derive);
     }
-
 }
