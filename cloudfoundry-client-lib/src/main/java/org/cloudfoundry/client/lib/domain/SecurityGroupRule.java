@@ -1,88 +1,29 @@
-/*
- * Copyright 2015 the original author or authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package org.cloudfoundry.client.lib.domain;
 
-/**
- * A single rule within a security group. See <a href="http://docs.cloudfoundry.org/adminguide/app-sec-groups.html">
- * http://docs.cloudfoundry.org/adminguide/app-sec-groups.html</a> for more details.
- *
- * @author David Ehringer
- * @see http://docs.cloudfoundry.org/adminguide/app-sec-groups.html
- */
-public class SecurityGroupRule {
+import org.cloudfoundry.client.lib.domain.annotation.Nullable;
+import org.immutables.value.Value;
 
-    private Integer code;
-    private String destination;
-    private Boolean log;
-    private String ports;
-    private String protocol;
-    private Integer type;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
-    // Required by Jackson.
-    public SecurityGroupRule() {
-    }
+@Value.Immutable
+@JsonSerialize(as = ImmutableSecurityGroupRule.class)
+@JsonDeserialize(as = ImmutableSecurityGroupRule.class)
+public interface SecurityGroupRule {
 
-    public SecurityGroupRule(String protocol, String ports, String destination) {
-        this(protocol, ports, destination, null);
-    }
+    String getProtocol();
 
-    public SecurityGroupRule(String protocol, String ports, String destination, Boolean log) {
-        this(protocol, ports, destination, log, null, null);
-    }
+    String getPorts();
 
-    /**
-     * @param protocol network protocol (tcp,icmp,udp,all)
-     * @param ports port or port range (applicable for tcp,udp,all), may be conditionally <code>null</code>
-     * @param destination destination CIDR or destination range
-     * @param log enables logging for the egress rule, may be <code>null</code>
-     * @param type control signal for icmp, may be <code>null</code>
-     * @param code control signal for icmp, may be <code>null</code>
-     */
-    public SecurityGroupRule(String protocol, String ports, String destination, Boolean log, Integer type, Integer code) {
-        this.protocol = protocol;
-        this.ports = ports;
-        this.destination = destination;
-        this.log = log;
-        this.type = type;
-        this.code = code;
-    }
+    String getDestination();
 
-    public Integer getCode() {
-        return code;
-    }
+    @Nullable
+    Boolean getLog();
 
-    public String getDestination() {
-        return destination;
-    }
+    @Nullable
+    Integer getType();
 
-    public Boolean getLog() {
-        return log;
-    }
-
-    public String getPorts() {
-        return ports;
-    }
-
-    public String getProtocol() {
-        return protocol;
-    }
-
-    public Integer getType() {
-        return type;
-    }
+    @Nullable
+    Integer getCode();
 
 }

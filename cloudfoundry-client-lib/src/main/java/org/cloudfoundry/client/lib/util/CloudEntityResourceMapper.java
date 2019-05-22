@@ -75,6 +75,11 @@ import org.cloudfoundry.client.lib.domain.ImmutableCloudSpace;
 import org.cloudfoundry.client.lib.domain.ImmutableCloudStack;
 import org.cloudfoundry.client.lib.domain.ImmutableCloudTask;
 import org.cloudfoundry.client.lib.domain.ImmutableCloudUser;
+import org.cloudfoundry.client.lib.domain.ImmutableDockerCredentials;
+import org.cloudfoundry.client.lib.domain.ImmutableDockerInfo;
+import org.cloudfoundry.client.lib.domain.ImmutableErrorDetails;
+import org.cloudfoundry.client.lib.domain.ImmutableSecurityGroupRule;
+import org.cloudfoundry.client.lib.domain.ImmutableStaging;
 import org.cloudfoundry.client.lib.domain.PackageState;
 import org.cloudfoundry.client.lib.domain.SecurityGroupRule;
 import org.cloudfoundry.client.lib.domain.Staging;
@@ -363,9 +368,15 @@ public class CloudEntityResourceMapper {
         List<SecurityGroupRule> rules = new ArrayList<>();
         List<Map<String, Object>> jsonRules = getV2ResourceAttribute(resource, "rules", List.class);
         for (Map<String, Object> jsonRule : jsonRules) {
-            rules.add(new SecurityGroupRule((String) jsonRule.get("protocol"), (String) jsonRule.get("ports"),
-                (String) jsonRule.get("destination"), (Boolean) jsonRule.get("log"), (Integer) jsonRule.get("type"),
-                (Integer) jsonRule.get("code")));
+            SecurityGroupRule rule = ImmutableSecurityGroupRule.builder()
+                .protocol((String) jsonRule.get("protocol"))
+                .ports((String) jsonRule.get("ports"))
+                .destination((String) jsonRule.get("destination"))
+                .log((Boolean) jsonRule.get("log"))
+                .type((Integer) jsonRule.get("type"))
+                .code((Integer) jsonRule.get("code"))
+                .build();
+            rules.add(rule);
         }
         return rules;
     }
@@ -388,14 +399,15 @@ public class CloudEntityResourceMapper {
         Map<String, String> dockerCredentials = getV2ResourceAttribute(resource, "docker_credentials", Map.class);
         DockerInfo dockerInfo = createDockerInfo(dockerImage, dockerCredentials);
 
-        Staging staging = new Staging.StagingBuilder().command(command)
+        Staging staging = ImmutableStaging.builder()
+            .command(command)
             .buildpackUrl(buildpack)
             .stack(stackName)
             .healthCheckTimeout(healthCheckTimeout)
             .detectedBuildpack(detectedBuildpack)
             .healthCheckType(healthCheckType)
             .healthCheckHttpEndpoint(healthCheckHttpEndpoint)
-            .sshEnabled(sshEnabled)
+            .isSshEnabled(sshEnabled)
             .dockerInfo(dockerInfo)
             .build();
 
@@ -477,16 +489,22 @@ public class CloudEntityResourceMapper {
         if (dockerImage == null) {
             return null;
         }
-        DockerInfo dockerInfo = new DockerInfo(dockerImage);
+        return ImmutableDockerInfo.builder()
+            .image(dockerImage)
+            .credentials(createDockerCredentials(dockerCredentials))
+            .build();
+    }
+
+    private DockerCredentials createDockerCredentials(Map<String, String> dockerCredentials) {
         String username = dockerCredentials.get("username");
         String password = dockerCredentials.get("password");
         if (username == null || password == null) {
-            return dockerInfo;
+            return null;
         }
-        DockerCredentials credentials = new DockerCredentials(username, password);
-        dockerInfo.setDockerCredentials(credentials);
-
-        return dockerInfo;
+        return ImmutableDockerCredentials.builder()
+            .username(username)
+            .password(password)
+            .build();
     }
 
     private CloudSecurityGroup mapApplicationSecurityGroupResource(Map<String, Object> resource) {
@@ -596,10 +614,11 @@ public class CloudEntityResourceMapper {
         if (errorDetailsResource == null) {
             return null;
         }
-        Long code = getValue(errorDetailsResource, "code", Long.class);
-        String description = getValue(errorDetailsResource, "description", String.class);
-        String errorCode = getValue(errorDetailsResource, "error_code", String.class);
-        return new ErrorDetails(code, description, errorCode);
+        return ImmutableErrorDetails.builder()
+            .code(getValue(errorDetailsResource, "code", Long.class))
+            .description(getValue(errorDetailsResource, "description", String.class))
+            .errorCode(getValue(errorDetailsResource, "error_code", String.class))
+            .build();
     }
 
     private CloudOrganization mapOrganizationResource(Map<String, Object> resource) {

@@ -78,6 +78,9 @@ import org.cloudfoundry.client.lib.domain.ErrorDetails;
 import org.cloudfoundry.client.lib.domain.ImmutableCloudApplication;
 import org.cloudfoundry.client.lib.domain.ImmutableCloudInfo;
 import org.cloudfoundry.client.lib.domain.ImmutableCloudServiceKey;
+import org.cloudfoundry.client.lib.domain.ImmutableErrorDetails;
+import org.cloudfoundry.client.lib.domain.ImmutableUpload;
+import org.cloudfoundry.client.lib.domain.ImmutableUploadToken;
 import org.cloudfoundry.client.lib.domain.InstanceState;
 import org.cloudfoundry.client.lib.domain.InstanceStats;
 import org.cloudfoundry.client.lib.domain.InstancesInfo;
@@ -305,8 +308,8 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         }
         if (dockerInfo != null) {
             appRequest.put("docker_image", dockerInfo.getImage());
-            if (dockerInfo.getDockerCredentials() != null) {
-                appRequest.put("docker_credentials", dockerInfo.getDockerCredentials());
+            if (dockerInfo.getCredentials() != null) {
+                appRequest.put("docker_credentials", dockerInfo.getCredentials());
             }
         }
         appRequest.put("instances", 1);
@@ -1561,7 +1564,10 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                 .build())
             .block());
 
-        return new UploadToken(getUrl("/v3/packages/" + packageGuid), packageGuid);
+        return ImmutableUploadToken.builder()
+            .token(getUrl("/v3/packages/" + packageGuid))
+            .packageGuid(packageGuid)
+            .build();
     }
 
     private UUID createPackageForApplication(UUID applicationGuid) {
@@ -1634,10 +1640,15 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     @Override
     public Upload getUploadStatus(String uploadToken) {
         CloudPackage cloudPackage = getCloudPackage(uploadToken);
-        ErrorDetails errorDetails = new ErrorDetails(0, cloudPackage.getData()
-            .getError(), null);
+        ErrorDetails errorDetails = ImmutableErrorDetails.builder()
+            .description(cloudPackage.getData()
+                .getError())
+            .build();
 
-        return new Upload(cloudPackage.getStatus(), errorDetails);
+        return ImmutableUpload.builder()
+            .status(cloudPackage.getStatus())
+            .errorDetails(errorDetails)
+            .build();
     }
 
     protected String doGetFile(String urlPath, UUID applicationGuid, int instanceIndex, String filePath, int startPosition,
@@ -1775,9 +1786,9 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
             appRequest.put("docker_image", staging.getDockerInfo()
                 .getImage());
             if (staging.getDockerInfo()
-                .getDockerCredentials() != null) {
+                .getCredentials() != null) {
                 appRequest.put("docker_credentials", staging.getDockerInfo()
-                    .getDockerCredentials());
+                    .getCredentials());
             }
         }
     }
