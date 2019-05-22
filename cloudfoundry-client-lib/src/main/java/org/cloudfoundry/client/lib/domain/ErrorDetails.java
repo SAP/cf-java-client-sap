@@ -1,30 +1,25 @@
 package org.cloudfoundry.client.lib.domain;
 
-public class ErrorDetails {
+import org.cloudfoundry.client.lib.domain.annotation.Nullable;
+import org.immutables.value.Value;
 
-    private long code;
-    private String description;
-    private String errorCode;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
-    // Required by Jackson.
-    public ErrorDetails() {
+@Value.Immutable
+@JsonSerialize(as = ImmutableErrorDetails.class)
+@JsonDeserialize(as = ImmutableErrorDetails.class)
+public interface ErrorDetails {
+
+    @Value.Default
+    default long getCode() {
+        return 0;
     }
 
-    public ErrorDetails(long code, String description, String errorCode) {
-        this.code = code;
-        this.description = description;
-        this.errorCode = errorCode;
-    }
+    @Nullable
+    String getDescription();
 
-    public long getCode() {
-        return code;
-    }
+    @Nullable
+    String getErrorCode();
 
-    public String getDescription() {
-        return description;
-    }
-
-    public String getErrorCode() {
-        return errorCode;
-    }
 }

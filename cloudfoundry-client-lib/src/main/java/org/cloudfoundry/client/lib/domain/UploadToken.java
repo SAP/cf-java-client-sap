@@ -2,34 +2,18 @@ package org.cloudfoundry.client.lib.domain;
 
 import java.util.UUID;
 
-public class UploadToken {
+import org.immutables.value.Value;
 
-    private String token;
-    private UUID packageGuid;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
-    // Required by Jackson.
-    public UploadToken() {
-    }
+@Value.Immutable
+@JsonSerialize(as = ImmutableUploadToken.class)
+@JsonDeserialize(as = ImmutableUploadToken.class)
+public interface UploadToken {
 
-    public UploadToken(String token, UUID packageGuid) {
-        this.token = token;
-        this.packageGuid = packageGuid;
-    }
+    String getToken();
 
-    public String getToken() {
-        return token;
-    }
-
-    public void setToken(String token) {
-        this.token = token;
-    }
-
-    public UUID getPackageGuid() {
-        return packageGuid;
-    }
-
-    public void setPackageGuid(UUID packageGuid) {
-        this.packageGuid = packageGuid;
-    }
+    UUID getPackageGuid();
 
 }

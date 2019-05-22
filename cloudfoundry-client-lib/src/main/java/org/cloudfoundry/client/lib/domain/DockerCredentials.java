@@ -1,42 +1,17 @@
 package org.cloudfoundry.client.lib.domain;
 
-import java.util.Objects;
+import org.immutables.value.Value;
 
-public class DockerCredentials {
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
-    private String username;
-    private String password;
+@Value.Immutable
+@JsonSerialize(as = ImmutableDockerCredentials.class)
+@JsonDeserialize(as = ImmutableDockerCredentials.class)
+public interface DockerCredentials {
 
-    // Required by Jackson.
-    public DockerCredentials() {
-    }
+    String getUsername();
 
-    public DockerCredentials(String username, String password) {
-        this.username = username;
-        this.password = password;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(username, password);
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (!(obj instanceof DockerCredentials)) {
-            return false;
-        }
-        DockerCredentials dockerCredentials = (DockerCredentials) obj;
-
-        return Objects.equals(username, dockerCredentials.username) && Objects.equals(password, dockerCredentials.password);
-    }
+    String getPassword();
 
 }

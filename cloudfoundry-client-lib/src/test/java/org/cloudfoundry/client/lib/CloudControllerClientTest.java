@@ -60,6 +60,8 @@ import org.cloudfoundry.client.lib.domain.ImmutableCloudMetadata;
 import org.cloudfoundry.client.lib.domain.ImmutableCloudSecurityGroup;
 import org.cloudfoundry.client.lib.domain.ImmutableCloudService;
 import org.cloudfoundry.client.lib.domain.ImmutableCloudServiceBroker;
+import org.cloudfoundry.client.lib.domain.ImmutableSecurityGroupRule;
+import org.cloudfoundry.client.lib.domain.ImmutableStaging;
 import org.cloudfoundry.client.lib.domain.InstanceInfo;
 import org.cloudfoundry.client.lib.domain.InstanceState;
 import org.cloudfoundry.client.lib.domain.InstanceStats;
@@ -620,7 +622,8 @@ public class CloudControllerClientTest {
     public void createApplication() {
         String applicationName = namespacedAppName("travel_test-0");
         List<String> uris = Collections.singletonList(computeApplicationUrl(applicationName));
-        Staging staging = new Staging();
+        Staging staging = ImmutableStaging.builder()
+            .build();
         connectedClient.createApplication(applicationName, staging, DEFAULT_MEMORY, uris, null);
         CloudApplication application = connectedClient.getApplication(applicationName);
         assertNotNull(application);
@@ -676,7 +679,8 @@ public class CloudControllerClientTest {
         connectedClient.addDomain(TEST_DOMAIN);
         List<String> uris = Collections.singletonList(TEST_DOMAIN);
 
-        Staging staging = new Staging();
+        Staging staging = ImmutableStaging.builder()
+            .build();
         connectedClient.createApplication(applicationName, staging, DEFAULT_MEMORY, uris, null);
         CloudApplication application = connectedClient.getApplication(applicationName);
         assertNotNull(application);
@@ -756,11 +760,24 @@ public class CloudControllerClientTest {
         assumeTrue(CCNG_USER_IS_ADMIN);
 
         List<SecurityGroupRule> rules = new ArrayList<SecurityGroupRule>();
-        SecurityGroupRule rule = new SecurityGroupRule("tcp", "80, 443", "205.158.11.29");
+        SecurityGroupRule rule = ImmutableSecurityGroupRule.builder()
+            .protocol("tcp")
+            .ports("80, 443")
+            .destination("205.158.11.29")
+            .build();
         rules.add(rule);
-        rule = new SecurityGroupRule("all", null, "0.0.0.0-255.255.255.255");
+        rule = ImmutableSecurityGroupRule.builder()
+            .protocol("all")
+            .destination("0.0.0.0-255.255.255.255")
+            .build();
         rules.add(rule);
-        rule = new SecurityGroupRule("icmp", null, "0.0.0.0/0", true, 0, 1);
+        rule = ImmutableSecurityGroupRule.builder()
+            .protocol("icmp")
+            .destination("0.0.0.0/0")
+            .log(true)
+            .type(0)
+            .code(1)
+            .build();
         rules.add(rule);
         CloudSecurityGroup securityGroup = ImmutableCloudSecurityGroup.builder()
             .name(CCNG_SECURITY_GROUP_NAME_TEST)
@@ -779,7 +796,10 @@ public class CloudControllerClientTest {
 
         // Update group
         rules = new ArrayList<SecurityGroupRule>();
-        rule = new SecurityGroupRule("all", null, "0.0.0.0-255.255.255.255");
+        rule = ImmutableSecurityGroupRule.builder()
+            .protocol("all")
+            .destination("0.0.0.0-255.255.255.255")
+            .build();
         rules.add(rule);
         securityGroup = ImmutableCloudSecurityGroup.builder()
             .name(CCNG_SECURITY_GROUP_NAME_TEST)
@@ -903,7 +923,8 @@ public class CloudControllerClientTest {
     public void getApplicationEnvironmentByGuid() {
         String applicationName = namespacedAppName("simple-app");
         List<String> uris = Collections.singletonList(computeApplicationUrl(applicationName));
-        Staging staging = new Staging();
+        Staging staging = ImmutableStaging.builder()
+            .build();
         connectedClient.createApplication(applicationName, staging, DEFAULT_MEMORY, uris, null);
         connectedClient.updateApplicationEnv(applicationName, Collections.singletonMap("testKey", "testValue"));
         CloudApplication application = connectedClient.getApplication(applicationName);
@@ -916,7 +937,8 @@ public class CloudControllerClientTest {
     public void getApplicationEnvironmentByName() {
         String applicationName = namespacedAppName("simple-app");
         List<String> uris = Collections.singletonList(computeApplicationUrl(applicationName));
-        Staging staging = new Staging();
+        Staging staging = ImmutableStaging.builder()
+            .build();
         connectedClient.createApplication(applicationName, staging, DEFAULT_MEMORY, uris, null);
         connectedClient.updateApplicationEnv(applicationName, Collections.singletonMap("testKey", "testValue"));
         Map<String, Object> env = connectedClient.getApplicationEnvironment(applicationName);
@@ -1858,7 +1880,8 @@ public class CloudControllerClientTest {
             .getCommand());
         connectedClient.stopApplication(applicationName);
 
-        Staging newStaging = new Staging.StagingBuilder().command("ruby simple.rb test")
+        Staging newStaging = ImmutableStaging.builder()
+            .command("ruby simple.rb test")
             .buildpackUrl("https://github" + ".com/cloudfoundry/heroku-buildpack-ruby")
             .build();
         connectedClient.updateApplicationStaging(applicationName, newStaging);
@@ -1892,7 +1915,9 @@ public class CloudControllerClientTest {
         File war = SampleProjects.nonAsciFileName();
         List<String> serviceNames = new ArrayList<String>();
 
-        connectedClient.createApplication(applicationName, new Staging(), DEFAULT_MEMORY, uris, serviceNames);
+        Staging staging = ImmutableStaging.builder()
+            .build();
+        connectedClient.createApplication(applicationName, staging, DEFAULT_MEMORY, uris, serviceNames);
         connectedClient.uploadApplication(applicationName, war.getCanonicalPath());
 
         CloudApplication application = connectedClient.getApplication(applicationName);
@@ -1941,7 +1966,8 @@ public class CloudControllerClientTest {
         String applicationName = namespacedAppName("env");
         ClassPathResource cpr = new ClassPathResource("apps/env/");
         File explodedDir = cpr.getFile();
-        Staging staging = new Staging();
+        Staging staging = ImmutableStaging.builder()
+            .build();
         createAndUploadExplodedTestApp(applicationName, explodedDir, staging);
         connectedClient.startApplication(applicationName);
         CloudApplication env = connectedClient.getApplication(applicationName);
@@ -1967,7 +1993,8 @@ public class CloudControllerClientTest {
         List<String> uris = new ArrayList<String>();
         uris.add(computeApplicationUrl(applicationName));
         List<String> services = new ArrayList<String>();
-        Staging staging = new Staging.StagingBuilder().command("node app.js")
+        Staging staging = ImmutableStaging.builder()
+            .command("node app.js")
             .build();
         File file = SampleProjects.standaloneNode();
         connectedClient.createApplication(applicationName, staging, 64, uris, services);
@@ -1977,10 +2004,6 @@ public class CloudControllerClientTest {
         assertNotNull(application);
         assertEquals(CloudApplication.State.STARTED, application.getState());
         assertEquals(Collections.singletonList(computeApplicationUrlNoProtocol(applicationName)), application.getUris());
-    }
-
-    private HashSet<String> arrayToHashSet(String... array) {
-        return listToHashSet(asList(array));
     }
 
     private void assertAppEnvironment(Map<String, Object> env) {
@@ -2209,7 +2232,9 @@ public class CloudControllerClientTest {
     private CloudApplication createAndUploadExplodedSpringTestApp(String applicationName) throws IOException {
         File explodedDir = SampleProjects.springTravelUnpacked(temporaryFolder);
         assertTrue("Expected exploded test app at " + explodedDir.getCanonicalPath(), explodedDir.exists());
-        createTestApp(applicationName, null, new Staging());
+        Staging staging = ImmutableStaging.builder()
+            .build();
+        createTestApp(applicationName, null, staging);
         connectedClient.uploadApplication(applicationName, explodedDir.getCanonicalPath());
         return connectedClient.getApplication(applicationName);
     }
@@ -2274,7 +2299,9 @@ public class CloudControllerClientTest {
     }
 
     private void createSpringApplication(String applicationName) {
-        createTestApp(applicationName, null, new Staging());
+        Staging staging = ImmutableStaging.builder()
+            .build();
+        createTestApp(applicationName, null, staging);
     }
 
     //
@@ -2282,16 +2309,20 @@ public class CloudControllerClientTest {
     //
 
     private void createSpringApplication(String applicationName, List<String> serviceNames) {
-        createTestApp(applicationName, serviceNames, new Staging());
+        Staging staging = ImmutableStaging.builder()
+            .build();
+        createTestApp(applicationName, serviceNames, staging);
     }
 
     private void createSpringApplication(String applicationName, String buildpackUrl) {
-        createTestApp(applicationName, null, new Staging.StagingBuilder().buildpackUrl(buildpackUrl)
+        createTestApp(applicationName, null, ImmutableStaging.builder()
+            .buildpackUrl(buildpackUrl)
             .build());
     }
 
     private void createSpringApplication(String applicationName, String stack, Integer healthCheckTimeout) {
-        createTestApp(applicationName, null, new Staging.StagingBuilder().stack(stack)
+        createTestApp(applicationName, null, ImmutableStaging.builder()
+            .stack(stack)
             .healthCheckTimeout(healthCheckTimeout)
             .build());
     }
@@ -2307,7 +2338,8 @@ public class CloudControllerClientTest {
     }
 
     private void createStandaloneRubyTestApp(String applicationName, List<String> uris, List<String> services) throws IOException {
-        Staging staging = new Staging.StagingBuilder().command("ruby simple.rb")
+        Staging staging = ImmutableStaging.builder()
+            .command("ruby simple.rb")
             .build();
         File file = SampleProjects.standaloneRuby();
         connectedClient.createApplication(applicationName, staging, 128, uris, services);

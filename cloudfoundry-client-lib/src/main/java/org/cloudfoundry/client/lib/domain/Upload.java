@@ -1,25 +1,19 @@
 package org.cloudfoundry.client.lib.domain;
 
-public class Upload {
+import org.cloudfoundry.client.lib.domain.annotation.Nullable;
+import org.immutables.value.Value;
 
-    private Status status;
-    private ErrorDetails errorDetails;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
-    // Required by Jackson.
-    public Upload() {
-    }
+@Value.Immutable
+@JsonSerialize(as = ImmutableUpload.class)
+@JsonDeserialize(as = ImmutableUpload.class)
+public interface Upload {
 
-    public Upload(Status status, ErrorDetails errorDetails) {
-        this.status = status;
-        this.errorDetails = errorDetails;
-    }
+    Status getStatus();
 
-    public Status getStatus() {
-        return status;
-    }
-
-    public ErrorDetails getErrorDetails() {
-        return errorDetails;
-    }
+    @Nullable
+    ErrorDetails getErrorDetails();
 
 }
