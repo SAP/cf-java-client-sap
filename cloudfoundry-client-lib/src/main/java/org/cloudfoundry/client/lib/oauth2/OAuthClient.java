@@ -22,7 +22,9 @@ import java.util.Map;
 
 import org.cloudfoundry.client.lib.CloudCredentials;
 import org.cloudfoundry.client.lib.CloudOperationException;
+import org.cloudfoundry.client.lib.adapters.OAuthTokenProvider;
 import org.cloudfoundry.client.lib.util.JsonUtil;
+import org.cloudfoundry.reactor.TokenProvider;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -51,7 +53,7 @@ public class OAuthClient {
     private URL authorizationUrl;
     private RestTemplate restTemplate;
     protected OAuth2AccessToken token;
-    private CloudCredentials credentials;
+    protected CloudCredentials credentials;
 
     public OAuthClient(URL authorizationUrl, RestTemplate restTemplate) {
         this.authorizationUrl = authorizationUrl;
@@ -65,8 +67,7 @@ public class OAuthClient {
             if (credentials.getToken() != null) {
                 this.token = credentials.getToken();
             } else {
-                this.token = createToken(credentials.getEmail(), credentials.getPassword(), credentials.getClientId(),
-                    credentials.getClientSecret());
+                this.token = createToken();
             }
         }
     }
@@ -81,8 +82,7 @@ public class OAuthClient {
             return null;
         }
         if (credentials.isRefreshable() && token.getExpiresIn() < 50) { // 50 seconds before expiration? Then refresh it.
-            token = refreshToken(token, credentials.getEmail(), credentials.getPassword(), credentials.getClientId(),
-                credentials.getClientSecret());
+            token = refreshToken();
         }
         return token;
     }
@@ -95,9 +95,10 @@ public class OAuthClient {
         return null;
     }
 
-    private OAuth2AccessToken createToken(String username, String password, String clientId, String clientSecret) {
-        OAuth2ProtectedResourceDetails resource = getResourceDetails(username, password, clientId, clientSecret);
-        AccessTokenRequest request = createAccessTokenRequest(username, password);
+    protected OAuth2AccessToken createToken() {
+        OAuth2ProtectedResourceDetails resource = getResourceDetails(credentials.getEmail(), credentials.getPassword(),
+            credentials.getClientId(), credentials.getClientSecret());
+        AccessTokenRequest request = createAccessTokenRequest(credentials.getEmail(), credentials.getPassword());
 
         ResourceOwnerPasswordAccessTokenProvider provider = createResourceOwnerPasswordAccessTokenProvider();
         try {
@@ -108,14 +109,18 @@ public class OAuthClient {
         }
     }
 
-    private OAuth2AccessToken refreshToken(OAuth2AccessToken currentToken, String username, String password, String clientId,
-        String clientSecret) {
-        OAuth2ProtectedResourceDetails resource = getResourceDetails(username, password, clientId, clientSecret);
-        AccessTokenRequest request = createAccessTokenRequest(username, password);
+    protected OAuth2AccessToken refreshToken() {
+        OAuth2ProtectedResourceDetails resource = getResourceDetails(credentials.getEmail(), credentials.getPassword(),
+            credentials.getClientId(), credentials.getClientSecret());
+        AccessTokenRequest request = createAccessTokenRequest(credentials.getEmail(), credentials.getPassword());
 
         ResourceOwnerPasswordAccessTokenProvider provider = createResourceOwnerPasswordAccessTokenProvider();
 
-        return provider.refreshAccessToken(resource, currentToken.getRefreshToken(), request);
+        return provider.refreshAccessToken(resource, token.getRefreshToken(), request);
+    }
+
+    public TokenProvider getTokenProvider() {
+        return new OAuthTokenProvider(this);
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })

@@ -31,9 +31,11 @@ import org.cloudfoundry.client.lib.domain.CloudSpace;
 import org.cloudfoundry.client.lib.oauth2.OAuthClient;
 import org.cloudfoundry.client.lib.util.RestUtil;
 import org.cloudfoundry.operations.CloudFoundryOperations;
+import org.cloudfoundry.reactor.ConnectionContext;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.type.TypeReference;
 import org.springframework.http.client.ClientHttpRequestFactory;
+import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
 
 /**
@@ -88,7 +90,8 @@ public class CloudControllerRestClientFactory {
 
     public CloudControllerRestClient createClient(URL controllerUrl, CloudCredentials credentials, String organizationName,
         String spaceName) {
-        return createClient(controllerUrl, credentials, organizationName, spaceName, createOAuthClient(controllerUrl));
+        return createClient(controllerUrl, credentials, organizationName, spaceName,
+            createOAuthClient(controllerUrl, credentials.getOrigin()));
     }
 
     public CloudControllerRestClient createClient(URL controllerUrl, CloudCredentials credentials, String organizationName,
@@ -100,23 +103,27 @@ public class CloudControllerRestClientFactory {
     }
 
     public CloudControllerRestClient createClient(URL controllerUrl, CloudCredentials credentials, CloudSpace target) {
-        return createClient(controllerUrl, credentials, target, createOAuthClient(controllerUrl));
+        return createClient(controllerUrl, credentials, target, createOAuthClient(controllerUrl, credentials.getOrigin()));
     }
 
     public CloudControllerRestClient createClient(URL controllerUrl, CloudCredentials credentials, CloudSpace target,
         OAuthClient oAuthClient) {
         RestTemplate restTemplate = createAuthorizationSettingRestTemplate(credentials, oAuthClient);
-        CloudFoundryOperations v3OperationsClient = v3ClientFactory.createOperationsClient(controllerUrl, oAuthClient, target);
         CloudFoundryClient v3Client = v3ClientFactory.createClient(controllerUrl, oAuthClient);
+        CloudFoundryOperations v3OperationsClient = v3ClientFactory.createOperationsClient(controllerUrl, v3Client, target);
 
         return new CloudControllerRestClientImpl(controllerUrl, credentials, restTemplate, oAuthClient, v3OperationsClient, v3Client,
             target);
     }
 
-    private OAuthClient createOAuthClient(URL controllerUrl) {
+    private OAuthClient createOAuthClient(URL controllerUrl, String origin) {
         Map<String, Object> infoMap = getInfoMap(controllerUrl);
         URL authorizationEndpoint = getAuthorizationEndpoint(infoMap);
-        return restUtil.createOAuthClient(authorizationEndpoint, httpProxyConfiguration, trustSelfSignedCerts);
+        if (StringUtils.isEmpty(origin)) {
+            return restUtil.createOAuthClient(authorizationEndpoint, httpProxyConfiguration, trustSelfSignedCerts);
+        }
+        ConnectionContext connectionContext = v3ClientFactory.getOrCreateConnectionContext(controllerUrl.getHost());
+        return restUtil.createOAuthClient(authorizationEndpoint, httpProxyConfiguration, trustSelfSignedCerts, connectionContext, origin);
     }
 
     private URL getAuthorizationEndpoint(Map<String, Object> infoMap) {
