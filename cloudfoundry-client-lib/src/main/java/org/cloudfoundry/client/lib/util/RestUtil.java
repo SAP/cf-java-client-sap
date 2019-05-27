@@ -20,9 +20,11 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.DefaultProxyRoutePlanner;
 import org.cloudfoundry.client.lib.HttpProxyConfiguration;
 import org.cloudfoundry.client.lib.oauth2.OAuthClient;
+import org.cloudfoundry.client.lib.oauth2.OAuthClientWithLoginHint;
 import org.cloudfoundry.client.lib.rest.CloudControllerResponseErrorHandler;
 import org.cloudfoundry.client.lib.rest.LoggingRestTemplate;
 import org.cloudfoundry.client.lib.rest.LoggregatorHttpMessageConverter;
+import org.cloudfoundry.reactor.ConnectionContext;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.http.converter.ByteArrayHttpMessageConverter;
@@ -42,6 +44,12 @@ public class RestUtil {
     public OAuthClient createOAuthClient(URL authorizationUrl, HttpProxyConfiguration httpProxyConfiguration,
         boolean trustSelfSignedCerts) {
         return new OAuthClient(authorizationUrl, createRestTemplate(httpProxyConfiguration, trustSelfSignedCerts));
+    }
+
+    public OAuthClient createOAuthClient(URL authorizationUrl, HttpProxyConfiguration httpProxyConfiguration,
+        boolean trustSelfSignedCerts, ConnectionContext connectionContext, String origin) {
+        return new OAuthClientWithLoginHint(authorizationUrl, createRestTemplate(httpProxyConfiguration, trustSelfSignedCerts),
+            connectionContext, origin);
     }
 
     public ClientHttpRequestFactory createRequestFactory(HttpProxyConfiguration httpProxyConfiguration, boolean trustSelfSignedCerts) {
