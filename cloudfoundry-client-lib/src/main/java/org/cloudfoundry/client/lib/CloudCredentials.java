@@ -30,6 +30,7 @@ public class CloudCredentials {
     private String email;
     private String password;
     private String proxyUser;
+    private String origin;
     private boolean refreshable = true;
     private OAuth2AccessToken token;
 
@@ -70,6 +71,23 @@ public class CloudCredentials {
         this.password = password;
         this.clientId = clientId;
         this.clientSecret = clientSecret;
+    }
+
+    /**
+     * Create credentials using email, password, client ID and login origin.
+     *
+     * @param email email to authenticate with
+     * @param password the password
+     * @param clientId the client ID to use for authorization
+     * @param clientSecret the secret for the given client
+     * @param origin the origin name
+     */
+    public CloudCredentials(String email, String password, String clientId, String clientSecret, String origin) {
+        this.email = email;
+        this.password = password;
+        this.clientId = clientId;
+        this.clientSecret = clientSecret;
+        this.origin = origin;
     }
 
     /**
@@ -146,6 +164,15 @@ public class CloudCredentials {
      */
     public String getClientSecret() {
         return clientSecret;
+    }
+
+    /**
+     * Get the origin
+     *
+     * @return the origin
+     */
+    public String getOrigin() {
+        return origin;
     }
 
     /**
