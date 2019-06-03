@@ -62,8 +62,7 @@ public class OAuthClientWithLoginHint extends OAuthClient {
     }
 
     private OAuth2AccessToken getOrRefreshToken() {
-        getTokenProvider();
-        String token = tokenProvider.getToken(connectionContext)
+        String token = getTokenProvider().getToken(connectionContext)
             .block();
         return new DefaultOAuth2AccessToken(getTokenValue(token));
     }
