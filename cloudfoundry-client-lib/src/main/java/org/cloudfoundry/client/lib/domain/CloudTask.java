@@ -1,7 +1,5 @@
 package org.cloudfoundry.client.lib.domain;
 
-import java.util.Map;
-
 import org.cloudfoundry.client.lib.domain.ImmutableCloudTask.ImmutableResult;
 import org.cloudfoundry.client.lib.domain.annotation.Nullable;
 import org.immutables.value.Value;
@@ -17,13 +15,6 @@ public interface CloudTask extends CloudEntity {
 
     @Nullable
     String getCommand();
-
-    /**
-     * Only relevant for XSA.
-     * 
-     */
-    @Nullable
-    Map<String, String> getEnvironmentVariables();
 
     @Nullable
     Integer getMemory();
