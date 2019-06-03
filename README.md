@@ -19,7 +19,7 @@ In order to use this client in your application, you need to include the followi
     <dependency>
         <groupId>org.cloudfoundry</groupId>
         <artifactId>cloudfoundry-client-lib</artifactId>
-        <version>1.1.4.RELEASE-sap-02</version>
+        <version>...</version>
     </dependency>
     ...
 </dependencies>
@@ -83,6 +83,8 @@ The project is built using [Apache Maven](http://maven.apache.org/) and you can 
 ```shell
 mvn clean install
 ```
+
+Additionally, the project uses [Immutables](https://immutables.github.io/) to generate value objects. As a result, it won't compile in IDEs like Eclipse or IntelliJ unless you also have an enabled annotation processor. See [this guide](https://immutables.github.io/apt.html) for instructions on how to configure your IDE.
 
 # License
 Copyright (c) 2017 SAP SE or an SAP affiliate company. All rights reserved.
