@@ -772,6 +772,12 @@ public interface CloudControllerClient {
     CloudServiceInstance getServiceInstance(String service);
 
     /**
+     * Get all service parameters.
+     * @param guid The service instance guid
+     * @return service parameters in key-value pairs
+     */
+    Map<String, Object> getServiceParameters(UUID guid);
+    /**
      * Get a service instance.
      *
      * @param service name of the service instance

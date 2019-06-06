@@ -383,4 +383,6 @@ public interface CloudControllerRestClient {
 
     OAuthClient getOAuthClient();
 
+    Map<String, Object> getServiceParameters(UUID guid);
+
 }

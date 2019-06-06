@@ -606,6 +606,11 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
+    public Map<String, Object> getServiceParameters(UUID guid) {
+        return cc.getServiceParameters(guid);
+    }
+
+    @Override
     public CloudServiceInstance getServiceInstance(String service, boolean required) {
         return cc.getServiceInstance(service, required);
     }
