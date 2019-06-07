@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.cloudfoundry.client.lib.domain.ApplicationLog;
-import org.cloudfoundry.client.lib.domain.ApplicationStats;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.cloudfoundry.client.lib.domain.CloudBuild;
 import org.cloudfoundry.client.lib.domain.CloudDomain;
@@ -468,14 +467,6 @@ public interface CloudControllerClient {
      * @return instances info
      */
     InstancesInfo getApplicationInstances(CloudApplication app);
-
-    /**
-     * Get application stats for the app with the specified name.
-     *
-     * @param applicationName name of the app
-     * @return the cloud application stats
-     */
-    ApplicationStats getApplicationStats(String applicationName);
 
     /**
      * Get all cloud applications.
@@ -1327,8 +1318,6 @@ public interface CloudControllerClient {
     UploadToken asyncUploadApplication(String applicationName, File file, UploadStatusCallback callback) throws IOException;
 
     Upload getUploadStatus(String uploadToken);
-
-    boolean areTasksSupported();
 
     CloudTask getTask(UUID taskGuid);
 
