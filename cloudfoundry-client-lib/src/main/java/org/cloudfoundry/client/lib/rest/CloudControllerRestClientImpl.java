@@ -49,14 +49,11 @@ import org.cloudfoundry.client.lib.StartingInfo;
 import org.cloudfoundry.client.lib.StreamingLogToken;
 import org.cloudfoundry.client.lib.UploadStatusCallback;
 import org.cloudfoundry.client.lib.domain.ApplicationLog;
-import org.cloudfoundry.client.lib.domain.ApplicationStats;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.cloudfoundry.client.lib.domain.CloudBuild;
 import org.cloudfoundry.client.lib.domain.CloudDomain;
 import org.cloudfoundry.client.lib.domain.CloudEvent;
 import org.cloudfoundry.client.lib.domain.CloudInfo;
-import org.cloudfoundry.client.lib.domain.CloudJob;
-import org.cloudfoundry.client.lib.domain.CloudMetadata;
 import org.cloudfoundry.client.lib.domain.CloudOrganization;
 import org.cloudfoundry.client.lib.domain.CloudPackage;
 import org.cloudfoundry.client.lib.domain.CloudQuota;
@@ -81,8 +78,8 @@ import org.cloudfoundry.client.lib.domain.ImmutableCloudServiceKey;
 import org.cloudfoundry.client.lib.domain.ImmutableErrorDetails;
 import org.cloudfoundry.client.lib.domain.ImmutableUpload;
 import org.cloudfoundry.client.lib.domain.ImmutableUploadToken;
+import org.cloudfoundry.client.lib.domain.InstanceInfo;
 import org.cloudfoundry.client.lib.domain.InstanceState;
-import org.cloudfoundry.client.lib.domain.InstanceStats;
 import org.cloudfoundry.client.lib.domain.InstancesInfo;
 import org.cloudfoundry.client.lib.domain.Staging;
 import org.cloudfoundry.client.lib.domain.Status;
@@ -128,20 +125,15 @@ import org.cloudfoundry.operations.CloudFoundryOperations;
 import org.cloudfoundry.util.PaginationUtils;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.client.ClientHttpRequest;
-import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.FileCopyUtils;
-import org.springframework.web.client.RequestCallback;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.ResponseErrorHandler;
-import org.springframework.web.client.ResponseExtractor;
 import org.springframework.web.client.RestTemplate;
 
 import reactor.core.publisher.Flux;
@@ -163,7 +155,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     private static final String DEFAULT_HOST_DOMAIN_SEPARATOR = "\\.";
     private static final String DEFAULT_PATH_SEPARATOR = "/";
     private static final long JOB_POLLING_PERIOD = TimeUnit.SECONDS.toMillis(5);
-    private static final String LOGS_LOCATION = "logs";
 
     private final Log logger = LogFactory.getLog(getClass().getName());
     private CloudCredentials credentials;
@@ -395,14 +386,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public void createSpace(String spaceName) {
-        assertSpaceProvided("create a new space");
-        UUID organizationGuid = target.getOrganization()
-            .getMetadata()
-            .getGuid();
-        UUID spaceGuid = getSpaceGuid(spaceName, organizationGuid);
-        if (spaceGuid == null) {
-            doCreateSpace(spaceName, organizationGuid);
-        }
+        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
     }
 
     @Override
@@ -549,14 +533,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public void deleteSpace(String spaceName) {
-        assertSpaceProvided("delete a space");
-        UUID organizationGuid = target.getOrganization()
-            .getMetadata()
-            .getGuid();
-        UUID spaceGuid = getSpaceGuid(spaceName, organizationGuid);
-        if (spaceGuid != null) {
-            doDeleteSpace(spaceGuid);
-        }
+        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
     }
 
     @Override
@@ -629,13 +606,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                 .getGuid());
         }
         return null;
-    }
-
-    @Override
-    public ApplicationStats getApplicationStats(String applicationName) {
-        CloudApplication application = getApplication(applicationName);
-        return doGetApplicationStats(application.getMetadata()
-            .getGuid(), application.getState());
     }
 
     @Override
@@ -1291,22 +1261,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public void updateApplicationEnv(String applicationName, List<String> env) {
-        Map<String, String> envHash = new HashMap<>();
-        for (String envVariable : env) {
-            if (!envVariable.contains("=")) {
-                throw new IllegalArgumentException("Environment setting without '=' is invalid: " + envVariable);
-            }
-            String key = envVariable.substring(0, envVariable.indexOf('='))
-                .trim();
-            String value = envVariable.substring(envVariable.indexOf('=') + 1)
-                .trim();
-            envHash.put(key, value);
-        }
-        updateApplicationEnv(applicationName, envHash);
-    }
-
-    @Override
     public void updateApplicationInstances(String applicationName, int instances) {
         UUID applicationGuid = getRequiredApplicationGuid(applicationName);
         convertV3ClientExceptions(() -> v3Client.applicationsV2()
@@ -1455,11 +1409,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public boolean areTasksSupported() {
-        return true;
-    }
-
-    @Override
     public CloudTask getTask(UUID taskGuid) {
         String urlPath = "/v3/tasks/{taskGuid}";
         Map<String, Object> urlVariables = new HashMap<>();
@@ -1519,7 +1468,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public void uploadApplication(String applicationName, File file, UploadStatusCallback callback) throws IOException {
-        UploadToken uploadToken = startUpload(applicationName, file, callback);
+        UploadToken uploadToken = startUpload(applicationName, file);
         processAsyncUpload(uploadToken.getToken(), callback);
     }
 
@@ -1541,18 +1490,14 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public UploadToken asyncUploadApplication(String applicationName, File file, UploadStatusCallback callback) throws IOException {
-        UploadToken uploadToken = startUpload(applicationName, file, callback);
+        UploadToken uploadToken = startUpload(applicationName, file);
         processAsyncUploadInBackground(uploadToken.getToken(), callback);
         return uploadToken;
     }
 
-    private UploadToken startUpload(String applicationName, File file, UploadStatusCallback callback) throws IOException {
+    private UploadToken startUpload(String applicationName, File file) {
         Assert.notNull(applicationName, "AppName must not be null");
         Assert.notNull(file, "File must not be null");
-
-        if (callback == null) {
-            callback = UploadStatusCallback.NONE;
-        }
 
         UUID applicationGuid = getRequiredApplicationGuid(applicationName);
         UUID packageGuid = createPackageForApplication(applicationGuid);
@@ -1651,57 +1596,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
             .build();
     }
 
-    protected String doGetFile(String urlPath, UUID applicationGuid, int instanceIndex, String filePath, int startPosition,
-        int endPosition) {
-        return doGetFile(urlPath, applicationGuid, String.valueOf(instanceIndex), filePath, startPosition, endPosition);
-    }
-
-    protected String doGetFile(String urlPath, UUID applicationGuid, String instance, String filePath, int startPosition, int endPosition) {
-        Assert.isTrue(startPosition >= -1, "Invalid start position value: " + startPosition);
-        Assert.isTrue(endPosition >= -1, "Invalid end position value: " + endPosition);
-        Assert.isTrue(startPosition < 0 || endPosition < 0 || endPosition >= startPosition,
-            "The end position (" + endPosition + ") can't be less than the start position (" + startPosition + ")");
-
-        int start, end;
-        if (startPosition == -1 && endPosition == -1) {
-            start = 0;
-            end = -1;
-        } else {
-            start = startPosition;
-            end = endPosition;
-        }
-
-        final String range = "bytes=" + (start == -1 ? "" : start) + "-" + (end == -1 ? "" : end);
-
-        return doGetFileByRange(urlPath, applicationGuid, instance, filePath, start, end, range);
-    }
-
-    protected Map<String, String> doGetLogs(String urlPath, String applicationName, String instance) {
-        UUID applicationGuid = getRequiredApplicationGuid(applicationName);
-        String logFiles = doGetFile(urlPath, applicationGuid, instance, LOGS_LOCATION, -1, -1);
-        String[] lines = logFiles.split("\n");
-        List<String> fileNames = new ArrayList<>();
-        for (String line : lines) {
-            String[] parts = line.split("\\s");
-            if (parts.length > 0 && parts[0] != null) {
-                fileNames.add(parts[0]);
-            }
-        }
-        Map<String, String> logs = new HashMap<>(fileNames.size());
-        for (String fileName : fileNames) {
-            String logFile = LOGS_LOCATION + DEFAULT_PATH_SEPARATOR + fileName;
-            logs.put(logFile, doGetFile(urlPath, applicationGuid, instance, logFile, -1, -1));
-        }
-        return logs;
-    }
-
-    @SuppressWarnings("unchecked")
-    protected void doOpenFile(String urlPath, UUID applicationGuid, int instanceIndex, String filePath,
-        ClientHttpResponseCallback callback) {
-        getRestTemplate().execute(getUrl(urlPath), HttpMethod.GET, null, new ResponseExtractorWrapper(callback), applicationGuid,
-            String.valueOf(instanceIndex), filePath);
-    }
-
     protected void extractUriInfo(Map<String, UUID> existingDomains, String uri, Map<String, String> uriInfo) {
         URI newUri = URI.create(uri);
         String host = newUri.getScheme() != null ? newUri.getHost() : newUri.getPath();
@@ -1733,15 +1627,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         if (uriInfo.get("host") == null) {
             throw new IllegalArgumentException("Invalid URI " + uri + " -- host not specified for domain " + uriInfo.get("domainName"));
         }
-    }
-
-    protected String getFileUrlPath() {
-        return "/v2/apps/{applicationGuid}/instances/{instance}/files/{filePath}";
-    }
-
-    protected String getUrl(CloudJob job) {
-        CloudMetadata meta = job.getMetadata();
-        return getUrl(meta.getUrl());
     }
 
     protected String getUrl(String path) {
@@ -1859,16 +1744,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
             .block());
     }
 
-    private UUID doCreateSpace(String spaceName, UUID organizationGuid) {
-        String urlPath = "/v2/spaces";
-        Map<String, Object> spaceRequest = new HashMap<>();
-        spaceRequest.put("organization_guid", organizationGuid);
-        spaceRequest.put("name", spaceName);
-        String response = getRestTemplate().postForObject(getUrl(urlPath), spaceRequest, String.class);
-        Map<String, Object> resource = JsonUtil.convertJsonToMap(response);
-        return resourceMapper.getGuidOfV2Resource(resource);
-    }
-
     private void doDeleteDomain(UUID domainGuid) {
         convertV3ClientExceptions(() -> v3Client.privateDomains()
             .delete(DeletePrivateDomainRequest.builder()
@@ -1900,10 +1775,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
             .block());
     }
 
-    private void doDeleteSpace(UUID spaceGuid) {
-        getRestTemplate().delete(getUrl("/v2/spaces/{guid}?async=false"), spaceGuid);
-    }
-
     @SuppressWarnings("unchecked")
     private InstancesInfo doGetApplicationInstances(UUID applicationGuid) {
         List<Map<String, Object>> instanceList = new ArrayList<>();
@@ -1925,21 +1796,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
             instanceList.add(instanceMap);
         }
         return new InstancesInfo(instanceList);
-    }
-
-    @SuppressWarnings("unchecked")
-    private ApplicationStats doGetApplicationStats(UUID applicationGuid, CloudApplication.State appState) {
-        List<InstanceStats> instanceList = new ArrayList<>();
-        if (appState.equals(CloudApplication.State.STARTED)) {
-            Map<String, Object> respMap = getInstanceInfoForApp(applicationGuid, "stats");
-            if (!CollectionUtils.isEmpty(respMap)) {
-                for (String instanceId : respMap.keySet()) {
-                    InstanceStats instanceStats = new InstanceStats(instanceId, (Map<String, Object>) respMap.get(instanceId));
-                    instanceList.add(instanceStats);
-                }
-            }
-        }
-        return new ApplicationStats(instanceList);
     }
 
     private List<CloudDomain> doGetDomains(CloudOrganization organization) {
@@ -1979,69 +1835,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
             }
         }
         return resources;
-    }
-
-    private String doGetFileByRange(String urlPath, UUID applicationGuid, String instance, String filePath, int start, int end,
-        String range) {
-        boolean supportsRanges;
-        try {
-            supportsRanges = getRestTemplate().execute(getUrl(urlPath), HttpMethod.HEAD, new RequestCallback() {
-                @Override
-                public void doWithRequest(ClientHttpRequest request) throws IOException {
-                    request.getHeaders()
-                        .set("Range", "bytes=0-");
-                }
-            }, new ResponseExtractor<Boolean>() {
-                @Override
-                public Boolean extractData(ClientHttpResponse response) throws IOException {
-                    return response.getStatusCode()
-                        .equals(HttpStatus.PARTIAL_CONTENT);
-                }
-            }, applicationGuid, instance, filePath);
-        } catch (CloudOperationException e) {
-            if (e.getStatusCode()
-                .equals(HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE)) {
-                // must be a 0 byte file
-                return "";
-            } else {
-                throw e;
-            }
-        }
-        HttpHeaders headers = new HttpHeaders();
-        if (supportsRanges) {
-            headers.set("Range", range);
-        }
-        HttpEntity<Object> requestEntity = new HttpEntity<Object>(headers);
-        ResponseEntity<String> responseEntity = getRestTemplate().exchange(getUrl(urlPath), HttpMethod.GET, requestEntity, String.class,
-            applicationGuid, instance, filePath);
-        String response = responseEntity.getBody();
-        boolean partialFile = false;
-        if (responseEntity.getStatusCode()
-            .equals(HttpStatus.PARTIAL_CONTENT)) {
-            partialFile = true;
-        }
-        if (!partialFile && response != null) {
-            if (start == -1) {
-                return response.substring(response.length() - end);
-            } else {
-                if (start >= response.length()) {
-                    if (response.length() == 0) {
-                        return "";
-                    }
-                    throw new CloudOperationException(HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE,
-                        "The starting position " + start + " is past the end of the file content.");
-                }
-                if (end != -1) {
-                    if (end >= response.length()) {
-                        end = response.length() - 1;
-                    }
-                    return response.substring(start, end + 1);
-                } else {
-                    return response.substring(start);
-                }
-            }
-        }
-        return response;
     }
 
     private List<CloudRoute> doGetRoutes(UUID domainGuid) {
@@ -2551,12 +2344,15 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                 .build()));
     }
 
-    private int getRunningInstances(UUID applicationGuid, CloudApplication.State appState) {
+    private int getRunningInstances(UUID applicationGuid, CloudApplication.State applicationState) {
+        if (applicationState == CloudApplication.State.STOPPED) {
+            return 0;
+        }
         int running = 0;
-        ApplicationStats applicationStats = doGetApplicationStats(applicationGuid, appState);
-        if (applicationStats.getRecords() != null) {
-            for (InstanceStats instanceStats : applicationStats.getRecords()) {
-                if (InstanceState.RUNNING == instanceStats.getState()) {
+        InstancesInfo instancesInfo = doGetApplicationInstances(applicationGuid);
+        if (instancesInfo != null && instancesInfo.getInstances() != null) {
+            for (InstanceInfo instanceInfo : instancesInfo.getInstances()) {
+                if (InstanceState.RUNNING == instanceInfo.getState()) {
                     running++;
                 }
             }
@@ -2644,7 +2440,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return managersGuid;
     }
 
-    @SuppressWarnings("restriction")
     private Map<String, Object> getUserInfo(String user) {
         // String userJson = getRestTemplate().getForObject(getUrl("/v2/users/{guid}"), String.class, user);
         // Map<String, Object> userInfo = (Map<String, Object>) JsonUtil.convertJsonToMap(userJson);
@@ -2714,6 +2509,9 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     private void processAsyncUpload(String packageUrl, UploadStatusCallback callback) {
+        if (callback == null) {
+            callback = UploadStatusCallback.NONE;
+        }
         while (true) {
             Upload upload = getUploadStatus(packageUrl);
             boolean unsubscribe = callback.onProgress(upload.getStatus()
@@ -2793,22 +2591,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return target.getMetadata()
             .getGuid()
             .toString();
-    }
-
-    private static class ResponseExtractorWrapper implements ResponseExtractor {
-
-        private ClientHttpResponseCallback callback;
-
-        public ResponseExtractorWrapper(ClientHttpResponseCallback callback) {
-            this.callback = callback;
-        }
-
-        @Override
-        public Object extractData(ClientHttpResponse clientHttpResponse) throws IOException {
-            callback.onClientHttpResponse(clientHttpResponse);
-            return null;
-        }
-
     }
 
 }

@@ -1,6 +1,5 @@
 package org.cloudfoundry.client.lib;
 
-import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasProperty;
 import static org.hamcrest.Matchers.is;
@@ -36,7 +35,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.io.IOUtils;
 import org.cloudfoundry.client.lib.domain.ApplicationLog;
-import org.cloudfoundry.client.lib.domain.ApplicationStats;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.cloudfoundry.client.lib.domain.CloudDomain;
 import org.cloudfoundry.client.lib.domain.CloudEvent;
@@ -64,7 +62,6 @@ import org.cloudfoundry.client.lib.domain.ImmutableSecurityGroupRule;
 import org.cloudfoundry.client.lib.domain.ImmutableStaging;
 import org.cloudfoundry.client.lib.domain.InstanceInfo;
 import org.cloudfoundry.client.lib.domain.InstanceState;
-import org.cloudfoundry.client.lib.domain.InstanceStats;
 import org.cloudfoundry.client.lib.domain.InstancesInfo;
 import org.cloudfoundry.client.lib.domain.SecurityGroupRule;
 import org.cloudfoundry.client.lib.domain.Staging;
@@ -971,58 +968,9 @@ public class CloudControllerClientTest {
         connectedClient.getApplication(applicationName);
     }
 
-    @Test
-    public void getApplicationStats() throws Exception {
-        final int instanceCount = 3;
-        String applicationName = namespacedAppName("stats2");
-        createAndUploadSimpleSpringApp(applicationName);
-        connectedClient.updateApplicationInstances(applicationName, instanceCount);
-        connectedClient.startApplication(applicationName);
-        CloudApplication application = connectedClient.getApplication(applicationName);
-
-        assertEquals(CloudApplication.State.STARTED, application.getState());
-
-        waitForStatsAvailable(applicationName, instanceCount);
-
-        ApplicationStats stats = connectedClient.getApplicationStats(applicationName);
-        assertNotNull(stats);
-        assertNotNull(stats.getRecords());
-        assertEquals(instanceCount, stats.getRecords()
-            .size());
-
-        for (InstanceStats instanceStats : stats.getRecords()) {
-            assertNotNull(instanceStats.getUris());
-            assertNotNull(instanceStats.getHost());
-            assertTrue(instanceStats.getPort() > 0);
-            assertTrue(instanceStats.getDiskQuota() > 0);
-            assertTrue(instanceStats.getMemQuota() > 0);
-            assertTrue(instanceStats.getFdsQuota() > 0);
-            assertTrue(instanceStats.getUptime() > 0);
-
-            InstanceStats.Usage usage = instanceStats.getUsage();
-            assertNotNull(usage);
-            assertTrue(usage.getDisk() > 0);
-            assertTrue(usage.getMem() > 0);
-
-            assertTimeWithinRange("Usage time should be very recent", usage.getTime()
-                .getTime(), FIVE_MINUTES);
-        }
-    }
-
     //
     // Advanced Application tests
     //
-
-    @Test
-    public void getApplicationStatsStoppedApp() throws IOException {
-        String applicationName = namespacedAppName("stats2");
-        createAndUploadAndStartSimpleSpringApp(applicationName);
-        connectedClient.stopApplication(applicationName);
-
-        ApplicationStats stats = connectedClient.getApplicationStats(applicationName);
-        assertTrue(stats.getRecords()
-            .isEmpty());
-    }
 
     @Test
     public void getApplications() {
@@ -2704,26 +2652,6 @@ public class CloudControllerClientTest {
         List<CloudServiceOffering> offerings = client.getServiceOfferings();
         assertNotNull(offerings);
         assertTrue(offerings.size() >= 2);
-    }
-
-    private void waitForStatsAvailable(String applicationName, int instanceCount) throws InterruptedException {
-        // TODO: Make this pattern reusable
-        ApplicationStats stats = connectedClient.getApplicationStats(applicationName);
-        for (int retries = 0; retries < 10 && stats.getRecords()
-            .size() < instanceCount; retries++) {
-            Thread.sleep(1000);
-            stats = connectedClient.getApplicationStats(applicationName);
-        }
-
-        InstanceStats firstInstance = stats.getRecords()
-            .get(0);
-        assertEquals("0", firstInstance.getId());
-        for (int retries = 0; retries < 50 && firstInstance.getUsage() == null; retries++) {
-            Thread.sleep(1000);
-            stats = connectedClient.getApplicationStats(applicationName);
-            firstInstance = stats.getRecords()
-                .get(0);
-        }
     }
 
     private static abstract class NoOpUploadStatusCallback implements UploadStatusCallback {

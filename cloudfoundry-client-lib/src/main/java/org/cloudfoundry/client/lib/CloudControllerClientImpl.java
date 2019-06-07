@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.cloudfoundry.client.lib.domain.ApplicationLog;
-import org.cloudfoundry.client.lib.domain.ApplicationStats;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.cloudfoundry.client.lib.domain.CloudBuild;
 import org.cloudfoundry.client.lib.domain.CloudDomain;
@@ -407,11 +406,6 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     @Override
     public InstancesInfo getApplicationInstances(CloudApplication app) {
         return cc.getApplicationInstances(app);
-    }
-
-    @Override
-    public ApplicationStats getApplicationStats(String applicationName) {
-        return cc.getApplicationStats(applicationName);
     }
 
     @Override
@@ -970,11 +964,6 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     @Override
     public CloudBuild getBuild(UUID buildGuid) {
         return cc.getBuild(buildGuid);
-    }
-
-    @Override
-    public boolean areTasksSupported() {
-        return cc.areTasksSupported();
     }
 
     @Override

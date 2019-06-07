@@ -33,7 +33,6 @@ import org.cloudfoundry.client.lib.StartingInfo;
 import org.cloudfoundry.client.lib.StreamingLogToken;
 import org.cloudfoundry.client.lib.UploadStatusCallback;
 import org.cloudfoundry.client.lib.domain.ApplicationLog;
-import org.cloudfoundry.client.lib.domain.ApplicationStats;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.cloudfoundry.client.lib.domain.CloudBuild;
 import org.cloudfoundry.client.lib.domain.CloudDomain;
@@ -159,8 +158,6 @@ public interface CloudControllerRestClient {
     InstancesInfo getApplicationInstances(String applicationName);
 
     InstancesInfo getApplicationInstances(CloudApplication app);
-
-    ApplicationStats getApplicationStats(String applicationName);
 
     List<CloudApplication> getApplications();
 
@@ -326,8 +323,6 @@ public interface CloudControllerRestClient {
 
     void updateApplicationEnv(String applicationName, Map<String, String> env);
 
-    void updateApplicationEnv(String applicationName, List<String> env);
-
     void updateApplicationInstances(String applicationName, int instances);
 
     void updateApplicationMemory(String applicationName, int memory);
@@ -360,8 +355,6 @@ public interface CloudControllerRestClient {
     UploadToken asyncUploadApplication(String applicationName, File file, UploadStatusCallback callback) throws IOException;
 
     Upload getUploadStatus(String uploadToken);
-
-    boolean areTasksSupported();
 
     CloudTask getTask(UUID taskGuid);
 
