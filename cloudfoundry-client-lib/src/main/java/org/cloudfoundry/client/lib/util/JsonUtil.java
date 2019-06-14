@@ -29,6 +29,7 @@ import org.apache.commons.logging.LogFactory;
 import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.map.ObjectWriter;
 import org.codehaus.jackson.type.TypeReference;
 import org.springframework.http.MediaType;
 
@@ -73,13 +74,26 @@ public class JsonUtil {
     }
 
     public static String convertToJson(Object value) {
-        if (mapper.canSerialize(value.getClass())) {
+        return convertToJson(value, false);
+    }
+
+    public static String convertToJson(Object value, boolean shouldPrettyPrint) {
+        if (shouldPrettyPrint) {
+            return convertToJsonStringUsingWriter(mapper.writerWithDefaultPrettyPrinter(), value);
+        }
+
+        return convertToJsonStringUsingWriter(mapper.writer(), value);
+    }
+
+    private static String convertToJsonStringUsingWriter(ObjectWriter writer, Object value) {
+        if (value == null || writer.canSerialize(value.getClass())) {
             try {
-                return mapper.writeValueAsString(value);
+                return writer.writeValueAsString(value);
             } catch (IOException e) {
                 logger.warn("Error while serializing " + value + " to JSON", e);
                 return null;
             }
+
         } else {
             throw new IllegalArgumentException("Value of type " + value.getClass()
                 .getName() + " can not be serialized to JSON.");
@@ -98,4 +112,5 @@ public class JsonUtil {
             throw new IllegalArgumentException("Unable to parse JSON from InputStream", e);
         }
     }
+
 }
