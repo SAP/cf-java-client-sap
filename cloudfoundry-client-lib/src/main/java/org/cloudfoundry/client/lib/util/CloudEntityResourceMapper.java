@@ -22,7 +22,9 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.cloudfoundry.client.lib.domain.CloudBuild;
@@ -422,14 +424,28 @@ public class CloudEntityResourceMapper {
         }
 
         Map envMap = getV2ResourceAttribute(resource, "environment_json", Map.class);
-        if (!envMap.isEmpty()) {
-            builder.env(envMap);
+        Map<String, String> resultMap = convertEnvironmentValuesToJson(envMap);
+        if (!resultMap.isEmpty()) {
+            builder.env(resultMap);
         }
 
         return builder.memory(getV2ResourceAttribute(resource, "memory", Integer.class))
             .diskQuota(getV2ResourceAttribute(resource, "disk_quota", Integer.class))
             .services(getApplicationServices(resource))
             .build();
+    }
+
+    private Map<String, String> convertEnvironmentValuesToJson(Map<String, Object> envMap) {
+        return envMap.entrySet()
+            .stream()
+            .collect(Collectors.toMap(entry -> entry.getKey(), entry -> convertValueToString(entry)));
+    }
+
+    private String convertValueToString(Entry<String, Object> entry) {
+        if (entry.getValue() instanceof String) {
+            return (String) entry.getValue();
+        }
+        return JsonUtil.convertToJson(entry.getValue(), true);
     }
 
     private String getStackName(Map<String, Object> applicationResource) {
@@ -765,5 +781,4 @@ public class CloudEntityResourceMapper {
             .defaultSpaceGuid(defaultSpaceGuid)
             .build();
     }
-
 }
