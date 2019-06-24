@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.cloudfoundry.client.lib.CloudOperationException;
+import org.cloudfoundry.client.lib.exception.CloudOperationException;
 import org.cloudfoundry.client.lib.util.CloudUtil;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.springframework.http.HttpStatus;

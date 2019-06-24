@@ -18,7 +18,7 @@ import org.apache.http.conn.ssl.SSLContextBuilder;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.tomcat.websocket.WsWebSocketContainer;
 import org.cloudfoundry.client.lib.ApplicationLogListener;
-import org.cloudfoundry.client.lib.CloudException;
+import org.cloudfoundry.client.lib.exception.CloudException;
 import org.springframework.web.util.UriTemplate;
 
 public class LoggregatorClient {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2009-2013 the original author or authors.
+ * Copyright 2013-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,16 +14,18 @@
  * limitations under the License.
  */
 
-package org.cloudfoundry.client.lib;
+package org.cloudfoundry.client.lib.exception;
 
 import org.springframework.http.HttpStatus;
 
 @SuppressWarnings("serial")
 public class CloudOperationException extends CloudException {
 
-    private final HttpStatus statusCode;
-    private final String statusText;
     private final String description;
+
+    private final HttpStatus statusCode;
+
+    private final String statusText;
 
     public CloudOperationException(HttpStatus statusCode) {
         this(statusCode, statusCode.getReasonPhrase());
@@ -51,16 +53,16 @@ public class CloudOperationException extends CloudException {
         return String.format("%d %s", statusCode.value(), statusText);
     }
 
+    public String getDescription() {
+        return description;
+    }
+
     public HttpStatus getStatusCode() {
         return statusCode;
     }
 
     public String getStatusText() {
         return statusText;
-    }
-
-    public String getDescription() {
-        return description;
     }
 
 }

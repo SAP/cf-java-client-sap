@@ -8,7 +8,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 
-import org.cloudfoundry.client.lib.CloudOperationException;
+import org.cloudfoundry.client.lib.exception.CloudOperationException;
 import org.junit.Test;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;

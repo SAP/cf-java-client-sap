@@ -1,5 +1,7 @@
 package org.cloudfoundry.client.lib;
 
+import org.cloudfoundry.client.lib.exception.CloudOperationException;
+
 public interface ApplicationServicesUpdateCallback {
 
     void onError(CloudOperationException e, String applicationName, String serviceName);

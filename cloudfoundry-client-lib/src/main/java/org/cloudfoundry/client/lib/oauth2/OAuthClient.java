@@ -21,7 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.cloudfoundry.client.lib.CloudCredentials;
-import org.cloudfoundry.client.lib.CloudOperationException;
+import org.cloudfoundry.client.lib.exception.CloudOperationException;
 import org.cloudfoundry.client.lib.adapters.OAuthTokenProvider;
 import org.cloudfoundry.client.lib.util.JsonUtil;
 import org.cloudfoundry.reactor.TokenProvider;
