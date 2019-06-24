@@ -23,7 +23,9 @@ import java.net.URL;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Supplier;
 
+import org.cloudfoundry.AbstractCloudFoundryException;
 import org.cloudfoundry.client.lib.domain.ApplicationLog;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.cloudfoundry.client.lib.domain.CloudBuild;
@@ -52,6 +54,7 @@ import org.cloudfoundry.client.lib.domain.UploadToken;
 import org.cloudfoundry.client.lib.rest.ApplicationServicesUpdater;
 import org.cloudfoundry.client.lib.rest.CloudControllerRestClient;
 import org.cloudfoundry.client.lib.rest.CloudControllerRestClientFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.util.Assert;
 import org.springframework.web.client.ResponseErrorHandler;
@@ -68,8 +71,7 @@ import org.springframework.web.client.ResponseErrorHandler;
  */
 public class CloudControllerClientImpl implements CloudControllerClient {
 
-    private CloudControllerRestClient cc;
-
+    private CloudControllerRestClient delegate;
     private CloudInfo info;
 
     /**
@@ -135,7 +137,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         Assert.notNull(controllerUrl, "URL for cloud controller cannot be null");
         CloudControllerRestClientFactory cloudControllerClientFactory = new CloudControllerRestClientFactory(trustSelfSignedCerts,
             httpProxyConfiguration);
-        this.cc = cloudControllerClientFactory.createClient(controllerUrl, credentials, target);
+        this.delegate = cloudControllerClientFactory.createClient(controllerUrl, credentials, target);
     }
 
     /**
@@ -161,272 +163,276 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         Assert.notNull(controllerUrl, "URL for cloud controller cannot be null");
         CloudControllerRestClientFactory cloudControllerClientFactory = new CloudControllerRestClientFactory(trustSelfSignedCerts,
             httpProxyConfiguration);
-        this.cc = cloudControllerClientFactory.createClient(controllerUrl, credentials, organizationName, spaceName);
+        this.delegate = cloudControllerClientFactory.createClient(controllerUrl, credentials, organizationName, spaceName);
     }
 
     /**
      * Construct a client with a pre-configured CloudControllerClient
      */
-    public CloudControllerClientImpl(CloudControllerRestClient cc) {
-        this.cc = cc;
+    public CloudControllerClientImpl(CloudControllerRestClient delegate) {
+        this.delegate = delegate;
     }
 
     @Override
     public void addDomain(String domainName) {
-        cc.addDomain(domainName);
+        handleExceptions(() -> delegate.addDomain(domainName));
     }
 
     @Override
     public void addRoute(String host, String domainName) {
-        cc.addRoute(host, domainName);
+        handleExceptions(() -> delegate.addRoute(host, domainName));
     }
 
     @Override
     public void associateAuditorWithSpace(String spaceName) {
-        cc.associateAuditorWithSpace(null, spaceName, null);
+        handleExceptions(() -> delegate.associateAuditorWithSpace(null, spaceName, null));
     }
 
     @Override
     public void associateAuditorWithSpace(String organizationName, String spaceName) {
-        cc.associateAuditorWithSpace(organizationName, spaceName, null);
+        handleExceptions(() -> delegate.associateAuditorWithSpace(organizationName, spaceName, null));
     }
 
     @Override
     public void associateAuditorWithSpace(String organizationName, String spaceName, String userGuid) {
-        cc.associateAuditorWithSpace(organizationName, spaceName, userGuid);
+        handleExceptions(() -> delegate.associateAuditorWithSpace(organizationName, spaceName, userGuid));
     }
 
     @Override
     public void associateDeveloperWithSpace(String spaceName) {
-        cc.associateDeveloperWithSpace(null, spaceName, null);
+        handleExceptions(() -> delegate.associateDeveloperWithSpace(null, spaceName, null));
     }
 
     @Override
     public void associateDeveloperWithSpace(String organizationName, String spaceName) {
-        cc.associateDeveloperWithSpace(organizationName, spaceName, null);
+        handleExceptions(() -> delegate.associateDeveloperWithSpace(organizationName, spaceName, null));
     }
 
     @Override
     public void associateDeveloperWithSpace(String organizationName, String spaceName, String userGuid) {
-        cc.associateDeveloperWithSpace(organizationName, spaceName, userGuid);
+        handleExceptions(() -> delegate.associateDeveloperWithSpace(organizationName, spaceName, userGuid));
     }
 
     @Override
     public void associateManagerWithSpace(String spaceName) {
-        cc.associateManagerWithSpace(null, spaceName, null);
+        handleExceptions(() -> delegate.associateManagerWithSpace(null, spaceName, null));
     }
 
     @Override
     public void associateManagerWithSpace(String organizationName, String spaceName) {
-        cc.associateManagerWithSpace(organizationName, spaceName, null);
+        handleExceptions(() -> delegate.associateManagerWithSpace(organizationName, spaceName, null));
     }
 
     @Override
     public void associateManagerWithSpace(String organizationName, String spaceName, String userGuid) {
-        cc.associateManagerWithSpace(organizationName, spaceName, userGuid);
+        handleExceptions(() -> delegate.associateManagerWithSpace(organizationName, spaceName, userGuid));
     }
 
     @Override
     public void bindRunningSecurityGroup(String securityGroupName) {
-        cc.bindRunningSecurityGroup(securityGroupName);
+        handleExceptions(() -> delegate.bindRunningSecurityGroup(securityGroupName));
     }
 
     @Override
     public void bindSecurityGroup(String organizationName, String spaceName, String securityGroupName) {
-        cc.bindSecurityGroup(organizationName, spaceName, securityGroupName);
+        handleExceptions(() -> delegate.bindSecurityGroup(organizationName, spaceName, securityGroupName));
     }
 
     @Override
     public void bindService(String applicationName, String serviceName) {
-        cc.bindService(applicationName, serviceName);
+        handleExceptions(() -> delegate.bindService(applicationName, serviceName));
     }
 
     @Override
     public void bindService(String applicationName, String serviceName, Map<String, Object> parameters,
         ApplicationServicesUpdateCallback updateServicesCallback) {
-        cc.bindService(applicationName, serviceName, parameters, updateServicesCallback);
+        try {
+            handleExceptions(() -> delegate.bindService(applicationName, serviceName, parameters));
+        } catch (CloudOperationException e) {
+            updateServicesCallback.onError(e, applicationName, serviceName);
+        }
     }
 
     @Override
     public void bindStagingSecurityGroup(String securityGroupName) {
-        cc.bindStagingSecurityGroup(securityGroupName);
+        handleExceptions(() -> delegate.bindStagingSecurityGroup(securityGroupName));
     }
 
     @Override
     public void createApplication(String applicationName, Staging staging, Integer memory, List<String> uris, List<String> serviceNames) {
-        cc.createApplication(applicationName, staging, memory, uris, serviceNames);
+        handleExceptions(() -> delegate.createApplication(applicationName, staging, memory, uris, serviceNames));
     }
 
     @Override
     public void createApplication(String applicationName, Staging staging, Integer disk, Integer memory, List<String> uris,
         List<String> serviceNames, DockerInfo dockerInfo) {
-        cc.createApplication(applicationName, staging, disk, memory, uris, serviceNames, dockerInfo);
+        handleExceptions(() -> delegate.createApplication(applicationName, staging, disk, memory, uris, serviceNames, dockerInfo));
     }
 
     @Override
     public void createQuota(CloudQuota quota) {
-        cc.createQuota(quota);
+        handleExceptions(() -> delegate.createQuota(quota));
     }
 
     @Override
     public void createSecurityGroup(CloudSecurityGroup securityGroup) {
-        cc.createSecurityGroup(securityGroup);
+        handleExceptions(() -> delegate.createSecurityGroup(securityGroup));
     }
 
     @Override
     public void createSecurityGroup(String name, InputStream jsonRulesFile) {
-        cc.createSecurityGroup(name, jsonRulesFile);
+        handleExceptions(() -> delegate.createSecurityGroup(name, jsonRulesFile));
     }
 
     @Override
     public void createService(CloudService service) {
-        cc.createService(service);
+        handleExceptions(() -> delegate.createService(service));
     }
 
     @Override
     public void createServiceBroker(CloudServiceBroker serviceBroker) {
-        cc.createServiceBroker(serviceBroker);
+        handleExceptions(() -> delegate.createServiceBroker(serviceBroker));
     }
 
     @Override
     public void createServiceKey(String serviceName, String serviceKeyName, Map<String, Object> parameters) {
-        cc.createServiceKey(serviceName, serviceKeyName, parameters);
+        handleExceptions(() -> delegate.createServiceKey(serviceName, serviceKeyName, parameters));
     }
 
     @Override
     public void createSpace(String spaceName) {
-        cc.createSpace(spaceName);
+        handleExceptions(() -> delegate.createSpace(spaceName));
     }
 
     @Override
     public void createUserProvidedService(CloudService service, Map<String, Object> credentials) {
-        cc.createUserProvidedService(service, credentials);
+        handleExceptions(() -> delegate.createUserProvidedService(service, credentials));
     }
 
     @Override
     public void createUserProvidedService(CloudService service, Map<String, Object> credentials, String syslogDrainUrl) {
-        cc.createUserProvidedService(service, credentials, syslogDrainUrl);
+        handleExceptions(() -> delegate.createUserProvidedService(service, credentials, syslogDrainUrl));
     }
 
     @Override
     public void deleteAllApplications() {
-        cc.deleteAllApplications();
+        handleExceptions(() -> delegate.deleteAllApplications());
     }
 
     @Override
     public void deleteAllServices() {
-        cc.deleteAllServices();
+        handleExceptions(() -> delegate.deleteAllServices());
     }
 
     @Override
     public void deleteApplication(String applicationName) {
-        cc.deleteApplication(applicationName);
+        handleExceptions(() -> delegate.deleteApplication(applicationName));
     }
 
     @Override
     public void deleteDomain(String domainName) {
-        cc.deleteDomain(domainName);
+        handleExceptions(() -> delegate.deleteDomain(domainName));
     }
 
     @Override
     public List<CloudRoute> deleteOrphanedRoutes() {
-        return cc.deleteOrphanedRoutes();
+        return handleExceptions(() -> delegate.deleteOrphanedRoutes());
     }
 
     @Override
     public void deleteQuota(String quotaName) {
-        cc.deleteQuota(quotaName);
+        handleExceptions(() -> delegate.deleteQuota(quotaName));
     }
 
     @Override
     public void deleteRoute(String host, String domainName) {
-        cc.deleteRoute(host, domainName);
+        handleExceptions(() -> delegate.deleteRoute(host, domainName));
     }
 
     @Override
     public void deleteSecurityGroup(String securityGroupName) {
-        cc.deleteSecurityGroup(securityGroupName);
+        handleExceptions(() -> delegate.deleteSecurityGroup(securityGroupName));
     }
 
     @Override
     public void deleteService(String service) {
-        cc.deleteService(service);
+        handleExceptions(() -> delegate.deleteService(service));
     }
 
     @Override
     public void deleteServiceBroker(String name) {
-        cc.deleteServiceBroker(name);
+        handleExceptions(() -> delegate.deleteServiceBroker(name));
     }
 
     @Override
     public void deleteServiceKey(String service, String serviceKey) {
-        cc.deleteServiceKey(service, serviceKey);
+        handleExceptions(() -> delegate.deleteServiceKey(service, serviceKey));
     }
 
     @Override
     public void deleteSpace(String spaceName) {
-        cc.deleteSpace(spaceName);
+        handleExceptions(() -> delegate.deleteSpace(spaceName));
     }
 
     @Override
     public CloudApplication getApplication(String applicationName) {
-        return cc.getApplication(applicationName);
+        return handleExceptions(() -> delegate.getApplication(applicationName));
     }
 
     @Override
     public CloudApplication getApplication(String applicationName, boolean required) {
-        return cc.getApplication(applicationName, required);
+        return handleExceptions(() -> delegate.getApplication(applicationName, required));
     }
 
     @Override
     public CloudApplication getApplication(UUID applicationGuid) {
-        return cc.getApplication(applicationGuid);
+        return handleExceptions(() -> delegate.getApplication(applicationGuid));
     }
 
     @Override
     public Map<String, Object> getApplicationEnvironment(UUID applicationGuid) {
-        return cc.getApplicationEnvironment(applicationGuid);
+        return handleExceptions(() -> delegate.getApplicationEnvironment(applicationGuid));
     }
 
     @Override
     public Map<String, Object> getApplicationEnvironment(String applicationName) {
-        return cc.getApplicationEnvironment(applicationName);
+        return handleExceptions(() -> delegate.getApplicationEnvironment(applicationName));
     }
 
     @Override
     public List<CloudEvent> getApplicationEvents(String applicationName) {
-        return cc.getApplicationEvents(applicationName);
+        return handleExceptions(() -> delegate.getApplicationEvents(applicationName));
     }
 
     @Override
     public InstancesInfo getApplicationInstances(String applicationName) {
-        return cc.getApplicationInstances(applicationName);
+        return handleExceptions(() -> delegate.getApplicationInstances(applicationName));
     }
 
     @Override
     public InstancesInfo getApplicationInstances(CloudApplication app) {
-        return cc.getApplicationInstances(app);
+        return handleExceptions(() -> delegate.getApplicationInstances(app));
     }
 
     @Override
     public List<CloudApplication> getApplications() {
-        return cc.getApplications();
+        return handleExceptions(() -> delegate.getApplications());
     }
 
     @Override
     public List<CloudApplication> getApplications(boolean fetchAdditionalInfo) {
-        return cc.getApplications(fetchAdditionalInfo);
+        return handleExceptions(() -> delegate.getApplications(fetchAdditionalInfo));
     }
 
     @Override
     public URL getCloudControllerUrl() {
-        return cc.getControllerUrl();
+        return delegate.getControllerUrl();
     }
 
     @Override
     public CloudInfo getCloudInfo() {
         if (info == null) {
-            info = cc.getInfo();
+            info = handleExceptions(() -> delegate.getInfo());
         }
         return info;
     }
@@ -437,43 +443,43 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     @Deprecated
     @Override
     public Map<String, String> getCrashLogs(String applicationName) {
-        return cc.getCrashLogs(applicationName);
+        return handleExceptions(() -> delegate.getCrashLogs(applicationName));
     }
 
     @Override
     public CrashesInfo getCrashes(String applicationName) {
-        return cc.getCrashes(applicationName);
+        return handleExceptions(() -> delegate.getCrashes(applicationName));
     }
 
     @Override
     public CloudDomain getDefaultDomain() {
-        return cc.getDefaultDomain();
+        return handleExceptions(() -> delegate.getDefaultDomain());
     }
 
     @Override
     public List<CloudDomain> getDomains() {
-        return cc.getDomains();
+        return handleExceptions(() -> delegate.getDomains());
     }
 
     @Override
     public List<CloudDomain> getDomainsForOrganization() {
-        return cc.getDomainsForOrganization();
+        return handleExceptions(() -> delegate.getDomainsForOrganization());
     }
 
     @Override
     public List<CloudEvent> getEvents() {
-        return cc.getEvents();
+        return handleExceptions(() -> delegate.getEvents());
     }
 
     @Override
     public String getFile(String applicationName, int instanceIndex, String filePath) {
-        return cc.getFile(applicationName, instanceIndex, filePath, 0, -1);
+        return handleExceptions(() -> delegate.getFile(applicationName, instanceIndex, filePath, 0, -1));
     }
 
     @Override
     public String getFile(String applicationName, int instanceIndex, String filePath, int startPosition) {
         Assert.isTrue(startPosition >= 0, startPosition + " is not a valid value for start position, it should be 0 or greater.");
-        return cc.getFile(applicationName, instanceIndex, filePath, startPosition, -1);
+        return handleExceptions(() -> delegate.getFile(applicationName, instanceIndex, filePath, startPosition, -1));
     }
 
     @Override
@@ -481,7 +487,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         Assert.isTrue(startPosition >= 0, startPosition + " is not a valid value for start position, it should be 0 or greater.");
         Assert.isTrue(endPosition > startPosition, endPosition
             + " is not a valid value for end position, it should be greater than startPosition " + "which is " + startPosition + ".");
-        return cc.getFile(applicationName, instanceIndex, filePath, startPosition, endPosition - 1);
+        return handleExceptions(() -> delegate.getFile(applicationName, instanceIndex, filePath, startPosition, endPosition - 1));
     }
 
     // list services, un/provision services, modify instance
@@ -489,7 +495,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     @Override
     public String getFileTail(String applicationName, int instanceIndex, String filePath, int length) {
         Assert.isTrue(length > 0, length + " is not a valid value for length, it should be 1 or greater.");
-        return cc.getFile(applicationName, instanceIndex, filePath, -1, length);
+        return handleExceptions(() -> delegate.getFile(applicationName, instanceIndex, filePath, -1, length));
     }
 
     /**
@@ -498,368 +504,372 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     @Deprecated
     @Override
     public Map<String, String> getLogs(String applicationName) {
-        return cc.getLogs(applicationName);
+        return handleExceptions(() -> delegate.getLogs(applicationName));
     }
 
     @Override
     public CloudOrganization getOrganization(String organizationName) {
-        return cc.getOrganization(organizationName);
+        return handleExceptions(() -> delegate.getOrganization(organizationName));
     }
 
     @Override
     public CloudOrganization getOrganization(String organizationName, boolean required) {
-        return cc.getOrganization(organizationName, required);
+        return handleExceptions(() -> delegate.getOrganization(organizationName, required));
     }
 
     @Override
     public Map<String, CloudUser> getOrganizationUsers(String organizationName) {
-        return cc.getOrganizationUsers(organizationName);
+        return handleExceptions(() -> delegate.getOrganizationUsers(organizationName));
     }
 
     @Override
     public List<CloudOrganization> getOrganizations() {
-        return cc.getOrganizations();
+        return handleExceptions(() -> delegate.getOrganizations());
     }
 
     @Override
     public List<CloudDomain> getPrivateDomains() {
-        return cc.getPrivateDomains();
+        return handleExceptions(() -> delegate.getPrivateDomains());
     }
 
     @Override
     public CloudQuota getQuota(String quotaName) {
-        return cc.getQuota(quotaName);
+        return handleExceptions(() -> delegate.getQuota(quotaName));
     }
 
     @Override
     public CloudQuota getQuota(String quotaName, boolean required) {
-        return cc.getQuota(quotaName, required);
+        return handleExceptions(() -> delegate.getQuota(quotaName, required));
     }
 
     @Override
     public List<CloudQuota> getQuotas() {
-        return cc.getQuotas();
+        return handleExceptions(() -> delegate.getQuotas());
     }
 
     @Override
     public List<ApplicationLog> getRecentLogs(String applicationName) {
-        return cc.getRecentLogs(applicationName);
+        return handleExceptions(() -> delegate.getRecentLogs(applicationName));
     }
 
     @Override
     public List<CloudRoute> getRoutes(String domainName) {
-        return cc.getRoutes(domainName);
+        return handleExceptions(() -> delegate.getRoutes(domainName));
     }
 
     @Override
     public List<CloudSecurityGroup> getRunningSecurityGroups() {
-        return cc.getRunningSecurityGroups();
+        return handleExceptions(() -> delegate.getRunningSecurityGroups());
     }
 
     @Override
     public CloudSecurityGroup getSecurityGroup(String securityGroupName) {
-        return cc.getSecurityGroup(securityGroupName);
+        return handleExceptions(() -> delegate.getSecurityGroup(securityGroupName));
     }
 
     @Override
     public CloudSecurityGroup getSecurityGroup(String securityGroupName, boolean required) {
-        return cc.getSecurityGroup(securityGroupName, required);
+        return handleExceptions(() -> delegate.getSecurityGroup(securityGroupName, required));
     }
 
     @Override
     public List<CloudSecurityGroup> getSecurityGroups() {
-        return cc.getSecurityGroups();
+        return handleExceptions(() -> delegate.getSecurityGroups());
     }
 
     @Override
     public CloudService getService(String service) {
-        return cc.getService(service);
+        return handleExceptions(() -> delegate.getService(service));
     }
 
     @Override
     public CloudService getService(String service, boolean required) {
-        return cc.getService(service, required);
+        return handleExceptions(() -> delegate.getService(service, required));
     }
 
     @Override
     public CloudServiceBroker getServiceBroker(String name) {
-        return cc.getServiceBroker(name);
+        return handleExceptions(() -> delegate.getServiceBroker(name));
     }
 
     @Override
     public CloudServiceBroker getServiceBroker(String name, boolean required) {
-        return cc.getServiceBroker(name, required);
+        return handleExceptions(() -> delegate.getServiceBroker(name, required));
     }
 
     @Override
     public List<CloudServiceBroker> getServiceBrokers() {
-        return cc.getServiceBrokers();
+        return handleExceptions(() -> delegate.getServiceBrokers());
     }
 
     @Override
     public CloudServiceInstance getServiceInstance(String service) {
-        return cc.getServiceInstance(service);
+        return handleExceptions(() -> delegate.getServiceInstance(service));
     }
 
     @Override
     public Map<String, Object> getServiceParameters(UUID guid) {
-        return cc.getServiceParameters(guid);
+        return handleExceptions(() -> delegate.getServiceParameters(guid));
     }
 
     @Override
     public CloudServiceInstance getServiceInstance(String service, boolean required) {
-        return cc.getServiceInstance(service, required);
+        return handleExceptions(() -> delegate.getServiceInstance(service, required));
     }
 
     @Override
     public List<CloudServiceKey> getServiceKeys(String serviceName) {
-        return cc.getServiceKeys(serviceName);
+        return handleExceptions(() -> delegate.getServiceKeys(serviceName));
     }
 
     @Override
     public List<CloudServiceOffering> getServiceOfferings() {
-        return cc.getServiceOfferings();
+        return handleExceptions(() -> delegate.getServiceOfferings());
     }
 
     @Override
     public List<CloudService> getServices() {
-        return cc.getServices();
+        return handleExceptions(() -> delegate.getServices());
     }
 
     @Override
     public List<CloudDomain> getSharedDomains() {
-        return cc.getSharedDomains();
+        return handleExceptions(() -> delegate.getSharedDomains());
     }
 
     @Override
     public CloudSpace getSpace(UUID spaceGuid) {
-        return cc.getSpace(spaceGuid);
+        return handleExceptions(() -> delegate.getSpace(spaceGuid));
     }
 
     @Override
     public CloudSpace getSpace(String organizationName, String spaceName) {
-        return cc.getSpace(organizationName, spaceName);
+        return handleExceptions(() -> delegate.getSpace(organizationName, spaceName));
     }
 
     @Override
     public CloudSpace getSpace(String organizationName, String spaceName, boolean required) {
-        return cc.getSpace(organizationName, spaceName, required);
+        return handleExceptions(() -> delegate.getSpace(organizationName, spaceName, required));
     }
 
     @Override
     public CloudSpace getSpace(String spaceName) {
-        return cc.getSpace(spaceName);
+        return handleExceptions(() -> delegate.getSpace(spaceName));
     }
 
     @Override
     public CloudSpace getSpace(String spaceName, boolean required) {
-        return cc.getSpace(spaceName, required);
+        return handleExceptions(() -> delegate.getSpace(spaceName, required));
     }
 
     @Override
     public List<UUID> getSpaceAuditors(String spaceName) {
-        return cc.getSpaceAuditors(null, spaceName);
+        return handleExceptions(() -> delegate.getSpaceAuditors(null, spaceName));
     }
 
     @Override
     public List<UUID> getSpaceAuditors(UUID spaceGuid) {
-        return cc.getSpaceAuditors(spaceGuid);
+        return handleExceptions(() -> delegate.getSpaceAuditors(spaceGuid));
     }
 
     @Override
     public List<UUID> getSpaceAuditors(String organizationName, String spaceName) {
-        return cc.getSpaceAuditors(organizationName, spaceName);
+        return handleExceptions(() -> delegate.getSpaceAuditors(organizationName, spaceName));
     }
 
     @Override
     public List<UUID> getSpaceDevelopers(String spaceName) {
-        return cc.getSpaceDevelopers(null, spaceName);
+        return handleExceptions(() -> delegate.getSpaceDevelopers(null, spaceName));
     }
 
     @Override
     public List<UUID> getSpaceDevelopers(UUID spaceGuid) {
-        return cc.getSpaceDevelopers(spaceGuid);
+        return handleExceptions(() -> delegate.getSpaceDevelopers(spaceGuid));
     }
 
     @Override
     public List<UUID> getSpaceDevelopers(String organizationName, String spaceName) {
-        return cc.getSpaceDevelopers(organizationName, spaceName);
+        return handleExceptions(() -> delegate.getSpaceDevelopers(organizationName, spaceName));
     }
 
     @Override
     public List<UUID> getSpaceManagers(String spaceName) {
-        return cc.getSpaceManagers(null, spaceName);
+        return handleExceptions(() -> delegate.getSpaceManagers(null, spaceName));
     }
 
     @Override
     public List<UUID> getSpaceManagers(UUID spaceGuid) {
-        return cc.getSpaceManagers(spaceGuid);
+        return handleExceptions(() -> delegate.getSpaceManagers(spaceGuid));
     }
 
     @Override
     public List<UUID> getSpaceManagers(String organizationName, String spaceName) {
-        return cc.getSpaceManagers(organizationName, spaceName);
+        return handleExceptions(() -> delegate.getSpaceManagers(organizationName, spaceName));
     }
 
     @Override
     public List<CloudSpace> getSpaces() {
-        return cc.getSpaces();
+        return handleExceptions(() -> delegate.getSpaces());
     }
 
     @Override
     public List<CloudSpace> getSpaces(String organizationName) {
-        return cc.getSpaces(organizationName);
+        return handleExceptions(() -> delegate.getSpaces(organizationName));
     }
 
     @Override
     public List<CloudSpace> getSpacesBoundToSecurityGroup(String securityGroupName) {
-        return cc.getSpacesBoundToSecurityGroup(securityGroupName);
+        return handleExceptions(() -> delegate.getSpacesBoundToSecurityGroup(securityGroupName));
     }
 
     @Override
     public CloudStack getStack(String name) {
-        return cc.getStack(name);
+        return handleExceptions(() -> delegate.getStack(name));
     }
 
     @Override
     public CloudStack getStack(String name, boolean required) {
-        return cc.getStack(name, required);
+        return handleExceptions(() -> delegate.getStack(name, required));
     }
 
     @Override
     public List<CloudStack> getStacks() {
-        return cc.getStacks();
+        return handleExceptions(() -> delegate.getStacks());
     }
 
     @Override
     public String getStagingLogs(StartingInfo info, int offset) {
-        return cc.getStagingLogs(info, offset);
+        return handleExceptions(() -> delegate.getStagingLogs(info, offset));
     }
 
     @Override
     public List<CloudSecurityGroup> getStagingSecurityGroups() {
-        return cc.getStagingSecurityGroups();
+        return handleExceptions(() -> delegate.getStagingSecurityGroups());
     }
 
     @Override
     public OAuth2AccessToken login() {
-        return cc.login();
+        return handleExceptions(() -> delegate.login());
     }
 
     @Override
     public void logout() {
-        cc.logout();
+        handleExceptions(() -> delegate.logout());
     }
 
     @Override
     public void openFile(String applicationName, int instanceIndex, String filePath, ClientHttpResponseCallback callback) {
-        cc.openFile(applicationName, instanceIndex, filePath, callback);
+        handleExceptions(() -> delegate.openFile(applicationName, instanceIndex, filePath, callback));
     }
 
     @Override
     public void register(String email, String password) {
-        cc.register(email, password);
+        handleExceptions(() -> delegate.register(email, password));
     }
 
     @Override
     public void registerRestLogListener(RestLogCallback callBack) {
-        cc.registerRestLogListener(callBack);
+        delegate.registerRestLogListener(callBack);
     }
 
     @Override
     public void removeDomain(String domainName) {
-        cc.removeDomain(domainName);
+        handleExceptions(() -> delegate.removeDomain(domainName));
     }
 
     @Override
     public void rename(String applicationName, String newName) {
-        cc.rename(applicationName, newName);
+        handleExceptions(() -> delegate.rename(applicationName, newName));
     }
 
     @Override
     public StartingInfo restartApplication(String applicationName) {
-        return cc.restartApplication(applicationName);
+        return handleExceptions(() -> delegate.restartApplication(applicationName));
     }
 
     @Override
     public void setQuotaToOrganization(String organizationName, String quotaName) {
-        cc.setQuotaToOrganization(organizationName, quotaName);
+        handleExceptions(() -> delegate.setQuotaToOrganization(organizationName, quotaName));
     }
 
     @Override
     public void setResponseErrorHandler(ResponseErrorHandler errorHandler) {
-        cc.setResponseErrorHandler(errorHandler);
+        delegate.setResponseErrorHandler(errorHandler);
     }
 
     @Override
     public StartingInfo startApplication(String applicationName) {
-        return cc.startApplication(applicationName);
+        return handleExceptions(() -> delegate.startApplication(applicationName));
     }
 
     @Override
     public void stopApplication(String applicationName) {
-        cc.stopApplication(applicationName);
+        handleExceptions(() -> delegate.stopApplication(applicationName));
     }
 
     @Override
     public StreamingLogToken streamLogs(String applicationName, ApplicationLogListener listener) {
-        return cc.streamLogs(applicationName, listener);
+        return handleExceptions(() -> delegate.streamLogs(applicationName, listener));
     }
 
     @Override
     public void unRegisterRestLogListener(RestLogCallback callBack) {
-        cc.unRegisterRestLogListener(callBack);
+        delegate.unRegisterRestLogListener(callBack);
     }
 
     @Override
     public void unbindRunningSecurityGroup(String securityGroupName) {
-        cc.unbindRunningSecurityGroup(securityGroupName);
+        handleExceptions(() -> delegate.unbindRunningSecurityGroup(securityGroupName));
     }
 
     @Override
     public void unbindSecurityGroup(String organizationName, String spaceName, String securityGroupName) {
-        cc.unbindSecurityGroup(organizationName, spaceName, securityGroupName);
+        handleExceptions(() -> delegate.unbindSecurityGroup(organizationName, spaceName, securityGroupName));
     }
 
     @Override
     public void unbindService(String applicationName, String serviceName,
         ApplicationServicesUpdateCallback applicationServicesUpdateCallback) {
-        cc.unbindService(applicationName, serviceName, applicationServicesUpdateCallback);
+        try {
+            handleExceptions(() -> delegate.unbindService(applicationName, serviceName));
+        } catch (CloudOperationException e) {
+            applicationServicesUpdateCallback.onError(e, applicationName, serviceName);
+        }
     }
 
     @Override
     public void unbindService(String applicationName, String serviceName) {
-        cc.unbindService(applicationName, serviceName);
+        handleExceptions(() -> delegate.unbindService(applicationName, serviceName));
     }
 
     @Override
     public void unbindStagingSecurityGroup(String securityGroupName) {
-        cc.unbindStagingSecurityGroup(securityGroupName);
+        handleExceptions(() -> delegate.unbindStagingSecurityGroup(securityGroupName));
     }
 
     @Override
     public void unregister() {
-        cc.unregister();
+        handleExceptions(() -> delegate.unregister());
     }
 
     @Override
     public void updateApplicationDiskQuota(String applicationName, int disk) {
-        cc.updateApplicationDiskQuota(applicationName, disk);
+        handleExceptions(() -> delegate.updateApplicationDiskQuota(applicationName, disk));
     }
 
     @Override
     public void updateApplicationEnv(String applicationName, Map<String, String> env) {
-        cc.updateApplicationEnv(applicationName, env);
+        handleExceptions(() -> delegate.updateApplicationEnv(applicationName, env));
     }
 
     @Override
     public void updateApplicationInstances(String applicationName, int instances) {
-        cc.updateApplicationInstances(applicationName, instances);
+        handleExceptions(() -> delegate.updateApplicationInstances(applicationName, instances));
     }
 
     @Override
     public void updateApplicationMemory(String applicationName, int memory) {
-        cc.updateApplicationMemory(applicationName, memory);
+        handleExceptions(() -> delegate.updateApplicationMemory(applicationName, memory));
     }
 
     @Override
@@ -867,138 +877,193 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         Map<String, Map<String, Object>> serviceNamesWithBindingParameters,
         ApplicationServicesUpdateCallback applicationServicesUpdateCallback) {
         ApplicationServicesUpdater applicationServicesUpdater = new ApplicationServicesUpdater(this);
-        return applicationServicesUpdater.updateApplicationServices(applicationName, serviceNamesWithBindingParameters,
-            applicationServicesUpdateCallback);
+        return handleExceptions(() -> applicationServicesUpdater.updateApplicationServices(applicationName,
+            serviceNamesWithBindingParameters, applicationServicesUpdateCallback));
     }
 
     @Override
     public void updateApplicationStaging(String applicationName, Staging staging) {
-        cc.updateApplicationStaging(applicationName, staging);
+        handleExceptions(() -> delegate.updateApplicationStaging(applicationName, staging));
     }
 
     @Override
     public void updateApplicationUris(String applicationName, List<String> uris) {
-        cc.updateApplicationUris(applicationName, uris);
+        handleExceptions(() -> delegate.updateApplicationUris(applicationName, uris));
     }
 
     @Override
     public void updatePassword(String newPassword) {
-        cc.updatePassword(newPassword);
+        handleExceptions(() -> delegate.updatePassword(newPassword));
     }
 
     @Override
     public void updatePassword(CloudCredentials credentials, String newPassword) {
-        cc.updatePassword(credentials, newPassword);
+        handleExceptions(() -> delegate.updatePassword(credentials, newPassword));
     }
 
     @Override
     public void updateQuota(CloudQuota quota, String name) {
-        cc.updateQuota(quota, name);
+        handleExceptions(() -> delegate.updateQuota(quota, name));
     }
 
     @Override
     public void updateSecurityGroup(CloudSecurityGroup securityGroup) {
-        cc.updateSecurityGroup(securityGroup);
+        handleExceptions(() -> delegate.updateSecurityGroup(securityGroup));
     }
 
     @Override
     public void updateSecurityGroup(String name, InputStream jsonRulesFile) {
-        cc.updateSecurityGroup(name, jsonRulesFile);
+        handleExceptions(() -> delegate.updateSecurityGroup(name, jsonRulesFile));
     }
 
     @Override
     public void updateServiceBroker(CloudServiceBroker serviceBroker) {
-        cc.updateServiceBroker(serviceBroker);
+        handleExceptions(() -> delegate.updateServiceBroker(serviceBroker));
     }
 
     @Override
     public void updateServicePlanVisibilityForBroker(String name, boolean visibility) {
-        cc.updateServicePlanVisibilityForBroker(name, visibility);
+        handleExceptions(() -> delegate.updateServicePlanVisibilityForBroker(name, visibility));
     }
 
     @Override
     public void uploadApplication(String applicationName, String file) throws IOException {
-        cc.uploadApplication(applicationName, new File(file), null);
+        handleUploadExceptions(() -> delegate.uploadApplication(applicationName, new File(file), null));
     }
 
     @Override
     public void uploadApplication(String applicationName, File file) throws IOException {
-        cc.uploadApplication(applicationName, file, null);
+        handleUploadExceptions(() -> delegate.uploadApplication(applicationName, file, null));
     }
 
     @Override
     public void uploadApplication(String applicationName, File file, UploadStatusCallback callback) throws IOException {
-        cc.uploadApplication(applicationName, file, callback);
+        handleUploadExceptions(() -> delegate.uploadApplication(applicationName, file, callback));
     }
 
     @Override
     public void uploadApplication(String applicationName, InputStream inputStream) throws IOException {
-        cc.uploadApplication(applicationName, inputStream, null);
+        handleUploadExceptions(() -> delegate.uploadApplication(applicationName, inputStream, null));
     }
 
     @Override
     public void uploadApplication(String applicationName, InputStream inputStream, UploadStatusCallback callback) throws IOException {
-        cc.uploadApplication(applicationName, inputStream, callback);
+        handleUploadExceptions(() -> delegate.uploadApplication(applicationName, inputStream, callback));
     }
 
     @Override
     public UploadToken asyncUploadApplication(String applicationName, File file) throws IOException {
-        return cc.asyncUploadApplication(applicationName, file, null);
+        return handleUploadExceptions(() -> delegate.asyncUploadApplication(applicationName, file, null));
     }
 
     @Override
     public UploadToken asyncUploadApplication(String applicationName, File file, UploadStatusCallback callback) throws IOException {
-        return cc.asyncUploadApplication(applicationName, file, callback);
+        return handleUploadExceptions(() -> delegate.asyncUploadApplication(applicationName, file, callback));
     }
 
     @Override
     public Upload getUploadStatus(String uploadToken) {
-        return cc.getUploadStatus(uploadToken);
+        return handleExceptions(() -> delegate.getUploadStatus(uploadToken));
     }
 
     @Override
     public CloudBuild createBuild(UUID packageGuid) {
-        return cc.createBuild(packageGuid);
+        return handleExceptions(() -> delegate.createBuild(packageGuid));
     }
 
     @Override
     public CloudBuild getBuild(UUID buildGuid) {
-        return cc.getBuild(buildGuid);
+        return handleExceptions(() -> delegate.getBuild(buildGuid));
     }
 
     @Override
     public CloudTask getTask(UUID taskGuid) {
-        return cc.getTask(taskGuid);
+        return handleExceptions(() -> delegate.getTask(taskGuid));
     }
 
     @Override
     public List<CloudTask> getTasks(String applicationName) {
-        return cc.getTasks(applicationName);
+        return handleExceptions(() -> delegate.getTasks(applicationName));
     }
 
     @Override
     public CloudTask runTask(String applicationName, CloudTask task) {
-        return cc.runTask(applicationName, task);
+        return handleExceptions(() -> delegate.runTask(applicationName, task));
     }
 
     @Override
     public CloudTask cancelTask(UUID taskGuid) {
-        return cc.cancelTask(taskGuid);
+        return handleExceptions(() -> delegate.cancelTask(taskGuid));
     }
 
     @Override
     public void bindDropletToApp(UUID dropletGuid, UUID applicationGuid) {
-        cc.bindDropletToApp(dropletGuid, applicationGuid);
+        handleExceptions(() -> delegate.bindDropletToApp(dropletGuid, applicationGuid));
     }
 
     @Override
     public List<CloudBuild> getBuildsForApplication(UUID applicationGuid) {
-        return cc.getBuildsForApplication(applicationGuid);
+        return handleExceptions(() -> delegate.getBuildsForApplication(applicationGuid));
     }
 
     @Override
     public List<CloudBuild> getBuildsForPackage(UUID packageGuid) {
-        return cc.getBuildsForPackage(packageGuid);
+        return handleExceptions(() -> delegate.getBuildsForPackage(packageGuid));
+    }
+
+    private void handleExceptions(Runnable runnable) {
+        handleExceptions(() -> {
+            runnable.run();
+            return null;
+        });
+    }
+
+    private <T> T handleExceptions(Supplier<T> runnable) {
+        try {
+            return runnable.get();
+        } catch (AbstractCloudFoundryException e) {
+            throw convertV3ClientException(e);
+        }
+    }
+
+    private void handleUploadExceptions(UploadRunnable runnable) throws IOException {
+        handleUploadExceptions(() -> {
+            runnable.run();
+            return null;
+        });
+    }
+
+    private <T> T handleUploadExceptions(UploadSupplier<T> runnable) throws IOException {
+        try {
+            return runnable.get();
+        } catch (AbstractCloudFoundryException e) {
+            throw convertV3ClientException(e);
+        }
+    }
+
+    private CloudOperationException convertV3ClientException(AbstractCloudFoundryException e) {
+        HttpStatus httpStatus = HttpStatus.valueOf(e.getStatusCode());
+        return new CloudOperationException(httpStatus, httpStatus.getReasonPhrase(), e.getMessage(), e);
+    }
+
+    /**
+     * Necessary, because upload methods can throw IOExceptions and the standard Runnable interface cannot.
+     */
+    @FunctionalInterface
+    private interface UploadRunnable {
+
+        void run() throws IOException;
+
+    }
+
+    /**
+     * Necessary, because upload methods can throw IOExceptions and the standard Supplier interface cannot.
+     */
+    @FunctionalInterface
+    private interface UploadSupplier<T> {
+
+        T get() throws IOException;
+
     }
 
 }
