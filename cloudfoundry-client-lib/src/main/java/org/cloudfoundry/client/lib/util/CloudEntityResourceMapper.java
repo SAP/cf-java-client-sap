@@ -16,7 +16,10 @@
 
 package org.cloudfoundry.client.lib.util;
 
-import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -93,7 +96,7 @@ import org.cloudfoundry.client.lib.domain.Status;
 // TODO: use some more advanced JSON mapping framework?
 public class CloudEntityResourceMapper {
 
-    private static SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
+    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssZ");
 
     @SuppressWarnings("unchecked")
     public static Map<String, Object> getEmbeddedResource(Map<String, Object> resource, String embeddedResourceName) {
@@ -184,18 +187,28 @@ public class CloudEntityResourceMapper {
         }
     }
 
-    private static Date parseDate(String dateString) {
-        if (dateString != null) {
+    private static Date parseDate(String date) {
+        if (date != null) {
             try {
-                // if the time zone part of the dateString contains a colon (e.g. 2013-09-19T21:56:36+00:00)
-                // then remove it before parsing
-                String isoDateString = dateString.replaceFirst(":(?=[0-9]{2}$)", "")
-                    .replaceFirst("Z$", "+0000");
-                return dateFormatter.parse(isoDateString);
-            } catch (Exception ignore) {
+                Instant instant = parseInstant(date);
+                return Date.from(instant);
+            } catch (DateTimeParseException ignore) {
             }
         }
         return null;
+    }
+
+    private static Instant parseInstant(String date) {
+        String isoDate = toIsoDate(date);
+        return ZonedDateTime.parse(isoDate, DATE_TIME_FORMATTER)
+            .toInstant();
+    }
+
+    private static String toIsoDate(String date) {
+        // If the time zone part of the date contains a colon (e.g. 2013-09-19T21:56:36+00:00)
+        // then remove it before parsing.
+        return date.replaceFirst(":(?=[0-9]{2}$)", "")
+            .replaceFirst("Z$", "+0000");
     }
 
     public UUID getGuidOfV2Resource(Map<String, Object> resource) {
