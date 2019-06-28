@@ -16,6 +16,7 @@
 
 package org.cloudfoundry.client.lib.util;
 
+import java.text.MessageFormat;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -87,6 +88,8 @@ import org.cloudfoundry.client.lib.domain.PackageState;
 import org.cloudfoundry.client.lib.domain.SecurityGroupRule;
 import org.cloudfoundry.client.lib.domain.Staging;
 import org.cloudfoundry.client.lib.domain.Status;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Class handling the mapping of the cloud domain objects
@@ -96,6 +99,7 @@ import org.cloudfoundry.client.lib.domain.Status;
 // TODO: use some more advanced JSON mapping framework?
 public class CloudEntityResourceMapper {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(CloudEntityResourceMapper.class);
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssZ");
 
     @SuppressWarnings("unchecked")
@@ -183,6 +187,7 @@ public class CloudEntityResourceMapper {
         try {
             return UUID.fromString(guid);
         } catch (IllegalArgumentException e) {
+            LOGGER.warn(MessageFormat.format("Could not parse GUID string: \"{0}\"", guid), e);
             return null;
         }
     }
@@ -192,7 +197,8 @@ public class CloudEntityResourceMapper {
             try {
                 Instant instant = parseInstant(date);
                 return Date.from(instant);
-            } catch (DateTimeParseException ignore) {
+            } catch (DateTimeParseException e) {
+                LOGGER.warn(MessageFormat.format("Could not parse date string: \"{0}\"", date), e);
             }
         }
         return null;
