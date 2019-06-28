@@ -9,7 +9,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @Value.Immutable
 @JsonSerialize(as = ImmutableCloudSpace.class)
 @JsonDeserialize(as = ImmutableCloudSpace.class)
-public interface CloudSpace extends CloudEntity {
+public interface CloudSpace extends CloudEntity<CloudSpace> {
 
     @Nullable
     CloudOrganization getOrganization();

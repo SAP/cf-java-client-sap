@@ -137,8 +137,10 @@ public class CloudEntityResourceMapperTest {
             .getGuid()
             .toString());
         assertEquals("rake db:migrate", task.getCommand());
-        assertEquals(Integer.valueOf(512), task.getMemory());
-        assertEquals(Integer.valueOf(1024), task.getDiskQuota());
+        assertEquals(Integer.valueOf(512), task.getLimits()
+            .getMemory());
+        assertEquals(Integer.valueOf(1024), task.getLimits()
+            .getDisk());
     }
 
     @Test

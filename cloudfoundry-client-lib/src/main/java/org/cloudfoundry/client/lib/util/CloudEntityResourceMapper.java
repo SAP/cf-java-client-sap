@@ -537,21 +537,9 @@ public class CloudEntityResourceMapper {
     }
 
     private CloudDomain mapDomainResource(Map<String, Object> resource) {
-        @SuppressWarnings("unchecked")
-        Map<String, Object> ownerResource = getV2ResourceAttribute(resource, "owning_organization", Map.class);
-        CloudOrganization owner;
-        if (ownerResource == null) {
-            owner = ImmutableCloudOrganization.builder()
-                .metadata(CloudMetadata.defaultMetadata())
-                .name("none")
-                .build();
-        } else {
-            owner = mapOrganizationResource(ownerResource);
-        }
         return ImmutableCloudDomain.builder()
             .metadata(getV2Metadata(resource))
             .name(getV2ResourceName(resource))
-            .owningOrganization(owner)
             .build();
     }
 
@@ -593,16 +581,22 @@ public class CloudEntityResourceMapper {
             .metadata(getV3Metadata(resource))
             .name(getV3ResourceName(resource))
             .command(getV3ResourceAttribute(resource, "command", String.class))
-            .memory(getV3ResourceAttribute(resource, "memory_in_mb", Integer.class))
-            .diskQuota(getV3ResourceAttribute(resource, "disk_in_mb", Integer.class))
-            .state(getTaskState(resource))
+            .limits(getTaskLimits(resource))
             .result(getTaskResult(resource))
+            .state(getTaskState(resource))
             .build();
     }
 
     private CloudTask.State getTaskState(Map<String, Object> resource) {
         String stateAsString = getV3ResourceAttribute(resource, "state", String.class);
         return stateAsString == null ? null : CloudTask.State.valueOf(stateAsString);
+    }
+
+    private CloudTask.Limits getTaskLimits(Map<String, Object> resource) {
+        return ImmutableCloudTask.ImmutableLimits.builder()
+            .disk(getV3ResourceAttribute(resource, "disk_in_mb", Integer.class))
+            .memory(getV3ResourceAttribute(resource, "memory_in_mb", Integer.class))
+            .build();
     }
 
     private CloudTask.Result getTaskResult(Map<String, Object> resource) {
@@ -702,11 +696,6 @@ public class CloudEntityResourceMapper {
         builder.dashboardUrl(getV2ResourceAttribute(resource, "dashboard_url", String.class));
         builder.credentials(getV2ResourceAttribute(resource, "credentials", Map.class));
 
-        Map<String, Object> servicePlanResource = getEmbeddedResource(resource, "service_plan");
-        if (servicePlanResource != null) {
-            builder.servicePlan(mapServicePlanResource(servicePlanResource));
-        }
-
         CloudService service = mapServiceResource(resource);
         builder.service(service);
 
@@ -738,7 +727,7 @@ public class CloudEntityResourceMapper {
         if (servicePlanList != null) {
             for (Map<String, Object> servicePlanResource : servicePlanList) {
                 CloudServicePlan servicePlan = mapServicePlanResource(servicePlanResource);
-                builder.addCloudServicePlan(servicePlan);
+                builder.addServicePlan(servicePlan);
             }
         }
         return builder.build();

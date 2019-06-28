@@ -925,7 +925,7 @@ public class CloudControllerClientTest {
         connectedClient.createApplication(applicationName, staging, DEFAULT_MEMORY, uris, null);
         connectedClient.updateApplicationEnv(applicationName, Collections.singletonMap("testKey", "testValue"));
         CloudApplication application = connectedClient.getApplication(applicationName);
-        Map<String, Object> env = connectedClient.getApplicationEnvironment(application.getMetadata()
+        Map<String, String> env = connectedClient.getApplicationEnvironment(application.getMetadata()
             .getGuid());
         assertAppEnvironment(env);
     }
@@ -938,7 +938,7 @@ public class CloudControllerClientTest {
             .build();
         connectedClient.createApplication(applicationName, staging, DEFAULT_MEMORY, uris, null);
         connectedClient.updateApplicationEnv(applicationName, Collections.singletonMap("testKey", "testValue"));
-        Map<String, Object> env = connectedClient.getApplicationEnvironment(applicationName);
+        Map<String, String> env = connectedClient.getApplicationEnvironment(applicationName);
         assertAppEnvironment(env);
     }
 
@@ -1199,10 +1199,6 @@ public class CloudControllerClientTest {
         assertEquals(MYSQL_SERVICE_LABEL, service.getLabel());
         assertEquals(MYSQL_SERVICE_PLAN, service.getPlan());
 
-        CloudServicePlan servicePlan = serviceInstance.getServicePlan();
-        assertNotNull(servicePlan);
-        assertEquals(MYSQL_SERVICE_PLAN, servicePlan.getName());
-
         List<CloudServiceBinding> bindings = serviceInstance.getBindings();
         assertNotNull(bindings);
         assertEquals(1, bindings.size());
@@ -1236,14 +1232,14 @@ public class CloudControllerClientTest {
         assertNotNull(offering);
         assertNotNull(offering.getName());
         assertEquals(MYSQL_SERVICE_LABEL, offering.getName());
-        assertNotNull(offering.getCloudServicePlans());
-        assertTrue(offering.getCloudServicePlans()
+        assertNotNull(offering.getServicePlans());
+        assertTrue(offering.getServicePlans()
             .size() > 0);
         assertNotNull(offering.getDescription());
         assertNotNull(offering.getUniqueId());
         assertNotNull(offering.getExtra());
 
-        CloudServicePlan plan = offering.getCloudServicePlans()
+        CloudServicePlan plan = offering.getServicePlans()
             .get(0);
         assertNotNull(plan.getName());
         assertNotNull(plan.getUniqueId());
@@ -1954,13 +1950,13 @@ public class CloudControllerClientTest {
         assertEquals(Collections.singletonList(computeApplicationUrlNoProtocol(applicationName)), application.getUris());
     }
 
-    private void assertAppEnvironment(Map<String, Object> env) {
+    private void assertAppEnvironment(Map<String, String> env) {
         assertMapInEnv(env, "staging_env_json", true);
         assertMapInEnv(env, "running_env_json", true);
-        assertMapInEnv(env, "environment_json", true, "testKey");
-        assertMapInEnv(env, "system_env_json", true, "VCAP_SERVICES");
+        assertMapInEnv(env, "environment_json", true);
+        assertMapInEnv(env, "system_env_json", true);
         // this value is not present in Pivotal CF < 1.4
-        assertMapInEnv(env, "application_env_json", false, "VCAP_APPLICATION");
+        assertMapInEnv(env, "application_env_json", false);
     }
 
     private void assertDomainInList(List<CloudDomain> domains) {
@@ -2003,8 +1999,8 @@ public class CloudControllerClientTest {
         }
     }
 
-    private void assertMapInEnv(Map<String, Object> env, String key, boolean alwaysPresent, String... expectedKeys) {
-        Object value = env.get(key);
+    private void assertMapInEnv(Map<String, String> env, String key, boolean alwaysPresent) {
+        String value = env.get(key);
 
         if (value == null) {
             if (alwaysPresent) {
@@ -2012,15 +2008,6 @@ public class CloudControllerClientTest {
             } else {
                 return;
             }
-        }
-
-        assertTrue(value.getClass()
-            .getName(), value instanceof Map);
-        Map map = (Map) value;
-        assertTrue(map.size() >= expectedKeys.length);
-
-        for (String expectedKey : expectedKeys) {
-            assertTrue(map.containsKey(expectedKey));
         }
     }
 

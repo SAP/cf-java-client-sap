@@ -22,15 +22,19 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import java.util.function.IntFunction;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
@@ -44,18 +48,42 @@ import org.cloudfoundry.client.lib.RestLogCallback;
 import org.cloudfoundry.client.lib.StartingInfo;
 import org.cloudfoundry.client.lib.StreamingLogToken;
 import org.cloudfoundry.client.lib.UploadStatusCallback;
+import org.cloudfoundry.client.lib.adapters.ImmutableRawCloudApplication;
+import org.cloudfoundry.client.lib.adapters.ImmutableRawCloudBuild;
+import org.cloudfoundry.client.lib.adapters.ImmutableRawCloudDomain;
+import org.cloudfoundry.client.lib.adapters.ImmutableRawCloudEvent;
+import org.cloudfoundry.client.lib.adapters.ImmutableRawCloudInfo;
+import org.cloudfoundry.client.lib.adapters.ImmutableRawCloudOrganization;
+import org.cloudfoundry.client.lib.adapters.ImmutableRawCloudPackage;
+import org.cloudfoundry.client.lib.adapters.ImmutableRawCloudPrivateDomain;
+import org.cloudfoundry.client.lib.adapters.ImmutableRawCloudRoute;
+import org.cloudfoundry.client.lib.adapters.ImmutableRawCloudService;
+import org.cloudfoundry.client.lib.adapters.ImmutableRawCloudServiceBinding;
+import org.cloudfoundry.client.lib.adapters.ImmutableRawCloudServiceBroker;
+import org.cloudfoundry.client.lib.adapters.ImmutableRawCloudServiceInstance;
+import org.cloudfoundry.client.lib.adapters.ImmutableRawCloudServiceKey;
+import org.cloudfoundry.client.lib.adapters.ImmutableRawCloudServiceOffering;
+import org.cloudfoundry.client.lib.adapters.ImmutableRawCloudServicePlan;
+import org.cloudfoundry.client.lib.adapters.ImmutableRawCloudSharedDomain;
+import org.cloudfoundry.client.lib.adapters.ImmutableRawCloudSpace;
+import org.cloudfoundry.client.lib.adapters.ImmutableRawCloudStack;
+import org.cloudfoundry.client.lib.adapters.ImmutableRawCloudTask;
+import org.cloudfoundry.client.lib.adapters.ImmutableRawInstancesInfo;
 import org.cloudfoundry.client.lib.domain.ApplicationLog;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.cloudfoundry.client.lib.domain.CloudBuild;
 import org.cloudfoundry.client.lib.domain.CloudDomain;
+import org.cloudfoundry.client.lib.domain.CloudEntity;
 import org.cloudfoundry.client.lib.domain.CloudEvent;
 import org.cloudfoundry.client.lib.domain.CloudInfo;
+import org.cloudfoundry.client.lib.domain.CloudMetadata;
 import org.cloudfoundry.client.lib.domain.CloudOrganization;
 import org.cloudfoundry.client.lib.domain.CloudPackage;
 import org.cloudfoundry.client.lib.domain.CloudQuota;
 import org.cloudfoundry.client.lib.domain.CloudRoute;
 import org.cloudfoundry.client.lib.domain.CloudSecurityGroup;
 import org.cloudfoundry.client.lib.domain.CloudService;
+import org.cloudfoundry.client.lib.domain.CloudServiceBinding;
 import org.cloudfoundry.client.lib.domain.CloudServiceBroker;
 import org.cloudfoundry.client.lib.domain.CloudServiceInstance;
 import org.cloudfoundry.client.lib.domain.CloudServiceKey;
@@ -66,16 +94,12 @@ import org.cloudfoundry.client.lib.domain.CloudStack;
 import org.cloudfoundry.client.lib.domain.CloudTask;
 import org.cloudfoundry.client.lib.domain.CloudUser;
 import org.cloudfoundry.client.lib.domain.CrashesInfo;
+import org.cloudfoundry.client.lib.domain.Derivable;
 import org.cloudfoundry.client.lib.domain.DockerInfo;
 import org.cloudfoundry.client.lib.domain.ErrorDetails;
-import org.cloudfoundry.client.lib.domain.ImmutableCloudApplication;
-import org.cloudfoundry.client.lib.domain.ImmutableCloudInfo;
-import org.cloudfoundry.client.lib.domain.ImmutableCloudServiceKey;
 import org.cloudfoundry.client.lib.domain.ImmutableErrorDetails;
 import org.cloudfoundry.client.lib.domain.ImmutableUpload;
 import org.cloudfoundry.client.lib.domain.ImmutableUploadToken;
-import org.cloudfoundry.client.lib.domain.InstanceInfo;
-import org.cloudfoundry.client.lib.domain.InstanceState;
 import org.cloudfoundry.client.lib.domain.InstancesInfo;
 import org.cloudfoundry.client.lib.domain.Staging;
 import org.cloudfoundry.client.lib.domain.Status;
@@ -83,47 +107,102 @@ import org.cloudfoundry.client.lib.domain.Upload;
 import org.cloudfoundry.client.lib.domain.UploadToken;
 import org.cloudfoundry.client.lib.oauth2.OAuthClient;
 import org.cloudfoundry.client.lib.util.CloudEntityResourceMapper;
-import org.cloudfoundry.client.lib.util.CloudUtil;
 import org.cloudfoundry.client.lib.util.JsonUtil;
 import org.cloudfoundry.client.v2.Metadata;
 import org.cloudfoundry.client.v2.Resource;
+import org.cloudfoundry.client.v2.applications.ApplicationEntity;
+import org.cloudfoundry.client.v2.applications.ApplicationInstancesRequest;
+import org.cloudfoundry.client.v2.applications.ApplicationInstancesResponse;
 import org.cloudfoundry.client.v2.applications.AssociateApplicationRouteRequest;
 import org.cloudfoundry.client.v2.applications.DeleteApplicationRequest;
+import org.cloudfoundry.client.v2.applications.GetApplicationRequest;
 import org.cloudfoundry.client.v2.applications.ListApplicationServiceBindingsRequest;
+import org.cloudfoundry.client.v2.applications.ListApplicationsRequest;
 import org.cloudfoundry.client.v2.applications.RemoveApplicationRouteRequest;
+import org.cloudfoundry.client.v2.applications.SummaryApplicationRequest;
+import org.cloudfoundry.client.v2.applications.SummaryApplicationResponse;
 import org.cloudfoundry.client.v2.applications.UpdateApplicationRequest;
 import org.cloudfoundry.client.v2.domains.CreateDomainRequest;
-import org.cloudfoundry.client.v2.domains.DomainResource;
+import org.cloudfoundry.client.v2.domains.DomainEntity;
 import org.cloudfoundry.client.v2.domains.ListDomainsRequest;
+import org.cloudfoundry.client.v2.events.EventEntity;
+import org.cloudfoundry.client.v2.events.ListEventsRequest;
+import org.cloudfoundry.client.v2.info.GetInfoRequest;
+import org.cloudfoundry.client.v2.info.GetInfoResponse;
+import org.cloudfoundry.client.v2.organizations.GetOrganizationRequest;
+import org.cloudfoundry.client.v2.organizations.ListOrganizationPrivateDomainsRequest;
+import org.cloudfoundry.client.v2.organizations.ListOrganizationSpacesRequest;
+import org.cloudfoundry.client.v2.organizations.ListOrganizationsRequest;
+import org.cloudfoundry.client.v2.organizations.OrganizationEntity;
 import org.cloudfoundry.client.v2.privatedomains.DeletePrivateDomainRequest;
+import org.cloudfoundry.client.v2.privatedomains.ListPrivateDomainsRequest;
+import org.cloudfoundry.client.v2.privatedomains.PrivateDomainEntity;
+import org.cloudfoundry.client.v2.routemappings.ListRouteMappingsRequest;
+import org.cloudfoundry.client.v2.routemappings.RouteMappingEntity;
 import org.cloudfoundry.client.v2.routes.CreateRouteRequest;
 import org.cloudfoundry.client.v2.routes.CreateRouteResponse;
 import org.cloudfoundry.client.v2.routes.DeleteRouteRequest;
-import org.cloudfoundry.client.v2.routes.RouteResource;
+import org.cloudfoundry.client.v2.routes.RouteEntity;
 import org.cloudfoundry.client.v2.servicebindings.CreateServiceBindingRequest;
 import org.cloudfoundry.client.v2.servicebindings.DeleteServiceBindingRequest;
-import org.cloudfoundry.client.v2.servicebindings.ServiceBindingResource;
+import org.cloudfoundry.client.v2.servicebindings.ListServiceBindingsRequest;
+import org.cloudfoundry.client.v2.servicebindings.ServiceBindingEntity;
 import org.cloudfoundry.client.v2.servicebrokers.CreateServiceBrokerRequest;
 import org.cloudfoundry.client.v2.servicebrokers.DeleteServiceBrokerRequest;
+import org.cloudfoundry.client.v2.servicebrokers.ListServiceBrokersRequest;
+import org.cloudfoundry.client.v2.servicebrokers.ServiceBrokerEntity;
 import org.cloudfoundry.client.v2.servicebrokers.UpdateServiceBrokerRequest;
 import org.cloudfoundry.client.v2.serviceinstances.CreateServiceInstanceRequest;
 import org.cloudfoundry.client.v2.serviceinstances.DeleteServiceInstanceRequest;
-import org.cloudfoundry.client.v2.serviceinstances.ListServiceInstanceServiceBindingsRequest;
+import org.cloudfoundry.client.v2.serviceinstances.UnionServiceInstanceEntity;
 import org.cloudfoundry.client.v2.servicekeys.CreateServiceKeyRequest;
 import org.cloudfoundry.client.v2.servicekeys.DeleteServiceKeyRequest;
+import org.cloudfoundry.client.v2.servicekeys.ListServiceKeysRequest;
+import org.cloudfoundry.client.v2.servicekeys.ServiceKeyEntity;
+import org.cloudfoundry.client.v2.serviceplans.GetServicePlanRequest;
+import org.cloudfoundry.client.v2.serviceplans.ListServicePlansRequest;
+import org.cloudfoundry.client.v2.serviceplans.ServicePlanEntity;
+import org.cloudfoundry.client.v2.serviceplans.UpdateServicePlanRequest;
+import org.cloudfoundry.client.v2.services.GetServiceRequest;
+import org.cloudfoundry.client.v2.services.ListServicesRequest;
+import org.cloudfoundry.client.v2.services.ServiceEntity;
+import org.cloudfoundry.client.v2.shareddomains.ListSharedDomainsRequest;
+import org.cloudfoundry.client.v2.shareddomains.SharedDomainEntity;
+import org.cloudfoundry.client.v2.spaces.GetSpaceRequest;
+import org.cloudfoundry.client.v2.spaces.ListSpaceApplicationsRequest;
+import org.cloudfoundry.client.v2.spaces.ListSpaceAuditorsRequest;
+import org.cloudfoundry.client.v2.spaces.ListSpaceDevelopersRequest;
+import org.cloudfoundry.client.v2.spaces.ListSpaceManagersRequest;
 import org.cloudfoundry.client.v2.spaces.ListSpaceRoutesRequest;
+import org.cloudfoundry.client.v2.spaces.ListSpaceServiceInstancesRequest;
+import org.cloudfoundry.client.v2.spaces.ListSpacesRequest;
+import org.cloudfoundry.client.v2.spaces.SpaceEntity;
+import org.cloudfoundry.client.v2.stacks.GetStackRequest;
+import org.cloudfoundry.client.v2.stacks.ListStacksRequest;
+import org.cloudfoundry.client.v2.stacks.StackEntity;
 import org.cloudfoundry.client.v2.userprovidedserviceinstances.CreateUserProvidedServiceInstanceRequest;
 import org.cloudfoundry.client.v2.userprovidedserviceinstances.ListUserProvidedServiceInstanceServiceBindingsRequest;
+import org.cloudfoundry.client.v2.users.UserEntity;
 import org.cloudfoundry.client.v3.Relationship;
+import org.cloudfoundry.client.v3.ToOneRelationship;
+import org.cloudfoundry.client.v3.applications.ListApplicationBuildsRequest;
 import org.cloudfoundry.client.v3.applications.SetApplicationCurrentDropletRequest;
+import org.cloudfoundry.client.v3.builds.Build;
+import org.cloudfoundry.client.v3.builds.CreateBuildRequest;
+import org.cloudfoundry.client.v3.builds.GetBuildRequest;
+import org.cloudfoundry.client.v3.packages.CreatePackageRequest;
+import org.cloudfoundry.client.v3.packages.GetPackageRequest;
+import org.cloudfoundry.client.v3.packages.PackageRelationships;
+import org.cloudfoundry.client.v3.packages.PackageType;
 import org.cloudfoundry.client.v3.packages.UploadPackageRequest;
+import org.cloudfoundry.client.v3.tasks.CancelTaskRequest;
+import org.cloudfoundry.client.v3.tasks.CreateTaskRequest;
+import org.cloudfoundry.client.v3.tasks.GetTaskRequest;
+import org.cloudfoundry.client.v3.tasks.ListTasksRequest;
+import org.cloudfoundry.client.v3.tasks.Task;
 import org.cloudfoundry.operations.CloudFoundryOperations;
 import org.cloudfoundry.util.PaginationUtils;
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
@@ -133,6 +212,9 @@ import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestTemplate;
 
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.util.function.Tuple2;
+import reactor.util.function.Tuples;
 
 /**
  * Abstract implementation of the CloudControllerClient intended to serve as the base.
@@ -150,6 +232,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     private static final String MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED = "Feature is not yet implemented.";
     private static final String DEFAULT_HOST_DOMAIN_SEPARATOR = "\\.";
     private static final String DEFAULT_PATH_SEPARATOR = "/";
+    private static final String USER_PROVIDED_SERVICE_INSTANCE_TYPE = "user_provided_service_instance";
     private static final long JOB_POLLING_PERIOD = TimeUnit.SECONDS.toMillis(5);
 
     private final Log logger = LogFactory.getLog(getClass().getName());
@@ -210,8 +293,8 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     @Override
     public void addDomain(String domainName) {
         assertSpaceProvided("add domain");
-        UUID domainGuid = getDomainGuid(domainName, false);
-        if (domainGuid == null) {
+        CloudDomain domain = findDomainByName(domainName);
+        if (domain == null) {
             doCreateDomain(domainName);
         }
     }
@@ -219,7 +302,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     @Override
     public void addRoute(String host, String domainName) {
         assertSpaceProvided("add route for domain");
-        UUID domainGuid = getDomainGuid(domainName, true);
+        UUID domainGuid = getRequiredDomainGuid(domainName);
         doAddRoute(domainGuid, host, null);
     }
 
@@ -280,6 +363,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     @Override
     public void createApplication(String name, Staging staging, Integer diskQuota, Integer memory, List<String> uris,
         List<String> serviceNames, DockerInfo dockerInfo) {
+        // TODO: Refactor with version 3.16.0.RELEASE of the v3 client.
         Map<String, Object> appRequest = new HashMap<>();
         appRequest.put("space_guid", target.getMetadata()
             .getGuid());
@@ -337,7 +421,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
             .getGuid();
         v3Client.serviceInstances()
             .create(CreateServiceInstanceRequest.builder()
-                .spaceId(getTargetSpaceId())
+                .spaceId(getTargetSpaceGuid().toString())
                 .name(service.getName())
                 .servicePlanId(servicePlanGuid.toString())
                 .build())
@@ -391,7 +475,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
         v3Client.userProvidedServiceInstances()
             .create(CreateUserProvidedServiceInstanceRequest.builder()
-                .spaceId(getTargetSpaceId())
+                .spaceId(getTargetSpaceGuid().toString())
                 .name(service.getName())
                 .credentials(credentials)
                 .build())
@@ -431,12 +515,12 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     @Override
     public void deleteDomain(String domainName) {
         assertSpaceProvided("delete domain");
-        UUID domainGuid = getDomainGuid(domainName, true);
-        List<CloudRoute> routes = getRoutes(domainName);
+        CloudDomain domain = findDomainByName(domainName, true);
+        List<CloudRoute> routes = findRoutes(domain);
         if (!routes.isEmpty()) {
             throw new IllegalStateException("Unable to remove domain that is in use --" + " it has " + routes.size() + " routes.");
         }
-        doDeleteDomain(domainGuid);
+        doDeleteDomain(getGuid(domain));
     }
 
     /**
@@ -468,7 +552,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     @Override
     public void deleteRoute(String host, String domainName) {
         assertSpaceProvided("delete route for domain");
-        UUID routeGuid = getRouteGuid(getDomainGuid(domainName, true), host, null);
+        UUID routeGuid = getRouteGuid(getRequiredDomainGuid(domainName), host, null);
         if (routeGuid == null) {
             throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found",
                 "Host " + host + " not found for domain " + domainName + ".");
@@ -513,14 +597,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Service key " + serviceKeyName + " not found.");
     }
 
-    private void doDeleteServiceKey(UUID guid) {
-        v3Client.serviceKeys()
-            .delete(DeleteServiceKeyRequest.builder()
-                .serviceKeyId(guid.toString())
-                .build())
-            .block();
-    }
-
     @Override
     public void deleteSpace(String spaceName) {
         throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
@@ -533,53 +609,33 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public CloudApplication getApplication(String applicationName, boolean required) {
-        Map<String, Object> resource = findApplicationResource(applicationName, true);
-        CloudApplication application = null;
-        if (resource != null) {
-            application = mapCloudApplication(resource);
-        }
-        if (application == null && required) {
-            throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Application " + applicationName + " not found.");
-        }
-        return application;
+        return findApplicationByName(applicationName, required);
     }
 
     @Override
     public CloudApplication getApplication(UUID applicationGuid) {
-        Map<String, Object> resource = findApplicationResource(applicationGuid);
-        CloudApplication application = null;
-        if (resource != null) {
-            application = mapCloudApplication(resource);
-        }
-        if (application == null) {
-            throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found",
-                "Application with GUID " + applicationGuid + " not found.");
-        }
-        return application;
+        return findApplication(applicationGuid);
     }
 
     @Override
-    public Map<String, Object> getApplicationEnvironment(UUID applicationGuid) {
-        String url = getUrl("/v2/apps/{guid}/env");
-        Map<String, Object> urlVars = new HashMap<>();
-        urlVars.put("guid", applicationGuid);
-        String response = restTemplate.getForObject(url, String.class, urlVars);
-        return JsonUtil.convertJsonToMap(response);
+    public Map<String, String> getApplicationEnvironment(String applicationName) {
+        return getApplication(applicationName).getEnv();
     }
 
     @Override
-    public Map<String, Object> getApplicationEnvironment(String applicationName) {
-        UUID applicationGuid = getRequiredApplicationGuid(applicationName);
-        return getApplicationEnvironment(applicationGuid);
+    public Map<String, String> getApplicationEnvironment(UUID applicationGuid) {
+        return getApplication(applicationGuid).getEnv();
     }
 
     @Override
     public List<CloudEvent> getApplicationEvents(String applicationName) {
         UUID applicationGuid = getRequiredApplicationGuid(applicationName);
-        Map<String, Object> urlVars = new HashMap<>();
-        urlVars.put("applicationGuid", applicationGuid);
-        String urlPath = "/v2/events?q=actee:{applicationGuid}";
-        return doGetEvents(urlPath, urlVars);
+        return getApplicationEvents(applicationGuid);
+    }
+
+    @Override
+    public List<CloudEvent> getApplicationEvents(UUID applicationGuid) {
+        return findEventsByActee(applicationGuid.toString());
     }
 
     @Override
@@ -592,35 +648,14 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     public InstancesInfo getApplicationInstances(CloudApplication application) {
         if (application.getState()
             .equals(CloudApplication.State.STARTED)) {
-            return doGetApplicationInstances(application.getMetadata()
-                .getGuid());
+            return findApplicationInstances(getGuid(application));
         }
         return null;
     }
 
     @Override
     public List<CloudApplication> getApplications() {
-        return getApplications(true);
-    }
-
-    @Override
-    public List<CloudApplication> getApplications(boolean fetchAdditionalInfo) {
-        Map<String, Object> urlVars = new HashMap<>();
-        String urlPath = "/v2";
-        if (target != null) {
-            urlVars.put("space", target.getMetadata()
-                .getGuid());
-            urlPath = urlPath + "/spaces/{space}";
-        }
-        urlPath = urlPath + "/apps";
-        urlPath = fetchAdditionalInfo ? urlPath + "?inline-relations-depth=1" : urlPath;
-        List<Map<String, Object>> resourceList = getAllResources(urlPath, urlVars);
-        List<CloudApplication> applications = new ArrayList<>();
-        for (Map<String, Object> resource : resourceList) {
-            resource = fetchAdditionalInfo ? processApplicationResource(resource) : resource;
-            applications.add(mapCloudApplication(resource));
-        }
-        return applications;
+        return fetchListWithAuxiliaryContent(this::getApplicationResources, this::zipWithAuxiliaryApplicationContent);
     }
 
     @Override
@@ -644,20 +679,29 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
+    public List<CloudDomain> getSharedDomains() {
+        return fetchList(this::getSharedDomainResources, ImmutableRawCloudSharedDomain::of);
+    }
+
+    @Override
     public List<CloudDomain> getDomains() {
-        return doGetDomains((CloudOrganization) null);
+        return getPrivateDomains();
     }
 
     @Override
     public List<CloudDomain> getDomainsForOrganization() {
         assertSpaceProvided("access organization domains");
-        return doGetDomains(target.getOrganization());
+        return findDomainsByOrganizationGuid(getTargetOrganizationGuid());
+    }
+
+    @Override
+    public List<CloudDomain> getPrivateDomains() {
+        return fetchList(this::getPrivateDomainResources, ImmutableRawCloudPrivateDomain::of);
     }
 
     @Override
     public List<CloudEvent> getEvents() {
-        String urlPath = "/v2/events";
-        return doGetEvents(urlPath, null);
+        return fetchList(this::getEventResources, ImmutableRawCloudEvent::of);
     }
 
     @Override
@@ -667,31 +711,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public CloudInfo getInfo() {
-        String infoV2Json = getRestTemplate().getForObject(getUrl("/v2/info"), String.class);
-        Map<String, Object> infoV2Map = JsonUtil.convertJsonToMap(infoV2Json);
-
-        Map<String, Object> userMap = getUserInfo((String) infoV2Map.get("user"));
-
-        String user = (String) userMap.get("user_name");
-        String name = CloudUtil.parse(String.class, infoV2Map.get("name"));
-        String support = CloudUtil.parse(String.class, infoV2Map.get("support"));
-        String authorizationEndpoint = CloudUtil.parse(String.class, infoV2Map.get("authorization_endpoint"));
-        String build = CloudUtil.parse(String.class, infoV2Map.get("build"));
-        String version = "" + CloudUtil.parse(Number.class, infoV2Map.get("version"));
-        String description = CloudUtil.parse(String.class, infoV2Map.get("description"));
-
-        String loggingEndpoint = CloudUtil.parse(String.class, infoV2Map.get("doppler_logging_endpoint"));
-
-        return ImmutableCloudInfo.builder()
-            .name(name)
-            .user(user)
-            .support(support)
-            .version(version)
-            .authorizationEndpoint(authorizationEndpoint)
-            .loggingEndpoint(loggingEndpoint)
-            .build(build)
-            .description(description)
-            .build();
+        return fetch(this::getInfoResource, ImmutableRawCloudInfo::of);
     }
 
     @Override
@@ -713,20 +733,10 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
      */
     @Override
     public CloudOrganization getOrganization(String organizationName, boolean required) {
-        Map<String, Object> urlVars = new HashMap<>();
-        String urlPath = "/v2/organizations?inline-relations-depth=1&q=name:{name}";
-        urlVars.put("name", organizationName);
-        CloudOrganization organization = null;
-        List<Map<String, Object>> resourceList = getAllResources(urlPath, urlVars);
-        if (!resourceList.isEmpty()) {
-            Map<String, Object> resource = resourceList.get(0);
-            organization = resourceMapper.mapResource(resource, CloudOrganization.class);
-        }
-
+        CloudOrganization organization = findOrganization(organizationName);
         if (organization == null && required) {
             throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Organization " + organizationName + " not found.");
         }
-
         return organization;
     }
 
@@ -737,18 +747,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public List<CloudOrganization> getOrganizations() {
-        String urlPath = "/v2/organizations?inline-relations-depth=0";
-        List<Map<String, Object>> resourceList = getAllResources(urlPath);
-        List<CloudOrganization> organizations = new ArrayList<>();
-        for (Map<String, Object> resource : resourceList) {
-            organizations.add(resourceMapper.mapResource(resource, CloudOrganization.class));
-        }
-        return organizations;
-    }
-
-    @Override
-    public List<CloudDomain> getPrivateDomains() {
-        return doGetDomains("/v2/private_domains");
+        return fetchList(this::getOrganizationResources, ImmutableRawCloudOrganization::of);
     }
 
     @Override
@@ -774,8 +773,8 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     @Override
     public List<CloudRoute> getRoutes(String domainName) {
         assertSpaceProvided("get routes for domain");
-        UUID domainGuid = getDomainGuid(domainName, true);
-        return doGetRoutes(domainGuid);
+        CloudDomain domain = findDomainByName(domainName, true);
+        return findRoutes(domain);
     }
 
     @Override
@@ -805,11 +804,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public CloudService getService(String serviceName, boolean required) {
-        Map<String, Object> resource = doGetServiceInstance(serviceName, 0);
-        CloudService service = null;
-        if (resource != null) {
-            service = resourceMapper.mapResource(resource, CloudService.class);
-        }
+        CloudService service = findServiceByName(serviceName);
         if (service == null && required) {
             throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Service " + serviceName + " not found.");
         }
@@ -823,11 +818,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public CloudServiceBroker getServiceBroker(String name, boolean required) {
-        Map<String, Object> resource = findServiceBrokerResource(name);
-        CloudServiceBroker serviceBroker = null;
-        if (resource != null) {
-            serviceBroker = resourceMapper.mapResource(resource, CloudServiceBroker.class);
-        }
+        CloudServiceBroker serviceBroker = findServiceBrokerByName(name);
         if (serviceBroker == null && required) {
             throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Service broker " + name + " not found.");
         }
@@ -836,14 +827,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public List<CloudServiceBroker> getServiceBrokers() {
-        String urlPath = "/v2/service_brokers?inline-relations-depth=1";
-        List<Map<String, Object>> resourceList = getAllResources(urlPath);
-        List<CloudServiceBroker> serviceBrokers = new ArrayList<>();
-        for (Map<String, Object> resource : resourceList) {
-            CloudServiceBroker broker = resourceMapper.mapResource(resource, CloudServiceBroker.class);
-            serviceBrokers.add(broker);
-        }
-        return serviceBrokers;
+        return fetchList(this::getServiceBrokerResources, ImmutableRawCloudServiceBroker::of);
     }
 
     @Override
@@ -853,11 +837,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public CloudServiceInstance getServiceInstance(String serviceName, boolean required) {
-        Map<String, Object> resource = doGetServiceInstance(serviceName, 1);
-        CloudServiceInstance serviceInstance = null;
-        if (resource != null) {
-            serviceInstance = resourceMapper.mapResource(resource, CloudServiceInstance.class);
-        }
+        CloudServiceInstance serviceInstance = findServiceInstanceByName(serviceName);
         if (serviceInstance == null && required) {
             throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Service instance " + serviceName + " not found.");
         }
@@ -866,67 +846,28 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public List<CloudServiceKey> getServiceKeys(String serviceName) {
-        CloudService cloudService = getService(serviceName, true);
-        return doGetServiceKeys(cloudService);
+        CloudService service = getService(serviceName);
+        return getServiceKeys(service);
     }
 
     @Override
     public Map<String, Object> getServiceParameters(UUID guid) {
-        String urlPath = "/v2/service_instances/{guid}/parameters";
-        Map<String, Object> urlVars = new HashMap<>();
-        urlVars.put("guid", guid);
-        return getResponseMap(urlPath, urlVars);
+        return fetchParameters(String.format("/v2/service_instances/%s/parameters", guid));
     }
 
     @Override
     public List<CloudServiceOffering> getServiceOfferings() {
-        String urlPath = "/v2/services?inline-relations-depth=1";
-        List<Map<String, Object>> resourceList = getAllResources(urlPath);
-        List<CloudServiceOffering> serviceOfferings = new ArrayList<>();
-        for (Map<String, Object> resource : resourceList) {
-            CloudServiceOffering serviceOffering = resourceMapper.mapResource(resource, CloudServiceOffering.class);
-            serviceOfferings.add(serviceOffering);
-        }
-        return serviceOfferings;
+        return fetchListWithAuxiliaryContent(this::getServiceResources, this::zipWithAuxiliaryServiceOfferingContent);
     }
 
     @Override
     public List<CloudService> getServices() {
-        Map<String, Object> urlVars = new HashMap<>();
-        String urlPath = "/v2";
-        if (target != null) {
-            urlVars.put("space", target.getMetadata()
-                .getGuid());
-            urlPath = urlPath + "/spaces/{space}";
-        }
-        urlPath = urlPath + "/service_instances?inline-relations-depth=1&return_user_provided_service_instances=true";
-        List<Map<String, Object>> resourceList = getAllResources(urlPath, urlVars);
-        List<CloudService> services = new ArrayList<>();
-        for (Map<String, Object> resource : resourceList) {
-            if (hasEmbeddedResource(resource, "service_plan")) {
-                fillInEmbeddedResource(resource, "service_plan", "service");
-            }
-            services.add(resourceMapper.mapResource(resource, CloudService.class));
-        }
-        return services;
-    }
-
-    @Override
-    public List<CloudDomain> getSharedDomains() {
-        return doGetDomains("/v2/shared_domains");
+        return fetchListWithAuxiliaryContent(this::getServiceInstanceResources, this::zipWithAuxiliaryServiceContent);
     }
 
     @Override
     public CloudSpace getSpace(UUID spaceGuid) {
-        Map<String, Object> resource = findSpaceResource(spaceGuid);
-        CloudSpace space = null;
-        if (resource != null) {
-            space = resourceMapper.mapResource(resource, CloudSpace.class);
-        }
-        if (space == null) {
-            throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Space with GUID " + spaceGuid + " not found.");
-        }
-        return space;
+        return fetchWithAuxiliaryContent(() -> getSpaceResource(spaceGuid), this::zipWithAuxiliarySpaceContent);
     }
 
     @Override
@@ -937,7 +878,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     @Override
     public CloudSpace getSpace(String organizationName, String spaceName, boolean required) {
         UUID organizationGuid = getOrganizationGuid(organizationName, required);
-        return getSpace(organizationGuid, spaceName, required);
+        return findSpaceByOrganizationGuidAndName(organizationGuid, spaceName, required);
     }
 
     @Override
@@ -947,57 +888,79 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public CloudSpace getSpace(String spaceName, boolean required) {
-        UUID organizationGuid = target.getOrganization()
-            .getMetadata()
-            .getGuid();
-        return getSpace(organizationGuid, spaceName, required);
+        UUID organizationGuid = getTargetOrganizationGuid();
+        return findSpaceByOrganizationGuidAndName(organizationGuid, spaceName, required);
+    }
+
+    @Override
+    public List<UUID> getSpaceAuditors(String spaceName) {
+        return getSpaceAuditors(getTargetOrganizationName(), spaceName);
     }
 
     @Override
     public List<UUID> getSpaceAuditors(String organizationName, String spaceName) {
-        String urlPath = "/v2/spaces/{guid}/auditors";
-        return getSpaceUserGuids(organizationName, spaceName, urlPath);
+        return findSpaceUsers(organizationName, spaceName, this::getSpaceAuditors);
+    }
+
+    @Override
+    public List<UUID> getSpaceAuditors() {
+        return getSpaceAuditors(getTargetSpaceGuid());
     }
 
     @Override
     public List<UUID> getSpaceAuditors(UUID spaceGuid) {
-        String urlPath = "/v2/spaces/{guid}/auditors";
-        return getSpaceUserGuids(spaceGuid, urlPath);
+        return getGuids(getSpaceAuditorResourcesBySpaceGuid(spaceGuid));
+    }
+
+    @Override
+    public List<UUID> getSpaceDevelopers(String spaceName) {
+        return getSpaceDevelopers(getTargetOrganizationName(), spaceName);
     }
 
     @Override
     public List<UUID> getSpaceDevelopers(String organizationName, String spaceName) {
-        String urlPath = "/v2/spaces/{guid}/developers";
-        return getSpaceUserGuids(organizationName, spaceName, urlPath);
+        return findSpaceUsers(organizationName, spaceName, this::getSpaceDevelopers);
+    }
+
+    @Override
+    public List<UUID> getSpaceDevelopers() {
+        return getSpaceDevelopers(getTargetSpaceGuid());
     }
 
     @Override
     public List<UUID> getSpaceDevelopers(UUID spaceGuid) {
-        String urlPath = "/v2/spaces/{guid}/developers";
-        return getSpaceUserGuids(spaceGuid, urlPath);
+        return getGuids(getSpaceDeveloperResourcesBySpaceGuid(spaceGuid));
+    }
+
+    @Override
+    public List<UUID> getSpaceManagers(String spaceName) {
+        return getSpaceManagers(getTargetOrganizationName(), spaceName);
     }
 
     @Override
     public List<UUID> getSpaceManagers(String organizationName, String spaceName) {
-        String urlPath = "/v2/spaces/{guid}/managers";
-        return getSpaceUserGuids(organizationName, spaceName, urlPath);
+        return findSpaceUsers(organizationName, spaceName, this::getSpaceManagers);
+    }
+
+    @Override
+    public List<UUID> getSpaceManagers() {
+        return getSpaceManagers(getTargetSpaceGuid());
     }
 
     @Override
     public List<UUID> getSpaceManagers(UUID spaceGuid) {
-        String urlPath = "/v2/spaces/{guid}/managers";
-        return getSpaceUserGuids(spaceGuid, urlPath);
+        return getGuids(getSpaceManagerResourcesBySpaceGuid(spaceGuid));
     }
 
     @Override
     public List<CloudSpace> getSpaces() {
-        return getSpacesByOrganizationGuid(null);
+        return fetchListWithAuxiliaryContent(this::getSpaceResources, this::zipWithAuxiliarySpaceContent);
     }
 
     @Override
     public List<CloudSpace> getSpaces(String organizationName) {
         UUID organizationGuid = getOrganizationGuid(organizationName, true);
-        return getSpacesByOrganizationGuid(organizationGuid);
+        return findSpacesByOrganizationGuid(organizationGuid);
     }
 
     @Override
@@ -1012,11 +975,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public CloudStack getStack(String name, boolean required) {
-        Map<String, Object> resource = findStackResource(name);
-        CloudStack stack = null;
-        if (resource != null) {
-            stack = resourceMapper.mapResource(resource, CloudStack.class);
-        }
+        CloudStack stack = findStackResource(name);
         if (stack == null && required) {
             throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Stack " + name + " not found.");
         }
@@ -1025,13 +984,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public List<CloudStack> getStacks() {
-        String urlPath = "/v2/stacks";
-        List<Map<String, Object>> resources = getAllResources(urlPath);
-        List<CloudStack> stacks = new ArrayList<>();
-        for (Map<String, Object> resource : resources) {
-            stacks.add(resourceMapper.mapResource(resource, CloudStack.class));
-        }
-        return stacks;
+        return fetchList(this::getStackResources, ImmutableRawCloudStack::of);
     }
 
     /**
@@ -1361,94 +1314,38 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     @Override
     public void updateServicePlanVisibilityForBroker(String name, boolean visibility) {
         CloudServiceBroker broker = getServiceBroker(name);
-
-        String urlPath = "/v2/services?q={q}";
-        Map<String, Object> urlVars = new HashMap<>();
-        urlVars.put("q", "service_broker_guid:" + broker.getMetadata()
-            .getGuid());
-        List<Map<String, Object>> serviceResourceList = getAllResources(urlPath, urlVars);
-
-        for (Map<String, Object> serviceResource : serviceResourceList) {
-            Map<String, Object> metadata = (Map<String, Object>) serviceResource.get("metadata");
-            String serviceGuid = (String) metadata.get("guid");
-
-            urlPath = "/v2/service_plans?q={q}";
-            urlVars = new HashMap<>();
-            urlVars.put("q", "service_guid:" + serviceGuid);
-            List<Map<String, Object>> planResourceList = getAllResources(urlPath, urlVars);
-            for (Map<String, Object> planResource : planResourceList) {
-                metadata = (Map<String, Object>) planResource.get("metadata");
-                String planGuid = (String) metadata.get("guid");
-
-                Map<String, Object> planUpdateRequest = new HashMap<>();
-                planUpdateRequest.put("public", visibility);
-                getRestTemplate().put(getUrl("/v2/service_plans/{guid}"), planUpdateRequest, planGuid);
-            }
+        List<CloudServicePlan> servicePlans = findServicePlansByBrokerGuid(getGuid(broker));
+        for (CloudServicePlan servicePlan : servicePlans) {
+            updateServicePlanVisibility(servicePlan, visibility);
         }
     }
 
     @Override
     public CloudTask getTask(UUID taskGuid) {
-        String urlPath = "/v3/tasks/{taskGuid}";
-        Map<String, Object> urlVariables = new HashMap<>();
-        urlVariables.put("taskGuid", taskGuid);
-
-        @SuppressWarnings("unchecked")
-        Map<String, Object> response = getRestTemplate().getForObject(getUrl(urlPath), Map.class, urlVariables);
-        return resourceMapper.mapResource(response, CloudTask.class);
+        return fetch(() -> getTaskResource(taskGuid), ImmutableRawCloudTask::of);
     }
 
     @Override
     public List<CloudTask> getTasks(String applicationName) {
-        UUID applicationId = getRequiredApplicationGuid(applicationName);
-        String urlPath = "/v3/apps/{applicationGuid}/tasks";
-        Map<String, Object> urlVariables = new HashMap<>();
-        urlVariables.put("applicationGuid", applicationId);
-
-        return doGetTasks(urlPath, urlVariables);
+        UUID applicationGuid = getRequiredApplicationGuid(applicationName);
+        return fetchList(() -> getTaskResourcesByApplicationGuid(applicationGuid), ImmutableRawCloudTask::of);
     }
 
     @Override
     public CloudTask runTask(String applicationName, CloudTask task) {
-        UUID applicationId = getRequiredApplicationGuid(applicationName);
-        String urlPath = "/v3/apps/{applicationGuid}/tasks";
-        Map<String, Object> urlVariables = new HashMap<>();
-        urlVariables.put("applicationGuid", applicationId);
-        Map<String, Object> request = new HashMap<>();
-        Assert.notNull(task.getCommand(), "Command must not be null");
-        request.put("command", task.getCommand());
-
-        addNonNullRequestParameter(request, "name", task.getName());
-        addNonNullRequestParameter(request, "memory_in_mb", task.getMemory());
-        addNonNullRequestParameter(request, "disk_in_mb", task.getDiskQuota());
-
-        @SuppressWarnings("unchecked")
-        Map<String, Object> resource = getRestTemplate().postForObject(getUrl(urlPath), request, Map.class, urlVariables);
-        return resourceMapper.mapResource(resource, CloudTask.class);
-    }
-
-    private void addNonNullRequestParameter(Map<String, Object> request, String requestParameterName, Object value) {
-        if (value != null) {
-            request.put(requestParameterName, value);
-        }
+        UUID applicationGuid = getRequiredApplicationGuid(applicationName);
+        return createTask(applicationGuid, task);
     }
 
     @Override
     public CloudTask cancelTask(UUID taskGuid) {
-        String urlPath = "/v3/tasks/{taskGuid}/actions/cancel";
-        Map<String, Object> urlVariables = new HashMap<>();
-        urlVariables.put("taskGuid", taskGuid);
-        Map<String, Object> request = null;
-
-        @SuppressWarnings("unchecked")
-        Map<String, Object> resource = getRestTemplate().postForObject(getUrl(urlPath), request, Map.class, urlVariables);
-        return resourceMapper.mapResource(resource, CloudTask.class);
+        return fetch(() -> cancelTaskResource(taskGuid), ImmutableRawCloudTask::of);
     }
 
     @Override
     public void uploadApplication(String applicationName, File file, UploadStatusCallback callback) throws IOException {
         UploadToken uploadToken = startUpload(applicationName, file);
-        processAsyncUpload(uploadToken.getToken(), callback);
+        processAsyncUpload(uploadToken, callback);
     }
 
     @Override
@@ -1470,60 +1367,32 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     @Override
     public UploadToken asyncUploadApplication(String applicationName, File file, UploadStatusCallback callback) throws IOException {
         UploadToken uploadToken = startUpload(applicationName, file);
-        processAsyncUploadInBackground(uploadToken.getToken(), callback);
+        processAsyncUploadInBackground(uploadToken, callback);
         return uploadToken;
     }
 
-    private UploadToken startUpload(String applicationName, File file) {
-        Assert.notNull(applicationName, "AppName must not be null");
-        Assert.notNull(file, "File must not be null");
+    @Override
+    public Upload getUploadStatus(UUID packageGuid) {
+        CloudPackage cloudPackage = findPackage(packageGuid);
+        ErrorDetails errorDetails = ImmutableErrorDetails.builder()
+            .description(cloudPackage.getData()
+                .getError())
+            .build();
 
-        UUID applicationGuid = getRequiredApplicationGuid(applicationName);
-        UUID packageGuid = createPackageForApplication(applicationGuid);
-
-        v3Client.packages()
-            .upload(UploadPackageRequest.builder()
-                .bits(file.toPath())
-                .packageId(packageGuid.toString())
-                .build())
-            .block();
-
-        return ImmutableUploadToken.builder()
-            .token(getUrl("/v3/packages/" + packageGuid))
-            .packageGuid(packageGuid)
+        return ImmutableUpload.builder()
+            .status(cloudPackage.getStatus())
+            .errorDetails(errorDetails)
             .build();
     }
 
-    private UUID createPackageForApplication(UUID applicationGuid) {
-        Map<String, Object> packageRequest = new HashMap<>();
-        packageRequest.put("type", "bits");
-        Map<String, Map<String, Map<String, Object>>> relationships = new HashMap<>();
-        Map<String, Map<String, Object>> app = new HashMap<>();
-        Map<String, Object> data = new HashMap<>();
-        data.put("guid", applicationGuid);
-        app.put("data", data);
-        relationships.put("app", app);
-        packageRequest.put("relationships", relationships);
-
-        String packageResponse = getRestTemplate().postForObject(getUrl("/v3/packages"), packageRequest, String.class);
-        Map<String, Object> packageEntity = JsonUtil.convertJsonToMap(packageResponse);
-
-        return resourceMapper.mapResource(packageEntity, CloudPackage.class)
-            .getMetadata()
-            .getGuid();
+    @Override
+    public CloudBuild getBuild(UUID buildGuid) {
+        return fetch(() -> getBuildResource(buildGuid), ImmutableRawCloudBuild::of);
     }
 
     @Override
-    public CloudBuild createBuild(UUID packageGuid) {
-        Map<String, Object> buildRequest = new HashMap<>();
-        Map<String, Object> packageMap = new HashMap<>();
-        packageMap.put("guid", packageGuid);
-        buildRequest.put("package", packageMap);
-
-        String buildResponse = getRestTemplate().postForObject(getUrl("/v3/builds"), buildRequest, String.class);
-        Map<String, Object> buildEntity = JsonUtil.convertJsonToMap(buildResponse);
-
-        return resourceMapper.mapResource(buildEntity, CloudBuild.class);
+    public List<CloudBuild> getBuildsForApplication(UUID applicationGuid) {
+        return fetchList(() -> getBuildResourcesByApplicationGuid(applicationGuid), ImmutableRawCloudBuild::of);
     }
 
     @Override
@@ -1531,6 +1400,11 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         Map<String, Object> urlVars = new HashMap<>();
         urlVars.put("packageGuid", packageGuid);
         return doGetResources("/v3/builds?package_guids={packageGuid}", urlVars, CloudBuild.class);
+    }
+
+    @Override
+    public CloudBuild createBuild(UUID packageGuid) {
+        return fetch(() -> createBuildResource(packageGuid), ImmutableRawCloudBuild::of);
     }
 
     @Override
@@ -1545,34 +1419,468 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
             .block();
     }
 
-    @Override
-    public CloudBuild getBuild(UUID buildGuid) {
-        ResponseEntity<Map<String, Object>> responseEntity = getRestTemplate().exchange(getUrl("/v3/builds/{buildGuid}"), HttpMethod.GET,
-            HttpEntity.EMPTY, new ParameterizedTypeReference<Map<String, Object>>() {
-            }, buildGuid);
-
-        return resourceMapper.mapResource(responseEntity.getBody(), CloudBuild.class);
+    private <R> List<R> doGetResources(String urlPath, Map<String, Object> urlVariables, Class<R> resourceClass) {
+        List<Map<String, Object>> resourceList = getAllResources(urlPath, urlVariables);
+        List<R> resources = new ArrayList<>();
+        for (Map<String, Object> resource : resourceList) {
+            if (resource != null) {
+                resources.add(resourceMapper.mapResource(resource, resourceClass));
+            }
+        }
+        return resources;
     }
 
-    @Override
-    public List<CloudBuild> getBuildsForApplication(UUID applicationGuid) {
-        Map<String, Object> urlVars = new HashMap<>();
-        urlVars.put("applicationGuid", applicationGuid);
-        return doGetResources("/v3/apps/{applicationGuid}/builds", urlVars, CloudBuild.class);
+    private List<Map<String, Object>> getAllResources(String urlPath, Map<String, Object> urlVars) {
+        Map<String, Object> responseMap = getResponseMap(urlPath, urlVars);
+        List<Map<String, Object>> allResources = new ArrayList<>();
+        List<Map<String, Object>> newResources = (List<Map<String, Object>>) responseMap.get("resources");
+        if (newResources != null && !newResources.isEmpty()) {
+            allResources.addAll(newResources);
+        }
+        addAllRemainingResources(responseMap, allResources);
+        return allResources;
     }
 
-    @Override
-    public Upload getUploadStatus(String uploadToken) {
-        CloudPackage cloudPackage = getCloudPackage(uploadToken);
-        ErrorDetails errorDetails = ImmutableErrorDetails.builder()
-            .description(cloudPackage.getData()
-                .getError())
-            .build();
+    private Map<String, Object> getResponseMap(String urlPath, Map<String, Object> urlVars) {
+        String response = getResponse(urlPath, urlVars);
+        return JsonUtil.convertJsonToMap(response);
+    }
 
-        return ImmutableUpload.builder()
-            .status(cloudPackage.getStatus())
-            .errorDetails(errorDetails)
+    private String getResponse(String urlPath, Map<String, Object> urlVars) {
+        return urlVars == null ? getRestTemplate().getForObject(getUrl(urlPath), String.class)
+            : getRestTemplate().getForObject(getUrl(urlPath), String.class, urlVars);
+    }
+
+    private void addAllRemainingResources(Map<String, Object> responseMap, List<Map<String, Object>> allResources) {
+        String nextUrl = getNextUrl(responseMap);
+
+        while (nextUrl != null && !nextUrl.isEmpty()) {
+            nextUrl = addPageOfResources(nextUrl, allResources);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private String addPageOfResources(String nextUrl, List<Map<String, Object>> allResources) {
+        String response = getRestTemplate().getForObject(nextUrl, String.class);
+        Map<String, Object> respMap = JsonUtil.convertJsonToMap(response);
+        List<Map<String, Object>> newResources = (List<Map<String, Object>>) respMap.get("resources");
+        if (newResources != null && !newResources.isEmpty()) {
+            allResources.addAll(newResources);
+        }
+        return getNextUrl(respMap);
+    }
+
+    private String getNextUrl(Map<String, Object> responseMap) {
+        String nextUrl = getNextUrlValue(responseMap);
+        if (nextUrl != null && !nextUrl.isEmpty()) {
+            return getUrl(nextUrl);
+        }
+        Map<String, Object> paginationMap = getPaginationMap(responseMap);
+        if (paginationMap == null) {
+            return null;
+        }
+        return getNextUrlValueV3(paginationMap);
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> getPaginationMap(Map<String, Object> responseMap) {
+        return (Map<String, Object>) responseMap.get("pagination");
+    }
+
+    private String getNextUrlValue(Map<String, Object> map) {
+        return (String) map.get("next_url");
+    }
+
+    private String getNextUrlValueV3(Map<String, Object> map) {
+        Map<String, Object> next = (Map<String, Object>) map.get("next");
+        return next == null ? null : (String) next.get("href");
+    }
+
+    private CloudApplication findApplicationByName(String name, boolean required) {
+        CloudApplication application = findApplicationByName(name);
+        if (application == null && required) {
+            throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Application " + name + " not found.");
+        }
+        return application;
+    }
+
+    private CloudApplication findApplicationByName(String name) {
+        return fetchWithAuxiliaryContent(() -> getApplicationResourceByName(name), this::zipWithAuxiliaryApplicationContent);
+    }
+
+    private CloudApplication findApplication(UUID guid) {
+        return fetchWithAuxiliaryContent(() -> getApplicationResource(guid), this::zipWithAuxiliaryApplicationContent);
+    }
+
+    private Flux<? extends Resource<ApplicationEntity>> getApplicationResources() {
+        IntFunction<ListSpaceApplicationsRequest> pageRequestSupplier = page -> ListSpaceApplicationsRequest.builder()
+            .spaceId(getTargetSpaceGuid().toString())
+            .page(page)
             .build();
+        return PaginationUtils.requestClientV2Resources(page -> v3Client.spaces()
+            .listApplications(pageRequestSupplier.apply(page)));
+    }
+
+    private Mono<? extends Resource<ApplicationEntity>> getApplicationResource(UUID guid) {
+        GetApplicationRequest request = GetApplicationRequest.builder()
+            .applicationId(guid.toString())
+            .build();
+        return v3Client.applicationsV2()
+            .get(request);
+    }
+
+    private Mono<? extends Resource<ApplicationEntity>> getApplicationResourceByName(String name) {
+        IntFunction<ListApplicationsRequest> pageRequestSupplier = page -> ListApplicationsRequest.builder()
+            .spaceId(getTargetSpaceGuid().toString())
+            .name(name)
+            .page(page)
+            .build();
+        return PaginationUtils.requestClientV2Resources(page -> v3Client.applicationsV2()
+            .list(pageRequestSupplier.apply(page)))
+            .singleOrEmpty();
+    }
+
+    private Mono<Derivable<CloudApplication>> zipWithAuxiliaryApplicationContent(Resource<ApplicationEntity> applicationResource) {
+        UUID applicationGuid = getGuid(applicationResource);
+        return getApplicationSummary(applicationGuid).zipWhen(this::getApplicationStackResource)
+            .map(tuple -> ImmutableRawCloudApplication.builder()
+                .resource(applicationResource)
+                .summary(tuple.getT1())
+                .stack(ImmutableRawCloudStack.of(tuple.getT2()))
+                .space(target)
+                .build());
+    }
+
+    private Mono<SummaryApplicationResponse> getApplicationSummary(UUID guid) {
+        SummaryApplicationRequest request = SummaryApplicationRequest.builder()
+            .applicationId(guid.toString())
+            .build();
+        return v3Client.applicationsV2()
+            .summary(request);
+    }
+
+    private Mono<? extends Resource<StackEntity>> getApplicationStackResource(SummaryApplicationResponse summary) {
+        UUID stackGuid = UUID.fromString(summary.getStackId());
+        return getStackResource(stackGuid);
+    }
+
+    private CloudServiceInstance findServiceInstanceByName(String name) {
+        return fetchWithAuxiliaryContent(() -> getServiceInstanceResourceByName(name), this::zipWithAuxiliaryServiceInstanceContent);
+    }
+
+    private CloudService findServiceByName(String name) {
+        return fetchWithAuxiliaryContent(() -> getServiceInstanceResourceByName(name), this::zipWithAuxiliaryServiceContent);
+    }
+
+    private Flux<? extends Resource<UnionServiceInstanceEntity>> getServiceInstanceResources() {
+        IntFunction<ListSpaceServiceInstancesRequest> pageRequestSupplier = page -> ListSpaceServiceInstancesRequest.builder()
+            .returnUserProvidedServiceInstances(true)
+            .spaceId(getTargetSpaceGuid().toString())
+            .page(page)
+            .build();
+        return getServiceInstanceResources(pageRequestSupplier);
+    }
+
+    private Mono<? extends Resource<UnionServiceInstanceEntity>> getServiceInstanceResourceByName(String name) {
+        IntFunction<ListSpaceServiceInstancesRequest> pageRequestSupplier = page -> ListSpaceServiceInstancesRequest.builder()
+            .returnUserProvidedServiceInstances(true)
+            .spaceId(getTargetSpaceGuid().toString())
+            .name(name)
+            .page(page)
+            .build();
+        return getServiceInstanceResources(pageRequestSupplier).singleOrEmpty();
+    }
+
+    private Flux<? extends Resource<UnionServiceInstanceEntity>> getServiceInstanceResources(
+        IntFunction<ListSpaceServiceInstancesRequest> pageRequestSupplier) {
+        return PaginationUtils.requestClientV2Resources(page -> v3Client.spaces()
+            .listServiceInstances(pageRequestSupplier.apply(page)));
+    }
+
+    private Mono<Derivable<CloudServiceInstance>> zipWithAuxiliaryServiceInstanceContent(
+        Resource<UnionServiceInstanceEntity> serviceInstanceResource) {
+        Mono<List<CloudServiceBinding>> serviceBindings = getServiceInstanceBindingsFlux(getGuid(serviceInstanceResource)).collectList();
+        Mono<Derivable<CloudService>> service = zipWithAuxiliaryServiceContent(serviceInstanceResource);
+        return Mono.zip(service, serviceBindings)
+            .map(tuple -> ImmutableRawCloudServiceInstance.builder()
+                .resource(serviceInstanceResource)
+                .serviceBindings(tuple.getT2())
+                .service(tuple.getT1())
+                .build());
+    }
+
+    private Flux<CloudServiceBinding> getServiceInstanceBindingsFlux(UUID serviceInstanceGuid) {
+        return fetchFluxWithAuxiliaryContent(() -> getServiceBindingResourcesByServiceInstanceGuid(serviceInstanceGuid),
+            this::zipWithAuxiliaryServiceBindingContent);
+    }
+
+    private Mono<Derivable<CloudService>> zipWithAuxiliaryServiceContent(Resource<UnionServiceInstanceEntity> serviceInstanceResource) {
+        UnionServiceInstanceEntity serviceInstance = serviceInstanceResource.getEntity();
+        if (isUserProvided(serviceInstance)) {
+            return Mono.just(ImmutableRawCloudService.of(serviceInstanceResource));
+        }
+        UUID serviceGuid = UUID.fromString(serviceInstance.getServiceId());
+        UUID servicePlanGuid = UUID.fromString(serviceInstance.getServicePlanId());
+        return Mono.zip(Mono.just(serviceInstanceResource), getServiceResource(serviceGuid), getServicePlanResource(servicePlanGuid))
+            .map(tuple -> ImmutableRawCloudService.builder()
+                .resource(tuple.getT1())
+                .serviceResource(tuple.getT2())
+                .servicePlanResource(tuple.getT3())
+                .build());
+    }
+
+    private boolean isUserProvided(UnionServiceInstanceEntity serviceInstance) {
+        return USER_PROVIDED_SERVICE_INSTANCE_TYPE.equals(serviceInstance.getType());
+    }
+
+    private List<UUID> getServiceBindingGuids(CloudService service) {
+        Flux<? extends Resource<ServiceBindingEntity>> bindings = getServiceBindingResources(service);
+        return getGuids(bindings);
+    }
+
+    private List<UUID> getServiceBindingGuids(UUID applicationGuid) {
+        Flux<? extends Resource<ServiceBindingEntity>> bindings = getServiceBindingResourcesByApplicationGuid(applicationGuid);
+        return getGuids(bindings);
+    }
+
+    private Flux<? extends Resource<ServiceBindingEntity>> getServiceBindingResources(CloudService service) {
+        UUID serviceGuid = getGuid(service);
+        if (service.isUserProvided()) {
+            return getUserProvidedServiceBindingResourcesByServiceInstanceGuid(serviceGuid);
+        }
+        return getServiceBindingResourcesByServiceInstanceGuid(serviceGuid);
+    }
+
+    private Flux<? extends Resource<ServiceBindingEntity>> getUserProvidedServiceBindingResourcesByServiceInstanceGuid(
+        UUID serviceInstanceGuid) {
+        IntFunction<ListUserProvidedServiceInstanceServiceBindingsRequest> pageRequestSupplier = page -> ListUserProvidedServiceInstanceServiceBindingsRequest
+            .builder()
+            .userProvidedServiceInstanceId(serviceInstanceGuid.toString())
+            .page(page)
+            .build();
+        return PaginationUtils.requestClientV2Resources(page -> v3Client.userProvidedServiceInstances()
+            .listServiceBindings(pageRequestSupplier.apply(page)));
+    }
+
+    private Flux<? extends Resource<ServiceBindingEntity>> getServiceBindingResourcesByServiceInstanceGuid(UUID serviceInstanceGuid) {
+        IntFunction<ListServiceBindingsRequest> pageRequestSupplier = page -> ListServiceBindingsRequest.builder()
+            .serviceInstanceId(serviceInstanceGuid.toString())
+            .page(page)
+            .build();
+        return PaginationUtils.requestClientV2Resources(page -> v3Client.serviceBindingsV2()
+            .list(pageRequestSupplier.apply(page)));
+    }
+
+    private Mono<? extends Resource<ServiceBindingEntity>> getServiceBindingResourceByApplicationGuidAndServiceInstanceGuid(
+        UUID applicationGuid, UUID serviceInstanceGuid) {
+        IntFunction<ListApplicationServiceBindingsRequest> pageRequestSupplier = page -> ListApplicationServiceBindingsRequest.builder()
+            .applicationId(applicationGuid.toString())
+            .serviceInstanceId(serviceInstanceGuid.toString())
+            .page(page)
+            .build();
+        return getApplicationServiceBindingResources(pageRequestSupplier).singleOrEmpty();
+    }
+
+    private Flux<? extends Resource<ServiceBindingEntity>> getServiceBindingResourcesByApplicationGuid(UUID applicationGuid) {
+        IntFunction<ListApplicationServiceBindingsRequest> pageRequestSupplier = page -> ListApplicationServiceBindingsRequest.builder()
+            .applicationId(applicationGuid.toString())
+            .page(page)
+            .build();
+        return getApplicationServiceBindingResources(pageRequestSupplier);
+    }
+
+    private Flux<? extends Resource<ServiceBindingEntity>> getApplicationServiceBindingResources(
+        IntFunction<ListApplicationServiceBindingsRequest> pageRequestSupplier) {
+        return PaginationUtils.requestClientV2Resources(page -> v3Client.applicationsV2()
+            .listServiceBindings(pageRequestSupplier.apply(page)));
+    }
+
+    private Mono<Derivable<CloudServiceBinding>> zipWithAuxiliaryServiceBindingContent(Resource<ServiceBindingEntity> resource) {
+        Map<String, Object> parameters = fetchParametersQuietly(resource.getEntity()
+            .getServiceBindingParametersUrl());
+        return Mono.just(ImmutableRawCloudServiceBinding.builder()
+            .resource(resource)
+            .parameters(parameters)
+            .build());
+    }
+
+    private List<CloudServicePlan> findServicePlansByBrokerGuid(UUID brokerGuid) {
+        List<CloudServiceOffering> offerings = findServiceOfferingsByBrokerGuid(brokerGuid);
+        return getPlans(offerings);
+    }
+
+    private List<CloudServicePlan> getPlans(List<CloudServiceOffering> offerings) {
+        return offerings.stream()
+            .map(CloudServiceOffering::getServicePlans)
+            .flatMap(Collection::stream)
+            .collect(Collectors.toList());
+    }
+
+    private void updateServicePlanVisibility(CloudServicePlan servicePlan, boolean visibility) {
+        updateServicePlanVisibility(getGuid(servicePlan), visibility);
+    }
+
+    private void updateServicePlanVisibility(UUID servicePlanGuid, boolean visibility) {
+        UpdateServicePlanRequest request = UpdateServicePlanRequest.builder()
+            .servicePlanId(servicePlanGuid.toString())
+            .publiclyVisible(visibility)
+            .build();
+        v3Client.servicePlans()
+            .update(request)
+            .block();
+    }
+
+    private Flux<? extends Resource<UserEntity>> getSpaceAuditorResourcesBySpaceGuid(UUID spaceGuid) {
+        IntFunction<ListSpaceAuditorsRequest> pageRequestSupplier = page -> ListSpaceAuditorsRequest.builder()
+            .spaceId(spaceGuid.toString())
+            .page(page)
+            .build();
+        return PaginationUtils.requestClientV2Resources(page -> v3Client.spaces()
+            .listAuditors(pageRequestSupplier.apply(page)));
+    }
+
+    private Flux<? extends Resource<UserEntity>> getSpaceDeveloperResourcesBySpaceGuid(UUID spaceGuid) {
+        IntFunction<ListSpaceDevelopersRequest> pageRequestSupplier = page -> ListSpaceDevelopersRequest.builder()
+            .spaceId(spaceGuid.toString())
+            .page(page)
+            .build();
+        return PaginationUtils.requestClientV2Resources(page -> v3Client.spaces()
+            .listDevelopers(pageRequestSupplier.apply(page)));
+    }
+
+    private Flux<? extends Resource<UserEntity>> getSpaceManagerResourcesBySpaceGuid(UUID spaceGuid) {
+        IntFunction<ListSpaceManagersRequest> pageRequestSupplier = page -> ListSpaceManagersRequest.builder()
+            .spaceId(spaceGuid.toString())
+            .page(page)
+            .build();
+        return PaginationUtils.requestClientV2Resources(page -> v3Client.spaces()
+            .listManagers(pageRequestSupplier.apply(page)));
+    }
+
+    private Mono<? extends Task> getTaskResource(UUID guid) {
+        GetTaskRequest request = GetTaskRequest.builder()
+            .taskId(guid.toString())
+            .build();
+        return v3Client.tasks()
+            .get(request);
+    }
+
+    private Flux<? extends Task> getTaskResourcesByApplicationGuid(UUID applicationGuid) {
+        IntFunction<ListTasksRequest> pageRequestSupplier = page -> ListTasksRequest.builder()
+            .applicationId(applicationGuid.toString())
+            .page(page)
+            .build();
+        return PaginationUtils.requestClientV3Resources(page -> v3Client.tasks()
+            .list(pageRequestSupplier.apply(page)));
+    }
+
+    private CloudTask createTask(UUID applicationGuid, CloudTask task) {
+        return fetch(() -> createTaskResource(applicationGuid, task), ImmutableRawCloudTask::of);
+    }
+
+    private Mono<? extends Task> createTaskResource(UUID applicationGuid, CloudTask task) {
+        CreateTaskRequest request = CreateTaskRequest.builder()
+            .applicationId(applicationGuid.toString())
+            .command(task.getCommand())
+            .name(task.getName())
+            .memoryInMb(task.getLimits()
+                .getMemory())
+            .diskInMb(task.getLimits()
+                .getDisk())
+            .build();
+        return v3Client.tasks()
+            .create(request);
+    }
+
+    private Mono<? extends Task> cancelTaskResource(UUID taskGuid) {
+        CancelTaskRequest request = CancelTaskRequest.builder()
+            .taskId(taskGuid.toString())
+            .build();
+        return v3Client.tasks()
+            .cancel(request);
+    }
+
+    private File createTemporaryUploadFile(InputStream inputStream) throws IOException {
+        File file = File.createTempFile("cfjava", null);
+        FileOutputStream outputStream = new FileOutputStream(file);
+        FileCopyUtils.copy(inputStream, outputStream);
+        outputStream.close();
+        return file;
+    }
+
+    private UploadToken startUpload(String applicationName, File file) {
+        Assert.notNull(applicationName, "AppName must not be null");
+        Assert.notNull(file, "File must not be null");
+
+        UUID applicationGuid = getRequiredApplicationGuid(applicationName);
+        UUID packageGuid = getGuid(createPackageForApplication(applicationGuid));
+
+        v3Client.packages()
+            .upload(UploadPackageRequest.builder()
+                .bits(file.toPath())
+                .packageId(packageGuid.toString())
+                .build())
+            .block();
+
+        return ImmutableUploadToken.builder()
+            .packageGuid(packageGuid)
+            .build();
+    }
+
+    private CloudPackage createPackageForApplication(UUID applicationGuid) {
+        return fetch(() -> createPackageResource(applicationGuid), ImmutableRawCloudPackage::of);
+    }
+
+    private Mono<? extends org.cloudfoundry.client.v3.packages.Package> createPackageResource(UUID applicationGuid) {
+        CreatePackageRequest request = CreatePackageRequest.builder()
+            .type(PackageType.BITS)
+            .relationships(buildPackageRelationships(applicationGuid))
+            .build();
+        return v3Client.packages()
+            .create(request);
+    }
+
+    private PackageRelationships buildPackageRelationships(UUID applicationGuid) {
+        return PackageRelationships.builder()
+            .application(buildToOneRelationship(applicationGuid))
+            .build();
+    }
+
+    private ToOneRelationship buildToOneRelationship(UUID guid) {
+        return ToOneRelationship.builder()
+            .data(buildRelationship(guid))
+            .build();
+    }
+
+    private Relationship buildRelationship(UUID guid) {
+        return Relationship.builder()
+            .id(guid.toString())
+            .build();
+    }
+
+    private Mono<? extends Build> createBuildResource(UUID packageGuid) {
+        CreateBuildRequest request = CreateBuildRequest.builder()
+            .getPackage(buildRelationship(packageGuid))
+            .build();
+        return v3Client.builds()
+            .create(request);
+    }
+
+    private Mono<? extends Build> getBuildResource(UUID buildGuid) {
+        GetBuildRequest request = GetBuildRequest.builder()
+            .buildId(buildGuid.toString())
+            .build();
+        return v3Client.builds()
+            .get(request);
+    }
+
+    private Flux<? extends Build> getBuildResourcesByApplicationGuid(UUID applicationGuid) {
+        IntFunction<ListApplicationBuildsRequest> pageRequestSupplier = page -> ListApplicationBuildsRequest.builder()
+            .applicationId(applicationGuid.toString())
+            .page(page)
+            .build();
+        return PaginationUtils.requestClientV3Resources(page -> v3Client.applicationsV3()
+            .listBuilds(pageRequestSupplier.apply(page)));
     }
 
     protected void extractUriInfo(Map<String, UUID> existingDomains, String uri, Map<String, String> uriInfo) {
@@ -1610,17 +1918,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     protected String getUrl(String path) {
         return controllerUrl + (path.startsWith(DEFAULT_PATH_SEPARATOR) ? path : DEFAULT_PATH_SEPARATOR + path);
-    }
-
-    @SuppressWarnings("unchecked")
-    private String addPageOfResources(String nextUrl, List<Map<String, Object>> allResources) {
-        String response = getRestTemplate().getForObject(nextUrl, String.class);
-        Map<String, Object> respMap = JsonUtil.convertJsonToMap(response);
-        List<Map<String, Object>> newResources = (List<Map<String, Object>>) respMap.get("resources");
-        if (newResources != null && !newResources.isEmpty()) {
-            allResources.addAll(newResources);
-        }
-        return getNextUrl(respMap);
     }
 
     private void addStagingToRequest(Staging staging, Map<String, Object> appRequest) {
@@ -1691,14 +1988,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return routeGuid;
     }
 
-    private File createTemporaryUploadFile(InputStream inputStream) throws IOException {
-        File file = File.createTempFile("cfjava", null);
-        FileOutputStream outputStream = new FileOutputStream(file);
-        FileCopyUtils.copy(inputStream, outputStream);
-        outputStream.close();
-        return file;
-    }
-
     private UUID doAddRoute(UUID domainGuid, String host, String path) {
         assertSpaceProvided("add route");
         CreateRouteResponse response = v3Client.routes()
@@ -1706,35 +1995,34 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                 .domainId(domainGuid.toString())
                 .host(host)
                 .path(path)
-                .spaceId(getTargetSpaceId())
+                .spaceId(getTargetSpaceGuid().toString())
                 .build())
             .block();
-        return UUID.fromString(response.getMetadata()
-            .getId());
+        return getGuid(response);
     }
 
     private void doCreateDomain(String name) {
         v3Client.domains()
             .create(CreateDomainRequest.builder()
                 .wildcard(true)
-                .owningOrganizationId(getTargetOrganizationGuid())
+                .owningOrganizationId(getTargetOrganizationGuid().toString())
                 .name(name)
                 .build())
             .block();
     }
 
-    private void doDeleteDomain(UUID domainGuid) {
+    private void doDeleteDomain(UUID guid) {
         v3Client.privateDomains()
             .delete(DeletePrivateDomainRequest.builder()
-                .privateDomainId(domainGuid.toString())
+                .privateDomainId(guid.toString())
                 .build())
             .block();
     }
 
-    private void doDeleteRoute(UUID routeGuid) {
+    private void doDeleteRoute(UUID guid) {
         v3Client.routes()
             .delete(DeleteRouteRequest.builder()
-                .routeId(routeGuid.toString())
+                .routeId(guid.toString())
                 .build())
             .block();
     }
@@ -1754,141 +2042,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
             .block();
     }
 
-    @SuppressWarnings("unchecked")
-    private InstancesInfo doGetApplicationInstances(UUID applicationGuid) {
-        List<Map<String, Object>> instanceList = new ArrayList<>();
-        Map<String, Object> respMap = getInstanceInfoForApp(applicationGuid, "instances");
-        if (respMap == null) {
-            return null;
-        }
-        List<String> keys = new ArrayList<>(respMap.keySet());
-        Collections.sort(keys);
-        for (String instanceId : keys) {
-            Integer index;
-            try {
-                index = Integer.valueOf(instanceId);
-            } catch (NumberFormatException e) {
-                index = -1;
-            }
-            Map<String, Object> instanceMap = (Map<String, Object>) respMap.get(instanceId);
-            instanceMap.put("index", index);
-            instanceList.add(instanceMap);
-        }
-        return new InstancesInfo(instanceList);
-    }
-
-    private List<CloudDomain> doGetDomains(CloudOrganization organization) {
-        Map<String, Object> urlVars = new HashMap<>();
-        String urlPath = "/v2";
-        if (organization != null) {
-            urlVars.put("organization", organization.getMetadata()
-                .getGuid());
-            urlPath = urlPath + "/organizations/{organization}";
-        }
-        urlPath = urlPath + "/private_domains";
-        return doGetDomains(urlPath, urlVars);
-    }
-
-    private List<CloudDomain> doGetDomains(String urlPath) {
-        return doGetDomains(urlPath, null);
-    }
-
-    private List<CloudDomain> doGetDomains(String urlPath, Map<String, Object> urlVariables) {
-        return doGetResources(urlPath, urlVariables, CloudDomain.class);
-    }
-
-    private List<CloudEvent> doGetEvents(String urlPath, Map<String, Object> urlVariables) {
-        return doGetResources(urlPath, urlVariables, CloudEvent.class);
-    }
-
-    private List<CloudTask> doGetTasks(String urlPath, Map<String, Object> urlVariables) {
-        return doGetResources(urlPath, urlVariables, CloudTask.class);
-    }
-
-    private <R> List<R> doGetResources(String urlPath, Map<String, Object> urlVariables, Class<R> resourceClass) {
-        List<Map<String, Object>> resourceList = getAllResources(urlPath, urlVariables);
-        List<R> resources = new ArrayList<>();
-        for (Map<String, Object> resource : resourceList) {
-            if (resource != null) {
-                resources.add(resourceMapper.mapResource(resource, resourceClass));
-            }
-        }
-        return resources;
-    }
-
-    private List<CloudRoute> doGetRoutes(UUID domainGuid) {
-        Map<String, Object> urlVars = new HashMap<String, Object>();
-        String urlPath = "/v2";
-        // TODO: NOT implemented ATM:
-        // if (sessionSpace != null) {
-        // urlVars.put("space", sessionSpace.getMetadata().getGuid());
-        // urlPath = urlPath + "/spaces/{space}";
-        // }
-        urlPath = urlPath + "/routes?inline-relations-depth=1";
-        List<Map<String, Object>> allRoutes = getAllResources(urlPath, urlVars);
-        List<CloudRoute> routes = new ArrayList<CloudRoute>();
-        for (Map<String, Object> route : allRoutes) {
-            // TODO: move space_guid to path once implemented (see above):
-            UUID space = CloudEntityResourceMapper.getV2ResourceAttribute(route, "space_guid", UUID.class);
-            UUID domain = CloudEntityResourceMapper.getV2ResourceAttribute(route, "domain_guid", UUID.class);
-            if (target.getMetadata()
-                .getGuid()
-                .equals(space) && domainGuid.equals(domain)) {
-                // routes.add(CloudEntityResourceMapper.getEntityAttribute(route, "host", String.class));
-                routes.add(resourceMapper.mapResource(route, CloudRoute.class));
-            }
-        }
-        return routes;
-    }
-
-    private Map<String, Object> doGetServiceInstance(String serviceName, int inlineDepth) {
-        String urlPath = "/v2";
-        Map<String, Object> urlVars = new HashMap<>();
-        if (target != null) {
-            urlVars.put("space", target.getMetadata()
-                .getGuid());
-            urlPath = urlPath + "/spaces/{space}";
-        }
-        urlVars.put("q", "name:" + serviceName);
-        urlPath = urlPath + "/service_instances?q={q}&return_user_provided_service_instances=true";
-        if (inlineDepth > 0) {
-            urlPath = urlPath + "&inline-relations-depth=" + inlineDepth;
-        }
-
-        List<Map<String, Object>> resources = getAllResources(urlPath, urlVars);
-
-        if (!resources.isEmpty()) {
-            Map<String, Object> serviceResource = resources.get(0);
-            if (hasEmbeddedResource(serviceResource, "service_plan")) {
-                fillInEmbeddedResource(serviceResource, false, "service_plan", "service");
-            }
-            // If the bindings are more than 50, then they will not be included in the response due to the way the 'inline-relations-depth'
-            // parameter works. In this case, we have to make one additional request to the URL specified in the 'service_bindings_url'
-            // field of the response.
-            if (hasEmbeddedResource(serviceResource, "service_bindings")) {
-                fillInEmbeddedResource(serviceResource, true, "service_bindings", "service_binding_parameters");
-            }
-            return serviceResource;
-        }
-        return null;
-    }
-
-    private List<CloudServiceKey> doGetServiceKeys(CloudService service) {
-        String urlPath = "/v2/service_instances/{serviceId}/service_keys";
-        Map<String, Object> pathVariables = new HashMap<>();
-        pathVariables.put("serviceId", service.getMetadata()
-            .getGuid());
-        List<Map<String, Object>> resourceList = getAllResources(urlPath, pathVariables);
-        List<CloudServiceKey> serviceKeys = new ArrayList<>();
-        for (Map<String, Object> resource : resourceList) {
-            CloudServiceKey serviceKey = resourceMapper.mapResource(resource, CloudServiceKey.class);
-            serviceKey = ImmutableCloudServiceKey.copyOf(serviceKey)
-                .withService(service);
-            serviceKeys.add(serviceKey);
-        }
-        return serviceKeys;
-    }
-
     private void doUnbindService(UUID applicationGuid, UUID serviceGuid) {
         UUID serviceBindingGuid = getServiceBindingGuid(applicationGuid, serviceGuid);
         doUnbindService(serviceBindingGuid);
@@ -1902,180 +2055,451 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
             .block();
     }
 
+    private void doDeleteServiceKey(UUID guid) {
+        v3Client.serviceKeys()
+            .delete(DeleteServiceKeyRequest.builder()
+                .serviceKeyId(guid.toString())
+                .build())
+            .block();
+    }
+
+    private CloudDomain findDomainByName(String name, boolean required) {
+        CloudDomain domain = findDomainByName(name);
+        if (domain == null && required) {
+            throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Domain " + name + " not found.");
+        }
+        return domain;
+    }
+
+    private CloudDomain findDomainByName(String name) {
+        return fetch(() -> getDomainResourceByName(name), ImmutableRawCloudDomain::of);
+    }
+
+    private List<CloudDomain> findDomainsByOrganizationGuid(UUID organizationGuid) {
+        return fetchList(() -> getPrivateDomainResourcesByOrganizationGuid(organizationGuid), ImmutableRawCloudPrivateDomain::of);
+    }
+
+    private Mono<? extends Resource<DomainEntity>> getDomainResourceByName(String name) {
+        IntFunction<ListDomainsRequest> pageRequestSupplier = page -> ListDomainsRequest.builder()
+            .name(name)
+            .page(page)
+            .build();
+        return PaginationUtils.requestClientV2Resources(page -> v3Client.domains()
+            .list(pageRequestSupplier.apply(page)))
+            .singleOrEmpty();
+    }
+
+    private Flux<? extends Resource<SharedDomainEntity>> getSharedDomainResources() {
+        IntFunction<ListSharedDomainsRequest> pageRequestSupplier = page -> ListSharedDomainsRequest.builder()
+            .page(page)
+            .build();
+        return PaginationUtils.requestClientV2Resources(page -> v3Client.sharedDomains()
+            .list(pageRequestSupplier.apply(page)));
+    }
+
+    private Flux<? extends Resource<PrivateDomainEntity>> getPrivateDomainResources() {
+        IntFunction<ListPrivateDomainsRequest> pageRequestSupplier = page -> ListPrivateDomainsRequest.builder()
+            .page(page)
+            .build();
+        return PaginationUtils.requestClientV2Resources(page -> v3Client.privateDomains()
+            .list(pageRequestSupplier.apply(page)));
+    }
+
+    private Flux<? extends Resource<PrivateDomainEntity>> getPrivateDomainResourcesByOrganizationGuid(UUID organizationGuid) {
+        IntFunction<ListOrganizationPrivateDomainsRequest> pageRequestSupplier = page -> ListOrganizationPrivateDomainsRequest.builder()
+            .organizationId(organizationGuid.toString())
+            .page(page)
+            .build();
+        return PaginationUtils.requestClientV2Resources(page -> v3Client.organizations()
+            .listPrivateDomains(pageRequestSupplier.apply(page)));
+    }
+
+    private List<CloudSpace> findSpacesByOrganizationGuid(UUID organizationGuid) {
+        return fetchListWithAuxiliaryContent(() -> getSpaceResourcesByOrganizationGuid(organizationGuid),
+            this::zipWithAuxiliarySpaceContent);
+    }
+
+    private CloudSpace findSpaceByOrganizationGuidAndName(UUID organizationGuid, String spaceName, boolean required) {
+        CloudSpace space = findSpaceByOrganizationGuidAndName(organizationGuid, spaceName);
+        if (space == null && required) {
+            throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found",
+                "Space " + spaceName + " not found in organization with GUID " + organizationGuid + ".");
+        }
+        return space;
+    }
+
+    private CloudSpace findSpaceByOrganizationGuidAndName(UUID organizationGuid, String spaceName) {
+        return fetchWithAuxiliaryContent(() -> getSpaceResourceByOrganizationGuidAndName(organizationGuid, spaceName),
+            this::zipWithAuxiliarySpaceContent);
+    }
+
+    private Flux<? extends Resource<SpaceEntity>> getSpaceResources() {
+        IntFunction<ListSpacesRequest> pageRequestSupplier = page -> ListSpacesRequest.builder()
+            .page(page)
+            .build();
+        return getSpaceResources(pageRequestSupplier);
+    }
+
+    private Mono<? extends Resource<SpaceEntity>> getSpaceResource(UUID guid) {
+        GetSpaceRequest request = GetSpaceRequest.builder()
+            .spaceId(guid.toString())
+            .build();
+        return v3Client.spaces()
+            .get(request);
+    }
+
+    private Flux<? extends Resource<SpaceEntity>> getSpaceResourcesByOrganizationGuid(UUID organizationGuid) {
+        IntFunction<ListSpacesRequest> pageRequestSupplier = page -> ListSpacesRequest.builder()
+            .organizationId(organizationGuid.toString())
+            .page(page)
+            .build();
+        return getSpaceResources(pageRequestSupplier);
+    }
+
+    private Mono<? extends Resource<SpaceEntity>> getSpaceResourceByOrganizationGuidAndName(UUID organizationGuid, String name) {
+        IntFunction<ListOrganizationSpacesRequest> pageRequestSupplier = page -> ListOrganizationSpacesRequest.builder()
+            .organizationId(organizationGuid.toString())
+            .name(name)
+            .page(page)
+            .build();
+        return PaginationUtils.requestClientV2Resources(page -> v3Client.organizations()
+            .listSpaces(pageRequestSupplier.apply(page)))
+            .singleOrEmpty();
+    }
+
+    private Flux<? extends Resource<SpaceEntity>> getSpaceResources(IntFunction<ListSpacesRequest> requestForPage) {
+        return PaginationUtils.requestClientV2Resources(page -> v3Client.spaces()
+            .list(requestForPage.apply(page)));
+    }
+
+    private Mono<Derivable<CloudSpace>> zipWithAuxiliarySpaceContent(Resource<SpaceEntity> resource) {
+        UUID organizationGuid = UUID.fromString(resource.getEntity()
+            .getOrganizationId());
+        return getOrganizationMono(organizationGuid).map(organization -> ImmutableRawCloudSpace.builder()
+            .resource(resource)
+            .organization(organization)
+            .build());
+    }
+
+    private Mono<? extends Derivable<CloudOrganization>> getOrganizationMono(UUID guid) {
+        return fetchMono(() -> getOrganizationResource(guid), ImmutableRawCloudOrganization::of);
+    }
+
+    private CloudOrganization findOrganization(String name) {
+        return fetch(() -> getOrganizationResourceByName(name), ImmutableRawCloudOrganization::of);
+    }
+
+    private Flux<? extends Resource<OrganizationEntity>> getOrganizationResources() {
+        IntFunction<ListOrganizationsRequest> pageRequestSupplier = page -> ListOrganizationsRequest.builder()
+            .page(page)
+            .build();
+        return getOrganizationResources(pageRequestSupplier);
+    }
+
+    private Mono<? extends Resource<OrganizationEntity>> getOrganizationResource(UUID guid) {
+        GetOrganizationRequest request = GetOrganizationRequest.builder()
+            .organizationId(guid.toString())
+            .build();
+        return v3Client.organizations()
+            .get(request);
+    }
+
+    private Mono<? extends Resource<OrganizationEntity>> getOrganizationResourceByName(String name) {
+        IntFunction<ListOrganizationsRequest> pageRequestSupplier = page -> ListOrganizationsRequest.builder()
+            .name(name)
+            .page(page)
+            .build();
+        return getOrganizationResources(pageRequestSupplier).singleOrEmpty();
+    }
+
+    private Flux<? extends Resource<OrganizationEntity>> getOrganizationResources(
+        IntFunction<ListOrganizationsRequest> pageRequestSupplier) {
+        return PaginationUtils.requestClientV2Resources(page -> v3Client.organizations()
+            .list(pageRequestSupplier.apply(page)));
+    }
+
+    private List<CloudRoute> findRoutes(CloudDomain domain) {
+        return fetchListWithAuxiliaryContent(() -> getRouteTuple(domain, getTargetSpaceGuid()), this::zipWithAuxiliaryRouteContent);
+    }
+
+    private Flux<Tuple2<? extends Resource<RouteEntity>, CloudDomain>> getRouteTuple(CloudDomain domain, UUID spaceGuid) {
+        UUID domainGuid = getGuid(domain);
+        return getRouteResourcesByDomainGuidAndSpaceGuid(domainGuid, spaceGuid).map(routeResource -> Tuples.of(routeResource, domain));
+    }
+
+    private Flux<? extends Resource<RouteEntity>> getRouteResourcesByDomainGuidAndSpaceGuid(UUID domainGuid, UUID spaceGuid) {
+        IntFunction<ListSpaceRoutesRequest> pageRequestSupplier = page -> ListSpaceRoutesRequest.builder()
+            .domainId(domainGuid.toString())
+            .spaceId(spaceGuid.toString())
+            .page(page)
+            .build();
+        return PaginationUtils.requestClientV2Resources(page -> v3Client.spaces()
+            .listRoutes(pageRequestSupplier.apply(page)));
+    }
+
+    private Flux<? extends Resource<RouteEntity>> getRouteResourcesByDomainGuidHostAndPath(UUID domainGuid, String host, String path) {
+        ListSpaceRoutesRequest.Builder requestBuilder = ListSpaceRoutesRequest.builder();
+        if (host != null) {
+            requestBuilder.host(host);
+        }
+        if (path != null) {
+            requestBuilder.path(path);
+        }
+        requestBuilder.spaceId(getTargetSpaceGuid().toString())
+            .domainId(domainGuid.toString());
+
+        return PaginationUtils.requestClientV2Resources(page -> v3Client.spaces()
+            .listRoutes(requestBuilder.page(page)
+                .build()));
+    }
+
+    private Mono<Derivable<CloudRoute>> zipWithAuxiliaryRouteContent(Tuple2<? extends Resource<RouteEntity>, CloudDomain> routeTuple) {
+        UUID routeGuid = getGuid(routeTuple.getT1());
+        return getRouteMappingResourcesByRouteGuid(routeGuid).collectList()
+            .map(routeMappingResources -> ImmutableRawCloudRoute.builder()
+                .resource(routeTuple.getT1())
+                .domain(routeTuple.getT2())
+                .routeMappingResources(routeMappingResources)
+                .build());
+    }
+
+    private Flux<? extends Resource<RouteMappingEntity>> getRouteMappingResourcesByRouteGuid(UUID routeGuid) {
+        IntFunction<ListRouteMappingsRequest> pageRequestSupplier = page -> ListRouteMappingsRequest.builder()
+            .routeId(routeGuid.toString())
+            .page(page)
+            .build();
+        return PaginationUtils.requestClientV2Resources(page -> v3Client.routeMappings()
+            .list(pageRequestSupplier.apply(page)));
+    }
+
+    private List<CloudServiceOffering> findServiceOfferingsByBrokerGuid(UUID brokerGuid) {
+        return fetchListWithAuxiliaryContent(() -> getServiceResourcesByBrokerGuid(brokerGuid),
+            this::zipWithAuxiliaryServiceOfferingContent);
+    }
+
+    private List<CloudServiceOffering> findServiceOfferingsByLabel(String label) {
+        Assert.notNull(label, "Service label must not be null");
+        return fetchListWithAuxiliaryContent(() -> getServiceResourcesByLabel(label), this::zipWithAuxiliaryServiceOfferingContent);
+    }
+
+    private Flux<? extends Resource<ServiceEntity>> getServiceResources() {
+        IntFunction<ListServicesRequest> pageRequestSupplier = page -> ListServicesRequest.builder()
+            .page(page)
+            .build();
+        return getServiceResources(pageRequestSupplier);
+    }
+
+    private Mono<? extends Resource<ServiceEntity>> getServiceResource(UUID serviceGuid) {
+        GetServiceRequest request = GetServiceRequest.builder()
+            .serviceId(serviceGuid.toString())
+            .build();
+        return v3Client.services()
+            .get(request);
+    }
+
+    private Flux<? extends Resource<ServiceEntity>> getServiceResourcesByBrokerGuid(UUID brokerGuid) {
+        IntFunction<ListServicesRequest> pageRequestSupplier = page -> ListServicesRequest.builder()
+            .serviceBrokerId(brokerGuid.toString())
+            .page(page)
+            .build();
+        return getServiceResources(pageRequestSupplier);
+    }
+
+    private Flux<? extends Resource<ServiceEntity>> getServiceResourcesByLabel(String label) {
+        IntFunction<ListServicesRequest> pageRequestSupplier = page -> ListServicesRequest.builder()
+            .label(label)
+            .page(page)
+            .build();
+        return getServiceResources(pageRequestSupplier);
+    }
+
+    private Flux<? extends Resource<ServiceEntity>> getServiceResources(IntFunction<ListServicesRequest> pageRequestSupplier) {
+        return PaginationUtils.requestClientV2Resources(page -> v3Client.services()
+            .list(pageRequestSupplier.apply(page)));
+    }
+
+    private Mono<Derivable<CloudServiceOffering>> zipWithAuxiliaryServiceOfferingContent(Resource<ServiceEntity> resource) {
+        UUID serviceGuid = getGuid(resource);
+        return getServicePlansFlux(serviceGuid).collectList()
+            .map(servicePlans -> ImmutableRawCloudServiceOffering.builder()
+                .resource(resource)
+                .servicePlans(servicePlans)
+                .build());
+    }
+
+    private Flux<CloudServicePlan> getServicePlansFlux(UUID serviceGuid) {
+        return fetchFlux(() -> getServicePlanResourcesByServiceGuid(serviceGuid), ImmutableRawCloudServicePlan::of);
+    }
+
+    private Mono<? extends Resource<ServicePlanEntity>> getServicePlanResource(UUID servicePlanGuid) {
+        GetServicePlanRequest request = GetServicePlanRequest.builder()
+            .servicePlanId(servicePlanGuid.toString())
+            .build();
+        return v3Client.servicePlans()
+            .get(request);
+    }
+
+    private Flux<? extends Resource<ServicePlanEntity>> getServicePlanResourcesByServiceGuid(UUID serviceGuid) {
+        IntFunction<ListServicePlansRequest> pageRequestSupplier = page -> ListServicePlansRequest.builder()
+            .serviceId(serviceGuid.toString())
+            .page(page)
+            .build();
+        return PaginationUtils.requestClientV2Resources(page -> v3Client.servicePlans()
+            .list(pageRequestSupplier.apply(page)));
+    }
+
+    private Map<String, Object> fetchParametersQuietly(String url) {
+        try {
+            return fetchParameters(url);
+        } catch (CloudOperationException e) {
+            return null;
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> fetchParameters(String url) {
+        return getRestTemplate().getForObject(getUrl(url), Map.class);
+    }
+
+    private List<CloudServiceKey> getServiceKeys(CloudService service) {
+        return fetchList(() -> getServiceKeyTuple(service), tuple -> ImmutableRawCloudServiceKey.builder()
+            .resource(tuple.getT1())
+            .service(tuple.getT2())
+            .build());
+    }
+
+    private Flux<Tuple2<? extends Resource<ServiceKeyEntity>, CloudService>> getServiceKeyTuple(CloudService service) {
+        UUID serviceInstanceGuid = getGuid(service);
+        return getServiceKeyResourcesByServiceInstanceGuid(serviceInstanceGuid)
+            .map(serviceKeyResource -> Tuples.of(serviceKeyResource, service));
+    }
+
+    private Flux<? extends Resource<ServiceKeyEntity>> getServiceKeyResourcesByServiceInstanceGuid(UUID serviceInstanceGuid) {
+        IntFunction<ListServiceKeysRequest> pageRequestSupplier = page -> ListServiceKeysRequest.builder()
+            .serviceInstanceId(serviceInstanceGuid.toString())
+            .page(page)
+            .build();
+        return PaginationUtils.requestClientV2Resources(page -> v3Client.serviceKeys()
+            .list(pageRequestSupplier.apply(page)));
+    }
+
     private List<CloudRoute> fetchOrphanRoutes(String domainName) {
         List<CloudRoute> orphanRoutes = new ArrayList<>();
         for (CloudRoute route : getRoutes(domainName)) {
-            if (isOrphanRoute(route)) {
+            if (!route.isUsed()) {
                 orphanRoutes.add(route);
             }
         }
         return orphanRoutes;
     }
 
-    private void fillInEmbeddedResource(Map<String, Object> resource, String... resourcePath) {
-        fillInEmbeddedResource(resource, false, resourcePath);
+    private CloudStack findStackResource(String name) {
+        return fetch(() -> getStackResourceByName(name), ImmutableRawCloudStack::of);
     }
 
-    @SuppressWarnings("unchecked")
-    private void fillInEmbeddedResource(Map<String, Object> resource, boolean isFailSafe, String... resourcePath) {
-        if (resourcePath.length == 0) {
-            return;
-        }
-        Map<String, Object> entity = (Map<String, Object>) resource.get("entity");
-        if (entity == null) {
-            throw new IllegalStateException("Unable to find required element \"entity\" in the resource.");
-        }
-
-        String headKey = resourcePath[0];
-        String[] tailPath = Arrays.copyOfRange(resourcePath, 1, resourcePath.length);
-
-        if (!entity.containsKey(headKey)) {
-            String pathUrl = entity.get(headKey + "_url")
-                .toString();
-            Object response = retrieveResponse(getUrl(pathUrl), isFailSafe);
-            if (response == null) {
-                fillInEmbeddedResource(resource, isFailSafe, tailPath);
-            }
-            if (response instanceof Map) {
-                Map<String, Object> responseMap = (Map<String, Object>) response;
-                List<Map<String, Object>> resources = (List<Map<String, Object>>) responseMap.get("resources");
-                if (resources != null) {
-                    addAllRemainingResources(responseMap, resources);
-                    response = resources;
-                }
-            }
-            entity.put(headKey, response);
-        }
-        Object embeddedResource = entity.get(headKey);
-
-        if (embeddedResource instanceof Map) {
-            Map<String, Object> embeddedResourceMap = (Map<String, Object>) embeddedResource;
-            fillInEmbeddedResource(embeddedResourceMap, isFailSafe, tailPath);
-        } else if (embeddedResource instanceof List) {
-            List<Object> embeddedResourcesList = (List<Object>) embeddedResource;
-            for (Object r : embeddedResourcesList) {
-                fillInEmbeddedResource((Map<String, Object>) r, isFailSafe, tailPath);
-            }
-        }
+    private Flux<? extends Resource<StackEntity>> getStackResources() {
+        IntFunction<ListStacksRequest> pageRequestSupplier = page -> ListStacksRequest.builder()
+            .page(page)
+            .build();
+        return getStackResources(pageRequestSupplier);
     }
 
-    private Object retrieveResponse(String url, boolean isFailSafe) {
-        try {
-            return getRestTemplate().getForObject(url, Object.class);
-        } catch (CloudOperationException e) {
-            if (!isFailSafe) {
-                throw e;
-            }
-            return null;
-        }
+    private Mono<? extends Resource<StackEntity>> getStackResource(UUID guid) {
+        GetStackRequest request = GetStackRequest.builder()
+            .stackId(guid.toString())
+            .build();
+        return v3Client.stacks()
+            .get(request);
     }
 
-    private Map<String, Object> findApplicationResource(UUID applicationGuid) {
-        Map<String, Object> urlVars = new HashMap<>();
-        String urlPath = "/v2/apps/{application}?inline-relations-depth=1";
-        urlVars.put("application", applicationGuid);
-        String response = getRestTemplate().getForObject(getUrl(urlPath), String.class, urlVars);
-        Map<String, Object> resource = JsonUtil.convertJsonToMap(response);
-        return processApplicationResource(resource);
+    private Mono<? extends Resource<StackEntity>> getStackResourceByName(String name) {
+        IntFunction<ListStacksRequest> pageRequestSupplier = page -> ListStacksRequest.builder()
+            .name(name)
+            .page(page)
+            .build();
+        return getStackResources(pageRequestSupplier).singleOrEmpty();
     }
 
-    private Map<String, Object> findApplicationResource(String applicationName, boolean fetchAdditionalInfo) {
-        Map<String, Object> urlVars = new HashMap<>();
-        String urlPath = "/v2";
-        if (target != null) {
-            urlVars.put("space", target.getMetadata()
-                .getGuid());
-            urlPath = urlPath + "/spaces/{space}";
-        }
-        urlVars.put("q", "name:" + applicationName);
-        urlPath = urlPath + "/apps?q={q}";
-        urlPath = fetchAdditionalInfo ? urlPath + "&inline-relations-depth=1" : urlPath;
-
-        List<Map<String, Object>> allResources = getAllResources(urlPath, urlVars);
-        if (allResources.isEmpty()) {
-            return null;
-        }
-        Map<String, Object> resource = allResources.get(0);
-        return fetchAdditionalInfo ? processApplicationResource(resource) : resource;
+    private Flux<? extends Resource<StackEntity>> getStackResources(IntFunction<ListStacksRequest> requestForPage) {
+        return PaginationUtils.requestClientV2Resources(page -> v3Client.stacks()
+            .list(requestForPage.apply(page)));
     }
 
-    private List<String> findApplicationUris(UUID applicationGuid) {
-        String urlPath = "/v2/apps/{application}/routes?inline-relations-depth=1";
-        Map<String, Object> urlVars = new HashMap<>();
-        urlVars.put("application", applicationGuid);
-        List<Map<String, Object>> resourceList = getAllResources(urlPath, urlVars);
-        List<String> uris = new ArrayList<>();
-        for (Map<String, Object> resource : resourceList) {
-            Map<String, Object> domainResource = CloudEntityResourceMapper.getEmbeddedResource(resource, "domain");
-            String host = CloudEntityResourceMapper.getV2ResourceAttribute(resource, "host", String.class);
-            String domain = CloudEntityResourceMapper.getV2ResourceAttribute(domainResource, "name", String.class);
-            if (host != null && host.length() > 0)
-                uris.add(host + "." + domain);
-            else
-                uris.add(domain);
-        }
-        return uris;
+    private List<CloudEvent> findEventsByActee(String actee) {
+        return fetchList(() -> getEventResourcesByActee(actee), ImmutableRawCloudEvent::of);
     }
 
-    private Map<String, Object> findServiceBrokerResource(String name) {
-        String urlPath = "/v2/service_brokers?q={q}";
-        Map<String, Object> urlVars = new HashMap<>();
-        urlVars.put("q", "name:" + name);
-        List<Map<String, Object>> resourceList = getAllResources(urlPath, urlVars);
-        if (!resourceList.isEmpty()) {
-            return resourceList.get(0);
-        }
-        return null;
+    private Flux<? extends Resource<EventEntity>> getEventResources() {
+        IntFunction<ListEventsRequest> pageRequestSupplier = page -> ListEventsRequest.builder()
+            .page(page)
+            .build();
+        return PaginationUtils.requestClientV2Resources(page -> v3Client.events()
+            .list(pageRequestSupplier.apply(page)));
     }
 
-    private List<Map<String, Object>> findSpaceResources(UUID organizationGuid, String spaceName) {
-        String urlPath = "/v2/spaces?inline-relations-depth=1";
-        Map<String, Object> request = new HashMap<>();
-        if (organizationGuid != null) {
-            urlPath += "&q=organization_guid:{organization_guid}";
-            request.put("organization_guid", organizationGuid);
-        }
-        if (spaceName != null) {
-            urlPath += "&q=name:{name}";
-            request.put("name", spaceName);
-        }
-        return getAllResources(urlPath, request);
+    private Flux<? extends Resource<EventEntity>> getEventResourcesByActee(String actee) {
+        IntFunction<ListEventsRequest> pageRequestSupplier = page -> ListEventsRequest.builder()
+            .actee(actee)
+            .page(page)
+            .build();
+        return PaginationUtils.requestClientV2Resources(page -> v3Client.events()
+            .list(pageRequestSupplier.apply(page)));
     }
 
-    private Map<String, Object> findSpaceResource(UUID organizationGuid, String spaceName) {
-        List<Map<String, Object>> resourceList = findSpaceResources(organizationGuid, spaceName);
-        if (!resourceList.isEmpty()) {
-            return resourceList.get(0);
-        }
-        return null;
+    private InstancesInfo findApplicationInstances(UUID applicationGuid) {
+        return fetch(() -> getApplicationInstances(applicationGuid), ImmutableRawInstancesInfo::of);
     }
 
-    private Map<String, Object> findSpaceResource(UUID spaceGuid) {
-        String urlPath = "/v2/spaces/{space}?inline-relations-depth=1";
-        Map<String, Object> urlVars = new HashMap<>();
-        urlVars.put("space", spaceGuid);
-
-        String response = getRestTemplate().getForObject(getUrl(urlPath), String.class, urlVars);
-        return JsonUtil.convertJsonToMap(response);
+    private Mono<ApplicationInstancesResponse> getApplicationInstances(UUID applicationGuid) {
+        ApplicationInstancesRequest request = ApplicationInstancesRequest.builder()
+            .applicationId(applicationGuid.toString())
+            .build();
+        return v3Client.applicationsV2()
+            .instances(request);
     }
 
-    private Map<String, Object> findStackResource(String name) {
-        String urlPath = "/v2/stacks?q={q}";
-        Map<String, Object> urlVars = new HashMap<>();
-        urlVars.put("q", "name:" + name);
-        List<Map<String, Object>> resources = getAllResources(urlPath, urlVars);
-        if (!resources.isEmpty()) {
-            return resources.get(0);
-        }
-        return null;
+    private Mono<GetInfoResponse> getInfoResource() {
+        return v3Client.info()
+            .get(GetInfoRequest.builder()
+                .build());
+    }
+
+    private CloudServiceBroker findServiceBrokerByName(String name) {
+        return fetch(() -> getServiceBrokerResourceByName(name), ImmutableRawCloudServiceBroker::of);
+    }
+
+    private Flux<? extends Resource<ServiceBrokerEntity>> getServiceBrokerResources() {
+        IntFunction<ListServiceBrokersRequest> pageRequestSupplier = page -> ListServiceBrokersRequest.builder()
+            .page(page)
+            .build();
+        return getServiceBrokerResources(pageRequestSupplier);
+    }
+
+    private Mono<? extends Resource<ServiceBrokerEntity>> getServiceBrokerResourceByName(String name) {
+        IntFunction<ListServiceBrokersRequest> pageRequestSupplier = page -> ListServiceBrokersRequest.builder()
+            .page(page)
+            .name(name)
+            .build();
+        return getServiceBrokerResources(pageRequestSupplier).singleOrEmpty();
+    }
+
+    private Flux<? extends Resource<ServiceBrokerEntity>> getServiceBrokerResources(
+        IntFunction<ListServiceBrokersRequest> pageRequestSupplier) {
+        return PaginationUtils.requestClientV2Resources(page -> v3Client.serviceBrokers()
+            .list(pageRequestSupplier.apply(page)));
+    }
+
+    private List<UUID> findSpaceUsers(String organizationName, String spaceName, Function<UUID, List<UUID>> usersRetriever) {
+        CloudSpace space = getSpace(organizationName, spaceName);
+        return usersRetriever.apply(getGuid(space));
     }
 
     private CloudServicePlan findPlanForService(CloudService service) {
-        List<CloudServiceOffering> offerings = getServiceOfferings(service.getLabel());
+        List<CloudServiceOffering> offerings = findServiceOfferingsByLabel(service.getLabel());
         for (CloudServiceOffering offering : offerings) {
             if (service.getVersion() == null || service.getVersion()
                 .equals(offering.getVersion())) {
-                for (CloudServicePlan plan : offering.getCloudServicePlans()) {
+                for (CloudServicePlan plan : offering.getServicePlans()) {
                     if (service.getPlan() != null && service.getPlan()
                         .equals(plan.getName())) {
                         return plan;
@@ -2086,183 +2510,18 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Service plan " + service.getPlan() + " not found.");
     }
 
-    private List<Map<String, Object>> getAllResources(String urlPath) {
-        return getAllResources(urlPath, null);
+    private UUID getRequiredApplicationGuid(String name) {
+        return getGuid(findApplicationByName(name, true));
     }
 
-    @SuppressWarnings("unchecked")
-    private List<Map<String, Object>> getAllResources(String urlPath, Map<String, Object> urlVars) {
-        Map<String, Object> responseMap = getResponseMap(urlPath, urlVars);
-        List<Map<String, Object>> allResources = new ArrayList<>();
-        List<Map<String, Object>> newResources = (List<Map<String, Object>>) responseMap.get("resources");
-        if (newResources != null && !newResources.isEmpty()) {
-            allResources.addAll(newResources);
-        }
-        addAllRemainingResources(responseMap, allResources);
-        return allResources;
-    }
-
-    private Map<String, Object> getResponseMap(String urlPath, Map<String, Object> urlVars) {
-        String response = getResponse(urlPath, urlVars);
-        return JsonUtil.convertJsonToMap(response);
-    }
-
-    private String getResponse(String urlPath, Map<String, Object> urlVars) {
-        return urlVars == null ? getRestTemplate().getForObject(getUrl(urlPath), String.class)
-            : getRestTemplate().getForObject(getUrl(urlPath), String.class, urlVars);
-    }
-
-    private void addAllRemainingResources(Map<String, Object> responseMap, List<Map<String, Object>> allResources) {
-        String nextUrl = getNextUrl(responseMap);
-
-        while (nextUrl != null && !nextUrl.isEmpty()) {
-            nextUrl = addPageOfResources(nextUrl, allResources);
-        }
-    }
-
-    private String getNextUrl(Map<String, Object> responseMap) {
-        String nextUrl = getNextUrlValue(responseMap);
-        if (nextUrl != null && !nextUrl.isEmpty()) {
-            return getUrl(nextUrl);
-        }
-        Map<String, Object> paginationMap = getPaginationMap(responseMap);
-        if (paginationMap == null) {
-            return null;
-        }
-        return getNextUrlValueV3(paginationMap);
-    }
-
-    @SuppressWarnings("unchecked")
-    private Map<String, Object> getPaginationMap(Map<String, Object> responseMap) {
-        return (Map<String, Object>) responseMap.get("pagination");
-    }
-
-    private String getNextUrlValue(Map<String, Object> map) {
-        return (String) map.get("next_url");
-    }
-
-    private String getNextUrlValueV3(Map<String, Object> map) {
-        Map<String, Object> next = (Map<String, Object>) map.get("next");
-        return next == null ? null : (String) next.get("href");
-    }
-
-    private UUID getRequiredApplicationGuid(String applicationName) {
-        UUID applicationGuid = getApplicationGuid(applicationName);
-        if (applicationGuid == null) {
-            throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Application " + applicationName + " not found.");
-        }
-        return applicationGuid;
-    }
-
-    @SuppressWarnings("unchecked")
-    private UUID getApplicationGuid(String applicationName) {
-        Map<String, Object> resource = findApplicationResource(applicationName, false);
-        if (resource == null) {
-            return null;
-        }
-        Map<String, Object> applicationMeta = (Map<String, Object>) resource.get("metadata");
-        return UUID.fromString(String.valueOf(applicationMeta.get("guid")));
+    private UUID getRequiredDomainGuid(String name) {
+        return getGuid(findDomainByName(name, true));
     }
 
     private UUID getOrganizationGuid(String organizationName, boolean required) {
         CloudOrganization organization = getOrganization(organizationName, required);
         return organization != null ? organization.getMetadata()
             .getGuid() : null;
-    }
-
-    private CloudSpace getSpace(UUID organizationGuid, String spaceName, boolean required) {
-        Map<String, Object> resource = findSpaceResource(organizationGuid, spaceName);
-        CloudSpace space = null;
-        if (resource != null) {
-            space = resourceMapper.mapResource(resource, CloudSpace.class);
-        }
-        if (space == null && required) {
-            throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found",
-                "Space " + spaceName + " not found in organization with GUID " + organizationGuid + ".");
-        }
-        return space;
-    }
-
-    private List<CloudSpace> getSpacesByOrganizationGuid(UUID organizationGuid) {
-        List<Map<String, Object>> resourceList = findSpaceResources(organizationGuid, null);
-        List<CloudSpace> spaces = new ArrayList<>();
-        for (Map<String, Object> resource : resourceList) {
-            spaces.add(resourceMapper.mapResource(resource, CloudSpace.class));
-        }
-        return spaces;
-    }
-
-    private List<UUID> getServiceBindingGuids(UUID applicationGuid) {
-        Flux<ServiceBindingResource> bindings = getServiceBindingResourceByApplicationGuid(applicationGuid);
-        return getGuids(bindings);
-    }
-
-    private Flux<ServiceBindingResource> getServiceBindingResourceByApplicationGuid(UUID applicationGuid) {
-        return PaginationUtils.requestClientV2Resources(page -> v3Client.applicationsV2()
-            .listServiceBindings(ListApplicationServiceBindingsRequest.builder()
-                .applicationId(applicationGuid.toString())
-                .page(page)
-                .build()));
-    }
-
-    private List<UUID> getServiceBindingGuids(CloudService service) {
-        Flux<ServiceBindingResource> serviceBindings = getServiceBindingResources(service);
-        return getGuids(serviceBindings);
-    }
-
-    private Flux<ServiceBindingResource> getServiceBindingResources(CloudService service) {
-        UUID serviceGuid = service.getMetadata()
-            .getGuid();
-        if (service.isUserProvided()) {
-            return getUserProvidedServiceBindingResources(serviceGuid);
-        }
-        return getServiceBindingResources(serviceGuid);
-    }
-
-    private Flux<ServiceBindingResource> getUserProvidedServiceBindingResources(UUID serviceGuid) {
-        return PaginationUtils.requestClientV2Resources(page -> v3Client.userProvidedServiceInstances()
-            .listServiceBindings(ListUserProvidedServiceInstanceServiceBindingsRequest.builder()
-                .userProvidedServiceInstanceId(serviceGuid.toString())
-                .page(page)
-                .build()));
-    }
-
-    private Flux<ServiceBindingResource> getServiceBindingResources(UUID serviceGuid) {
-        return PaginationUtils.requestClientV2Resources(page -> v3Client.serviceInstances()
-            .listServiceBindings(ListServiceInstanceServiceBindingsRequest.builder()
-                .serviceInstanceId(serviceGuid.toString())
-                .page(page)
-                .build()));
-    }
-
-    private List<UUID> getGuids(Flux<? extends Resource<?>> resources) {
-        return resources.map(Resource::getMetadata)
-            .map(Metadata::getId)
-            .map(UUID::fromString)
-            .collectList()
-            .block();
-    }
-
-    private UUID getDomainGuid(String name, boolean required) {
-        List<DomainResource> domains = getDomainResources(name).collectList()
-            .block();
-        if (!domains.isEmpty()) {
-            DomainResource domain = domains.get(0);
-            return UUID.fromString(domain.getMetadata()
-                .getId());
-        }
-        if (required) {
-            throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Domain " + name + " not found.");
-        }
-        return null;
-    }
-
-    private Flux<DomainResource> getDomainResources(String name) {
-        return PaginationUtils.requestClientV2Resources(page -> v3Client.domains()
-            .list(ListDomainsRequest.builder()
-                .name(name)
-                .page(page)
-                .build()));
     }
 
     private Map<String, UUID> getDomainGuids() {
@@ -2277,221 +2536,35 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return domains;
     }
 
-    private Map<String, Object> getInstanceInfoForApp(UUID applicationGuid, String path) {
-        try {
-            String url = getUrl("/v2/apps/{guid}/" + path);
-            Map<String, Object> urlVars = new HashMap<>();
-            urlVars.put("guid", applicationGuid);
-            String response = getRestTemplate().getForObject(url, String.class, urlVars);
-            return JsonUtil.convertJsonToMap(response);
-        } catch (CloudOperationException e) {
-            if (HttpStatus.BAD_REQUEST.equals(e.getStatusCode())) {
-                // Application has been stopped before we could get the instance info
-                logger.warn(e.getMessage(), e);
-                return null;
-            }
-            throw e;
-        }
-    }
-
     private UUID getRouteGuid(UUID domainGuid, String host, String path) {
-        List<RouteResource> routes = getRouteResources(domainGuid, host, path).collectList()
+        List<UUID> routeGuids = getRouteResourcesByDomainGuidHostAndPath(domainGuid, host, path).map(this::getGuid)
+            .collectList()
             .block();
-
-        if (!routes.isEmpty()) {
-            RouteResource route = routes.get(0);
-            return UUID.fromString(route.getMetadata()
-                .getId());
-        }
-        return null;
+        return routeGuids.isEmpty() ? null : routeGuids.get(0);
     }
 
-    private Flux<RouteResource> getRouteResources(UUID domainGuid, String host, String path) {
-        ListSpaceRoutesRequest.Builder requestBuilder = ListSpaceRoutesRequest.builder();
-        if (host != null) {
-            requestBuilder.host(host);
-        }
-        if (path != null) {
-            requestBuilder.path(path);
-        }
-        requestBuilder.spaceId(getTargetSpaceId())
-            .domainId(domainGuid.toString());
-
-        return PaginationUtils.requestClientV2Resources(page -> v3Client.spaces()
-            .listRoutes(requestBuilder.page(page)
-                .build()));
+    private UUID getServiceBindingGuid(UUID applicationGuid, UUID serviceGuid) {
+        return getServiceBindingResourceByApplicationGuidAndServiceInstanceGuid(applicationGuid, serviceGuid).map(this::getGuid)
+            .block();
     }
 
-    private int getRunningInstances(UUID applicationGuid, CloudApplication.State applicationState) {
-        if (applicationState == CloudApplication.State.STOPPED) {
-            return 0;
-        }
-        int running = 0;
-        InstancesInfo instancesInfo = doGetApplicationInstances(applicationGuid);
-        if (instancesInfo != null && instancesInfo.getInstances() != null) {
-            for (InstanceInfo instanceInfo : instancesInfo.getInstances()) {
-                if (InstanceState.RUNNING == instanceInfo.getState()) {
-                    running++;
-                }
-            }
-        }
-        return running;
+    private List<UUID> getGuids(Flux<? extends Resource<?>> resources) {
+        return resources.map(this::getGuid)
+            .collectList()
+            .block();
     }
 
-    // Security Group operations
-
-    @SuppressWarnings("unchecked")
-    private UUID getServiceBindingGuid(UUID applicationGuid, UUID serviceId) {
-        Map<String, Object> urlVars = new HashMap<>();
-        urlVars.put("guid", applicationGuid);
-        List<Map<String, Object>> resourceList = getAllResources("/v2/apps/{guid}/service_bindings", urlVars);
-        UUID serviceBindingId = null;
-        if (!resourceList.isEmpty()) {
-            for (Map<String, Object> resource : resourceList) {
-                Map<String, Object> bindingMeta = (Map<String, Object>) resource.get("metadata");
-                Map<String, Object> bindingEntity = (Map<String, Object>) resource.get("entity");
-                String serviceInstanceGuid = (String) bindingEntity.get("service_instance_guid");
-                if (serviceInstanceGuid != null && serviceInstanceGuid.equals(serviceId.toString())) {
-                    String bindingGuid = (String) bindingMeta.get("guid");
-                    serviceBindingId = UUID.fromString(bindingGuid);
-                    break;
-                }
-            }
-        }
-        return serviceBindingId;
+    private void processAsyncUploadInBackground(UploadToken uploadToken, UploadStatusCallback callback) {
+        String threadName = String.format("App upload monitor: %s", uploadToken.getPackageGuid());
+        new Thread(() -> processAsyncUpload(uploadToken, callback), threadName).start();
     }
 
-    private List<CloudServiceOffering> getServiceOfferings(String label) {
-        Assert.notNull(label, "Service label must not be null");
-        List<Map<String, Object>> resourceList = getAllResources("/v2/services?inline-relations-depth=1");
-        List<CloudServiceOffering> results = new ArrayList<>();
-        for (Map<String, Object> resource : resourceList) {
-            CloudServiceOffering cloudServiceOffering = resourceMapper.mapResource(resource, CloudServiceOffering.class);
-            if (cloudServiceOffering.getName() != null && label.equals(cloudServiceOffering.getName())) {
-                results.add(cloudServiceOffering);
-            }
-        }
-        return results;
-    }
-
-    private UUID getSpaceGuid(String spaceName, UUID organizationGuid) {
-        Map<String, Object> urlVars = new HashMap<>();
-        String urlPath = "/v2/organizations/{organizationGuid}/spaces?inline-relations-depth=1&q=name:{name}";
-        urlVars.put("organizationGuid", organizationGuid);
-        urlVars.put("name", spaceName);
-        List<Map<String, Object>> resourceList = getAllResources(urlPath, urlVars);
-        if (!resourceList.isEmpty()) {
-            Map<String, Object> resource = resourceList.get(0);
-            return resourceMapper.getGuidOfV2Resource(resource);
-        }
-        return null;
-    }
-
-    private List<UUID> getSpaceUserGuids(String organizationName, String spaceName, String urlPath) {
-        if (organizationName == null || spaceName == null) {
-            assertSpaceProvided("get space users");
-        }
-
-        UUID spaceGuid;
-        if (spaceName == null) {
-            spaceGuid = target.getMetadata()
-                .getGuid();
-        } else {
-            CloudOrganization organization = (organizationName == null ? target.getOrganization() : getOrganization(organizationName));
-            spaceGuid = getSpaceGuid(spaceName, organization.getMetadata()
-                .getGuid());
-        }
-        return getSpaceUserGuids(spaceGuid, urlPath);
-    }
-
-    private List<UUID> getSpaceUserGuids(UUID spaceGuid, String urlPath) {
-        Assert.notNull(spaceGuid, "Unable to get space users without specifying space GUID.");
-        Map<String, Object> urlVars = new HashMap<>();
-        urlVars.put("guid", spaceGuid);
-
-        List<UUID> managersGuid = new ArrayList<>();
-        List<Map<String, Object>> resourceList = getAllResources(urlPath, urlVars);
-        for (Map<String, Object> resource : resourceList) {
-            UUID userGuid = resourceMapper.getGuidOfV2Resource(resource);
-            managersGuid.add(userGuid);
-        }
-        return managersGuid;
-    }
-
-    private Map<String, Object> getUserInfo(String user) {
-        // String userJson = getRestTemplate().getForObject(getUrl("/v2/users/{guid}"), String.class, user);
-        // Map<String, Object> userInfo = (Map<String, Object>) JsonUtil.convertJsonToMap(userJson);
-        // return userInfo();
-        // TODO: remove this temporary hack once the /v2/users/ uri can be accessed by mere mortals
-        String userJson = "{}";
-        OAuth2AccessToken accessToken = oAuthClient.getToken();
-        if (accessToken != null) {
-            String tokenString = accessToken.getValue();
-            int x = tokenString.indexOf('.');
-            int y = tokenString.indexOf('.', x + 1);
-            String encodedString = tokenString.substring(x + 1, y);
-            try {
-                byte[] decodedBytes = new sun.misc.BASE64Decoder().decodeBuffer(encodedString);
-                userJson = new String(decodedBytes, 0, decodedBytes.length, StandardCharsets.UTF_8);
-            } catch (IOException e) {
-            }
-        }
-        return (JsonUtil.convertJsonToMap(userJson));
-    }
-
-    @SuppressWarnings("unchecked")
-    private boolean hasEmbeddedResource(Map<String, Object> resource, String resourceKey) {
-        Map<String, Object> entity = (Map<String, Object>) resource.get("entity");
-        return entity.containsKey(resourceKey) || entity.containsKey(resourceKey + "_url");
-    }
-
-    private boolean isOrphanRoute(CloudRoute cloudRoute) {
-        return cloudRoute.getAppsUsingRoute() == 0;
-    }
-
-    @SuppressWarnings("unchecked")
-    private CloudApplication mapCloudApplication(Map<String, Object> resource) {
-        UUID applicationGuid = resourceMapper.getGuidOfV2Resource(resource);
-        CloudApplication application = null;
-        if (resource != null) {
-            int running = getRunningInstances(applicationGuid,
-                CloudApplication.State.valueOf(CloudEntityResourceMapper.getV2ResourceAttribute(resource, "state", String.class)));
-            ((Map<String, Object>) resource.get("entity")).put("running_instances", running);
-            application = resourceMapper.mapResource(resource, CloudApplication.class);
-            List<String> uris = findApplicationUris(application.getMetadata()
-                .getGuid());
-            application = ImmutableCloudApplication.copyOf(application)
-                .withUris(uris);
-        }
-        return application;
-    }
-
-    private Map<String, Object> processApplicationResource(Map<String, Object> resource) {
-        try {
-            fillInEmbeddedResource(resource, "service_bindings", "service_instance");
-            fillInEmbeddedResource(resource, "stack");
-            return resource;
-        } catch (CloudOperationException e) {
-            if (HttpStatus.NOT_FOUND.equals(e.getStatusCode())) {
-                // Application has been deleted before we could fetch the embedded resource
-                logger.warn(e.getMessage(), e);
-                return null;
-            }
-            throw e;
-        }
-    }
-
-    private void processAsyncUploadInBackground(final String packageUrl, final UploadStatusCallback callback) {
-        String threadName = String.format("App upload monitor: %s", packageUrl);
-        new Thread(() -> processAsyncUpload(packageUrl, callback), threadName).start();
-    }
-
-    private void processAsyncUpload(String packageUrl, UploadStatusCallback callback) {
+    private void processAsyncUpload(UploadToken uploadToken, UploadStatusCallback callback) {
         if (callback == null) {
             callback = UploadStatusCallback.NONE;
         }
         while (true) {
-            Upload upload = getUploadStatus(packageUrl);
+            Upload upload = getUploadStatus(uploadToken.getPackageGuid());
             boolean unsubscribe = callback.onProgress(upload.getStatus()
                 .toString());
             if (unsubscribe || upload.getStatus() == Status.READY) {
@@ -2511,12 +2584,16 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         }
     }
 
-    private CloudPackage getCloudPackage(String packageUrl) {
-        ResponseEntity<Map<String, Object>> cloudPackageEntity = getRestTemplate().exchange(packageUrl, HttpMethod.GET, HttpEntity.EMPTY,
-            new ParameterizedTypeReference<Map<String, Object>>() {
-            });
+    private CloudPackage findPackage(UUID guid) {
+        return fetch(() -> getPackageResource(guid), ImmutableRawCloudPackage::of);
+    }
 
-        return resourceMapper.mapResource(cloudPackageEntity.getBody(), CloudPackage.class);
+    private Mono<? extends org.cloudfoundry.client.v3.packages.Package> getPackageResource(UUID guid) {
+        GetPackageRequest request = GetPackageRequest.builder()
+            .packageId(guid.toString())
+            .build();
+        return v3Client.packages()
+            .get(request);
     }
 
     private void removeUris(List<String> uris, UUID applicationGuid) {
@@ -2544,17 +2621,81 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
             .block();
     }
 
-    private String getTargetOrganizationGuid() {
-        return target.getOrganization()
-            .getMetadata()
-            .getGuid()
-            .toString();
+    private String getTargetOrganizationName() {
+        return getName(target.getOrganization());
     }
 
-    private String getTargetSpaceId() {
-        return target.getMetadata()
-            .getGuid()
-            .toString();
+    private String getName(CloudEntity<?> entity) {
+        return entity == null ? null : entity.getName();
+    }
+
+    private UUID getTargetOrganizationGuid() {
+        return getGuid(target.getOrganization());
+    }
+
+    private UUID getTargetSpaceGuid() {
+        return getGuid(target);
+    }
+
+    private UUID getGuid(org.cloudfoundry.client.v2.Resource<?> resource) {
+        return Optional.ofNullable(resource)
+            .map(org.cloudfoundry.client.v2.Resource::getMetadata)
+            .map(org.cloudfoundry.client.v2.Metadata::getId)
+            .map(UUID::fromString)
+            .orElse(null);
+    }
+
+    private UUID getGuid(CloudEntity<? extends CloudEntity<?>> entity) {
+        return Optional.ofNullable(entity)
+            .map(CloudEntity::getMetadata)
+            .map(CloudMetadata::getGuid)
+            .orElse(null);
+    }
+
+    private <T, R, D extends Derivable<T>> Flux<T> fetchFluxWithAuxiliaryContent(Supplier<Flux<R>> resourceSupplier,
+        Function<R, Mono<D>> resourceMapper) {
+        return resourceSupplier.get()
+            .flatMap(resourceMapper)
+            .map(Derivable::derive);
+    }
+
+    private <T, R, D extends Derivable<T>> List<T> fetchListWithAuxiliaryContent(Supplier<Flux<R>> resourceSupplier,
+        Function<R, Mono<D>> resourceMapper) {
+        return fetchFluxWithAuxiliaryContent(resourceSupplier, resourceMapper).collectList()
+            .block();
+    }
+
+    private <T, R, D extends Derivable<T>> List<T> fetchList(Supplier<Flux<R>> resourceSupplier, Function<R, D> resourceMapper) {
+        return fetchFlux(resourceSupplier, resourceMapper).collectList()
+            .block();
+    }
+
+    private <T, R, D extends Derivable<T>> Flux<T> fetchFlux(Supplier<Flux<R>> resourceSupplier, Function<R, D> resourceMapper) {
+        return resourceSupplier.get()
+            .map(resourceMapper)
+            .map(Derivable::derive);
+    }
+
+    private <T, R, D extends Derivable<T>> T fetchWithAuxiliaryContent(Supplier<Mono<R>> resourceSupplier,
+        Function<R, Mono<D>> resourceMapper) {
+        return fetchMonoWithAuxiliaryContent(resourceSupplier, resourceMapper).block();
+    }
+
+    private <T, R, D extends Derivable<T>> T fetch(Supplier<Mono<R>> resourceSupplier, Function<R, D> resourceMapper) {
+        return fetchMono(resourceSupplier, resourceMapper).block();
+    }
+
+    private <T, R, D extends Derivable<T>> Mono<T> fetchMonoWithAuxiliaryContent(Supplier<Mono<R>> resourceSupplier,
+        Function<R, Mono<D>> resourceMapper) {
+        return resourceSupplier.get()
+            .flatMap(resourceMapper)
+            .map(Derivable::derive);
+    }
+
+    private <T, R, D extends Derivable<T>> Mono<T> fetchMono(Supplier<Mono<R>> resourceSupplier, Function<R, D> resourceMapper) {
+        return resourceSupplier.get()
+            .map(resourceMapper)
+            .map(Derivable::derive);
     }
 
 }

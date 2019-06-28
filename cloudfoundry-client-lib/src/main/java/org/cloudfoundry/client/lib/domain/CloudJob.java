@@ -9,7 +9,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @Value.Immutable
 @JsonSerialize(as = ImmutableCloudJob.class)
 @JsonDeserialize(as = ImmutableCloudJob.class)
-public interface CloudJob extends CloudEntity {
+public interface CloudJob extends CloudEntity<CloudJob> {
 
     @Nullable
     Status getStatus();

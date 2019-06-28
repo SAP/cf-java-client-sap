@@ -3,6 +3,7 @@ package org.cloudfoundry.client.lib.domain;
 import java.util.List;
 import java.util.Map;
 
+import org.cloudfoundry.AllowNulls;
 import org.cloudfoundry.client.lib.domain.annotation.Nullable;
 import org.immutables.value.Value;
 
@@ -12,7 +13,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @Value.Immutable
 @JsonSerialize(as = ImmutableCloudApplication.class)
 @JsonDeserialize(as = ImmutableCloudApplication.class)
-public interface CloudApplication extends CloudEntity {
+public interface CloudApplication extends CloudEntity<CloudApplication> {
 
     enum State {
         UPDATING, STARTED, STOPPED
@@ -54,6 +55,7 @@ public interface CloudApplication extends CloudEntity {
 
     List<String> getServices();
 
+    @AllowNulls
     Map<String, String> getEnv();
 
     @Nullable

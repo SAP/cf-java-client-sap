@@ -8,6 +8,6 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @Value.Immutable
 @JsonSerialize(as = ImmutableCloudQuota.class)
 @JsonDeserialize(as = ImmutableCloudQuota.class)
-public interface CloudQuota extends CloudEntity {
+public interface CloudQuota extends CloudEntity<CloudQuota> {
 
 }
