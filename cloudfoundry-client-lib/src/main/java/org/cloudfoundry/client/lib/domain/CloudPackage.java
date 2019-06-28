@@ -12,7 +12,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @Value.Immutable
 @JsonSerialize(as = ImmutableCloudPackage.class)
 @JsonDeserialize(as = ImmutableCloudPackage.class)
-public interface CloudPackage extends CloudEntity {
+public interface CloudPackage extends CloudEntity<CloudPackage> {
 
     @Nullable
     Type getType();

@@ -1,5 +1,6 @@
 package org.cloudfoundry.client.lib.domain;
 
+import org.cloudfoundry.client.lib.domain.ImmutableCloudTask.ImmutableLimits;
 import org.cloudfoundry.client.lib.domain.ImmutableCloudTask.ImmutableResult;
 import org.cloudfoundry.client.lib.domain.annotation.Nullable;
 import org.immutables.value.Value;
@@ -11,16 +12,13 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @Value.Immutable
 @JsonSerialize(as = ImmutableCloudTask.class)
 @JsonDeserialize(as = ImmutableCloudTask.class)
-public interface CloudTask extends CloudEntity {
+public interface CloudTask extends CloudEntity<CloudTask> {
 
     @Nullable
     String getCommand();
 
     @Nullable
-    Integer getMemory();
-
-    @Nullable
-    Integer getDiskQuota();
+    Limits getLimits();
 
     @Nullable
     Result getResult();
@@ -38,7 +36,21 @@ public interface CloudTask extends CloudEntity {
     interface Result {
 
         @Nullable
+        @Value.Parameter
         String getFailureReason();
+
+    }
+
+    @Value.Immutable
+    @JsonSerialize(as = ImmutableLimits.class)
+    @JsonDeserialize(as = ImmutableLimits.class)
+    interface Limits {
+
+        @Nullable
+        Integer getDisk();
+
+        @Nullable
+        Integer getMemory();
 
     }
 

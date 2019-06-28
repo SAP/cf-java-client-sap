@@ -434,7 +434,7 @@ public interface CloudControllerClient {
      * @param applicationName name of the app
      * @return the cloud application environment variables
      */
-    Map<String, Object> getApplicationEnvironment(String applicationName);
+    Map<String, String> getApplicationEnvironment(String applicationName);
 
     /**
      * Get application environment variables for the app with the specified GUID.
@@ -442,7 +442,7 @@ public interface CloudControllerClient {
      * @param applicationGuid GUID of the app
      * @return the cloud application environment variables
      */
-    Map<String, Object> getApplicationEnvironment(UUID applicationGuid);
+    Map<String, String> getApplicationEnvironment(UUID applicationGuid);
 
     /**
      * Get application events.
@@ -474,8 +474,6 @@ public interface CloudControllerClient {
      * @return list of cloud applications
      */
     List<CloudApplication> getApplications();
-
-    List<CloudApplication> getApplications(boolean fetchAdditionalInfo);
 
     /**
      * Get the URL used for the cloud controller.
@@ -840,6 +838,8 @@ public interface CloudControllerClient {
      */
     CloudSpace getSpace(String spaceName, boolean required);
 
+    List<UUID> getSpaceAuditors();
+
     /**
      * Get list of space auditor UUID for the space.
      *
@@ -847,8 +847,6 @@ public interface CloudControllerClient {
      * @return List of space auditor UUID
      */
     List<UUID> getSpaceAuditors(String spaceName);
-
-    List<UUID> getSpaceAuditors(UUID spaceGuid);
 
     /**
      * Get list of space auditor UUID for the space.
@@ -859,6 +857,10 @@ public interface CloudControllerClient {
      */
     List<UUID> getSpaceAuditors(String organizationName, String spaceName);
 
+    List<UUID> getSpaceAuditors(UUID spaceGuid);
+
+    List<UUID> getSpaceDevelopers();
+
     /**
      * Get list of space developer UUID for the space.
      *
@@ -866,8 +868,6 @@ public interface CloudControllerClient {
      * @return List of space developer UUID
      */
     List<UUID> getSpaceDevelopers(String spaceName);
-
-    List<UUID> getSpaceDevelopers(UUID spaceGuid);
 
     /**
      * Get list of space developer UUID for the space.
@@ -878,6 +878,10 @@ public interface CloudControllerClient {
      */
     List<UUID> getSpaceDevelopers(String organizationName, String spaceName);
 
+    List<UUID> getSpaceDevelopers(UUID spaceGuid);
+
+    List<UUID> getSpaceManagers();
+
     /**
      * Get list of space manager UUID for the space.
      *
@@ -885,8 +889,6 @@ public interface CloudControllerClient {
      * @return List of space manager UUID
      */
     List<UUID> getSpaceManagers(String spaceName);
-
-    List<UUID> getSpaceManagers(UUID spaceGuid);
 
     /**
      * Get list of space manager UUID for the space.
@@ -896,6 +898,8 @@ public interface CloudControllerClient {
      * @return List of space manager UUID
      */
     List<UUID> getSpaceManagers(String organizationName, String spaceName);
+
+    List<UUID> getSpaceManagers(UUID spaceGuid);
 
     /**
      * Get list of CloudSpaces for the current cloud.
@@ -1317,7 +1321,7 @@ public interface CloudControllerClient {
 
     UploadToken asyncUploadApplication(String applicationName, File file, UploadStatusCallback callback) throws IOException;
 
-    Upload getUploadStatus(String uploadToken);
+    Upload getUploadStatus(UUID packageGuid);
 
     CloudTask getTask(UUID taskGuid);
 
@@ -1357,4 +1361,5 @@ public interface CloudControllerClient {
     List<CloudBuild> getBuildsForApplication(UUID applicationGuid);
 
     List<CloudBuild> getBuildsForPackage(UUID packageGuid);
+
 }

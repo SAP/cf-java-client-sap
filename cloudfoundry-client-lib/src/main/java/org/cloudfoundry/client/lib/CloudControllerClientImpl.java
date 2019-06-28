@@ -390,12 +390,12 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public Map<String, Object> getApplicationEnvironment(UUID applicationGuid) {
+    public Map<String, String> getApplicationEnvironment(UUID applicationGuid) {
         return handleExceptions(() -> delegate.getApplicationEnvironment(applicationGuid));
     }
 
     @Override
-    public Map<String, Object> getApplicationEnvironment(String applicationName) {
+    public Map<String, String> getApplicationEnvironment(String applicationName) {
         return handleExceptions(() -> delegate.getApplicationEnvironment(applicationName));
     }
 
@@ -417,11 +417,6 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     @Override
     public List<CloudApplication> getApplications() {
         return handleExceptions(() -> delegate.getApplications());
-    }
-
-    @Override
-    public List<CloudApplication> getApplications(boolean fetchAdditionalInfo) {
-        return handleExceptions(() -> delegate.getApplications(fetchAdditionalInfo));
     }
 
     @Override
@@ -663,13 +658,13 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public List<UUID> getSpaceAuditors(String spaceName) {
-        return handleExceptions(() -> delegate.getSpaceAuditors(null, spaceName));
+    public List<UUID> getSpaceAuditors() {
+        return handleExceptions(() -> delegate.getSpaceAuditors());
     }
 
     @Override
-    public List<UUID> getSpaceAuditors(UUID spaceGuid) {
-        return handleExceptions(() -> delegate.getSpaceAuditors(spaceGuid));
+    public List<UUID> getSpaceAuditors(String spaceName) {
+        return handleExceptions(() -> delegate.getSpaceAuditors(spaceName));
     }
 
     @Override
@@ -678,13 +673,18 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public List<UUID> getSpaceDevelopers(String spaceName) {
-        return handleExceptions(() -> delegate.getSpaceDevelopers(null, spaceName));
+    public List<UUID> getSpaceAuditors(UUID spaceGuid) {
+        return handleExceptions(() -> delegate.getSpaceAuditors(spaceGuid));
     }
 
     @Override
-    public List<UUID> getSpaceDevelopers(UUID spaceGuid) {
-        return handleExceptions(() -> delegate.getSpaceDevelopers(spaceGuid));
+    public List<UUID> getSpaceDevelopers() {
+        return handleExceptions(() -> delegate.getSpaceDevelopers());
+    }
+
+    @Override
+    public List<UUID> getSpaceDevelopers(String spaceName) {
+        return handleExceptions(() -> delegate.getSpaceDevelopers(spaceName));
     }
 
     @Override
@@ -693,18 +693,28 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public List<UUID> getSpaceManagers(String spaceName) {
-        return handleExceptions(() -> delegate.getSpaceManagers(null, spaceName));
+    public List<UUID> getSpaceDevelopers(UUID spaceGuid) {
+        return handleExceptions(() -> delegate.getSpaceDevelopers(spaceGuid));
     }
 
     @Override
-    public List<UUID> getSpaceManagers(UUID spaceGuid) {
-        return handleExceptions(() -> delegate.getSpaceManagers(spaceGuid));
+    public List<UUID> getSpaceManagers() {
+        return handleExceptions(() -> delegate.getSpaceManagers());
+    }
+
+    @Override
+    public List<UUID> getSpaceManagers(String spaceName) {
+        return handleExceptions(() -> delegate.getSpaceManagers(spaceName));
     }
 
     @Override
     public List<UUID> getSpaceManagers(String organizationName, String spaceName) {
         return handleExceptions(() -> delegate.getSpaceManagers(organizationName, spaceName));
+    }
+
+    @Override
+    public List<UUID> getSpaceManagers(UUID spaceGuid) {
+        return handleExceptions(() -> delegate.getSpaceManagers(spaceGuid));
     }
 
     @Override
@@ -962,8 +972,8 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public Upload getUploadStatus(String uploadToken) {
-        return handleExceptions(() -> delegate.getUploadStatus(uploadToken));
+    public Upload getUploadStatus(UUID packageGuid) {
+        return handleExceptions(() -> delegate.getUploadStatus(packageGuid));
     }
 
     @Override

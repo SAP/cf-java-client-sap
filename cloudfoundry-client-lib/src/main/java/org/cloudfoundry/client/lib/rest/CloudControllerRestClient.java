@@ -147,19 +147,19 @@ public interface CloudControllerRestClient {
 
     CloudApplication getApplication(UUID applicationGuid);
 
-    Map<String, Object> getApplicationEnvironment(UUID applicationGuid);
+    Map<String, String> getApplicationEnvironment(UUID applicationGuid);
 
-    Map<String, Object> getApplicationEnvironment(String applicationName);
+    Map<String, String> getApplicationEnvironment(String applicationName);
 
     List<CloudEvent> getApplicationEvents(String applicationName);
+
+    List<CloudEvent> getApplicationEvents(UUID applicationGuid);
 
     InstancesInfo getApplicationInstances(String applicationName);
 
     InstancesInfo getApplicationInstances(CloudApplication app);
 
     List<CloudApplication> getApplications();
-
-    List<CloudApplication> getApplications(boolean fetchAdditionalInfo);
 
     URL getControllerUrl();
 
@@ -243,15 +243,25 @@ public interface CloudControllerRestClient {
 
     CloudSpace getSpace(String spaceName, boolean required);
 
+    List<UUID> getSpaceAuditors();
+
+    List<UUID> getSpaceAuditors(String spaceName);
+
     List<UUID> getSpaceAuditors(String organizationName, String spaceName);
 
     List<UUID> getSpaceAuditors(UUID spaceGuid);
+
+    List<UUID> getSpaceDevelopers();
+
+    List<UUID> getSpaceDevelopers(String spaceName);
 
     List<UUID> getSpaceDevelopers(String organizationName, String spaceName);
 
     List<UUID> getSpaceDevelopers(UUID spaceGuid);
 
-    // Domains and routes management
+    List<UUID> getSpaceManagers();
+
+    List<UUID> getSpaceManagers(String spaceName);
 
     List<UUID> getSpaceManagers(String organizationName, String spaceName);
 
@@ -349,7 +359,7 @@ public interface CloudControllerRestClient {
 
     UploadToken asyncUploadApplication(String applicationName, File file, UploadStatusCallback callback) throws IOException;
 
-    Upload getUploadStatus(String uploadToken);
+    Upload getUploadStatus(UUID packageGuid);
 
     CloudTask getTask(UUID taskGuid);
 

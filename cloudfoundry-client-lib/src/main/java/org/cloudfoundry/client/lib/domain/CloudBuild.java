@@ -15,7 +15,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @Value.Immutable
 @JsonSerialize(as = ImmutableCloudBuild.class)
 @JsonDeserialize(as = ImmutableCloudBuild.class)
-public interface CloudBuild extends CloudEntity {
+public interface CloudBuild extends CloudEntity<CloudBuild> {
 
     @Nullable
     State getState();
@@ -64,6 +64,7 @@ public interface CloudBuild extends CloudEntity {
     interface PackageInfo {
 
         @Nullable
+        @Value.Parameter
         UUID getGuid();
 
     }
@@ -74,6 +75,7 @@ public interface CloudBuild extends CloudEntity {
     interface DropletInfo {
 
         @Nullable
+        @Value.Parameter
         UUID getGuid();
 
     }

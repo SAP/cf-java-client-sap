@@ -16,50 +16,18 @@
 
 package org.cloudfoundry.client.lib.domain;
 
-import java.util.Date;
-import java.util.Map;
+import org.immutables.value.Value;
 
-import org.cloudfoundry.client.lib.util.CloudUtil;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
-public class InstanceInfo {
+@Value.Immutable
+@JsonSerialize(as = ImmutableInstanceInfo.class)
+@JsonDeserialize(as = ImmutableInstanceInfo.class)
+public interface InstanceInfo {
 
-    private String debugIp;
-    private int debugPort;
-    private int index;
-    private Date since;
+    int getIndex();
 
-    private InstanceState state;
+    InstanceState getState();
 
-    // Required by Jackson.
-    public InstanceInfo() {
-    }
-
-    public InstanceInfo(Map<String, Object> infoMap) {
-        since = new Date(CloudUtil.parse(Long.class, infoMap.get("since")) * 1000);
-        index = CloudUtil.parse(Integer.class, infoMap.get("index"));
-        String instanceState = CloudUtil.parse(String.class, infoMap.get("state"));
-        state = InstanceState.valueOfWithDefault(instanceState);
-        debugIp = CloudUtil.parse(String.class, infoMap.get("debug_ip"));
-        debugPort = CloudUtil.parse(Integer.class, infoMap.get("debug_port"));
-    }
-
-    public String getDebugIp() {
-        return debugIp;
-    }
-
-    public int getDebugPort() {
-        return debugPort;
-    }
-
-    public int getIndex() {
-        return index;
-    }
-
-    public Date getSince() {
-        return since;
-    }
-
-    public InstanceState getState() {
-        return state;
-    }
 }

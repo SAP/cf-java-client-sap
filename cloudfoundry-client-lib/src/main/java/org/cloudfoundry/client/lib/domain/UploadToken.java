@@ -12,8 +12,6 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @JsonDeserialize(as = ImmutableUploadToken.class)
 public interface UploadToken {
 
-    String getToken();
-
     UUID getPackageGuid();
 
 }

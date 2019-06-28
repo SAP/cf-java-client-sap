@@ -16,28 +16,18 @@
 
 package org.cloudfoundry.client.lib.domain;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
-public class InstancesInfo {
+import org.immutables.value.Value;
 
-    private List<InstanceInfo> instances;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
-    // Required by Jackson.
-    public InstancesInfo() {
-    }
-    
-    public InstancesInfo(List<Map<String, Object>> attributes) {
-        List<InstanceInfo> instances = new ArrayList<>(attributes.size());
-        for (Map<String, Object> data : attributes) {
-            instances.add(new InstanceInfo(data));
-        }
-        this.instances = Collections.unmodifiableList(instances);
-    }
+@Value.Immutable
+@JsonSerialize(as = ImmutableInstancesInfo.class)
+@JsonDeserialize(as = ImmutableInstancesInfo.class)
+public interface InstancesInfo {
 
-    public List<InstanceInfo> getInstances() {
-        return instances;
-    }
+    List<InstanceInfo> getInstances();
+
 }

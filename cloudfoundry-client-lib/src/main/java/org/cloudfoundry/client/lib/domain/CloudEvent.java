@@ -14,7 +14,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @Value.Immutable
 @JsonSerialize(as = ImmutableCloudEvent.class)
 @JsonDeserialize(as = ImmutableCloudEvent.class)
-public interface CloudEvent extends CloudEntity {
+public interface CloudEvent extends CloudEntity<CloudEvent> {
 
     @Nullable
     String getType();

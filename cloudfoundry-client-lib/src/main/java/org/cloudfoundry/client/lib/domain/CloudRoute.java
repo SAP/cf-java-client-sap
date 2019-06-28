@@ -9,7 +9,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @Value.Immutable
 @JsonSerialize(as = ImmutableCloudRoute.class)
 @JsonDeserialize(as = ImmutableCloudRoute.class)
-public interface CloudRoute extends CloudEntity {
+public interface CloudRoute extends CloudEntity<CloudRoute> {
 
     @Value.Default
     default int getAppsUsingRoute() {

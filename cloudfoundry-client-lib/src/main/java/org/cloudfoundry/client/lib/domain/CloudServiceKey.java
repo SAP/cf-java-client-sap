@@ -11,9 +11,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @Value.Immutable
 @JsonSerialize(as = ImmutableCloudServiceKey.class)
 @JsonDeserialize(as = ImmutableCloudServiceKey.class)
-public interface CloudServiceKey extends CloudEntity {
-
-    Map<String, Object> getParameters();
+public interface CloudServiceKey extends CloudEntity<CloudServiceKey> {
 
     Map<String, Object> getCredentials();
 
