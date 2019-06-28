@@ -84,7 +84,7 @@ public class CloudControllerRestClientFactory {
         return createClient(controllerUrl, credentials, (CloudSpace) null);
     }
 
-    private CloudControllerRestClient createClient(URL controllerUrl, CloudCredentials credentials, OAuthClient oAuthClient) {
+    public CloudControllerRestClient createClient(URL controllerUrl, CloudCredentials credentials, OAuthClient oAuthClient) {
         return createClient(controllerUrl, credentials, (CloudSpace) null, oAuthClient);
     }
 
