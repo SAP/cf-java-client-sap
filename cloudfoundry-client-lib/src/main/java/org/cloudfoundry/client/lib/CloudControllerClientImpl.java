@@ -38,6 +38,7 @@ import org.cloudfoundry.client.lib.domain.CloudSecurityGroup;
 import org.cloudfoundry.client.lib.domain.CloudService;
 import org.cloudfoundry.client.lib.domain.CloudServiceBroker;
 import org.cloudfoundry.client.lib.domain.CloudServiceInstance;
+import org.cloudfoundry.client.lib.domain.CloudServiceKey;
 import org.cloudfoundry.client.lib.domain.CloudServiceOffering;
 import org.cloudfoundry.client.lib.domain.CloudSpace;
 import org.cloudfoundry.client.lib.domain.CloudStack;
@@ -46,7 +47,6 @@ import org.cloudfoundry.client.lib.domain.CloudUser;
 import org.cloudfoundry.client.lib.domain.CrashesInfo;
 import org.cloudfoundry.client.lib.domain.DockerInfo;
 import org.cloudfoundry.client.lib.domain.InstancesInfo;
-import org.cloudfoundry.client.lib.domain.CloudServiceKey;
 import org.cloudfoundry.client.lib.domain.Staging;
 import org.cloudfoundry.client.lib.domain.Upload;
 import org.cloudfoundry.client.lib.domain.UploadToken;
@@ -440,6 +440,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     /**
      * @deprecated use {@link #streamLogs(String, ApplicationLogListener)} or {@link #getRecentLogs(String)}
      */
+    @Deprecated
     @Override
     public Map<String, String> getCrashLogs(String applicationName) {
         return cc.getCrashLogs(applicationName);
@@ -500,6 +501,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     /**
      * @deprecated use {@link #streamLogs(String, ApplicationLogListener)} or {@link #getRecentLogs(String)}
      */
+    @Deprecated
     @Override
     public Map<String, String> getLogs(String applicationName) {
         return cc.getLogs(applicationName);
@@ -1003,6 +1005,11 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     @Override
     public List<CloudBuild> getBuildsForApplication(UUID applicationGuid) {
         return cc.getBuildsForApplication(applicationGuid);
+    }
+
+    @Override
+    public List<CloudBuild> getBuildsForPackage(UUID packageGuid) {
+        return cc.getBuildsForPackage(packageGuid);
     }
 
 }

@@ -748,6 +748,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
      * @param required
      * @return CloudOrganization instance
      */
+    @Override
     public CloudOrganization getOrganization(String organizationName, boolean required) {
         Map<String, Object> urlVars = new HashMap<>();
         String urlPath = "/v2/organizations?inline-relations-depth=1&q=name:{name}";
@@ -905,7 +906,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         CloudService cloudService = getService(serviceName, true);
         return doGetServiceKeys(cloudService);
     }
-    
+
     @Override
     public Map<String, Object> getServiceParameters(UUID guid) {
         String urlPath = "/v2/service_instances/{guid}/parameters";
@@ -925,7 +926,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         }
         return serviceOfferings;
     }
-    
+
     @Override
     public List<CloudService> getServices() {
         Map<String, Object> urlVars = new HashMap<>();
@@ -1593,6 +1594,13 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         Map<String, Object> buildEntity = JsonUtil.convertJsonToMap(buildResponse);
 
         return resourceMapper.mapResource(buildEntity, CloudBuild.class);
+    }
+
+    @Override
+    public List<CloudBuild> getBuildsForPackage(UUID packageGuid) {
+        Map<String, Object> urlVars = new HashMap<>();
+        urlVars.put("packageGuid", packageGuid);
+        return doGetResources("/v3/builds?package_guids={packageGuid}", urlVars, CloudBuild.class);
     }
 
     @Override
@@ -2310,16 +2318,15 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         addAllRemainingResources(responseMap, allResources);
         return allResources;
     }
-    
+
     private Map<String, Object> getResponseMap(String urlPath, Map<String, Object> urlVars) {
         String response = getResponse(urlPath, urlVars);
         return JsonUtil.convertJsonToMap(response);
     }
 
     private String getResponse(String urlPath, Map<String, Object> urlVars) {
-        return urlVars == null ?
-            getRestTemplate().getForObject(getUrl(urlPath), String.class):
-             getRestTemplate().getForObject(getUrl(urlPath), String.class, urlVars);
+        return urlVars == null ? getRestTemplate().getForObject(getUrl(urlPath), String.class)
+            : getRestTemplate().getForObject(getUrl(urlPath), String.class, urlVars);
     }
 
     private void addAllRemainingResources(Map<String, Object> responseMap, List<Map<String, Object>> allResources) {
