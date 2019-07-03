@@ -38,6 +38,7 @@ import org.cloudfoundry.client.lib.domain.CloudSecurityGroup;
 import org.cloudfoundry.client.lib.domain.CloudService;
 import org.cloudfoundry.client.lib.domain.CloudServiceBroker;
 import org.cloudfoundry.client.lib.domain.CloudServiceInstance;
+import org.cloudfoundry.client.lib.domain.CloudServiceKey;
 import org.cloudfoundry.client.lib.domain.CloudServiceOffering;
 import org.cloudfoundry.client.lib.domain.CloudSpace;
 import org.cloudfoundry.client.lib.domain.CloudStack;
@@ -46,7 +47,6 @@ import org.cloudfoundry.client.lib.domain.CloudUser;
 import org.cloudfoundry.client.lib.domain.CrashesInfo;
 import org.cloudfoundry.client.lib.domain.DockerInfo;
 import org.cloudfoundry.client.lib.domain.InstancesInfo;
-import org.cloudfoundry.client.lib.domain.CloudServiceKey;
 import org.cloudfoundry.client.lib.domain.Staging;
 import org.cloudfoundry.client.lib.domain.Upload;
 import org.cloudfoundry.client.lib.domain.UploadToken;
@@ -509,6 +509,7 @@ public interface CloudControllerClient {
      *         the log file will be returned as a String value for the corresponding key.
      * @deprecated Use {@link #streamLogs(String, ApplicationLogListener)} or {@link #getRecentLogs(String)}
      */
+    @Deprecated
     Map<String, String> getCrashLogs(String applicationName);
 
     /**
@@ -601,6 +602,7 @@ public interface CloudControllerClient {
      *         the log file will be returned as a String value for the corresponding key.
      * @deprecated Use {@link #streamLogs(String, ApplicationLogListener)} or {@link #getRecentLogs(String)}
      */
+    @Deprecated
     Map<String, String> getLogs(String applicationName);
 
     /**
@@ -773,10 +775,12 @@ public interface CloudControllerClient {
 
     /**
      * Get all service parameters.
+     * 
      * @param guid The service instance guid
      * @return service parameters in key-value pairs
      */
     Map<String, Object> getServiceParameters(UUID guid);
+
     /**
      * Get a service instance.
      *
@@ -1008,6 +1012,7 @@ public interface CloudControllerClient {
      * @param domainName the domain to remove
      * @deprecated alias for {@link #deleteDomain}
      */
+    @Deprecated
     void removeDomain(String domainName);
 
     /**
@@ -1361,4 +1366,6 @@ public interface CloudControllerClient {
     void bindDropletToApp(UUID dropletGuid, UUID applicationGuid);
 
     List<CloudBuild> getBuildsForApplication(UUID applicationGuid);
+
+    List<CloudBuild> getBuildsForPackage(UUID packageGuid);
 }
