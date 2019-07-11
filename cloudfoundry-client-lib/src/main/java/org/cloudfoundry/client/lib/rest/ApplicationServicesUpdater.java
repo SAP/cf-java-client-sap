@@ -1,5 +1,6 @@
 package org.cloudfoundry.client.lib.rest;
 
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -73,7 +74,7 @@ public class ApplicationServicesUpdater {
 
             CloudServiceInstance cloudServiceInstance = client.getServiceInstance(serviceName);
             Map<String, Object> newServiceBindings = getNewServiceBindings(serviceNamesWithBindingParameters, cloudServiceInstance);
-            if (hasServiceBindingsChanged(application, cloudServiceInstance.getBindings(), newServiceBindings)) {
+            if (hasServiceBindingsChanged(application, cloudServiceInstance, newServiceBindings)) {
                 servicesToRebind.add(cloudServiceInstance.getService()
                     .getName());
             }
@@ -87,19 +88,23 @@ public class ApplicationServicesUpdater {
             .getName());
     }
 
-    private boolean hasServiceBindingsChanged(CloudApplication application, List<CloudServiceBinding> existingServiceBindings,
+    private boolean hasServiceBindingsChanged(CloudApplication application, CloudServiceInstance cloudServiceInstance,
         Map<String, Object> newServiceBindings) {
-        CloudServiceBinding bindingForApplication = getServiceBindingsForApplication(application, existingServiceBindings);
+        CloudServiceBinding bindingForApplication = getServiceBindingsForApplication(application, cloudServiceInstance);
         return !Objects.equals(bindingForApplication.getBindingParameters(), newServiceBindings);
     }
 
-    private CloudServiceBinding getServiceBindingsForApplication(CloudApplication application, List<CloudServiceBinding> serviceBindings) {
-        return serviceBindings.stream()
+    private CloudServiceBinding getServiceBindingsForApplication(CloudApplication application, CloudServiceInstance cloudServiceInstance) {
+        return cloudServiceInstance.getBindings()
+            .stream()
             .filter(serviceBinding -> application.getMetadata()
                 .getGuid()
                 .equals(serviceBinding.getApplicationGuid()))
             .findFirst()
-            .orElse(null);
+            .orElseThrow(() -> new IllegalStateException(
+                MessageFormat.format("Application {0} was bound to service {1} which was unbound in parallel", application.getName(),
+                    cloudServiceInstance.getService()
+                        .getName())));
     }
 
     private List<String> getUpdatedServiceNames(List<String> addServices, List<String> deleteServices, List<String> rebindServices) {
