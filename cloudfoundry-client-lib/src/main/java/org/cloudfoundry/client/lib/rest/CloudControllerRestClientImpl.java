@@ -108,7 +108,6 @@ import org.cloudfoundry.client.lib.domain.UploadToken;
 import org.cloudfoundry.client.lib.oauth2.OAuthClient;
 import org.cloudfoundry.client.lib.util.CloudEntityResourceMapper;
 import org.cloudfoundry.client.lib.util.JsonUtil;
-import org.cloudfoundry.client.v2.Metadata;
 import org.cloudfoundry.client.v2.Resource;
 import org.cloudfoundry.client.v2.applications.ApplicationEntity;
 import org.cloudfoundry.client.v2.applications.ApplicationInstancesRequest;
@@ -200,7 +199,6 @@ import org.cloudfoundry.client.v3.tasks.CreateTaskRequest;
 import org.cloudfoundry.client.v3.tasks.GetTaskRequest;
 import org.cloudfoundry.client.v3.tasks.ListTasksRequest;
 import org.cloudfoundry.client.v3.tasks.Task;
-import org.cloudfoundry.operations.CloudFoundryOperations;
 import org.cloudfoundry.util.PaginationUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
@@ -243,8 +241,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     private RestTemplate restTemplate;
     private CloudSpace target;
 
-    @SuppressWarnings("unused")
-    private CloudFoundryOperations v3OperationsClient;
     private CloudFoundryClient v3Client;
 
     /**
@@ -255,12 +251,12 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     public CloudControllerRestClientImpl(URL controllerUrl, CloudCredentials credentials, RestTemplate restTemplate,
-        OAuthClient oAuthClient, CloudFoundryOperations v3OperationsClient, CloudFoundryClient v3Client) {
-        this(controllerUrl, credentials, restTemplate, oAuthClient, v3OperationsClient, v3Client, null);
+        OAuthClient oAuthClient, CloudFoundryClient v3Client) {
+        this(controllerUrl, credentials, restTemplate, oAuthClient, v3Client, null);
     }
 
     public CloudControllerRestClientImpl(URL controllerUrl, CloudCredentials credentials, RestTemplate restTemplate,
-        OAuthClient oAuthClient, CloudFoundryOperations v3OperationsClient, CloudFoundryClient v3Client, CloudSpace target) {
+        OAuthClient oAuthClient, CloudFoundryClient v3Client, CloudSpace target) {
         Assert.notNull(controllerUrl, "CloudControllerUrl cannot be null");
         Assert.notNull(restTemplate, "RestTemplate cannot be null");
         Assert.notNull(oAuthClient, "OAuthClient cannot be null");
@@ -271,7 +267,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         this.oAuthClient = oAuthClient;
         this.target = target;
 
-        this.v3OperationsClient = v3OperationsClient;
         this.v3Client = v3Client;
     }
 
