@@ -30,7 +30,6 @@ import org.cloudfoundry.client.lib.adapters.CloudControllerV3ClientFactory;
 import org.cloudfoundry.client.lib.domain.CloudSpace;
 import org.cloudfoundry.client.lib.oauth2.OAuthClient;
 import org.cloudfoundry.client.lib.util.RestUtil;
-import org.cloudfoundry.operations.CloudFoundryOperations;
 import org.cloudfoundry.reactor.ConnectionContext;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.type.TypeReference;
@@ -110,10 +109,8 @@ public class CloudControllerRestClientFactory {
         OAuthClient oAuthClient) {
         RestTemplate restTemplate = createAuthorizationSettingRestTemplate(credentials, oAuthClient);
         CloudFoundryClient v3Client = v3ClientFactory.createClient(controllerUrl, oAuthClient);
-        CloudFoundryOperations v3OperationsClient = v3ClientFactory.createOperationsClient(controllerUrl, v3Client, target);
 
-        return new CloudControllerRestClientImpl(controllerUrl, credentials, restTemplate, oAuthClient, v3OperationsClient, v3Client,
-            target);
+        return new CloudControllerRestClientImpl(controllerUrl, credentials, restTemplate, oAuthClient, v3Client, target);
     }
 
     private OAuthClient createOAuthClient(URL controllerUrl, String origin) {
