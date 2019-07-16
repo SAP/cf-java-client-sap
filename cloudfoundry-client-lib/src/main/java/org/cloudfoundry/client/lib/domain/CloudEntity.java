@@ -18,18 +18,12 @@ package org.cloudfoundry.client.lib.domain;
 
 import org.cloudfoundry.client.lib.domain.annotation.Nullable;
 
-public interface CloudEntity<T extends CloudEntity<T>> extends Derivable<T> {
+public interface CloudEntity {
 
     @Nullable
     CloudMetadata getMetadata();
 
     @Nullable
     String getName();
-
-    @Override
-    @SuppressWarnings("unchecked")
-    default T derive() {
-        return (T) this;
-    }
 
 }

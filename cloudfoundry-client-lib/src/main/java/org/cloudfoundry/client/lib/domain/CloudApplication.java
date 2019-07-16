@@ -13,7 +13,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @Value.Immutable
 @JsonSerialize(as = ImmutableCloudApplication.class)
 @JsonDeserialize(as = ImmutableCloudApplication.class)
-public interface CloudApplication extends CloudEntity<CloudApplication> {
+public interface CloudApplication extends CloudEntity, Derivable<CloudApplication> {
 
     enum State {
         UPDATING, STARTED, STOPPED
@@ -60,5 +60,10 @@ public interface CloudApplication extends CloudEntity<CloudApplication> {
 
     @Nullable
     CloudSpace getSpace();
+
+    @Override
+    default CloudApplication derive() {
+        return this;
+    }
 
 }

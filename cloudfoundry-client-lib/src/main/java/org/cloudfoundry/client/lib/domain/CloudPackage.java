@@ -12,7 +12,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @Value.Immutable
 @JsonSerialize(as = ImmutableCloudPackage.class)
 @JsonDeserialize(as = ImmutableCloudPackage.class)
-public interface CloudPackage extends CloudEntity<CloudPackage> {
+public interface CloudPackage extends CloudEntity, Derivable<CloudPackage> {
 
     @Nullable
     Type getType();
@@ -22,6 +22,11 @@ public interface CloudPackage extends CloudEntity<CloudPackage> {
 
     @Nullable
     Status getStatus();
+
+    @Override
+    default CloudPackage derive() {
+        return this;
+    }
 
     enum Type {
         BITS, DOCKER,
