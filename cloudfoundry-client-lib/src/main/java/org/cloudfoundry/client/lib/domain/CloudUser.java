@@ -9,7 +9,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @Value.Immutable
 @JsonSerialize(as = ImmutableCloudUser.class)
 @JsonDeserialize(as = ImmutableCloudUser.class)
-public interface CloudUser extends CloudEntity<CloudUser> {
+public interface CloudUser extends CloudEntity, Derivable<CloudUser> {
 
     @Nullable
     String getDefaultSpaceGuid();
@@ -20,4 +20,9 @@ public interface CloudUser extends CloudEntity<CloudUser> {
     @Nullable
     Boolean isAdmin();
 
+    @Override
+    default CloudUser derive() {
+        return this;
+    }
+    
 }

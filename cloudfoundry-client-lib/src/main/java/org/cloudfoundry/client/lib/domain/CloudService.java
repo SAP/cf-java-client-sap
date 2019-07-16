@@ -9,7 +9,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @Value.Immutable
 @JsonSerialize(as = ImmutableCloudService.class)
 @JsonDeserialize(as = ImmutableCloudService.class)
-public interface CloudService extends CloudEntity<CloudService> {
+public interface CloudService extends CloudEntity, Derivable<CloudService> {
 
     @Nullable
     String getLabel();
@@ -25,6 +25,11 @@ public interface CloudService extends CloudEntity<CloudService> {
 
     default boolean isUserProvided() {
         return getPlan() == null && getProvider() == null && getVersion() == null;
+    }
+
+    @Override
+    default CloudService derive() {
+        return this;
     }
 
 }

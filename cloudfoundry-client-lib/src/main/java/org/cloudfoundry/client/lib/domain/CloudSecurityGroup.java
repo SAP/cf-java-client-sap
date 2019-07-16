@@ -11,7 +11,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @Value.Immutable
 @JsonSerialize(as = ImmutableCloudSecurityGroup.class)
 @JsonDeserialize(as = ImmutableCloudSecurityGroup.class)
-public interface CloudSecurityGroup extends CloudEntity<CloudSecurityGroup> {
+public interface CloudSecurityGroup extends CloudEntity, Derivable<CloudSecurityGroup> {
 
     List<SecurityGroupRule> getRules();
 
@@ -20,5 +20,10 @@ public interface CloudSecurityGroup extends CloudEntity<CloudSecurityGroup> {
 
     @Nullable
     Boolean isStagingDefault();
+
+    @Override
+    default CloudSecurityGroup derive() {
+        return this;
+    }
 
 }

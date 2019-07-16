@@ -2620,7 +2620,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return getName(target.getOrganization());
     }
 
-    private String getName(CloudEntity<?> entity) {
+    private String getName(CloudEntity entity) {
         return entity == null ? null : entity.getName();
     }
 
@@ -2640,7 +2640,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
             .orElse(null);
     }
 
-    private UUID getGuid(CloudEntity<? extends CloudEntity<?>> entity) {
+    private UUID getGuid(CloudEntity entity) {
         return Optional.ofNullable(entity)
             .map(CloudEntity::getMetadata)
             .map(CloudMetadata::getGuid)
