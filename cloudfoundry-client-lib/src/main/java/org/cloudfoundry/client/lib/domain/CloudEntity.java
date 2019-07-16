@@ -18,6 +18,11 @@ package org.cloudfoundry.client.lib.domain;
 
 import org.cloudfoundry.client.lib.domain.annotation.Nullable;
 
+/**
+ * Do not extend Derivable<T> in this interface. It is tempting, because all of its children have the same implementation, but implementing
+ * the derive() method here leads to this bug: https://github.com/immutables/immutables/issues/1045
+ *
+ */
 public interface CloudEntity {
 
     @Nullable
