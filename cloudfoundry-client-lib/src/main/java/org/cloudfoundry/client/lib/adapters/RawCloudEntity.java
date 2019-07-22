@@ -30,7 +30,7 @@ public abstract class RawCloudEntity<T> implements Derivable<T> {
     protected static CloudMetadata parseResourceMetadata(org.cloudfoundry.client.v2.Resource<?> resource) {
         Metadata metadata = resource.getMetadata();
         return ImmutableCloudMetadata.builder()
-            .guid(parseGuid(metadata.getId()))
+            .guid(parseNullableGuid(metadata.getId()))
             .createdAt(parseNullableDate(metadata.getCreatedAt()))
             .updatedAt(parseNullableDate(metadata.getUpdatedAt()))
             .url(metadata.getUrl())
@@ -39,10 +39,14 @@ public abstract class RawCloudEntity<T> implements Derivable<T> {
 
     protected static CloudMetadata parseResourceMetadata(org.cloudfoundry.client.v3.Resource resource) {
         return ImmutableCloudMetadata.builder()
-            .guid(parseGuid(resource.getId()))
+            .guid(parseNullableGuid(resource.getId()))
             .createdAt(parseNullableDate(resource.getCreatedAt()))
             .updatedAt(parseNullableDate(resource.getUpdatedAt()))
             .build();
+    }
+
+    protected static UUID parseNullableGuid(String guid) {
+        return guid == null ? null : parseGuid(guid);
     }
 
     protected static UUID parseGuid(String guid) {
@@ -74,17 +78,17 @@ public abstract class RawCloudEntity<T> implements Derivable<T> {
             .toInstant();
     }
 
-    protected static <E extends Enum<E>> E parseEnum(Enum<?> value, Class<E> targetEnum) {
-        String name = value.name()
-            .toUpperCase();
-        return Enum.valueOf(targetEnum, name);
-    }
-
     private static String toIsoDate(String date) {
         // If the time zone part of the date contains a colon (e.g. 2013-09-19T21:56:36+00:00)
         // then remove it before parsing.
         return date.replaceFirst(":(?=[0-9]{2}$)", "")
             .replaceFirst("Z$", "+0000");
+    }
+
+    protected static <E extends Enum<E>> E parseEnum(Enum<?> value, Class<E> targetEnum) {
+        String name = value.name()
+            .toUpperCase();
+        return Enum.valueOf(targetEnum, name);
     }
 
     protected static <D> D deriveFromNullable(Derivable<D> derivable) {
