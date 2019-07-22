@@ -29,7 +29,7 @@ public abstract class RawCloudEvent extends RawCloudEntity<CloudEvent> {
 
     private static Participant parseActee(EventEntity entity) {
         return ImmutableParticipant.builder()
-            .guid(parseGuid(entity.getActee()))
+            .guid(parseNullableGuid(entity.getActee()))
             .name(entity.getActeeName())
             .type(entity.getActeeType())
             .build();
@@ -37,7 +37,7 @@ public abstract class RawCloudEvent extends RawCloudEntity<CloudEvent> {
 
     private static Participant parseActor(EventEntity entity) {
         return ImmutableParticipant.builder()
-            .guid(parseGuid(entity.getActor()))
+            .guid(parseNullableGuid(entity.getActor()))
             .name(entity.getActorName())
             .type(entity.getActorType())
             .build();

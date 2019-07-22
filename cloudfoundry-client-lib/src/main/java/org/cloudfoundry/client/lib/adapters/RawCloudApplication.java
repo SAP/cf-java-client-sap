@@ -3,6 +3,7 @@ package org.cloudfoundry.client.lib.adapters;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.cloudfoundry.client.lib.domain.CloudApplication;
@@ -21,6 +22,7 @@ import org.cloudfoundry.client.lib.util.JsonUtil;
 import org.cloudfoundry.client.v2.Resource;
 import org.cloudfoundry.client.v2.applications.ApplicationEntity;
 import org.cloudfoundry.client.v2.applications.SummaryApplicationResponse;
+import org.cloudfoundry.client.v2.domains.Domain;
 import org.cloudfoundry.client.v2.routes.Route;
 import org.cloudfoundry.client.v2.serviceinstances.ServiceInstance;
 import org.immutables.value.Value;
@@ -101,8 +103,8 @@ public abstract class RawCloudApplication extends RawCloudEntity<CloudApplicatio
     }
 
     private static String parseStackName(Derivable<CloudStack> derivableStack) {
-        CloudStack stack = deriveFromNullable(derivableStack);
-        return stack == null ? null : stack.getName();
+        return derivableStack.derive()
+            .getName();
     }
 
     private static PackageState parsePackageState(String state) {
@@ -133,11 +135,9 @@ public abstract class RawCloudApplication extends RawCloudEntity<CloudApplicatio
     }
 
     private static void appendDomain(StringBuilder url, Route route) {
-        String domain = route.getDomain()
-            .getName();
-        if (domain != null) {
-            url.append(domain);
-        }
+        Optional.ofNullable(route.getDomain())
+            .map(Domain::getName)
+            .ifPresent(url::append);
     }
 
     private static void appendPort(StringBuilder url, Route route) {
