@@ -12,7 +12,7 @@ import org.cloudfoundry.client.v3.packages.PackageData;
 import org.cloudfoundry.client.v3.packages.PackageResource;
 import org.cloudfoundry.client.v3.packages.PackageState;
 import org.cloudfoundry.client.v3.packages.PackageType;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class RawCloudPackageTest {
 

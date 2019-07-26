@@ -6,7 +6,7 @@ import org.cloudfoundry.client.v3.tasks.Result;
 import org.cloudfoundry.client.v3.tasks.Task;
 import org.cloudfoundry.client.v3.tasks.TaskResource;
 import org.cloudfoundry.client.v3.tasks.TaskState;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class RawCloudTaskTest {
 

@@ -17,7 +17,8 @@ import org.cloudfoundry.client.lib.domain.Derivable;
 import org.cloudfoundry.client.lib.domain.ImmutableCloudMetadata;
 import org.cloudfoundry.client.v2.Metadata;
 import org.cloudfoundry.client.v3.applications.ApplicationState;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class RawCloudEntityTest {
 
@@ -125,9 +126,9 @@ public class RawCloudEntityTest {
         assertEquals(CloudApplication.State.STARTED, state);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testParseEnumWithIncompatibleEnumTypes() {
-        RawCloudEntity.parseEnum(ApplicationState.STARTED, CloudBuild.State.class);
+        Assertions.assertThrows(IllegalArgumentException.class, () -> RawCloudEntity.parseEnum(ApplicationState.STARTED, CloudBuild.State.class));
     }
 
     @Test

@@ -10,7 +10,7 @@ import org.cloudfoundry.client.lib.domain.ImmutableCloudServicePlan;
 import org.cloudfoundry.client.v2.Resource;
 import org.cloudfoundry.client.v2.services.ServiceEntity;
 import org.cloudfoundry.client.v2.services.ServiceResource;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class RawCloudServiceOfferingTest {
 

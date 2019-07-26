@@ -13,7 +13,7 @@ import org.cloudfoundry.client.v3.builds.BuildResource;
 import org.cloudfoundry.client.v3.builds.BuildState;
 import org.cloudfoundry.client.v3.builds.CreatedBy;
 import org.cloudfoundry.client.v3.builds.Droplet;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class RawCloudBuildTest {
 

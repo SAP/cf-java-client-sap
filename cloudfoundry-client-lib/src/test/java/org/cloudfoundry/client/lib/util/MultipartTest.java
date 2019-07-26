@@ -1,12 +1,12 @@
 package org.cloudfoundry.client.lib.util;
 
+import org.junit.jupiter.api.Test;
+
 import static org.junit.Assert.assertEquals;
 
 import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
 import java.util.List;
-
-import org.junit.Test;
 
 public class MultipartTest {
 

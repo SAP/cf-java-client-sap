@@ -5,7 +5,7 @@ import org.cloudfoundry.client.lib.domain.ImmutableCloudServiceBroker;
 import org.cloudfoundry.client.v2.Resource;
 import org.cloudfoundry.client.v2.servicebrokers.ServiceBrokerEntity;
 import org.cloudfoundry.client.v2.servicebrokers.ServiceBrokerResource;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class RawCloudServiceBrokerTest {
 

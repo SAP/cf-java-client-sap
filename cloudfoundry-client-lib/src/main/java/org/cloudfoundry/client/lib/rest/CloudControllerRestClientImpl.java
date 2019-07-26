@@ -1881,12 +1881,10 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     protected void extractUriInfo(Map<String, UUID> existingDomains, String uri, Map<String, String> uriInfo) {
         URI newUri = URI.create(uri);
         String host = newUri.getScheme() != null ? newUri.getHost() : newUri.getPath();
-
         String[] hostAndDomain = host.split(DEFAULT_HOST_DOMAIN_SEPARATOR, 2);
         if (hostAndDomain.length != 2) {
             throw new IllegalArgumentException("Invalid URI " + uri + " -- host or domain is not specified");
         }
-
         String hostName = hostAndDomain[0];
         int indexOfPathSeparator = hostAndDomain[1].indexOf(DEFAULT_PATH_SEPARATOR);
         String domain = hostAndDomain[1];
@@ -1896,18 +1894,24 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
             path = hostAndDomain[1].substring(indexOfPathSeparator);
         }
 
+        extractDomainInfo(existingDomains, uriInfo, domain, hostName, path);
+
+        if (uriInfo.get("domainName") == null) {
+            domain = host.split(DEFAULT_PATH_SEPARATOR)[0];
+            extractDomainInfo(existingDomains, uriInfo, domain, "", path);
+        }
+        if (uriInfo.get("domainName") == null) {
+            throw new IllegalArgumentException("Domain not found for URI " + uri);
+        }
+    }
+
+    private void extractDomainInfo(Map<String, UUID> existingDomains, Map<String, String> uriInfo, String domain, String hostName, String path) {
         for (String existingDomain : existingDomains.keySet()) {
             if (domain.equals(existingDomain)) {
                 uriInfo.put("domainName", existingDomain);
                 uriInfo.put("host", hostName);
                 uriInfo.put("path", path);
             }
-        }
-        if (uriInfo.get("domainName") == null) {
-            throw new IllegalArgumentException("Domain not found for URI " + uri);
-        }
-        if (uriInfo.get("host") == null) {
-            throw new IllegalArgumentException("Invalid URI " + uri + " -- host not specified for domain " + uriInfo.get("domainName"));
         }
     }
 

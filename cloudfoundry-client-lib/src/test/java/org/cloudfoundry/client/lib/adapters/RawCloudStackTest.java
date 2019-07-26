@@ -5,7 +5,7 @@ import org.cloudfoundry.client.lib.domain.ImmutableCloudStack;
 import org.cloudfoundry.client.v2.Resource;
 import org.cloudfoundry.client.v2.stacks.StackEntity;
 import org.cloudfoundry.client.v2.stacks.StackResource;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class RawCloudStackTest {
 

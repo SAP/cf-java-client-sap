@@ -13,7 +13,7 @@ import org.cloudfoundry.client.v2.routemappings.RouteMappingEntity;
 import org.cloudfoundry.client.v2.routemappings.RouteMappingResource;
 import org.cloudfoundry.client.v2.routes.RouteEntity;
 import org.cloudfoundry.client.v2.routes.RouteResource;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class RawCloudRouteTest {
 

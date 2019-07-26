@@ -9,7 +9,7 @@ import org.cloudfoundry.client.lib.domain.ImmutableCloudServiceBinding;
 import org.cloudfoundry.client.v2.Resource;
 import org.cloudfoundry.client.v2.servicebindings.ServiceBindingEntity;
 import org.cloudfoundry.client.v2.servicebindings.ServiceBindingResource;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class RawCloudServiceBindingTest {
 
