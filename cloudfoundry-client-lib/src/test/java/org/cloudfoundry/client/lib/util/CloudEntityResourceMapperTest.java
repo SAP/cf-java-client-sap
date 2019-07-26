@@ -16,7 +16,7 @@ import org.cloudfoundry.client.lib.domain.CloudMetadata;
 import org.cloudfoundry.client.lib.domain.CloudPackage;
 import org.cloudfoundry.client.lib.domain.CloudTask;
 import org.cloudfoundry.client.lib.domain.Status;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class CloudEntityResourceMapperTest {
 

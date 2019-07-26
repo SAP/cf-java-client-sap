@@ -1,0 +1,20 @@
+{
+  "uri": "http://bob:hq@bang.foo.bar.com:8181",
+  "domains": [
+    {
+      "name": "foo.bar.com",
+      "metadata": {
+        "guid": "9d7b4557-34aa-4e80-a903-ed8a170a3ebd"
+      }
+    },
+    {
+      "name": "anotherdomain.com",
+      "metadata": {
+        "guid": "c6852385-b30e-4efd-bb2c-d3d8c0d9376a"
+      }
+    }
+  ],
+  "expectedDomain": "foo.bar.com",
+  "expectedHost": "bang",
+  "expectedPath": ""
+}
