@@ -23,7 +23,7 @@ import org.cloudfoundry.client.v2.applications.SummaryApplicationResponse;
 import org.cloudfoundry.client.v2.domains.Domain;
 import org.cloudfoundry.client.v2.routes.Route;
 import org.cloudfoundry.client.v2.serviceinstances.ServiceInstance;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class RawCloudApplicationTest {
 

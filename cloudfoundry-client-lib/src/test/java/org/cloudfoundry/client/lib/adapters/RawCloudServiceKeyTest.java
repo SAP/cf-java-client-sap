@@ -10,7 +10,7 @@ import org.cloudfoundry.client.lib.domain.ImmutableCloudServiceKey;
 import org.cloudfoundry.client.v2.Resource;
 import org.cloudfoundry.client.v2.servicekeys.ServiceKeyEntity;
 import org.cloudfoundry.client.v2.servicekeys.ServiceKeyResource;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class RawCloudServiceKeyTest {
 

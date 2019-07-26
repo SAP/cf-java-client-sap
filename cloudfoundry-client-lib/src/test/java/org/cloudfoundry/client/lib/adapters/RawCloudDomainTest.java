@@ -5,7 +5,7 @@ import org.cloudfoundry.client.lib.domain.ImmutableCloudDomain;
 import org.cloudfoundry.client.v2.Resource;
 import org.cloudfoundry.client.v2.domains.DomainEntity;
 import org.cloudfoundry.client.v2.domains.DomainResource;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class RawCloudDomainTest {
 

@@ -5,7 +5,7 @@ import org.cloudfoundry.client.lib.domain.ImmutableCloudServicePlan;
 import org.cloudfoundry.client.v2.Resource;
 import org.cloudfoundry.client.v2.serviceplans.ServicePlanEntity;
 import org.cloudfoundry.client.v2.serviceplans.ServicePlanResource;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class RawCloudServicePlanTest {
 

@@ -25,9 +25,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.springframework.util.FileCopyUtils;
 
 /**
@@ -36,9 +35,6 @@ import org.springframework.util.FileCopyUtils;
  * @author Phillip Webb
  */
 public class DynamicInputStreamTest {
-
-    @Rule
-    public ExpectedException thrown = ExpectedException.none();
 
     private int index = 0;
 
@@ -62,26 +58,22 @@ public class DynamicInputStreamTest {
 
     @Test
     public void shouldNeedByteArray() throws Exception {
-        thrown.expect(NullPointerException.class);
-        inputStream.read(null, 0, 0);
+        Assertions.assertThrows(NullPointerException.class, () -> inputStream.read(null, 0, 0));
     }
 
     @Test
     public void shouldNeedLengthLessThanOrEqualToAvailableBuffer() throws Exception {
-        thrown.expect(IndexOutOfBoundsException.class);
-        inputStream.read(new byte[] { 0x00 }, 0, 2);
+        Assertions.assertThrows(IndexOutOfBoundsException.class, () -> inputStream.read(new byte[] { 0x00 }, 0, 2));
     }
 
     @Test
     public void shouldNeedLengthMoreThanZero() throws Exception {
-        thrown.expect(IndexOutOfBoundsException.class);
-        inputStream.read(new byte[] { 0x00 }, 0, -1);
+        Assertions.assertThrows(IndexOutOfBoundsException.class, () -> inputStream.read(new byte[] { 0x00 }, 0, -1));
     }
 
     @Test
     public void shouldNeedOffsetMoreThanZero() throws Exception {
-        thrown.expect(IndexOutOfBoundsException.class);
-        inputStream.read(new byte[] { 0x00 }, -1, 1);
+        Assertions.assertThrows(IndexOutOfBoundsException.class, () -> inputStream.read(new byte[] { 0x00 }, -1, 1));
     }
 
     @Test

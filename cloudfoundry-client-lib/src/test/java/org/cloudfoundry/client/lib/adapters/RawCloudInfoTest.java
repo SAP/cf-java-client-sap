@@ -3,7 +3,7 @@ package org.cloudfoundry.client.lib.adapters;
 import org.cloudfoundry.client.lib.domain.CloudInfo;
 import org.cloudfoundry.client.lib.domain.ImmutableCloudInfo;
 import org.cloudfoundry.client.v2.info.GetInfoResponse;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class RawCloudInfoTest {
 
