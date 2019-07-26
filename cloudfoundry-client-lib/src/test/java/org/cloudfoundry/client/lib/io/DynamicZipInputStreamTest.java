@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.zip.ZipOutputStream;
 
 import org.cloudfoundry.client.lib.io.DynamicZipInputStream.Entry;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.util.FileCopyUtils;
 
 /**

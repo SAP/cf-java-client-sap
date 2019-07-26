@@ -1,9 +1,11 @@
 .idea/libraries
 .idea/tasks.xml
 .idea/workspace.xml
+.idea/codeStyles
 target
 .project
 .settings/
 .classpath
 *.log
 **/.factorypath
+*.iml
