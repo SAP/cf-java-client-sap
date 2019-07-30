@@ -33,6 +33,7 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.IntFunction;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -205,6 +206,7 @@ import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.FileCopyUtils;
+import org.springframework.util.StringUtils;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestTemplate;
@@ -2532,10 +2534,30 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     private UUID getRouteGuid(UUID domainGuid, String host, String path) {
-        List<UUID> routeGuids = getRouteResourcesByDomainGuidHostAndPath(domainGuid, host, path).map(this::getGuid)
-            .collectList()
-            .block();
-        return routeGuids.isEmpty() ? null : routeGuids.get(0);
+        List<? extends Resource<RouteEntity>> routeEntitiesResource = getRouteResourcesByDomainGuidHostAndPath(domainGuid, host,
+                                                                                                               path).collect(Collectors.toList())
+                                                                                                                    .block();
+        if (CollectionUtils.isEmpty(routeEntitiesResource)) {
+            return null;
+        }
+        if (!StringUtils.isEmpty(host)) {
+            return getGuid(routeEntitiesResource.get(0));
+        }
+        // TODO: Remove this logic when this pull request is merged: https://github.com/cloudfoundry/cf-java-client/pull/978
+        return getFirstEmptyRoute(routeEntitiesResource);
+    }
+
+    private UUID getFirstEmptyRoute(List<? extends Resource<RouteEntity>> routeEntities) {
+        return routeEntities.stream()
+                            .filter(checkForEmptyHost())
+                            .findFirst()
+                            .map(this::getGuid)
+                            .orElse(null);
+    }
+
+    private Predicate<Resource<RouteEntity>> checkForEmptyHost() {
+        return routeEntity -> StringUtils.isEmpty(routeEntity.getEntity()
+                                                             .getHost());
     }
 
     private UUID getServiceBindingGuid(UUID applicationGuid, UUID serviceGuid) {
