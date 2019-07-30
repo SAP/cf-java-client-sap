@@ -436,6 +436,9 @@ public class CloudEntityResourceMapper {
     }
 
     private Map<String, String> convertEnvironmentValuesToJson(Map<String, Object> envMap) {
+        if (envMap == null) {
+            return Collections.<String, String> emptyMap();
+        }
         return envMap.entrySet()
             .stream()
             .collect(Collectors.toMap(entry -> entry.getKey(), entry -> convertValueToString(entry)));

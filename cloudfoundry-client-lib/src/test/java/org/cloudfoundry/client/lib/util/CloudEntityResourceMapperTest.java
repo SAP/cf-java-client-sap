@@ -3,6 +3,7 @@ package org.cloudfoundry.client.lib.util;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -11,6 +12,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.apache.commons.io.IOUtils;
+import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.cloudfoundry.client.lib.domain.CloudBuild;
 import org.cloudfoundry.client.lib.domain.CloudMetadata;
 import org.cloudfoundry.client.lib.domain.CloudPackage;
@@ -26,6 +28,7 @@ public class CloudEntityResourceMapperTest {
 
     private static final Map<String, Object> TASK_RESOURCE = getResourceAsMap("task.json");
     private static final Map<String, Object> V3_PACKAGE_RESOURCE = getResourceAsMap("package.json");
+    private static final Map<String, Object> V2_APPLICATION_RESOURCE = getResourceAsMap("application.json");
     private static final Map<String, Object> V3_BUILD_RESOURCE = getResourceAsMap("build.json");
     private static final String TASK_GUID = "d5cc22ec-99a3-4e6a-af91-a44b4ab7b6fa";
     private static final String TASK_NAME = "migrate";
@@ -139,6 +142,14 @@ public class CloudEntityResourceMapperTest {
         assertEquals("rake db:migrate", task.getCommand());
         assertEquals(Integer.valueOf(512), task.getMemory());
         assertEquals(Integer.valueOf(1024), task.getDiskQuota());
+    }
+    
+    @Test
+    public void testMapApplicationResourceEnvironmentNull() {
+        CloudApplication cloudApp = resourceMapper.mapResource(V2_APPLICATION_RESOURCE, CloudApplication.class);
+        assertNotNull(cloudApp.getEnv());
+        assertTrue(cloudApp.getEnv()
+                           .isEmpty());
     }
 
     @Test
