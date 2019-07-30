@@ -23,15 +23,11 @@ import java.io.InputStream;
 import java.net.URI;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
@@ -100,10 +96,7 @@ import org.cloudfoundry.client.v2.domains.CreateDomainRequest;
 import org.cloudfoundry.client.v2.domains.DomainResource;
 import org.cloudfoundry.client.v2.domains.ListDomainsRequest;
 import org.cloudfoundry.client.v2.privatedomains.DeletePrivateDomainRequest;
-import org.cloudfoundry.client.v2.routes.CreateRouteRequest;
-import org.cloudfoundry.client.v2.routes.CreateRouteResponse;
-import org.cloudfoundry.client.v2.routes.DeleteRouteRequest;
-import org.cloudfoundry.client.v2.routes.RouteResource;
+import org.cloudfoundry.client.v2.routes.*;
 import org.cloudfoundry.client.v2.servicebindings.CreateServiceBindingRequest;
 import org.cloudfoundry.client.v2.servicebindings.DeleteServiceBindingRequest;
 import org.cloudfoundry.client.v2.servicebindings.ServiceBindingResource;
@@ -136,6 +129,7 @@ import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.FileCopyUtils;
 import org.springframework.web.client.RequestCallback;
+import org.springframework.util.StringUtils;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.ResponseExtractor;
@@ -729,6 +723,28 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
             .build(build)
             .description(description)
             .build();
+    }
+
+    @SuppressWarnings("restriction")
+    private Map<String, Object> getUserInfo(String user) {
+        // String userJson = getRestTemplate().getForObject(getUrl("/v2/users/{guid}"), String.class, user);
+        // Map<String, Object> userInfo = (Map<String, Object>) JsonUtil.convertJsonToMap(userJson);
+        // return userInfo();
+        // TODO: remove this temporary hack once the /v2/users/ uri can be accessed by mere mortals
+        String userJson = "{}";
+        OAuth2AccessToken accessToken = oAuthClient.getToken();
+        if (accessToken != null) {
+            String tokenString = accessToken.getValue();
+            int x = tokenString.indexOf('.');
+            int y = tokenString.indexOf('.', x + 1);
+            String encodedString = tokenString.substring(x + 1, y);
+            try {
+                byte[] decodedBytes = new sun.misc.BASE64Decoder().decodeBuffer(encodedString);
+                userJson = new String(decodedBytes, 0, decodedBytes.length, StandardCharsets.UTF_8);
+            } catch (IOException e) {
+            }
+        }
+        return (JsonUtil.convertJsonToMap(userJson));
     }
 
     @Override
@@ -2509,19 +2525,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         }
     }
 
-    private UUID getRouteGuid(UUID domainGuid, String host, String path) {
-        List<RouteResource> routes = convertV3ClientExceptions(() -> getRouteResources(domainGuid, host, path).collectList()
-            .block());
-
-        if (!routes.isEmpty()) {
-            RouteResource route = routes.get(0);
-            return UUID.fromString(route.getMetadata()
-                .getId());
-        }
-        return null;
-    }
-
-    private Flux<RouteResource> getRouteResources(UUID domainGuid, String host, String path) {
+    private Flux<? extends Resource<RouteEntity>> getRouteResourcesByDomainGuidHostAndPath(UUID domainGuid, String host, String path) {
         ListSpaceRoutesRequest.Builder requestBuilder = ListSpaceRoutesRequest.builder();
         if (host != null) {
             requestBuilder.host(host);
@@ -2630,26 +2634,39 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return managersGuid;
     }
 
-    @SuppressWarnings("restriction")
-    private Map<String, Object> getUserInfo(String user) {
-        // String userJson = getRestTemplate().getForObject(getUrl("/v2/users/{guid}"), String.class, user);
-        // Map<String, Object> userInfo = (Map<String, Object>) JsonUtil.convertJsonToMap(userJson);
-        // return userInfo();
-        // TODO: remove this temporary hack once the /v2/users/ uri can be accessed by mere mortals
-        String userJson = "{}";
-        OAuth2AccessToken accessToken = oAuthClient.getToken();
-        if (accessToken != null) {
-            String tokenString = accessToken.getValue();
-            int x = tokenString.indexOf('.');
-            int y = tokenString.indexOf('.', x + 1);
-            String encodedString = tokenString.substring(x + 1, y);
-            try {
-                byte[] decodedBytes = new sun.misc.BASE64Decoder().decodeBuffer(encodedString);
-                userJson = new String(decodedBytes, 0, decodedBytes.length, StandardCharsets.UTF_8);
-            } catch (IOException e) {
-            }
+    private UUID getRouteGuid(UUID domainGuid, String host, String path) {
+
+        List<? extends Resource<RouteEntity>> routeEntitiesResource = getRouteResourcesByDomainGuidHostAndPath(domainGuid, host, path).collect(Collectors.toList())
+                                                                                                                    .block();
+        if (CollectionUtils.isEmpty(routeEntitiesResource)) {
+            return null;
         }
-        return (JsonUtil.convertJsonToMap(userJson));
+        if (!StringUtils.isEmpty(host)) {
+            return getGuid(routeEntitiesResource.get(0));
+        }
+        // TODO: Remove this logic when this pull request is merged: https://github.com/cloudfoundry/cf-java-client/pull/978
+        return getFirstEmptyRoute(routeEntitiesResource);
+    }
+
+    private UUID getFirstEmptyRoute(List<? extends Resource<RouteEntity>> routeEntities) {
+        return routeEntities.stream()
+                            .filter(checkForEmptyHost())
+                            .findFirst()
+                            .map(this::getGuid)
+                            .orElse(null);
+    }
+
+    private UUID getGuid(org.cloudfoundry.client.v2.Resource<?> resource) {
+        return Optional.ofNullable(resource)
+                .map(org.cloudfoundry.client.v2.Resource::getMetadata)
+                .map(org.cloudfoundry.client.v2.Metadata::getId)
+                .map(UUID::fromString)
+                .orElse(null);
+    }
+
+    private Predicate<Resource<RouteEntity>> checkForEmptyHost() {
+        return routeEntity -> StringUtils.isEmpty(routeEntity.getEntity()
+                                                             .getHost());
     }
 
     @SuppressWarnings("unchecked")
