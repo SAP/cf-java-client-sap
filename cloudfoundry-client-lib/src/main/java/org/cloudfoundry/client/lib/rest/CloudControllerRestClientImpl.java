@@ -22,17 +22,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.IntFunction;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -40,87 +34,14 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.cloudfoundry.client.CloudFoundryClient;
-import org.cloudfoundry.client.lib.ApplicationLogListener;
-import org.cloudfoundry.client.lib.ClientHttpResponseCallback;
-import org.cloudfoundry.client.lib.CloudCredentials;
-import org.cloudfoundry.client.lib.CloudOperationException;
-import org.cloudfoundry.client.lib.RestLogCallback;
-import org.cloudfoundry.client.lib.StartingInfo;
-import org.cloudfoundry.client.lib.StreamingLogToken;
-import org.cloudfoundry.client.lib.UploadStatusCallback;
-import org.cloudfoundry.client.lib.adapters.ImmutableRawCloudApplication;
-import org.cloudfoundry.client.lib.adapters.ImmutableRawCloudBuild;
-import org.cloudfoundry.client.lib.adapters.ImmutableRawCloudDomain;
-import org.cloudfoundry.client.lib.adapters.ImmutableRawCloudEvent;
-import org.cloudfoundry.client.lib.adapters.ImmutableRawCloudInfo;
-import org.cloudfoundry.client.lib.adapters.ImmutableRawCloudOrganization;
-import org.cloudfoundry.client.lib.adapters.ImmutableRawCloudPackage;
-import org.cloudfoundry.client.lib.adapters.ImmutableRawCloudPrivateDomain;
-import org.cloudfoundry.client.lib.adapters.ImmutableRawCloudRoute;
-import org.cloudfoundry.client.lib.adapters.ImmutableRawCloudService;
-import org.cloudfoundry.client.lib.adapters.ImmutableRawCloudServiceBinding;
-import org.cloudfoundry.client.lib.adapters.ImmutableRawCloudServiceBroker;
-import org.cloudfoundry.client.lib.adapters.ImmutableRawCloudServiceInstance;
-import org.cloudfoundry.client.lib.adapters.ImmutableRawCloudServiceKey;
-import org.cloudfoundry.client.lib.adapters.ImmutableRawCloudServiceOffering;
-import org.cloudfoundry.client.lib.adapters.ImmutableRawCloudServicePlan;
-import org.cloudfoundry.client.lib.adapters.ImmutableRawCloudSharedDomain;
-import org.cloudfoundry.client.lib.adapters.ImmutableRawCloudSpace;
-import org.cloudfoundry.client.lib.adapters.ImmutableRawCloudStack;
-import org.cloudfoundry.client.lib.adapters.ImmutableRawCloudTask;
-import org.cloudfoundry.client.lib.adapters.ImmutableRawInstancesInfo;
-import org.cloudfoundry.client.lib.domain.ApplicationLog;
-import org.cloudfoundry.client.lib.domain.CloudApplication;
-import org.cloudfoundry.client.lib.domain.CloudBuild;
-import org.cloudfoundry.client.lib.domain.CloudDomain;
-import org.cloudfoundry.client.lib.domain.CloudEntity;
-import org.cloudfoundry.client.lib.domain.CloudEvent;
-import org.cloudfoundry.client.lib.domain.CloudInfo;
-import org.cloudfoundry.client.lib.domain.CloudMetadata;
-import org.cloudfoundry.client.lib.domain.CloudOrganization;
-import org.cloudfoundry.client.lib.domain.CloudPackage;
-import org.cloudfoundry.client.lib.domain.CloudQuota;
-import org.cloudfoundry.client.lib.domain.CloudRoute;
-import org.cloudfoundry.client.lib.domain.CloudSecurityGroup;
-import org.cloudfoundry.client.lib.domain.CloudService;
-import org.cloudfoundry.client.lib.domain.CloudServiceBinding;
-import org.cloudfoundry.client.lib.domain.CloudServiceBroker;
-import org.cloudfoundry.client.lib.domain.CloudServiceInstance;
-import org.cloudfoundry.client.lib.domain.CloudServiceKey;
-import org.cloudfoundry.client.lib.domain.CloudServiceOffering;
-import org.cloudfoundry.client.lib.domain.CloudServicePlan;
-import org.cloudfoundry.client.lib.domain.CloudSpace;
-import org.cloudfoundry.client.lib.domain.CloudStack;
-import org.cloudfoundry.client.lib.domain.CloudTask;
-import org.cloudfoundry.client.lib.domain.CloudUser;
-import org.cloudfoundry.client.lib.domain.CrashesInfo;
-import org.cloudfoundry.client.lib.domain.Derivable;
-import org.cloudfoundry.client.lib.domain.DockerInfo;
-import org.cloudfoundry.client.lib.domain.ErrorDetails;
-import org.cloudfoundry.client.lib.domain.ImmutableErrorDetails;
-import org.cloudfoundry.client.lib.domain.ImmutableUpload;
-import org.cloudfoundry.client.lib.domain.ImmutableUploadToken;
-import org.cloudfoundry.client.lib.domain.InstancesInfo;
-import org.cloudfoundry.client.lib.domain.Staging;
-import org.cloudfoundry.client.lib.domain.Status;
-import org.cloudfoundry.client.lib.domain.Upload;
-import org.cloudfoundry.client.lib.domain.UploadToken;
+import org.cloudfoundry.client.lib.*;
+import org.cloudfoundry.client.lib.adapters.*;
+import org.cloudfoundry.client.lib.domain.*;
 import org.cloudfoundry.client.lib.oauth2.OAuthClient;
 import org.cloudfoundry.client.lib.util.CloudEntityResourceMapper;
 import org.cloudfoundry.client.lib.util.JsonUtil;
 import org.cloudfoundry.client.v2.Resource;
-import org.cloudfoundry.client.v2.applications.ApplicationEntity;
-import org.cloudfoundry.client.v2.applications.ApplicationInstancesRequest;
-import org.cloudfoundry.client.v2.applications.ApplicationInstancesResponse;
-import org.cloudfoundry.client.v2.applications.AssociateApplicationRouteRequest;
-import org.cloudfoundry.client.v2.applications.DeleteApplicationRequest;
-import org.cloudfoundry.client.v2.applications.GetApplicationRequest;
-import org.cloudfoundry.client.v2.applications.ListApplicationServiceBindingsRequest;
-import org.cloudfoundry.client.v2.applications.ListApplicationsRequest;
-import org.cloudfoundry.client.v2.applications.RemoveApplicationRouteRequest;
-import org.cloudfoundry.client.v2.applications.SummaryApplicationRequest;
-import org.cloudfoundry.client.v2.applications.SummaryApplicationResponse;
-import org.cloudfoundry.client.v2.applications.UpdateApplicationRequest;
+import org.cloudfoundry.client.v2.applications.*;
 import org.cloudfoundry.client.v2.domains.CreateDomainRequest;
 import org.cloudfoundry.client.v2.domains.DomainEntity;
 import org.cloudfoundry.client.v2.domains.ListDomainsRequest;
@@ -128,11 +49,7 @@ import org.cloudfoundry.client.v2.events.EventEntity;
 import org.cloudfoundry.client.v2.events.ListEventsRequest;
 import org.cloudfoundry.client.v2.info.GetInfoRequest;
 import org.cloudfoundry.client.v2.info.GetInfoResponse;
-import org.cloudfoundry.client.v2.organizations.GetOrganizationRequest;
-import org.cloudfoundry.client.v2.organizations.ListOrganizationPrivateDomainsRequest;
-import org.cloudfoundry.client.v2.organizations.ListOrganizationSpacesRequest;
-import org.cloudfoundry.client.v2.organizations.ListOrganizationsRequest;
-import org.cloudfoundry.client.v2.organizations.OrganizationEntity;
+import org.cloudfoundry.client.v2.organizations.*;
 import org.cloudfoundry.client.v2.privatedomains.DeletePrivateDomainRequest;
 import org.cloudfoundry.client.v2.privatedomains.ListPrivateDomainsRequest;
 import org.cloudfoundry.client.v2.privatedomains.PrivateDomainEntity;
@@ -146,11 +63,7 @@ import org.cloudfoundry.client.v2.servicebindings.CreateServiceBindingRequest;
 import org.cloudfoundry.client.v2.servicebindings.DeleteServiceBindingRequest;
 import org.cloudfoundry.client.v2.servicebindings.ListServiceBindingsRequest;
 import org.cloudfoundry.client.v2.servicebindings.ServiceBindingEntity;
-import org.cloudfoundry.client.v2.servicebrokers.CreateServiceBrokerRequest;
-import org.cloudfoundry.client.v2.servicebrokers.DeleteServiceBrokerRequest;
-import org.cloudfoundry.client.v2.servicebrokers.ListServiceBrokersRequest;
-import org.cloudfoundry.client.v2.servicebrokers.ServiceBrokerEntity;
-import org.cloudfoundry.client.v2.servicebrokers.UpdateServiceBrokerRequest;
+import org.cloudfoundry.client.v2.servicebrokers.*;
 import org.cloudfoundry.client.v2.serviceinstances.CreateServiceInstanceRequest;
 import org.cloudfoundry.client.v2.serviceinstances.DeleteServiceInstanceRequest;
 import org.cloudfoundry.client.v2.serviceinstances.UnionServiceInstanceEntity;
@@ -167,15 +80,7 @@ import org.cloudfoundry.client.v2.services.ListServicesRequest;
 import org.cloudfoundry.client.v2.services.ServiceEntity;
 import org.cloudfoundry.client.v2.shareddomains.ListSharedDomainsRequest;
 import org.cloudfoundry.client.v2.shareddomains.SharedDomainEntity;
-import org.cloudfoundry.client.v2.spaces.GetSpaceRequest;
-import org.cloudfoundry.client.v2.spaces.ListSpaceApplicationsRequest;
-import org.cloudfoundry.client.v2.spaces.ListSpaceAuditorsRequest;
-import org.cloudfoundry.client.v2.spaces.ListSpaceDevelopersRequest;
-import org.cloudfoundry.client.v2.spaces.ListSpaceManagersRequest;
-import org.cloudfoundry.client.v2.spaces.ListSpaceRoutesRequest;
-import org.cloudfoundry.client.v2.spaces.ListSpaceServiceInstancesRequest;
-import org.cloudfoundry.client.v2.spaces.ListSpacesRequest;
-import org.cloudfoundry.client.v2.spaces.SpaceEntity;
+import org.cloudfoundry.client.v2.spaces.*;
 import org.cloudfoundry.client.v2.stacks.GetStackRequest;
 import org.cloudfoundry.client.v2.stacks.ListStacksRequest;
 import org.cloudfoundry.client.v2.stacks.StackEntity;
@@ -189,22 +94,15 @@ import org.cloudfoundry.client.v3.applications.SetApplicationCurrentDropletReque
 import org.cloudfoundry.client.v3.builds.Build;
 import org.cloudfoundry.client.v3.builds.CreateBuildRequest;
 import org.cloudfoundry.client.v3.builds.GetBuildRequest;
-import org.cloudfoundry.client.v3.packages.CreatePackageRequest;
-import org.cloudfoundry.client.v3.packages.GetPackageRequest;
-import org.cloudfoundry.client.v3.packages.PackageRelationships;
-import org.cloudfoundry.client.v3.packages.PackageType;
-import org.cloudfoundry.client.v3.packages.UploadPackageRequest;
-import org.cloudfoundry.client.v3.tasks.CancelTaskRequest;
-import org.cloudfoundry.client.v3.tasks.CreateTaskRequest;
-import org.cloudfoundry.client.v3.tasks.GetTaskRequest;
-import org.cloudfoundry.client.v3.tasks.ListTasksRequest;
-import org.cloudfoundry.client.v3.tasks.Task;
+import org.cloudfoundry.client.v3.packages.*;
+import org.cloudfoundry.client.v3.tasks.*;
 import org.cloudfoundry.util.PaginationUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.FileCopyUtils;
+import org.springframework.util.StringUtils;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestTemplate;
@@ -2536,10 +2434,29 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     private UUID getRouteGuid(UUID domainGuid, String host, String path) {
-        List<UUID> routeGuids = getRouteResourcesByDomainGuidHostAndPath(domainGuid, host, path).map(this::getGuid)
-            .collectList()
-            .block();
-        return routeGuids.isEmpty() ? null : routeGuids.get(0);
+        List<? extends Resource<RouteEntity>> routeEntitiesResource = getRouteResourcesByDomainGuidHostAndPath(domainGuid, host,
+                                                                                                               path).collect(Collectors.toList())
+                                                                                                                    .block();
+        if (CollectionUtils.isEmpty(routeEntitiesResource)) {
+            return null;
+        }
+        if (routeEntitiesResource.size() == 1) {
+            return getGuid(routeEntitiesResource.get(0));
+        }
+        return getFirstEmptyRoute(routeEntitiesResource);
+    }
+
+    private UUID getFirstEmptyRoute(List<? extends Resource<RouteEntity>> routeEntities) {
+        return routeEntities.stream()
+                            .filter(checkForEmptyHost())
+                            .findFirst()
+                            .map(this::getGuid)
+                            .orElse(null);
+    }
+
+    private Predicate<Resource<RouteEntity>> checkForEmptyHost() {
+        return routeEntity -> StringUtils.isEmpty(routeEntity.getEntity()
+                                                             .getHost());
     }
 
     private UUID getServiceBindingGuid(UUID applicationGuid, UUID serviceGuid) {
