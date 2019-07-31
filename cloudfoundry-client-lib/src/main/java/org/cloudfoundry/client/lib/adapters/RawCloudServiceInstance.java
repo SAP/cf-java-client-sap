@@ -25,14 +25,14 @@ public abstract class RawCloudServiceInstance extends RawCloudEntity<CloudServic
         Resource<UnionServiceInstanceEntity> resource = getResource();
         UnionServiceInstanceEntity entity = resource.getEntity();
         return ImmutableCloudServiceInstance.builder()
-            .metadata(parseResourceMetadata(resource))
-            .name(entity.getName())
-            .type(entity.getType())
-            .service(getService().derive())
-            .credentials(entity.getCredentials())
-            .bindings(derive(getServiceBindings()))
-            .dashboardUrl(entity.getDashboardUrl())
-            .build();
+                                            .metadata(parseResourceMetadata(resource))
+                                            .name(entity.getName())
+                                            .type(entity.getType())
+                                            .service(getService().derive())
+                                            .credentials(entity.getCredentials())
+                                            .bindings(derive(getServiceBindings()))
+                                            .dashboardUrl(entity.getDashboardUrl())
+                                            .build();
     }
 
 }

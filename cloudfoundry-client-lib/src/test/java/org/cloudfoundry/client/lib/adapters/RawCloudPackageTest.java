@@ -36,11 +36,11 @@ public class RawCloudPackageTest {
 
     private static CloudPackage buildExpectedPackage(CloudPackage.Type type) {
         return ImmutableCloudPackage.builder()
-            .metadata(RawCloudEntityTest.EXPECTED_METADATA_PARSED_FROM_V3_RESOURCE)
-            .data(buildExpectedData(type))
-            .type(type)
-            .status(EXPECTED_STATUS)
-            .build();
+                                    .metadata(RawCloudEntityTest.EXPECTED_METADATA_PARSED_FROM_V3_RESOURCE)
+                                    .data(buildExpectedData(type))
+                                    .type(type)
+                                    .status(EXPECTED_STATUS)
+                                    .build();
     }
 
     private static CloudPackage.Data buildExpectedData(CloudPackage.Type type) {
@@ -48,33 +48,33 @@ public class RawCloudPackageTest {
             return null;
         }
         return ImmutableCloudPackage.ImmutableData.builder()
-            .checksum(buildExpectedChecksum())
-            .error(ERROR)
-            .build();
+                                                  .checksum(buildExpectedChecksum())
+                                                  .error(ERROR)
+                                                  .build();
     }
 
     private static CloudPackage.Checksum buildExpectedChecksum() {
         return ImmutableCloudPackage.ImmutableChecksum.builder()
-            .algorithm(EXPECTED_CHECKSUM_ALGORITHM)
-            .value(CHECKSUM_VALUE)
-            .build();
+                                                      .algorithm(EXPECTED_CHECKSUM_ALGORITHM)
+                                                      .value(CHECKSUM_VALUE)
+                                                      .build();
     }
 
     private static RawCloudPackage buildRawPackage(PackageType type) {
         return ImmutableRawCloudPackage.builder()
-            .resource(buildTestResource(type))
-            .build();
+                                       .resource(buildTestResource(type))
+                                       .build();
     }
 
     private static Package buildTestResource(PackageType type) {
         return PackageResource.builder()
-            .id(RawCloudEntityTest.GUID_STRING)
-            .createdAt(RawCloudEntityTest.CREATED_AT_STRING)
-            .updatedAt(RawCloudEntityTest.UPDATED_AT_STRING)
-            .type(type)
-            .data(buildTestData(type))
-            .state(STATE)
-            .build();
+                              .id(RawCloudEntityTest.GUID_STRING)
+                              .createdAt(RawCloudEntityTest.CREATED_AT_STRING)
+                              .updatedAt(RawCloudEntityTest.UPDATED_AT_STRING)
+                              .type(type)
+                              .data(buildTestData(type))
+                              .state(STATE)
+                              .build();
     }
 
     private static PackageData buildTestData(PackageType type) {
@@ -86,24 +86,24 @@ public class RawCloudPackageTest {
 
     private static DockerData buildDockerData() {
         return DockerData.builder()
-            .image("")
-            .username("")
-            .password("")
-            .build();
+                         .image("")
+                         .username("")
+                         .password("")
+                         .build();
     }
 
     private static BitsData buildBitsData() {
         return BitsData.builder()
-            .checksum(buildTestChecksum())
-            .error(ERROR)
-            .build();
+                       .checksum(buildTestChecksum())
+                       .error(ERROR)
+                       .build();
     }
 
     private static Checksum buildTestChecksum() {
         return Checksum.builder()
-            .type(CHECKSUM_TYPE)
-            .value(CHECKSUM_VALUE)
-            .build();
+                       .type(CHECKSUM_TYPE)
+                       .value(CHECKSUM_VALUE)
+                       .build();
     }
 
 }

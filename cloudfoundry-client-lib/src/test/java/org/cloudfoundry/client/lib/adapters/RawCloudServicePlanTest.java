@@ -23,14 +23,14 @@ public class RawCloudServicePlanTest {
 
     private static final CloudServicePlan buildExpectedPlan() {
         return ImmutableCloudServicePlan.builder()
-            .metadata(RawCloudEntityTest.EXPECTED_METADATA)
-            .name(NAME)
-            .description(DESCRIPTION)
-            .extra(EXTRA)
-            .uniqueId(UNIQUE_ID)
-            .isPublic(PUBLIC)
-            .isFree(FREE)
-            .build();
+                                        .metadata(RawCloudEntityTest.EXPECTED_METADATA)
+                                        .name(NAME)
+                                        .description(DESCRIPTION)
+                                        .extra(EXTRA)
+                                        .uniqueId(UNIQUE_ID)
+                                        .isPublic(PUBLIC)
+                                        .isFree(FREE)
+                                        .build();
     }
 
     private static final RawCloudServicePlan buildRawServicePlan() {
@@ -39,20 +39,20 @@ public class RawCloudServicePlanTest {
 
     private static Resource<ServicePlanEntity> buildTestResource() {
         return ServicePlanResource.builder()
-            .metadata(RawCloudEntityTest.METADATA)
-            .entity(buildTestEntity())
-            .build();
+                                  .metadata(RawCloudEntityTest.METADATA)
+                                  .entity(buildTestEntity())
+                                  .build();
     }
 
     private static ServicePlanEntity buildTestEntity() {
         return ServicePlanEntity.builder()
-            .name(NAME)
-            .description(DESCRIPTION)
-            .extra(EXTRA)
-            .uniqueId(UNIQUE_ID)
-            .publiclyVisible(PUBLIC)
-            .free(FREE)
-            .build();
+                                .name(NAME)
+                                .description(DESCRIPTION)
+                                .extra(EXTRA)
+                                .uniqueId(UNIQUE_ID)
+                                .publiclyVisible(PUBLIC)
+                                .free(FREE)
+                                .build();
     }
 
 }

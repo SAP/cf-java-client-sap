@@ -62,7 +62,7 @@ public class LoggregatorHttpMessageConverter extends AbstractHttpMessageConverte
 
     private String getMessageBoundary(HttpInputMessage inputMessage) {
         MediaType mediaType = inputMessage.getHeaders()
-            .getContentType();
+                                          .getContentType();
         Map<String, String> parameters = mediaType.getParameters();
         return parameters.get("boundary");
     }

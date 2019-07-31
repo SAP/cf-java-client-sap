@@ -68,12 +68,12 @@ public class TokensFile {
         targetInfos.putRefreshToken(targetInfo, token.getRefreshToken());
         targetInfos.putVersion(targetInfo, cloudInfo.getVersion());
         targetInfos.putSpace(targetInfo, space.getMetadata()
-            .getGuid()
-            .toString());
+                                              .getGuid()
+                                              .toString());
         targetInfos.putOrganization(targetInfo, space.getOrganization()
-            .getMetadata()
-            .getGuid()
-            .toString());
+                                                     .getMetadata()
+                                                     .getGuid()
+                                                     .toString());
 
         targetInfos.put(target, targetInfo);
 
@@ -100,7 +100,7 @@ public class TokensFile {
     protected void saveTokensToFile(TargetInfos targetInfos) {
         final File tokensFile = getTokensFile();
         tokensFile.getParentFile()
-            .mkdirs();
+                  .mkdirs();
         try {
             FileWriter fileWriter = new FileWriter(tokensFile);
 

@@ -70,10 +70,10 @@ public class LoggingRestTemplate extends RestTemplate {
                             message[0] = ((String) data).length() + " bytes";
                         } else if (data instanceof Map) {
                             message[0] = ((Map) data).keySet()
-                                .toString();
+                                                     .toString();
                         } else {
                             message[0] = data.getClass()
-                                .getName();
+                                             .getName();
                         }
                         return data;
                     } else {

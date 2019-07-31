@@ -17,14 +17,14 @@ public abstract class RawCloudServiceBroker extends RawCloudEntity<CloudServiceB
         Resource<ServiceBrokerEntity> resource = getResource();
         ServiceBrokerEntity entity = resource.getEntity();
         return ImmutableCloudServiceBroker.builder()
-            .metadata(parseResourceMetadata(resource))
-            .name(entity.getName())
-            // The password is not returned by the CF controller.
-            .password(null)
-            .username(entity.getAuthenticationUsername())
-            .url(entity.getBrokerUrl())
-            .spaceGuid(entity.getSpaceId())
-            .build();
+                                          .metadata(parseResourceMetadata(resource))
+                                          .name(entity.getName())
+                                          // The password is not returned by the CF controller.
+                                          .password(null)
+                                          .username(entity.getAuthenticationUsername())
+                                          .url(entity.getBrokerUrl())
+                                          .spaceGuid(entity.getSpaceId())
+                                          .build();
     }
 
 }

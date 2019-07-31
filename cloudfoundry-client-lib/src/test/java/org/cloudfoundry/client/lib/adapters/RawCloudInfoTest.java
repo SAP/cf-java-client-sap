@@ -30,20 +30,20 @@ public class RawCloudInfoTest {
 
     private CloudInfo buildExpectedInfo() {
         return ImmutableCloudInfo.builder()
-            .authorizationEndpoint(AUTHORIZATION_ENDPOINT)
-            .loggingEndpoint(DOPPLER_LOGGING_ENDPOINT)
-            .build(BUILD)
-            .description(DESCRIPTION)
-            .name(NAME)
-            .user(USER)
-            .support(SUPPORT)
-            .version(VERSION_STRING)
-            .build();
+                                 .authorizationEndpoint(AUTHORIZATION_ENDPOINT)
+                                 .loggingEndpoint(DOPPLER_LOGGING_ENDPOINT)
+                                 .build(BUILD)
+                                 .description(DESCRIPTION)
+                                 .name(NAME)
+                                 .user(USER)
+                                 .support(SUPPORT)
+                                 .version(VERSION_STRING)
+                                 .build();
     }
 
     private CloudInfo buildEmptyExpectedInfo() {
         return ImmutableCloudInfo.builder()
-            .build();
+                                 .build();
     }
 
     private RawCloudInfo buildRawInfo() {
@@ -52,15 +52,15 @@ public class RawCloudInfoTest {
 
     private GetInfoResponse buildTestResource() {
         return GetInfoResponse.builder()
-            .dopplerLoggingEndpoint(DOPPLER_LOGGING_ENDPOINT)
-            .authorizationEndpoint(AUTHORIZATION_ENDPOINT)
-            .buildNumber(BUILD)
-            .description(DESCRIPTION)
-            .name(NAME)
-            .user(USER)
-            .support(SUPPORT)
-            .version(VERSION)
-            .build();
+                              .dopplerLoggingEndpoint(DOPPLER_LOGGING_ENDPOINT)
+                              .authorizationEndpoint(AUTHORIZATION_ENDPOINT)
+                              .buildNumber(BUILD)
+                              .description(DESCRIPTION)
+                              .name(NAME)
+                              .user(USER)
+                              .support(SUPPORT)
+                              .version(VERSION)
+                              .build();
     }
 
     private RawCloudInfo buildEmptyRawInfo() {
@@ -69,7 +69,7 @@ public class RawCloudInfoTest {
 
     private GetInfoResponse buildEmptyTestResource() {
         return GetInfoResponse.builder()
-            .build();
+                              .build();
     }
 
 }

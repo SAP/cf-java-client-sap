@@ -30,9 +30,9 @@ public class CloudControllerV3ClientFactory {
 
     public CloudFoundryClient createClient(URL controllerUrl, OAuthClient oAuthClient) {
         return ReactorCloudFoundryClient.builder()
-            .connectionContext(getOrCreateConnectionContext(controllerUrl.getHost()))
-            .tokenProvider(oAuthClient.getTokenProvider())
-            .build();
+                                        .connectionContext(getOrCreateConnectionContext(controllerUrl.getHost()))
+                                        .tokenProvider(oAuthClient.getTokenProvider())
+                                        .build();
     }
 
     public ConnectionContext getOrCreateConnectionContext(String controllerApiHost) {
@@ -41,10 +41,10 @@ public class CloudControllerV3ClientFactory {
 
     private ConnectionContext createConnectionContext(String controllerApiHost) {
         return DefaultConnectionContext.builder()
-            .apiHost(controllerApiHost)
-            .threadPoolSize(clientThreadPoolSize)
-            .connectionPoolSize(clientCoonectionPoolSize)
-            .build();
+                                       .apiHost(controllerApiHost)
+                                       .threadPoolSize(clientThreadPoolSize)
+                                       .connectionPoolSize(clientCoonectionPoolSize)
+                                       .build();
     }
 
 }

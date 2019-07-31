@@ -20,11 +20,11 @@ public abstract class RawCloudServiceKey extends RawCloudEntity<CloudServiceKey>
         Resource<ServiceKeyEntity> resource = getResource();
         ServiceKeyEntity entity = resource.getEntity();
         return ImmutableCloudServiceKey.builder()
-            .metadata(parseResourceMetadata(resource))
-            .name(entity.getName())
-            .service(getService().derive())
-            .credentials(entity.getCredentials())
-            .build();
+                                       .metadata(parseResourceMetadata(resource))
+                                       .name(entity.getName())
+                                       .service(getService().derive())
+                                       .credentials(entity.getCredentials())
+                                       .build();
     }
 
 }

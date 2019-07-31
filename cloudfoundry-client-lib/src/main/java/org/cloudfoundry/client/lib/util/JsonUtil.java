@@ -41,7 +41,8 @@ import org.springframework.http.MediaType;
 public class JsonUtil {
 
     public static final MediaType JSON_MEDIA_TYPE = new MediaType(MediaType.APPLICATION_JSON.getType(),
-        MediaType.APPLICATION_JSON.getSubtype(), StandardCharsets.UTF_8);
+                                                                  MediaType.APPLICATION_JSON.getSubtype(),
+                                                                  StandardCharsets.UTF_8);
 
     protected static final Log logger = LogFactory.getLog(JsonUtil.class);
 
@@ -96,7 +97,8 @@ public class JsonUtil {
 
         } else {
             throw new IllegalArgumentException("Value of type " + value.getClass()
-                .getName() + " can not be serialized to JSON.");
+                                                                       .getName()
+                + " can not be serialized to JSON.");
         }
     }
 

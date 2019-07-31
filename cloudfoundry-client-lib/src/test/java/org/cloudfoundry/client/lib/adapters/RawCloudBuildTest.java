@@ -49,32 +49,32 @@ public class RawCloudBuildTest {
 
     private static CloudBuild buildExpectedBuild(CloudBuild.DropletInfo dropletInfo) {
         return ImmutableCloudBuild.builder()
-            .metadata(RawCloudEntityTest.EXPECTED_METADATA_PARSED_FROM_V3_RESOURCE)
-            .createdBy(buildExpectedCreatedBy())
-            .dropletInfo(dropletInfo)
-            .packageInfo(buildExpectedPackageInfo())
-            .state(EXPECTED_STATE)
-            .error(ERROR)
-            .build();
+                                  .metadata(RawCloudEntityTest.EXPECTED_METADATA_PARSED_FROM_V3_RESOURCE)
+                                  .createdBy(buildExpectedCreatedBy())
+                                  .dropletInfo(dropletInfo)
+                                  .packageInfo(buildExpectedPackageInfo())
+                                  .state(EXPECTED_STATE)
+                                  .error(ERROR)
+                                  .build();
     }
 
     private static CloudBuild.CreatedBy buildExpectedCreatedBy() {
         return ImmutableCloudBuild.ImmutableCreatedBy.builder()
-            .guid(CREATED_BY_GUID)
-            .name(CREATED_BY_NAME)
-            .build();
+                                                     .guid(CREATED_BY_GUID)
+                                                     .name(CREATED_BY_NAME)
+                                                     .build();
     }
 
     private static CloudBuild.DropletInfo buildExpectedDropletInfo() {
         return ImmutableCloudBuild.ImmutableDropletInfo.builder()
-            .guid(DROPLET_GUID)
-            .build();
+                                                       .guid(DROPLET_GUID)
+                                                       .build();
     }
 
     private static CloudBuild.PackageInfo buildExpectedPackageInfo() {
         return ImmutableCloudBuild.ImmutablePackageInfo.builder()
-            .guid(PACKAGE_GUID)
-            .build();
+                                                       .guid(PACKAGE_GUID)
+                                                       .build();
     }
 
     private RawCloudBuild buildRawBuild() {
@@ -87,48 +87,48 @@ public class RawCloudBuildTest {
 
     private static Build buildTestResource(Droplet droplet) {
         return BuildResource.builder()
-            .id(RawCloudEntityTest.GUID_STRING)
-            .createdAt(RawCloudEntityTest.CREATED_AT_STRING)
-            .updatedAt(RawCloudEntityTest.UPDATED_AT_STRING)
-            .inputPackage(buildTestPackage())
-            .createdBy(buildTestCreatedBy())
-            .lifecycle(buildTestLifecycle())
-            .droplet(droplet)
-            .state(STATE)
-            .error(ERROR)
-            .build();
+                            .id(RawCloudEntityTest.GUID_STRING)
+                            .createdAt(RawCloudEntityTest.CREATED_AT_STRING)
+                            .updatedAt(RawCloudEntityTest.UPDATED_AT_STRING)
+                            .inputPackage(buildTestPackage())
+                            .createdBy(buildTestCreatedBy())
+                            .lifecycle(buildTestLifecycle())
+                            .droplet(droplet)
+                            .state(STATE)
+                            .error(ERROR)
+                            .build();
     }
 
     private static Relationship buildTestPackage() {
         return Relationship.builder()
-            .id(PACKAGE_GUID_STRING)
-            .build();
+                           .id(PACKAGE_GUID_STRING)
+                           .build();
     }
 
     private static Droplet buildTestDroplet() {
         return Droplet.builder()
-            .id(DROPLET_GUID_STRING)
-            .build();
+                      .id(DROPLET_GUID_STRING)
+                      .build();
     }
 
     private static CreatedBy buildTestCreatedBy() {
         return CreatedBy.builder()
-            .id(CREATED_BY_GUID_STRING)
-            .name(CREATED_BY_NAME)
-            .email(CREATED_BY_NAME)
-            .build();
+                        .id(CREATED_BY_GUID_STRING)
+                        .name(CREATED_BY_NAME)
+                        .email(CREATED_BY_NAME)
+                        .build();
     }
 
     private static Lifecycle buildTestLifecycle() {
         return Lifecycle.builder()
-            .data(buildTestLifecycleData())
-            .type(LIFECYCLE_TYPE)
-            .build();
+                        .data(buildTestLifecycleData())
+                        .type(LIFECYCLE_TYPE)
+                        .build();
     }
 
     private static BuildpackData buildTestLifecycleData() {
         return BuildpackData.builder()
-            .build();
+                            .build();
     }
 
 }

@@ -21,7 +21,7 @@ public class CloudControllerRestClientImplTest {
     private CloudControllerRestClientImpl controllerClient;
 
     // @formatter:off
-    private static Stream<Arguments> testExtractUriInfo() {
+    public static Stream<Arguments> testExtractUriInfo() {
         return Stream.of(
                 // Select matching domain
                 Arguments.of("domain-1.json", null),

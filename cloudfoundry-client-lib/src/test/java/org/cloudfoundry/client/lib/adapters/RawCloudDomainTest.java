@@ -18,9 +18,9 @@ public class RawCloudDomainTest {
 
     private static CloudDomain buildExpectedDomain() {
         return ImmutableCloudDomain.builder()
-            .metadata(RawCloudEntityTest.EXPECTED_METADATA)
-            .name(DOMAIN_NAME)
-            .build();
+                                   .metadata(RawCloudEntityTest.EXPECTED_METADATA)
+                                   .name(DOMAIN_NAME)
+                                   .build();
     }
 
     private static RawCloudDomain buildRawDomain() {
@@ -29,15 +29,15 @@ public class RawCloudDomainTest {
 
     private static Resource<DomainEntity> buildTestResource() {
         return DomainResource.builder()
-            .metadata(RawCloudEntityTest.METADATA)
-            .entity(buildTestEntity())
-            .build();
+                             .metadata(RawCloudEntityTest.METADATA)
+                             .entity(buildTestEntity())
+                             .build();
     }
 
     private static DomainEntity buildTestEntity() {
         return DomainEntity.builder()
-            .name(DOMAIN_NAME)
-            .build();
+                           .name(DOMAIN_NAME)
+                           .build();
     }
 
 }

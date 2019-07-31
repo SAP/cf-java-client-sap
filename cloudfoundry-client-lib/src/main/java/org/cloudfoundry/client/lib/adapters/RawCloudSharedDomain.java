@@ -16,9 +16,9 @@ public abstract class RawCloudSharedDomain extends RawCloudEntity<CloudDomain> {
         Resource<SharedDomainEntity> resource = getResource();
         SharedDomainEntity entity = resource.getEntity();
         return ImmutableCloudDomain.builder()
-            .metadata(parseResourceMetadata(resource))
-            .name(entity.getName())
-            .build();
+                                   .metadata(parseResourceMetadata(resource))
+                                   .name(entity.getName())
+                                   .build();
     }
 
 }

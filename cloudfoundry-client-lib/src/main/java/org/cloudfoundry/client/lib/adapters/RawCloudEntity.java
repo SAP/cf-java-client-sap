@@ -30,19 +30,19 @@ public abstract class RawCloudEntity<T> implements Derivable<T> {
     protected static CloudMetadata parseResourceMetadata(org.cloudfoundry.client.v2.Resource<?> resource) {
         Metadata metadata = resource.getMetadata();
         return ImmutableCloudMetadata.builder()
-            .guid(parseNullableGuid(metadata.getId()))
-            .createdAt(parseNullableDate(metadata.getCreatedAt()))
-            .updatedAt(parseNullableDate(metadata.getUpdatedAt()))
-            .url(metadata.getUrl())
-            .build();
+                                     .guid(parseNullableGuid(metadata.getId()))
+                                     .createdAt(parseNullableDate(metadata.getCreatedAt()))
+                                     .updatedAt(parseNullableDate(metadata.getUpdatedAt()))
+                                     .url(metadata.getUrl())
+                                     .build();
     }
 
     protected static CloudMetadata parseResourceMetadata(org.cloudfoundry.client.v3.Resource resource) {
         return ImmutableCloudMetadata.builder()
-            .guid(parseNullableGuid(resource.getId()))
-            .createdAt(parseNullableDate(resource.getCreatedAt()))
-            .updatedAt(parseNullableDate(resource.getUpdatedAt()))
-            .build();
+                                     .guid(parseNullableGuid(resource.getId()))
+                                     .createdAt(parseNullableDate(resource.getCreatedAt()))
+                                     .updatedAt(parseNullableDate(resource.getUpdatedAt()))
+                                     .build();
     }
 
     protected static UUID parseNullableGuid(String guid) {
@@ -75,19 +75,19 @@ public abstract class RawCloudEntity<T> implements Derivable<T> {
     private static Instant parseInstant(String date) {
         String isoDate = toIsoDate(date);
         return ZonedDateTime.parse(isoDate, DATE_TIME_FORMATTER)
-            .toInstant();
+                            .toInstant();
     }
 
     private static String toIsoDate(String date) {
         // If the time zone part of the date contains a colon (e.g. 2013-09-19T21:56:36+00:00)
         // then remove it before parsing.
         return date.replaceFirst(":(?=[0-9]{2}$)", "")
-            .replaceFirst("Z$", "+0000");
+                   .replaceFirst("Z$", "+0000");
     }
 
     protected static <E extends Enum<E>> E parseEnum(Enum<?> value, Class<E> targetEnum) {
         String name = value.name()
-            .toUpperCase();
+                           .toUpperCase();
         return Enum.valueOf(targetEnum, name);
     }
 
@@ -97,8 +97,8 @@ public abstract class RawCloudEntity<T> implements Derivable<T> {
 
     protected static <D> Collection<D> derive(Collection<Derivable<D>> derivables) {
         return derivables.stream()
-            .map(Derivable::derive)
-            .collect(Collectors.toList());
+                         .map(Derivable::derive)
+                         .collect(Collectors.toList());
     }
 
 }

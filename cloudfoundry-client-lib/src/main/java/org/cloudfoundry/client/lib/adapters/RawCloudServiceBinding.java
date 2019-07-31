@@ -22,13 +22,13 @@ public abstract class RawCloudServiceBinding extends RawCloudEntity<CloudService
         Resource<ServiceBindingEntity> resource = getResource();
         ServiceBindingEntity entity = resource.getEntity();
         return ImmutableCloudServiceBinding.builder()
-            .metadata(parseResourceMetadata(resource))
-            .applicationGuid(parseNullableGuid(entity.getApplicationId()))
-            .syslogDrainUrl(entity.getSyslogDrainUrl())
-            .bindingOptions(entity.getBindingOptions())
-            .bindingParameters(getParameters())
-            .credentials(entity.getCredentials())
-            .build();
+                                           .metadata(parseResourceMetadata(resource))
+                                           .applicationGuid(parseNullableGuid(entity.getApplicationId()))
+                                           .syslogDrainUrl(entity.getSyslogDrainUrl())
+                                           .bindingOptions(entity.getBindingOptions())
+                                           .bindingParameters(getParameters())
+                                           .credentials(entity.getCredentials())
+                                           .build();
     }
 
 }

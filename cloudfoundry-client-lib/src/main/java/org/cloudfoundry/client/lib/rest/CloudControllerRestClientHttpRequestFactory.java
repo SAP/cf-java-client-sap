@@ -23,7 +23,7 @@ public class CloudControllerRestClientHttpRequestFactory implements ClientHttpRe
     private OAuthClient oAuthClient;
 
     public CloudControllerRestClientHttpRequestFactory(ClientHttpRequestFactory delegate, CloudCredentials credentials,
-        OAuthClient oAuthClient) {
+                                                       OAuthClient oAuthClient) {
         this.delegate = delegate;
         this.credentials = credentials;
         this.oAuthClient = oAuthClient;
@@ -37,12 +37,12 @@ public class CloudControllerRestClientHttpRequestFactory implements ClientHttpRe
         String authorizationHeader = oAuthClient.getAuthorizationHeader();
         if (authorizationHeader != null) {
             request.getHeaders()
-                .add(AUTHORIZATION_HEADER_KEY, authorizationHeader);
+                   .add(AUTHORIZATION_HEADER_KEY, authorizationHeader);
         }
 
         if (credentials != null && credentials.getProxyUser() != null) {
             request.getHeaders()
-                .add(PROXY_USER_HEADER_KEY, credentials.getProxyUser());
+                   .add(PROXY_USER_HEADER_KEY, credentials.getProxyUser());
         }
 
         return request;

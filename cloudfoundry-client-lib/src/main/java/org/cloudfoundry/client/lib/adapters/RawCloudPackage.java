@@ -19,11 +19,11 @@ public abstract class RawCloudPackage extends RawCloudEntity<CloudPackage> {
     public CloudPackage derive() {
         Package resource = getResource();
         return ImmutableCloudPackage.builder()
-            .metadata(parseResourceMetadata(resource))
-            .status(parseStatus(resource))
-            .data(parseData(resource))
-            .type(parseType(resource))
-            .build();
+                                    .metadata(parseResourceMetadata(resource))
+                                    .status(parseStatus(resource))
+                                    .data(parseData(resource))
+                                    .type(parseType(resource))
+                                    .build();
     }
 
     private static Status parseStatus(Package resource) {
@@ -39,17 +39,17 @@ public abstract class RawCloudPackage extends RawCloudEntity<CloudPackage> {
 
     private static CloudPackage.Data parseBitsData(BitsData data) {
         return ImmutableCloudPackage.ImmutableData.builder()
-            .checksum(parseChecksum(data.getChecksum()))
-            .error(data.getError())
-            .build();
+                                                  .checksum(parseChecksum(data.getChecksum()))
+                                                  .error(data.getError())
+                                                  .build();
     }
 
     private static CloudPackage.Checksum parseChecksum(Checksum checksum) {
         return ImmutableCloudPackage.ImmutableChecksum.builder()
-            .algorithm(checksum.getType()
-                .toString())
-            .value(checksum.getValue())
-            .build();
+                                                      .algorithm(checksum.getType()
+                                                                         .toString())
+                                                      .value(checksum.getValue())
+                                                      .build();
     }
 
     private static CloudPackage.Type parseType(Package resource) {

@@ -28,25 +28,25 @@ public abstract class RawCloudService extends RawCloudEntity<CloudService> {
         Resource<UnionServiceInstanceEntity> resource = getResource();
         UnionServiceInstanceEntity entity = resource.getEntity();
         return ImmutableCloudService.builder()
-            .metadata(parseResourceMetadata(resource))
-            .name(entity.getName())
-            .plan(parsePlan(getServicePlanResource()))
-            .label(parseLabel(getServiceResource()))
-            .build();
+                                    .metadata(parseResourceMetadata(resource))
+                                    .name(entity.getName())
+                                    .plan(parsePlan(getServicePlanResource()))
+                                    .label(parseLabel(getServiceResource()))
+                                    .build();
     }
 
     private static String parsePlan(Resource<ServicePlanEntity> resource) {
         return Optional.ofNullable(resource)
-            .map(Resource::getEntity)
-            .map(ServicePlanEntity::getName)
-            .orElse(null);
+                       .map(Resource::getEntity)
+                       .map(ServicePlanEntity::getName)
+                       .orElse(null);
     }
 
     private static String parseLabel(Resource<ServiceEntity> serviceResource) {
         return Optional.ofNullable(serviceResource)
-            .map(Resource::getEntity)
-            .map(ServiceEntity::getLabel)
-            .orElse(null);
+                       .map(Resource::getEntity)
+                       .map(ServiceEntity::getLabel)
+                       .orElse(null);
     }
 
 }

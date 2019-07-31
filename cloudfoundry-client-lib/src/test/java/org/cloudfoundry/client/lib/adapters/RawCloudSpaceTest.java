@@ -18,9 +18,9 @@ public class RawCloudSpaceTest {
 
     private static CloudSpace buildExpectedSpace() {
         return ImmutableCloudSpace.builder()
-            .metadata(RawCloudEntityTest.EXPECTED_METADATA)
-            .name(NAME)
-            .build();
+                                  .metadata(RawCloudEntityTest.EXPECTED_METADATA)
+                                  .name(NAME)
+                                  .build();
     }
 
     private static RawCloudSpace buildRawSpace() {
@@ -29,15 +29,15 @@ public class RawCloudSpaceTest {
 
     private static Resource<SpaceEntity> buildTestResource() {
         return SpaceResource.builder()
-            .metadata(RawCloudEntityTest.METADATA)
-            .entity(buildTestEntity())
-            .build();
+                            .metadata(RawCloudEntityTest.METADATA)
+                            .entity(buildTestEntity())
+                            .build();
     }
 
     private static SpaceEntity buildTestEntity() {
         return SpaceEntity.builder()
-            .name(NAME)
-            .build();
+                          .name(NAME)
+                          .build();
     }
 
 }

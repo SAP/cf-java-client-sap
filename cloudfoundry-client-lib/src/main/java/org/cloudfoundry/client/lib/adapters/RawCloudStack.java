@@ -17,10 +17,10 @@ public abstract class RawCloudStack extends RawCloudEntity<CloudStack> {
         Resource<StackEntity> resource = getResource();
         StackEntity entity = resource.getEntity();
         return ImmutableCloudStack.builder()
-            .metadata(parseResourceMetadata(resource))
-            .name(entity.getName())
-            .description(entity.getDescription())
-            .build();
+                                  .metadata(parseResourceMetadata(resource))
+                                  .name(entity.getName())
+                                  .description(entity.getDescription())
+                                  .build();
     }
 
 }

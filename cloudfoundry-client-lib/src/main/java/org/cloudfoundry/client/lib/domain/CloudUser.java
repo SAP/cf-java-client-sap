@@ -24,5 +24,5 @@ public interface CloudUser extends CloudEntity, Derivable<CloudUser> {
     default CloudUser derive() {
         return this;
     }
-    
+
 }

@@ -30,50 +30,50 @@ public class RawCloudRouteTest {
 
     private static CloudRoute buildExpectedRoute() {
         return ImmutableCloudRoute.builder()
-            .metadata(RawCloudEntityTest.EXPECTED_METADATA)
-            .host(HOST)
-            .domain(DOMAIN)
-            .appsUsingRoute(APPS_USING_ROUTE)
-            .build();
+                                  .metadata(RawCloudEntityTest.EXPECTED_METADATA)
+                                  .host(HOST)
+                                  .domain(DOMAIN)
+                                  .appsUsingRoute(APPS_USING_ROUTE)
+                                  .build();
     }
 
     private static RawCloudRoute buildRawRoute() {
         return ImmutableRawCloudRoute.builder()
-            .resource(buildTestResource())
-            .domain(DOMAIN)
-            .routeMappingResources(ROUTE_MAPPINGS)
-            .build();
+                                     .resource(buildTestResource())
+                                     .domain(DOMAIN)
+                                     .routeMappingResources(ROUTE_MAPPINGS)
+                                     .build();
     }
 
     private static Resource<RouteEntity> buildTestResource() {
         return RouteResource.builder()
-            .metadata(RawCloudEntityTest.METADATA)
-            .entity(buildTestEntity())
-            .build();
+                            .metadata(RawCloudEntityTest.METADATA)
+                            .entity(buildTestEntity())
+                            .build();
     }
 
     private static RouteEntity buildTestEntity() {
         return RouteEntity.builder()
-            .host(HOST)
-            .build();
+                          .host(HOST)
+                          .build();
     }
 
     private static CloudDomain buildTestDomain() {
         return ImmutableCloudDomain.builder()
-            .metadata(RawCloudEntityTest.EXPECTED_METADATA)
-            .name(DOMAIN_NAME)
-            .build();
+                                   .metadata(RawCloudEntityTest.EXPECTED_METADATA)
+                                   .name(DOMAIN_NAME)
+                                   .build();
     }
 
     private static List<Resource<RouteMappingEntity>> buildTestRouteMappings(int count) {
         return Stream.generate(RawCloudRouteTest::buildTestRouteMapping)
-            .limit(count)
-            .collect(Collectors.toList());
+                     .limit(count)
+                     .collect(Collectors.toList());
     }
 
     private static Resource<RouteMappingEntity> buildTestRouteMapping() {
         return RouteMappingResource.builder()
-            .build();
+                                   .build();
     }
 
 }

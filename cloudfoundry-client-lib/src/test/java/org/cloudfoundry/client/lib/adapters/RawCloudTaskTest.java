@@ -28,18 +28,18 @@ public class RawCloudTaskTest {
 
     private static CloudTask buildExpectedTask() {
         return ImmutableCloudTask.builder()
-            .metadata(RawCloudEntityTest.EXPECTED_METADATA_PARSED_FROM_V3_RESOURCE)
-            .name(NAME)
-            .command(COMMAND)
-            .limits(ImmutableCloudTask.ImmutableLimits.builder()
-                .disk(DISK_IN_MB)
-                .memory(MEMORY_IN_MB)
-                .build())
-            .result(ImmutableCloudTask.ImmutableResult.builder()
-                .failureReason(FAILURE_REASON)
-                .build())
-            .state(EXPECTED_STATE)
-            .build();
+                                 .metadata(RawCloudEntityTest.EXPECTED_METADATA_PARSED_FROM_V3_RESOURCE)
+                                 .name(NAME)
+                                 .command(COMMAND)
+                                 .limits(ImmutableCloudTask.ImmutableLimits.builder()
+                                                                           .disk(DISK_IN_MB)
+                                                                           .memory(MEMORY_IN_MB)
+                                                                           .build())
+                                 .result(ImmutableCloudTask.ImmutableResult.builder()
+                                                                           .failureReason(FAILURE_REASON)
+                                                                           .build())
+                                 .state(EXPECTED_STATE)
+                                 .build();
     }
 
     private static RawCloudTask buildRawTask() {
@@ -48,24 +48,24 @@ public class RawCloudTaskTest {
 
     private static Task buildTestResource() {
         return TaskResource.builder()
-            .id(RawCloudEntityTest.GUID_STRING)
-            .createdAt(RawCloudEntityTest.CREATED_AT_STRING)
-            .updatedAt(RawCloudEntityTest.UPDATED_AT_STRING)
-            .name(NAME)
-            .command(COMMAND)
-            .diskInMb(DISK_IN_MB)
-            .memoryInMb(MEMORY_IN_MB)
-            .state(STATE)
-            .result(buildTestResult())
-            .dropletId(DROPLET_ID)
-            .sequenceId(SEQUENCE_ID)
-            .build();
+                           .id(RawCloudEntityTest.GUID_STRING)
+                           .createdAt(RawCloudEntityTest.CREATED_AT_STRING)
+                           .updatedAt(RawCloudEntityTest.UPDATED_AT_STRING)
+                           .name(NAME)
+                           .command(COMMAND)
+                           .diskInMb(DISK_IN_MB)
+                           .memoryInMb(MEMORY_IN_MB)
+                           .state(STATE)
+                           .result(buildTestResult())
+                           .dropletId(DROPLET_ID)
+                           .sequenceId(SEQUENCE_ID)
+                           .build();
     }
 
     private static Result buildTestResult() {
         return Result.builder()
-            .failureReason(FAILURE_REASON)
-            .build();
+                     .failureReason(FAILURE_REASON)
+                     .build();
     }
 
 }

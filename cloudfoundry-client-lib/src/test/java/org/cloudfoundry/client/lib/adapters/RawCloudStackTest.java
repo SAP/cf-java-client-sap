@@ -18,9 +18,9 @@ public class RawCloudStackTest {
 
     private static CloudStack buildExpectedStack() {
         return ImmutableCloudStack.builder()
-            .metadata(RawCloudEntityTest.EXPECTED_METADATA)
-            .name(NAME)
-            .build();
+                                  .metadata(RawCloudEntityTest.EXPECTED_METADATA)
+                                  .name(NAME)
+                                  .build();
     }
 
     private static RawCloudStack buildRawStack() {
@@ -29,15 +29,15 @@ public class RawCloudStackTest {
 
     private static Resource<StackEntity> buildTestResource() {
         return StackResource.builder()
-            .metadata(RawCloudEntityTest.METADATA)
-            .entity(buildTestEntity())
-            .build();
+                            .metadata(RawCloudEntityTest.METADATA)
+                            .entity(buildTestEntity())
+                            .build();
     }
 
     private static StackEntity buildTestEntity() {
         return StackEntity.builder()
-            .name(NAME)
-            .build();
+                          .name(NAME)
+                          .build();
     }
 
 }

@@ -48,12 +48,12 @@ public class OAuthClientWithLoginHint extends OAuthClient {
     private TokenProvider createTokenProvider() {
         String loginHintAsJson = JsonUtil.convertToJson(loginHintMap);
         return PasswordGrantTokenProvider.builder()
-            .clientId(credentials.getClientId())
-            .clientSecret(credentials.getClientSecret())
-            .username(credentials.getEmail())
-            .password(credentials.getPassword())
-            .loginHint(loginHintAsJson)
-            .build();
+                                         .clientId(credentials.getClientId())
+                                         .clientSecret(credentials.getClientSecret())
+                                         .username(credentials.getEmail())
+                                         .password(credentials.getPassword())
+                                         .loginHint(loginHintAsJson)
+                                         .build();
     }
 
     @Override
@@ -63,7 +63,7 @@ public class OAuthClientWithLoginHint extends OAuthClient {
 
     private OAuth2AccessToken getOrRefreshToken() {
         String token = getTokenProvider().getToken(connectionContext)
-            .block();
+                                         .block();
         return new DefaultOAuth2AccessToken(getTokenValue(token));
     }
 

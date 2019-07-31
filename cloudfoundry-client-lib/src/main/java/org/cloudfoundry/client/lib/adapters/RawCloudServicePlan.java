@@ -17,14 +17,14 @@ public abstract class RawCloudServicePlan extends RawCloudEntity<CloudServicePla
         Resource<ServicePlanEntity> resource = getResource();
         ServicePlanEntity entity = resource.getEntity();
         return ImmutableCloudServicePlan.builder()
-            .metadata(parseResourceMetadata(resource))
-            .name(entity.getName())
-            .description(entity.getDescription())
-            .extra(entity.getExtra())
-            .uniqueId(entity.getUniqueId())
-            .isPublic(entity.getPubliclyVisible())
-            .isFree(entity.getFree())
-            .build();
+                                        .metadata(parseResourceMetadata(resource))
+                                        .name(entity.getName())
+                                        .description(entity.getDescription())
+                                        .extra(entity.getExtra())
+                                        .uniqueId(entity.getUniqueId())
+                                        .isPublic(entity.getPubliclyVisible())
+                                        .isFree(entity.getFree())
+                                        .build();
     }
 
 }

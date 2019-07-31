@@ -93,7 +93,7 @@ public interface CloudControllerRestClient {
     void createApplication(String applicationName, Staging staging, Integer memory, List<String> uris, List<String> serviceNames);
 
     void createApplication(String applicationName, Staging staging, Integer disk, Integer memory, List<String> uris,
-        List<String> serviceNames, DockerInfo dockerInfo);
+                           List<String> serviceNames, DockerInfo dockerInfo);
 
     // Service methods
 

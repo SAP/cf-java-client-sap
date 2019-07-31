@@ -41,41 +41,41 @@ public class RawCloudEventTest {
 
     private CloudEvent buildExpectedEvent() {
         return ImmutableCloudEvent.builder()
-            .metadata(RawCloudEntityTest.EXPECTED_METADATA)
-            .actee(buildExpectedActee())
-            .actor(buildExpectedActor())
-            .timestamp(TIMESTAMP)
-            .type(TYPE)
-            .build();
+                                  .metadata(RawCloudEntityTest.EXPECTED_METADATA)
+                                  .actee(buildExpectedActee())
+                                  .actor(buildExpectedActor())
+                                  .timestamp(TIMESTAMP)
+                                  .type(TYPE)
+                                  .build();
     }
 
     private Participant buildExpectedActee() {
         return ImmutableParticipant.builder()
-            .guid(ACTEE_GUID)
-            .name(ACTEE_NAME)
-            .type(ACTEE_TYPE)
-            .build();
+                                   .guid(ACTEE_GUID)
+                                   .name(ACTEE_NAME)
+                                   .type(ACTEE_TYPE)
+                                   .build();
     }
 
     private Participant buildExpectedActor() {
         return ImmutableParticipant.builder()
-            .guid(ACTOR_GUID)
-            .name(ACTOR_NAME)
-            .type(ACTOR_TYPE)
-            .build();
+                                   .guid(ACTOR_GUID)
+                                   .name(ACTOR_NAME)
+                                   .type(ACTOR_TYPE)
+                                   .build();
     }
 
     private CloudEvent buildEmptyExpectedEvent() {
         return ImmutableCloudEvent.builder()
-            .metadata(RawCloudEntityTest.EXPECTED_METADATA)
-            .actee(buildEmptyParticipant())
-            .actor(buildEmptyParticipant())
-            .build();
+                                  .metadata(RawCloudEntityTest.EXPECTED_METADATA)
+                                  .actee(buildEmptyParticipant())
+                                  .actor(buildEmptyParticipant())
+                                  .build();
     }
 
     private Participant buildEmptyParticipant() {
         return ImmutableParticipant.builder()
-            .build();
+                                   .build();
     }
 
     private RawCloudEvent buildRawEvent() {
@@ -84,22 +84,22 @@ public class RawCloudEventTest {
 
     private Resource<EventEntity> buildTestResource() {
         return EventResource.builder()
-            .metadata(RawCloudEntityTest.METADATA)
-            .entity(buildTestEntity())
-            .build();
+                            .metadata(RawCloudEntityTest.METADATA)
+                            .entity(buildTestEntity())
+                            .build();
     }
 
     private EventEntity buildTestEntity() {
         return EventEntity.builder()
-            .actee(ACTEE_GUID_STRING)
-            .acteeName(ACTEE_NAME)
-            .acteeType(ACTEE_TYPE)
-            .actor(ACTOR_GUID_STRING)
-            .actorName(ACTOR_NAME)
-            .actorType(ACTOR_TYPE)
-            .timestamp(TIMESTAMP_STRING)
-            .type(TYPE)
-            .build();
+                          .actee(ACTEE_GUID_STRING)
+                          .acteeName(ACTEE_NAME)
+                          .acteeType(ACTEE_TYPE)
+                          .actor(ACTOR_GUID_STRING)
+                          .actorName(ACTOR_NAME)
+                          .actorType(ACTOR_TYPE)
+                          .timestamp(TIMESTAMP_STRING)
+                          .type(TYPE)
+                          .build();
     }
 
     private RawCloudEvent buildEmptyRawEvent() {
@@ -108,14 +108,14 @@ public class RawCloudEventTest {
 
     private Resource<EventEntity> buildEmptyTestResource() {
         return EventResource.builder()
-            .metadata(RawCloudEntityTest.METADATA)
-            .entity(buildEmptyTestEntity())
-            .build();
+                            .metadata(RawCloudEntityTest.METADATA)
+                            .entity(buildEmptyTestEntity())
+                            .build();
     }
 
     private EventEntity buildEmptyTestEntity() {
         return EventEntity.builder()
-            .build();
+                          .build();
     }
 
 }

@@ -23,10 +23,10 @@ public abstract class RawCloudSpace extends RawCloudEntity<CloudSpace> {
         Resource<SpaceEntity> resource = getResource();
         SpaceEntity entity = resource.getEntity();
         return ImmutableCloudSpace.builder()
-            .metadata(parseResourceMetadata(resource))
-            .name(entity.getName())
-            .organization(deriveFromNullable(getOrganization()))
-            .build();
+                                  .metadata(parseResourceMetadata(resource))
+                                  .name(entity.getName())
+                                  .organization(deriveFromNullable(getOrganization()))
+                                  .build();
     }
 
 }

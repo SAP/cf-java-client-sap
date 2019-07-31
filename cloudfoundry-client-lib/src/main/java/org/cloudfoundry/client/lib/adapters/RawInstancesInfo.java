@@ -24,22 +24,22 @@ public abstract class RawInstancesInfo extends RawCloudEntity<InstancesInfo> {
     public InstancesInfo derive() {
         ApplicationInstancesResponse instancesResponse = getInstancesResponse();
         return ImmutableInstancesInfo.builder()
-            .instances(parseInstancesMap(instancesResponse.getInstances()))
-            .build();
+                                     .instances(parseInstancesMap(instancesResponse.getInstances()))
+                                     .build();
     }
 
     private static List<InstanceInfo> parseInstancesMap(Map<String, ApplicationInstanceInfo> instances) {
         return instances.entrySet()
-            .stream()
-            .map(RawInstancesInfo::parseInstance)
-            .collect(Collectors.toList());
+                        .stream()
+                        .map(RawInstancesInfo::parseInstance)
+                        .collect(Collectors.toList());
     }
 
     private static InstanceInfo parseInstance(Map.Entry<String, ApplicationInstanceInfo> instance) {
         return ImmutableInstanceInfo.builder()
-            .index(parseIndex(instance))
-            .state(parseState(instance))
-            .build();
+                                    .index(parseIndex(instance))
+                                    .state(parseState(instance))
+                                    .build();
     }
 
     private static int parseIndex(Entry<String, ApplicationInstanceInfo> instance) {
@@ -48,7 +48,7 @@ public abstract class RawInstancesInfo extends RawCloudEntity<InstancesInfo> {
 
     private static InstanceState parseState(Entry<String, ApplicationInstanceInfo> instance) {
         return InstanceState.valueOfWithDefault(instance.getValue()
-            .getState());
+                                                        .getState());
     }
 
 }

@@ -18,9 +18,9 @@ public class RawCloudSharedDomainTest {
 
     private static CloudDomain buildExpectedDomain() {
         return ImmutableCloudDomain.builder()
-            .metadata(RawCloudEntityTest.EXPECTED_METADATA)
-            .name(DOMAIN_NAME)
-            .build();
+                                   .metadata(RawCloudEntityTest.EXPECTED_METADATA)
+                                   .name(DOMAIN_NAME)
+                                   .build();
     }
 
     private static RawCloudSharedDomain buildRawDomain() {
@@ -29,15 +29,15 @@ public class RawCloudSharedDomainTest {
 
     private static Resource<SharedDomainEntity> buildTestResource() {
         return SharedDomainResource.builder()
-            .metadata(RawCloudEntityTest.METADATA)
-            .entity(buildTestEntity())
-            .build();
+                                   .metadata(RawCloudEntityTest.METADATA)
+                                   .entity(buildTestEntity())
+                                   .build();
     }
 
     private static SharedDomainEntity buildTestEntity() {
         return SharedDomainEntity.builder()
-            .name(DOMAIN_NAME)
-            .build();
+                                 .name(DOMAIN_NAME)
+                                 .build();
     }
 
 }

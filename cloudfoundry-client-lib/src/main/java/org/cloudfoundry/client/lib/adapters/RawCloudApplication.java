@@ -45,21 +45,21 @@ public abstract class RawCloudApplication extends RawCloudEntity<CloudApplicatio
     public CloudApplication derive() {
         SummaryApplicationResponse summary = getSummary();
         return ImmutableCloudApplication.builder()
-            .metadata(parseResourceMetadata(getResource()))
-            .name(summary.getName())
-            .memory(summary.getMemory())
-            .uris(toUrlStrings(summary.getRoutes()))
-            .diskQuota(summary.getDiskQuota())
-            .instances(summary.getInstances())
-            .runningInstances(summary.getRunningInstances())
-            .state(parseState(summary.getState()))
-            .staging(parseStaging(summary, getStack()))
-            .packageState(parsePackageState(summary.getPackageState()))
-            .stagingError(summary.getStagingFailedDescription())
-            .services(getNames(summary.getServices()))
-            .env(parseEnv(summary.getEnvironmentJsons()))
-            .space(getSpace().derive())
-            .build();
+                                        .metadata(parseResourceMetadata(getResource()))
+                                        .name(summary.getName())
+                                        .memory(summary.getMemory())
+                                        .uris(toUrlStrings(summary.getRoutes()))
+                                        .diskQuota(summary.getDiskQuota())
+                                        .instances(summary.getInstances())
+                                        .runningInstances(summary.getRunningInstances())
+                                        .state(parseState(summary.getState()))
+                                        .staging(parseStaging(summary, getStack()))
+                                        .packageState(parsePackageState(summary.getPackageState()))
+                                        .stagingError(summary.getStagingFailedDescription())
+                                        .services(getNames(summary.getServices()))
+                                        .env(parseEnv(summary.getEnvironmentJsons()))
+                                        .space(getSpace().derive())
+                                        .build();
     }
 
     private static CloudApplication.State parseState(String state) {
@@ -68,16 +68,16 @@ public abstract class RawCloudApplication extends RawCloudEntity<CloudApplicatio
 
     private static Staging parseStaging(SummaryApplicationResponse summary, Derivable<CloudStack> stack) {
         return ImmutableStaging.builder()
-            .buildpackUrl(summary.getBuildpack())
-            .command(summary.getCommand())
-            .detectedBuildpack(summary.getDetectedBuildpack())
-            .healthCheckHttpEndpoint(summary.getHealthCheckHttpEndpoint())
-            .healthCheckTimeout(summary.getHealthCheckTimeout())
-            .healthCheckType(summary.getHealthCheckType())
-            .isSshEnabled(summary.getEnableSsh())
-            .dockerInfo(parseDockerInfo(summary))
-            .stack(parseStackName(stack))
-            .build();
+                               .buildpackUrl(summary.getBuildpack())
+                               .command(summary.getCommand())
+                               .detectedBuildpack(summary.getDetectedBuildpack())
+                               .healthCheckHttpEndpoint(summary.getHealthCheckHttpEndpoint())
+                               .healthCheckTimeout(summary.getHealthCheckTimeout())
+                               .healthCheckType(summary.getHealthCheckType())
+                               .isSshEnabled(summary.getEnableSsh())
+                               .dockerInfo(parseDockerInfo(summary))
+                               .stack(parseStackName(stack))
+                               .build();
     }
 
     private static DockerInfo parseDockerInfo(SummaryApplicationResponse summary) {
@@ -86,9 +86,9 @@ public abstract class RawCloudApplication extends RawCloudEntity<CloudApplicatio
             return null;
         }
         return ImmutableDockerInfo.builder()
-            .image(image)
-            .credentials(parseDockerCredentials(summary))
-            .build();
+                                  .image(image)
+                                  .credentials(parseDockerCredentials(summary))
+                                  .build();
     }
 
     private static DockerCredentials parseDockerCredentials(SummaryApplicationResponse summary) {
@@ -97,14 +97,14 @@ public abstract class RawCloudApplication extends RawCloudEntity<CloudApplicatio
             return null;
         }
         return ImmutableDockerCredentials.builder()
-            .username(credentials.getUsername())
-            .password(credentials.getPassword())
-            .build();
+                                         .username(credentials.getUsername())
+                                         .password(credentials.getPassword())
+                                         .build();
     }
 
     private static String parseStackName(Derivable<CloudStack> derivableStack) {
         return derivableStack.derive()
-            .getName();
+                             .getName();
     }
 
     private static PackageState parsePackageState(String state) {
@@ -113,8 +113,8 @@ public abstract class RawCloudApplication extends RawCloudEntity<CloudApplicatio
 
     private static List<String> toUrlStrings(List<org.cloudfoundry.client.v2.routes.Route> routes) {
         return routes.stream()
-            .map(RawCloudApplication::toUrlString)
-            .collect(Collectors.toList());
+                     .map(RawCloudApplication::toUrlString)
+                     .collect(Collectors.toList());
     }
 
     private static String toUrlString(org.cloudfoundry.client.v2.routes.Route route) {
@@ -136,8 +136,8 @@ public abstract class RawCloudApplication extends RawCloudEntity<CloudApplicatio
 
     private static void appendDomain(StringBuilder url, Route route) {
         Optional.ofNullable(route.getDomain())
-            .map(Domain::getName)
-            .ifPresent(url::append);
+                .map(Domain::getName)
+                .ifPresent(url::append);
     }
 
     private static void appendPort(StringBuilder url, Route route) {
@@ -158,8 +158,8 @@ public abstract class RawCloudApplication extends RawCloudEntity<CloudApplicatio
 
     private static List<String> getNames(List<ServiceInstance> services) {
         return services.stream()
-            .map(ServiceInstance::getName)
-            .collect(Collectors.toList());
+                       .map(ServiceInstance::getName)
+                       .collect(Collectors.toList());
     }
 
     private static Map<String, String> parseEnv(Map<String, Object> env) {

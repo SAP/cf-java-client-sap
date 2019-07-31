@@ -35,13 +35,13 @@ public class RawCloudServiceBindingTest {
 
     private static CloudServiceBinding buildExpectedServiceBinding(Map<String, Object> parameters) {
         return ImmutableCloudServiceBinding.builder()
-            .metadata(RawCloudEntityTest.EXPECTED_METADATA)
-            .applicationGuid(APPLICATION_GUID)
-            .syslogDrainUrl(SYSLOG_DRAIN_URL)
-            .bindingOptions(PARAMETERS)
-            .bindingParameters(parameters)
-            .credentials(PARAMETERS)
-            .build();
+                                           .metadata(RawCloudEntityTest.EXPECTED_METADATA)
+                                           .applicationGuid(APPLICATION_GUID)
+                                           .syslogDrainUrl(SYSLOG_DRAIN_URL)
+                                           .bindingOptions(PARAMETERS)
+                                           .bindingParameters(parameters)
+                                           .credentials(PARAMETERS)
+                                           .build();
     }
 
     private static RawCloudServiceBinding buildRawServiceBinding() {
@@ -50,25 +50,25 @@ public class RawCloudServiceBindingTest {
 
     private static RawCloudServiceBinding buildRawServiceBinding(Map<String, Object> parameters) {
         return ImmutableRawCloudServiceBinding.builder()
-            .resource(buildTestResource())
-            .parameters(parameters)
-            .build();
+                                              .resource(buildTestResource())
+                                              .parameters(parameters)
+                                              .build();
     }
 
     private static Resource<ServiceBindingEntity> buildTestResource() {
         return ServiceBindingResource.builder()
-            .metadata(RawCloudEntityTest.METADATA)
-            .entity(buildTestEntity())
-            .build();
+                                     .metadata(RawCloudEntityTest.METADATA)
+                                     .entity(buildTestEntity())
+                                     .build();
     }
 
     private static ServiceBindingEntity buildTestEntity() {
         return ServiceBindingEntity.builder()
-            .applicationId(APPLICATION_GUID_STRING)
-            .syslogDrainUrl(SYSLOG_DRAIN_URL)
-            .bindingOptions(PARAMETERS)
-            .credentials(PARAMETERS)
-            .build();
+                                   .applicationId(APPLICATION_GUID_STRING)
+                                   .syslogDrainUrl(SYSLOG_DRAIN_URL)
+                                   .bindingOptions(PARAMETERS)
+                                   .credentials(PARAMETERS)
+                                   .build();
     }
 
     private static Map<String, Object> buildTestParameters() {

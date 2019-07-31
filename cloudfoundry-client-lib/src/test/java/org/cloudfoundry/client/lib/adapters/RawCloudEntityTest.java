@@ -33,23 +33,23 @@ public class RawCloudEntityTest {
     static final Date UPDATED_AT = fromZonedDateTime(ZonedDateTime.of(2019, 3, 21, 12, 29, 24, 0, ZoneId.of("Z")));
 
     static final Metadata METADATA = Metadata.builder()
-        .id(GUID_STRING)
-        .createdAt(CREATED_AT_STRING)
-        .updatedAt(UPDATED_AT_STRING)
-        .url(URL_STRING)
-        .build();
+                                             .id(GUID_STRING)
+                                             .createdAt(CREATED_AT_STRING)
+                                             .updatedAt(UPDATED_AT_STRING)
+                                             .url(URL_STRING)
+                                             .build();
 
     static final CloudMetadata EXPECTED_METADATA_PARSED_FROM_V3_RESOURCE = ImmutableCloudMetadata.builder()
-        .guid(GUID)
-        .createdAt(CREATED_AT)
-        .updatedAt(UPDATED_AT)
-        .build();
+                                                                                                 .guid(GUID)
+                                                                                                 .createdAt(CREATED_AT)
+                                                                                                 .updatedAt(UPDATED_AT)
+                                                                                                 .build();
     static final CloudMetadata EXPECTED_METADATA = ImmutableCloudMetadata.builder()
-        .guid(GUID)
-        .createdAt(CREATED_AT)
-        .updatedAt(UPDATED_AT)
-        .url(URL_STRING)
-        .build();
+                                                                         .guid(GUID)
+                                                                         .createdAt(CREATED_AT)
+                                                                         .updatedAt(UPDATED_AT)
+                                                                         .url(URL_STRING)
+                                                                         .build();
 
     static Date fromZonedDateTime(ZonedDateTime dateTime) {
         return Date.from(dateTime.toInstant());
@@ -57,15 +57,14 @@ public class RawCloudEntityTest {
 
     @Test
     public void testParseV2ResourceMetadata() {
-        org.cloudfoundry.client.v2.applications.ApplicationResource resource = org.cloudfoundry.client.v2.applications.ApplicationResource
-            .builder()
-            .metadata(Metadata.builder()
-                .id(GUID_STRING)
-                .createdAt(CREATED_AT_STRING)
-                .updatedAt(UPDATED_AT_STRING)
-                .url(URL_STRING)
-                .build())
-            .build();
+        org.cloudfoundry.client.v2.applications.ApplicationResource resource = org.cloudfoundry.client.v2.applications.ApplicationResource.builder()
+                                                                                                                                          .metadata(Metadata.builder()
+                                                                                                                                                            .id(GUID_STRING)
+                                                                                                                                                            .createdAt(CREATED_AT_STRING)
+                                                                                                                                                            .updatedAt(UPDATED_AT_STRING)
+                                                                                                                                                            .url(URL_STRING)
+                                                                                                                                                            .build())
+                                                                                                                                          .build();
 
         CloudMetadata metadata = RawCloudEntity.parseResourceMetadata(resource);
         assertEquals(EXPECTED_METADATA, metadata);
@@ -73,13 +72,12 @@ public class RawCloudEntityTest {
 
     @Test
     public void testParseV3ResourceMetadata() {
-        org.cloudfoundry.client.v3.organizations.Organization resource = org.cloudfoundry.client.v3.organizations.OrganizationResource
-            .builder()
-            .id(GUID_STRING)
-            .createdAt(CREATED_AT_STRING)
-            .updatedAt(UPDATED_AT_STRING)
-            .name(NAME)
-            .build();
+        org.cloudfoundry.client.v3.organizations.Organization resource = org.cloudfoundry.client.v3.organizations.OrganizationResource.builder()
+                                                                                                                                      .id(GUID_STRING)
+                                                                                                                                      .createdAt(CREATED_AT_STRING)
+                                                                                                                                      .updatedAt(UPDATED_AT_STRING)
+                                                                                                                                      .name(NAME)
+                                                                                                                                      .build();
 
         CloudMetadata metadata = RawCloudEntity.parseResourceMetadata(resource);
         assertEquals(EXPECTED_METADATA_PARSED_FROM_V3_RESOURCE, metadata);
@@ -128,7 +126,8 @@ public class RawCloudEntityTest {
 
     @Test
     public void testParseEnumWithIncompatibleEnumTypes() {
-        Assertions.assertThrows(IllegalArgumentException.class, () -> RawCloudEntity.parseEnum(ApplicationState.STARTED, CloudBuild.State.class));
+        Assertions.assertThrows(IllegalArgumentException.class,
+                                () -> RawCloudEntity.parseEnum(ApplicationState.STARTED, CloudBuild.State.class));
     }
 
     @Test

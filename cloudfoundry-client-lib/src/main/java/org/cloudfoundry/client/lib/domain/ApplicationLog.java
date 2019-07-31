@@ -12,7 +12,7 @@ public class ApplicationLog implements Comparable<ApplicationLog> {
     private Date timestamp;
 
     public ApplicationLog(String applicationGuid, String message, Date timestamp, MessageType messageType, String sourceName,
-        String sourceId) {
+                          String sourceId) {
         this.applicationGuid = applicationGuid;
         this.message = message;
         this.timestamp = timestamp;

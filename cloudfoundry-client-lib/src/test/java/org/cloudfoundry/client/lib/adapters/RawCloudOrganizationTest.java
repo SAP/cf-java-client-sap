@@ -18,9 +18,9 @@ public class RawCloudOrganizationTest {
 
     private static CloudOrganization buildExpectedOrganization() {
         return ImmutableCloudOrganization.builder()
-            .metadata(RawCloudEntityTest.EXPECTED_METADATA)
-            .name(ORGANIZATION_NAME)
-            .build();
+                                         .metadata(RawCloudEntityTest.EXPECTED_METADATA)
+                                         .name(ORGANIZATION_NAME)
+                                         .build();
     }
 
     private static RawCloudOrganization buildRawOrganization() {
@@ -29,15 +29,15 @@ public class RawCloudOrganizationTest {
 
     private static Resource<OrganizationEntity> buildTestResource() {
         return OrganizationResource.builder()
-            .metadata(RawCloudEntityTest.METADATA)
-            .entity(buildTestEntity())
-            .build();
+                                   .metadata(RawCloudEntityTest.METADATA)
+                                   .entity(buildTestEntity())
+                                   .build();
     }
 
     private static OrganizationEntity buildTestEntity() {
         return OrganizationEntity.builder()
-            .name(ORGANIZATION_NAME)
-            .build();
+                                 .name(ORGANIZATION_NAME)
+                                 .build();
     }
 
 }

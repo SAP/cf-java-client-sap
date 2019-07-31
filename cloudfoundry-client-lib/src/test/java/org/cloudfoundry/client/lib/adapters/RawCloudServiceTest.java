@@ -29,69 +29,69 @@ public class RawCloudServiceTest {
 
     private static CloudService buildExpectedService() {
         return ImmutableCloudService.builder()
-            .metadata(RawCloudEntityTest.EXPECTED_METADATA)
-            .name(NAME)
-            .plan(PLAN_NAME)
-            .label(OFFERING_NAME)
-            .build();
+                                    .metadata(RawCloudEntityTest.EXPECTED_METADATA)
+                                    .name(NAME)
+                                    .plan(PLAN_NAME)
+                                    .label(OFFERING_NAME)
+                                    .build();
     }
 
     private static CloudService buildExpectedUserProvidedService() {
         return ImmutableCloudService.builder()
-            .metadata(RawCloudEntityTest.EXPECTED_METADATA)
-            .name(NAME)
-            .build();
+                                    .metadata(RawCloudEntityTest.EXPECTED_METADATA)
+                                    .name(NAME)
+                                    .build();
     }
 
     private static RawCloudService buildRawService() {
         return ImmutableRawCloudService.builder()
-            .resource(buildTestResource())
-            .servicePlanResource(buildTestServicePlanResource())
-            .serviceResource(buildTestServiceResource())
-            .build();
+                                       .resource(buildTestResource())
+                                       .servicePlanResource(buildTestServicePlanResource())
+                                       .serviceResource(buildTestServiceResource())
+                                       .build();
     }
 
     private static RawCloudService buildRawUserProvidedService() {
         return ImmutableRawCloudService.builder()
-            .resource(buildTestResource())
-            .build();
+                                       .resource(buildTestResource())
+                                       .build();
     }
 
     private static Resource<UnionServiceInstanceEntity> buildTestResource() {
         return UnionServiceInstanceResource.builder()
-            .metadata(RawCloudEntityTest.METADATA)
-            .entity(buildTestEntity())
-            .build();
+                                           .metadata(RawCloudEntityTest.METADATA)
+                                           .entity(buildTestEntity())
+                                           .build();
     }
 
     private static UnionServiceInstanceEntity buildTestEntity() {
         return UnionServiceInstanceEntity.builder()
-            .name(NAME)
-            .build();
+                                         .name(NAME)
+                                         .build();
     }
 
     private static Resource<ServicePlanEntity> buildTestServicePlanResource() {
         return ServicePlanResource.builder()
-            .entity(buildTestServicePlanEntity())
-            .build();
+                                  .entity(buildTestServicePlanEntity())
+                                  .build();
     }
 
     private static ServicePlanEntity buildTestServicePlanEntity() {
         return ServicePlanEntity.builder()
-            .name(PLAN_NAME)
-            .build();
+                                .name(PLAN_NAME)
+                                .build();
     }
 
     private static Resource<ServiceEntity> buildTestServiceResource() {
         return ServiceResource.builder()
-            .entity(buildTestServiceEntity())
-            .build();
+                              .entity(buildTestServiceEntity())
+                              .build();
     }
 
     private static ServiceEntity buildTestServiceEntity() {
         return ServiceEntity.builder()
-            .label(OFFERING_NAME)
-            .build();
+                            .label(OFFERING_NAME)
+                            .build();
     }
 
 }

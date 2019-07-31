@@ -21,34 +21,34 @@ public class RawCloudServiceBrokerTest {
 
     private static final CloudServiceBroker buildExpectedServiceBroker() {
         return ImmutableCloudServiceBroker.builder()
-            .metadata(RawCloudEntityTest.EXPECTED_METADATA)
-            .username(USERNAME)
-            .name(NAME)
-            .spaceGuid(SPACE_GUID_STRING)
-            .url(URL)
-            .build();
+                                          .metadata(RawCloudEntityTest.EXPECTED_METADATA)
+                                          .username(USERNAME)
+                                          .name(NAME)
+                                          .spaceGuid(SPACE_GUID_STRING)
+                                          .url(URL)
+                                          .build();
     }
 
     private static final RawCloudServiceBroker buildRawServiceBroker() {
         return ImmutableRawCloudServiceBroker.builder()
-            .resource(buildTestResource())
-            .build();
+                                             .resource(buildTestResource())
+                                             .build();
     }
 
     private static Resource<ServiceBrokerEntity> buildTestResource() {
         return ServiceBrokerResource.builder()
-            .metadata(RawCloudEntityTest.METADATA)
-            .entity(buildTestEntity())
-            .build();
+                                    .metadata(RawCloudEntityTest.METADATA)
+                                    .entity(buildTestEntity())
+                                    .build();
     }
 
     private static ServiceBrokerEntity buildTestEntity() {
         return ServiceBrokerEntity.builder()
-            .authenticationUsername(USERNAME)
-            .spaceId(SPACE_GUID_STRING)
-            .name(NAME)
-            .brokerUrl(URL)
-            .build();
+                                  .authenticationUsername(USERNAME)
+                                  .spaceId(SPACE_GUID_STRING)
+                                  .name(NAME)
+                                  .brokerUrl(URL)
+                                  .build();
     }
 
 }

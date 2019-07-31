@@ -10,8 +10,10 @@ public class CloudControllerException extends CloudOperationException {
     private static final String DEFAULT_CLOUD_CONTROLLER_ERROR_MESSAGE = "Controller operation failed: {0}";
 
     public CloudControllerException(CloudOperationException cloudOperationException) {
-        super(cloudOperationException.getStatusCode(), cloudOperationException.getStatusText(), cloudOperationException.getDescription(),
-            cloudOperationException);
+        super(cloudOperationException.getStatusCode(),
+              cloudOperationException.getStatusText(),
+              cloudOperationException.getDescription(),
+              cloudOperationException);
     }
 
     public CloudControllerException(HttpStatus statusCode) {

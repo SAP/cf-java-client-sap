@@ -17,9 +17,9 @@ public abstract class RawCloudOrganization extends RawCloudEntity<CloudOrganizat
         Resource<OrganizationEntity> resource = getResource();
         OrganizationEntity entity = resource.getEntity();
         return ImmutableCloudOrganization.builder()
-            .metadata(parseResourceMetadata(resource))
-            .name(entity.getName())
-            .build();
+                                         .metadata(parseResourceMetadata(resource))
+                                         .name(entity.getName())
+                                         .build();
     }
 
 }

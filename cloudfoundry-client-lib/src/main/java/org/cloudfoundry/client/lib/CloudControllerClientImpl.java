@@ -111,7 +111,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     public CloudControllerClientImpl(URL controllerUrl, CloudCredentials credentials, HttpProxyConfiguration httpProxyConfiguration,
-        boolean trustSelfSignedCerts) {
+                                     boolean trustSelfSignedCerts) {
         this(controllerUrl, credentials, null, httpProxyConfiguration, trustSelfSignedCerts);
     }
 
@@ -128,15 +128,15 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     public CloudControllerClientImpl(URL controllerUrl, CloudCredentials credentials, CloudSpace target,
-        HttpProxyConfiguration httpProxyConfiguration) {
+                                     HttpProxyConfiguration httpProxyConfiguration) {
         this(controllerUrl, credentials, target, httpProxyConfiguration, false);
     }
 
     public CloudControllerClientImpl(URL controllerUrl, CloudCredentials credentials, CloudSpace target,
-        HttpProxyConfiguration httpProxyConfiguration, boolean trustSelfSignedCerts) {
+                                     HttpProxyConfiguration httpProxyConfiguration, boolean trustSelfSignedCerts) {
         Assert.notNull(controllerUrl, "URL for cloud controller cannot be null");
         CloudControllerRestClientFactory cloudControllerClientFactory = new CloudControllerRestClientFactory(trustSelfSignedCerts,
-            httpProxyConfiguration);
+                                                                                                             httpProxyConfiguration);
         this.delegate = cloudControllerClientFactory.createClient(controllerUrl, credentials, target);
     }
 
@@ -149,20 +149,20 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     public CloudControllerClientImpl(URL controllerUrl, CloudCredentials credentials, String organizationName, String spaceName,
-        boolean trustSelfSignedCerts) {
+                                     boolean trustSelfSignedCerts) {
         this(controllerUrl, credentials, organizationName, spaceName, null, trustSelfSignedCerts);
     }
 
     public CloudControllerClientImpl(URL controllerUrl, CloudCredentials credentials, String organizationName, String spaceName,
-        HttpProxyConfiguration httpProxyConfiguration) {
+                                     HttpProxyConfiguration httpProxyConfiguration) {
         this(controllerUrl, credentials, organizationName, spaceName, httpProxyConfiguration, false);
     }
 
     public CloudControllerClientImpl(URL controllerUrl, CloudCredentials credentials, String organizationName, String spaceName,
-        HttpProxyConfiguration httpProxyConfiguration, boolean trustSelfSignedCerts) {
+                                     HttpProxyConfiguration httpProxyConfiguration, boolean trustSelfSignedCerts) {
         Assert.notNull(controllerUrl, "URL for cloud controller cannot be null");
         CloudControllerRestClientFactory cloudControllerClientFactory = new CloudControllerRestClientFactory(trustSelfSignedCerts,
-            httpProxyConfiguration);
+                                                                                                             httpProxyConfiguration);
         this.delegate = cloudControllerClientFactory.createClient(controllerUrl, credentials, organizationName, spaceName);
     }
 
@@ -245,7 +245,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
 
     @Override
     public void bindService(String applicationName, String serviceName, Map<String, Object> parameters,
-        ApplicationServicesUpdateCallback updateServicesCallback) {
+                            ApplicationServicesUpdateCallback updateServicesCallback) {
         try {
             handleExceptions(() -> delegate.bindService(applicationName, serviceName, parameters));
         } catch (CloudOperationException e) {
@@ -265,7 +265,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
 
     @Override
     public void createApplication(String applicationName, Staging staging, Integer disk, Integer memory, List<String> uris,
-        List<String> serviceNames, DockerInfo dockerInfo) {
+                                  List<String> serviceNames, DockerInfo dockerInfo) {
         handleExceptions(() -> delegate.createApplication(applicationName, staging, disk, memory, uris, serviceNames, dockerInfo));
     }
 
@@ -839,7 +839,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
 
     @Override
     public void unbindService(String applicationName, String serviceName,
-        ApplicationServicesUpdateCallback applicationServicesUpdateCallback) {
+                              ApplicationServicesUpdateCallback applicationServicesUpdateCallback) {
         try {
             handleExceptions(() -> delegate.unbindService(applicationName, serviceName));
         } catch (CloudOperationException e) {
@@ -884,11 +884,12 @@ public class CloudControllerClientImpl implements CloudControllerClient {
 
     @Override
     public List<String> updateApplicationServices(String applicationName,
-        Map<String, Map<String, Object>> serviceNamesWithBindingParameters,
-        ApplicationServicesUpdateCallback applicationServicesUpdateCallback) {
+                                                  Map<String, Map<String, Object>> serviceNamesWithBindingParameters,
+                                                  ApplicationServicesUpdateCallback applicationServicesUpdateCallback) {
         ApplicationServicesUpdater applicationServicesUpdater = new ApplicationServicesUpdater(this);
         return handleExceptions(() -> applicationServicesUpdater.updateApplicationServices(applicationName,
-            serviceNamesWithBindingParameters, applicationServicesUpdateCallback));
+                                                                                           serviceNamesWithBindingParameters,
+                                                                                           applicationServicesUpdateCallback));
     }
 
     @Override

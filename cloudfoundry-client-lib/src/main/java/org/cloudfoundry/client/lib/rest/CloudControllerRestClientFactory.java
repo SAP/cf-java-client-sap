@@ -66,13 +66,14 @@ public class CloudControllerRestClientFactory {
     }
 
     public CloudControllerRestClientFactory(int clientConnectionPoolSize, int clientThreadPoolSize, boolean trustSelfSignedCerts,
-        HttpProxyConfiguration httpProxyConfiguration) {
-        this(new CloudControllerV3ClientFactory(clientConnectionPoolSize, clientThreadPoolSize), trustSelfSignedCerts,
-            httpProxyConfiguration);
+                                            HttpProxyConfiguration httpProxyConfiguration) {
+        this(new CloudControllerV3ClientFactory(clientConnectionPoolSize, clientThreadPoolSize),
+             trustSelfSignedCerts,
+             httpProxyConfiguration);
     }
 
     private CloudControllerRestClientFactory(CloudControllerV3ClientFactory v3ClientFactory, boolean trustSelfSignedCerts,
-        HttpProxyConfiguration httpProxyConfiguration) {
+                                             HttpProxyConfiguration httpProxyConfiguration) {
         this.httpProxyConfiguration = httpProxyConfiguration;
         this.trustSelfSignedCerts = trustSelfSignedCerts;
         this.generalPurposeRestTemplate = restUtil.createRestTemplate(httpProxyConfiguration, trustSelfSignedCerts);
@@ -88,13 +89,13 @@ public class CloudControllerRestClientFactory {
     }
 
     public CloudControllerRestClient createClient(URL controllerUrl, CloudCredentials credentials, String organizationName,
-        String spaceName) {
+                                                  String spaceName) {
         return createClient(controllerUrl, credentials, organizationName, spaceName,
-            createOAuthClient(controllerUrl, credentials.getOrigin()));
+                            createOAuthClient(controllerUrl, credentials.getOrigin()));
     }
 
     public CloudControllerRestClient createClient(URL controllerUrl, CloudCredentials credentials, String organizationName,
-        String spaceName, OAuthClient oAuthClient) {
+                                                  String spaceName, OAuthClient oAuthClient) {
         CloudControllerRestClient clientWithoutTarget = createClient(controllerUrl, credentials, oAuthClient);
         CloudSpace target = clientWithoutTarget.getSpace(organizationName, spaceName);
 
@@ -106,7 +107,7 @@ public class CloudControllerRestClientFactory {
     }
 
     public CloudControllerRestClient createClient(URL controllerUrl, CloudCredentials credentials, CloudSpace target,
-        OAuthClient oAuthClient) {
+                                                  OAuthClient oAuthClient) {
         RestTemplate restTemplate = createAuthorizationSettingRestTemplate(credentials, oAuthClient);
         CloudFoundryClient v3Client = v3ClientFactory.createClient(controllerUrl, oAuthClient);
 
@@ -128,8 +129,9 @@ public class CloudControllerRestClientFactory {
         try {
             return new URL(authorizationEndpoint);
         } catch (MalformedURLException e) {
-            throw new IllegalArgumentException(
-                MessageFormat.format("Error creating authorization endpoint URL for endpoint {0}.", authorizationEndpoint), e);
+            throw new IllegalArgumentException(MessageFormat.format("Error creating authorization endpoint URL for endpoint {0}.",
+                                                                    authorizationEndpoint),
+                                               e);
         }
     }
 

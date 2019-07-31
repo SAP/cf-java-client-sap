@@ -34,50 +34,50 @@ public class RawCloudServiceOfferingTest {
 
     private static CloudServiceOffering buildExpectedServiceOffering() {
         return ImmutableCloudServiceOffering.builder()
-            .metadata(RawCloudEntityTest.EXPECTED_METADATA)
-            .name(NAME)
-            .isActive(ACTIVE)
-            .isBindable(BINDABLE)
-            .description(DESCRIPTION)
-            .extra(EXTRA)
-            .docUrl(DOCUMENTATION_URL)
-            .infoUrl(INFO_URL)
-            .version(VERSION)
-            .provider(PROVIDER)
-            .uniqueId(UNIQUE_ID)
-            .url(URL)
-            .servicePlans(PLANS)
-            .build();
+                                            .metadata(RawCloudEntityTest.EXPECTED_METADATA)
+                                            .name(NAME)
+                                            .isActive(ACTIVE)
+                                            .isBindable(BINDABLE)
+                                            .description(DESCRIPTION)
+                                            .extra(EXTRA)
+                                            .docUrl(DOCUMENTATION_URL)
+                                            .infoUrl(INFO_URL)
+                                            .version(VERSION)
+                                            .provider(PROVIDER)
+                                            .uniqueId(UNIQUE_ID)
+                                            .url(URL)
+                                            .servicePlans(PLANS)
+                                            .build();
     }
 
     private static RawCloudServiceOffering buildRawServiceOffering() {
         return ImmutableRawCloudServiceOffering.builder()
-            .resource(buildTestResource())
-            .servicePlans(PLANS)
-            .build();
+                                               .resource(buildTestResource())
+                                               .servicePlans(PLANS)
+                                               .build();
     }
 
     private static Resource<ServiceEntity> buildTestResource() {
         return ServiceResource.builder()
-            .metadata(RawCloudEntityTest.METADATA)
-            .entity(buildTestEntity())
-            .build();
+                              .metadata(RawCloudEntityTest.METADATA)
+                              .entity(buildTestEntity())
+                              .build();
     }
 
     private static ServiceEntity buildTestEntity() {
         return ServiceEntity.builder()
-            .label(NAME)
-            .active(ACTIVE)
-            .bindable(BINDABLE)
-            .description(DESCRIPTION)
-            .extra(EXTRA)
-            .documentationUrl(DOCUMENTATION_URL)
-            .infoUrl(INFO_URL)
-            .version(VERSION)
-            .provider(PROVIDER)
-            .uniqueId(UNIQUE_ID)
-            .url(URL)
-            .build();
+                            .label(NAME)
+                            .active(ACTIVE)
+                            .bindable(BINDABLE)
+                            .description(DESCRIPTION)
+                            .extra(EXTRA)
+                            .documentationUrl(DOCUMENTATION_URL)
+                            .infoUrl(INFO_URL)
+                            .version(VERSION)
+                            .provider(PROVIDER)
+                            .uniqueId(UNIQUE_ID)
+                            .url(URL)
+                            .build();
     }
 
     private static List<CloudServicePlan> buildTestServiceBindings() {
@@ -86,8 +86,8 @@ public class RawCloudServiceOfferingTest {
 
     private static CloudServicePlan buildTestServiceBinding() {
         return ImmutableCloudServicePlan.builder()
-            .name("v9.4-small")
-            .build();
+                                        .name("v9.4-small")
+                                        .build();
     }
 
 }

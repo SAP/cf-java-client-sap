@@ -1,12 +1,12 @@
 package org.cloudfoundry.client.lib.util;
 
-import org.junit.jupiter.api.Test;
-
 import static org.junit.Assert.assertEquals;
 
 import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.junit.jupiter.api.Test;
 
 public class MultipartTest {
 
@@ -109,13 +109,13 @@ public class MultipartTest {
     private void assertPartHeaders(List<Multipart.Part> parts, String... headers) {
         for (int i = 0; i < parts.size(); i++) {
             assertEquals("Header at " + i, headers[i], parts.get(i)
-                .getHeader());
+                                                            .getHeader());
         }
     }
 
     private String contentAsString(List<Multipart.Part> parts, int index) {
         return new String(parts.get(index)
-            .getContent());
+                               .getContent());
     }
 
     private List<Multipart.Part> parseMessage(String message) {

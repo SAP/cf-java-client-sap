@@ -33,38 +33,38 @@ public class RawCloudServiceInstanceTest {
 
     private static CloudServiceInstance buildExpectedServiceInstance() {
         return ImmutableCloudServiceInstance.builder()
-            .metadata(RawCloudEntityTest.EXPECTED_METADATA)
-            .dashboardUrl(DASHBOARD_URL)
-            .bindings(BINDINGS)
-            .name(NAME)
-            .type(TYPE)
-            .service(SERVICE)
-            .credentials(CREDENTIALS)
-            .build();
+                                            .metadata(RawCloudEntityTest.EXPECTED_METADATA)
+                                            .dashboardUrl(DASHBOARD_URL)
+                                            .bindings(BINDINGS)
+                                            .name(NAME)
+                                            .type(TYPE)
+                                            .service(SERVICE)
+                                            .credentials(CREDENTIALS)
+                                            .build();
     }
 
     private static RawCloudServiceInstance buildRawServiceInstance() {
         return ImmutableRawCloudServiceInstance.builder()
-            .resource(buildTestResource())
-            .serviceBindings(BINDINGS)
-            .service(SERVICE)
-            .build();
+                                               .resource(buildTestResource())
+                                               .serviceBindings(BINDINGS)
+                                               .service(SERVICE)
+                                               .build();
     }
 
     private static Resource<UnionServiceInstanceEntity> buildTestResource() {
         return UnionServiceInstanceResource.builder()
-            .metadata(RawCloudEntityTest.METADATA)
-            .entity(buildTestEntity())
-            .build();
+                                           .metadata(RawCloudEntityTest.METADATA)
+                                           .entity(buildTestEntity())
+                                           .build();
     }
 
     private static UnionServiceInstanceEntity buildTestEntity() {
         return UnionServiceInstanceEntity.builder()
-            .name(NAME)
-            .type(TYPE)
-            .dashboardUrl(DASHBOARD_URL)
-            .credentials(CREDENTIALS)
-            .build();
+                                         .name(NAME)
+                                         .type(TYPE)
+                                         .dashboardUrl(DASHBOARD_URL)
+                                         .credentials(CREDENTIALS)
+                                         .build();
     }
 
     private static Map<String, Object> buildTestCredentials() {
@@ -77,8 +77,8 @@ public class RawCloudServiceInstanceTest {
 
     private static CloudService buildTestService() {
         return ImmutableCloudService.builder()
-            .name(NAME)
-            .build();
+                                    .name(NAME)
+                                    .build();
     }
 
     private static List<CloudServiceBinding> buildTestServiceBindings() {
@@ -87,8 +87,8 @@ public class RawCloudServiceInstanceTest {
 
     private static CloudServiceBinding buildTestServiceBinding() {
         return ImmutableCloudServiceBinding.builder()
-            .applicationGuid(UUID.fromString("c9a0d86b-9f53-4a26-93a5-b42fa1dff17d"))
-            .build();
+                                           .applicationGuid(UUID.fromString("c9a0d86b-9f53-4a26-93a5-b42fa1dff17d"))
+                                           .build();
     }
 
 }

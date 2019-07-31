@@ -15,15 +15,15 @@ public abstract class RawCloudInfo extends RawCloudEntity<CloudInfo> {
     public CloudInfo derive() {
         GetInfoResponse resource = getResource();
         return ImmutableCloudInfo.builder()
-            .authorizationEndpoint(resource.getAuthorizationEndpoint())
-            .loggingEndpoint(resource.getDopplerLoggingEndpoint())
-            .build(resource.getBuildNumber())
-            .description(resource.getDescription())
-            .name(resource.getName())
-            .user(resource.getUser())
-            .support(resource.getSupport())
-            .version(parseVersion(resource.getVersion()))
-            .build();
+                                 .authorizationEndpoint(resource.getAuthorizationEndpoint())
+                                 .loggingEndpoint(resource.getDopplerLoggingEndpoint())
+                                 .build(resource.getBuildNumber())
+                                 .description(resource.getDescription())
+                                 .name(resource.getName())
+                                 .user(resource.getUser())
+                                 .support(resource.getSupport())
+                                 .version(parseVersion(resource.getVersion()))
+                                 .build();
     }
 
     private static String parseVersion(Integer version) {

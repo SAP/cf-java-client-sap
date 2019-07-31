@@ -32,9 +32,13 @@ public class LoggregatorMessageParser {
             ? ApplicationLog.MessageType.STDOUT
             : ApplicationLog.MessageType.STDERR;
 
-        return new ApplicationLog(message.getAppId(), message.getMessage()
-            .toStringUtf8(), new Date(message.getTimestamp() / NANOSECONDS_IN_MILLISECOND), messageType, message.getSourceName(),
-            message.getSourceId());
+        return new ApplicationLog(message.getAppId(),
+                                  message.getMessage()
+                                         .toStringUtf8(),
+                                  new Date(message.getTimestamp() / NANOSECONDS_IN_MILLISECOND),
+                                  messageType,
+                                  message.getSourceName(),
+                                  message.getSourceId());
     }
 
 }

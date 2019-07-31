@@ -51,16 +51,16 @@ public class RawCloudApplicationTest {
     private static final String STACK_NAME = "cflinuxfs3";
     private static final String SPACE_NAME = "test";
     private static final CloudStack STACK = ImmutableCloudStack.builder()
-        .name(STACK_NAME)
-        .build();
+                                                               .name(STACK_NAME)
+                                                               .build();
     private static final CloudSpace SPACE = ImmutableCloudSpace.builder()
-        .name(SPACE_NAME)
-        .build();
+                                                               .name(SPACE_NAME)
+                                                               .build();
 
     private static final CloudApplication.State EXPECTED_STATE = CloudApplication.State.STARTED;
     private static final PackageState EXPECTED_PACKAGE_STATE = PackageState.PENDING;
     private static final List<String> EXPECTED_URIS = Arrays.asList("foo.example.com/does/this/work", "bar.example.com:30030",
-        "baz.example.com", "example.com", "example.com");
+                                                                    "baz.example.com", "example.com", "example.com");
     private static final List<String> EXPECTED_SERVICES = Arrays.asList("foo", "bar");
     private static final Map<String, String> EXPECTED_ENVIRONMENT = buildExpectedEnvironment();
 
@@ -73,8 +73,8 @@ public class RawCloudApplicationTest {
     public void testDeriveWithoutDockerCredentials() {
         RawCloudApplication rawApplication = buildRawApplication(DOCKER_IMAGE, null);
         DockerInfo expectedDockerInfo = ImmutableDockerInfo.builder()
-            .image(DOCKER_IMAGE)
-            .build();
+                                                           .image(DOCKER_IMAGE)
+                                                           .build();
         RawCloudEntityTest.testDerive(buildExpectedApplication(expectedDockerInfo), rawApplication);
     }
 
@@ -82,12 +82,12 @@ public class RawCloudApplicationTest {
     public void testDerive() {
         RawCloudApplication rawApplication = buildRawApplication(DOCKER_IMAGE, DOCKER_CREDENTIALS);
         DockerInfo expectedDockerInfo = ImmutableDockerInfo.builder()
-            .image(DOCKER_IMAGE)
-            .credentials(ImmutableDockerCredentials.builder()
-                .username(DOCKER_USERNAME)
-                .password(DOCKER_PASSWORD)
-                .build())
-            .build();
+                                                           .image(DOCKER_IMAGE)
+                                                           .credentials(ImmutableDockerCredentials.builder()
+                                                                                                  .username(DOCKER_USERNAME)
+                                                                                                  .password(DOCKER_PASSWORD)
+                                                                                                  .build())
+                                                           .build();
         RawCloudEntityTest.testDerive(buildExpectedApplication(expectedDockerInfo), rawApplication);
     }
 
@@ -97,35 +97,35 @@ public class RawCloudApplicationTest {
 
     private static CloudApplication buildExpectedApplication(DockerInfo dockerInfo) {
         return ImmutableCloudApplication.builder()
-            .metadata(RawCloudEntityTest.EXPECTED_METADATA)
-            .name(RawCloudEntityTest.NAME)
-            .uris(EXPECTED_URIS)
-            .memory(MEMORY)
-            .diskQuota(DISK_QUOTA)
-            .instances(INSTANCES)
-            .runningInstances(RUNNING_INSTANCES)
-            .state(EXPECTED_STATE)
-            .packageState(EXPECTED_PACKAGE_STATE)
-            .stagingError(STAGING_ERROR)
-            .staging(buildExpectedStaging(dockerInfo))
-            .services(EXPECTED_SERVICES)
-            .env(EXPECTED_ENVIRONMENT)
-            .space(SPACE)
-            .build();
+                                        .metadata(RawCloudEntityTest.EXPECTED_METADATA)
+                                        .name(RawCloudEntityTest.NAME)
+                                        .uris(EXPECTED_URIS)
+                                        .memory(MEMORY)
+                                        .diskQuota(DISK_QUOTA)
+                                        .instances(INSTANCES)
+                                        .runningInstances(RUNNING_INSTANCES)
+                                        .state(EXPECTED_STATE)
+                                        .packageState(EXPECTED_PACKAGE_STATE)
+                                        .stagingError(STAGING_ERROR)
+                                        .staging(buildExpectedStaging(dockerInfo))
+                                        .services(EXPECTED_SERVICES)
+                                        .env(EXPECTED_ENVIRONMENT)
+                                        .space(SPACE)
+                                        .build();
     }
 
     private static ImmutableStaging buildExpectedStaging(DockerInfo dockerInfo) {
         return ImmutableStaging.builder()
-            .buildpackUrl(BUILDPACK)
-            .command(COMMAND)
-            .detectedBuildpack(DETECTED_BUILDPACK)
-            .dockerInfo(dockerInfo)
-            .healthCheckHttpEndpoint(HEALTH_CHECK_HTTP_ENDPOINT)
-            .healthCheckTimeout(HEALTH_CHECK_TIMEOUT)
-            .healthCheckType(HEALTH_CHECK_TYPE)
-            .isSshEnabled(SSH_ENABLED)
-            .stack(STACK_NAME)
-            .build();
+                               .buildpackUrl(BUILDPACK)
+                               .command(COMMAND)
+                               .detectedBuildpack(DETECTED_BUILDPACK)
+                               .dockerInfo(dockerInfo)
+                               .healthCheckHttpEndpoint(HEALTH_CHECK_HTTP_ENDPOINT)
+                               .healthCheckTimeout(HEALTH_CHECK_TIMEOUT)
+                               .healthCheckType(HEALTH_CHECK_TYPE)
+                               .isSshEnabled(SSH_ENABLED)
+                               .stack(STACK_NAME)
+                               .build();
     }
 
     private static RawCloudApplication buildRawApplication() {
@@ -133,90 +133,90 @@ public class RawCloudApplicationTest {
     }
 
     private static RawCloudApplication buildRawApplication(String dockerImage,
-        org.cloudfoundry.client.v2.applications.DockerCredentials dockerCredentials) {
+                                                           org.cloudfoundry.client.v2.applications.DockerCredentials dockerCredentials) {
         return ImmutableRawCloudApplication.builder()
-            .resource(buildTestResource())
-            .summary(buildTestSummary(dockerImage, dockerCredentials))
-            .stack(STACK)
-            .space(SPACE)
-            .build();
+                                           .resource(buildTestResource())
+                                           .summary(buildTestSummary(dockerImage, dockerCredentials))
+                                           .stack(STACK)
+                                           .space(SPACE)
+                                           .build();
     }
 
     private static Resource<ApplicationEntity> buildTestResource() {
         return ApplicationResource.builder()
-            .metadata(RawCloudEntityTest.METADATA)
-            .build();
+                                  .metadata(RawCloudEntityTest.METADATA)
+                                  .build();
     }
 
-    private static SummaryApplicationResponse buildTestSummary(String dockerImage,
-        org.cloudfoundry.client.v2.applications.DockerCredentials dockerCredentials) {
+    private static SummaryApplicationResponse
+            buildTestSummary(String dockerImage, org.cloudfoundry.client.v2.applications.DockerCredentials dockerCredentials) {
         return SummaryApplicationResponse.builder()
-            .name(RawCloudEntityTest.NAME)
-            .memory(MEMORY)
-            .diskQuota(DISK_QUOTA)
-            .routes(ROUTES)
-            .instances(INSTANCES)
-            .runningInstances(RUNNING_INSTANCES)
-            .state(STATE)
-            .packageState(PACKAGE_STATE)
-            .stagingFailedDescription(STAGING_ERROR)
-            .healthCheckHttpEndpoint(HEALTH_CHECK_HTTP_ENDPOINT)
-            .healthCheckTimeout(HEALTH_CHECK_TIMEOUT)
-            .healthCheckType(HEALTH_CHECK_TYPE)
-            .enableSsh(SSH_ENABLED)
-            .dockerImage(dockerImage)
-            .dockerCredentials(dockerCredentials)
-            .environmentJsons(ENVIRONMENT)
-            .command(COMMAND)
-            .buildpack(BUILDPACK)
-            .detectedBuildpack(DETECTED_BUILDPACK)
-            .services(SERVICE_INSTANCES)
-            .build();
+                                         .name(RawCloudEntityTest.NAME)
+                                         .memory(MEMORY)
+                                         .diskQuota(DISK_QUOTA)
+                                         .routes(ROUTES)
+                                         .instances(INSTANCES)
+                                         .runningInstances(RUNNING_INSTANCES)
+                                         .state(STATE)
+                                         .packageState(PACKAGE_STATE)
+                                         .stagingFailedDescription(STAGING_ERROR)
+                                         .healthCheckHttpEndpoint(HEALTH_CHECK_HTTP_ENDPOINT)
+                                         .healthCheckTimeout(HEALTH_CHECK_TIMEOUT)
+                                         .healthCheckType(HEALTH_CHECK_TYPE)
+                                         .enableSsh(SSH_ENABLED)
+                                         .dockerImage(dockerImage)
+                                         .dockerCredentials(dockerCredentials)
+                                         .environmentJsons(ENVIRONMENT)
+                                         .command(COMMAND)
+                                         .buildpack(BUILDPACK)
+                                         .detectedBuildpack(DETECTED_BUILDPACK)
+                                         .services(SERVICE_INSTANCES)
+                                         .build();
     }
 
     private static List<Route> buildTestRoutes() {
         Domain domain = Domain.builder()
-            .name("example.com")
-            .build();
+                              .name("example.com")
+                              .build();
         Route foo = Route.builder()
-            .host("foo")
-            .domain(domain)
-            .path("/does/this/work")
-            .build();
+                         .host("foo")
+                         .domain(domain)
+                         .path("/does/this/work")
+                         .build();
         Route bar = Route.builder()
-            .host("bar")
-            .domain(domain)
-            .port(30030)
-            .build();
+                         .host("bar")
+                         .domain(domain)
+                         .port(30030)
+                         .build();
         Route baz = Route.builder()
-            .host("baz")
-            .domain(domain)
-            .build();
+                         .host("baz")
+                         .domain(domain)
+                         .build();
         Route qux = Route.builder()
-            .domain(domain)
-            .build();
+                         .domain(domain)
+                         .build();
         Route quux = Route.builder()
-            .host("")
-            .domain(domain)
-            .build();
+                          .host("")
+                          .domain(domain)
+                          .build();
         return Arrays.asList(foo, bar, baz, qux, quux);
     }
 
     private static List<ServiceInstance> buildTestServiceInstances() {
         ServiceInstance foo = ServiceInstance.builder()
-            .name("foo")
-            .build();
+                                             .name("foo")
+                                             .build();
         ServiceInstance bar = ServiceInstance.builder()
-            .name("bar")
-            .build();
+                                             .name("bar")
+                                             .build();
         return Arrays.asList(foo, bar);
     }
 
     private static org.cloudfoundry.client.v2.applications.DockerCredentials buildTestDockerCredentials() {
         return org.cloudfoundry.client.v2.applications.DockerCredentials.builder()
-            .username(DOCKER_USERNAME)
-            .password(DOCKER_PASSWORD)
-            .build();
+                                                                        .username(DOCKER_USERNAME)
+                                                                        .password(DOCKER_PASSWORD)
+                                                                        .build();
     }
 
     private static Map<String, String> buildExpectedEnvironment() {

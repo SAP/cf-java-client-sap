@@ -25,11 +25,11 @@ public abstract class RawCloudRoute extends RawCloudEntity<CloudRoute> {
         Resource<RouteEntity> resource = getResource();
         RouteEntity entity = resource.getEntity();
         return ImmutableCloudRoute.builder()
-            .metadata(parseResourceMetadata(resource))
-            .appsUsingRoute(getRouteMappingResources().size())
-            .host(entity.getHost())
-            .domain(getDomain().derive())
-            .build();
+                                  .metadata(parseResourceMetadata(resource))
+                                  .appsUsingRoute(getRouteMappingResources().size())
+                                  .host(entity.getHost())
+                                  .domain(getDomain().derive())
+                                  .build();
     }
 
 }

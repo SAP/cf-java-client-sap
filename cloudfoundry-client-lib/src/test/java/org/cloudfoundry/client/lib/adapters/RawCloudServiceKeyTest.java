@@ -18,8 +18,8 @@ public class RawCloudServiceKeyTest {
     private static final String NAME = "bar";
     private static final Map<String, Object> CREDENTIALS = buildTestCredentials();
     private static final CloudService SERVICE = ImmutableCloudService.builder()
-        .name(SERVICE_NAME)
-        .build();
+                                                                     .name(SERVICE_NAME)
+                                                                     .build();
 
     @Test
     public void testDerive() {
@@ -28,32 +28,32 @@ public class RawCloudServiceKeyTest {
 
     private static CloudServiceKey buildExpectedServiceKey() {
         return ImmutableCloudServiceKey.builder()
-            .metadata(RawCloudEntityTest.EXPECTED_METADATA)
-            .name(NAME)
-            .credentials(CREDENTIALS)
-            .service(SERVICE)
-            .build();
+                                       .metadata(RawCloudEntityTest.EXPECTED_METADATA)
+                                       .name(NAME)
+                                       .credentials(CREDENTIALS)
+                                       .service(SERVICE)
+                                       .build();
     }
 
     private static RawCloudServiceKey buildRawServiceKey() {
         return ImmutableRawCloudServiceKey.builder()
-            .resource(buildTestResource())
-            .service(SERVICE)
-            .build();
+                                          .resource(buildTestResource())
+                                          .service(SERVICE)
+                                          .build();
     }
 
     private static Resource<ServiceKeyEntity> buildTestResource() {
         return ServiceKeyResource.builder()
-            .metadata(RawCloudEntityTest.METADATA)
-            .entity(buildTestEntity())
-            .build();
+                                 .metadata(RawCloudEntityTest.METADATA)
+                                 .entity(buildTestEntity())
+                                 .build();
     }
 
     private static ServiceKeyEntity buildTestEntity() {
         return ServiceKeyEntity.builder()
-            .name(NAME)
-            .credentials(CREDENTIALS)
-            .build();
+                               .name(NAME)
+                               .credentials(CREDENTIALS)
+                               .build();
     }
 
     private static Map<String, Object> buildTestCredentials() {

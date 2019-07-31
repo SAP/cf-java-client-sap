@@ -19,28 +19,28 @@ public abstract class RawCloudEvent extends RawCloudEntity<CloudEvent> {
         Resource<EventEntity> resource = getResource();
         EventEntity entity = resource.getEntity();
         return ImmutableCloudEvent.builder()
-            .metadata(parseResourceMetadata(resource))
-            .actee(parseActee(entity))
-            .actor(parseActor(entity))
-            .timestamp(parseNullableDate(entity.getTimestamp()))
-            .type(entity.getType())
-            .build();
+                                  .metadata(parseResourceMetadata(resource))
+                                  .actee(parseActee(entity))
+                                  .actor(parseActor(entity))
+                                  .timestamp(parseNullableDate(entity.getTimestamp()))
+                                  .type(entity.getType())
+                                  .build();
     }
 
     private static Participant parseActee(EventEntity entity) {
         return ImmutableParticipant.builder()
-            .guid(parseNullableGuid(entity.getActee()))
-            .name(entity.getActeeName())
-            .type(entity.getActeeType())
-            .build();
+                                   .guid(parseNullableGuid(entity.getActee()))
+                                   .name(entity.getActeeName())
+                                   .type(entity.getActeeType())
+                                   .build();
     }
 
     private static Participant parseActor(EventEntity entity) {
         return ImmutableParticipant.builder()
-            .guid(parseNullableGuid(entity.getActor()))
-            .name(entity.getActorName())
-            .type(entity.getActorType())
-            .build();
+                                   .guid(parseNullableGuid(entity.getActor()))
+                                   .name(entity.getActorName())
+                                   .type(entity.getActorType())
+                                   .build();
     }
 
 }

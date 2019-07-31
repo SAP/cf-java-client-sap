@@ -97,7 +97,7 @@ public class OAuthClient {
 
     protected OAuth2AccessToken createToken() {
         OAuth2ProtectedResourceDetails resource = getResourceDetails(credentials.getEmail(), credentials.getPassword(),
-            credentials.getClientId(), credentials.getClientSecret());
+                                                                     credentials.getClientId(), credentials.getClientSecret());
         AccessTokenRequest request = createAccessTokenRequest(credentials.getEmail(), credentials.getPassword());
 
         ResourceOwnerPasswordAccessTokenProvider provider = createResourceOwnerPasswordAccessTokenProvider();
@@ -111,7 +111,7 @@ public class OAuthClient {
 
     protected OAuth2AccessToken refreshToken() {
         OAuth2ProtectedResourceDetails resource = getResourceDetails(credentials.getEmail(), credentials.getPassword(),
-            credentials.getClientId(), credentials.getClientSecret());
+                                                                     credentials.getClientId(), credentials.getClientSecret());
         AccessTokenRequest request = createAccessTokenRequest(credentials.getEmail(), credentials.getPassword());
 
         ResourceOwnerPasswordAccessTokenProvider provider = createResourceOwnerPasswordAccessTokenProvider();
