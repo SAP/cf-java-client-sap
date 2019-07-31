@@ -79,6 +79,7 @@ public class CloudControllerRestClientImplTest {
     }
 
     private static class Input {
+
         private String uri;
         private List<CloudDomain> domains;
         private String expectedPath;
@@ -90,48 +91,24 @@ public class CloudControllerRestClientImplTest {
             return uri;
         }
 
-        public void setUri(String uri) {
-            this.uri = uri;
-        }
-
         public List<CloudDomain> getDomains() {
             return domains;
-        }
-
-        public void setDomains(List<CloudDomain> domains) {
-            this.domains = domains;
         }
 
         public String getExpectedPath() {
             return expectedPath;
         }
 
-        public void setExpectedPath(String expectedPath) {
-            this.expectedPath = expectedPath;
-        }
-
         public String getExpectedHost() {
             return expectedHost;
-        }
-
-        public void setExpectedHost(String expectedHost) {
-            this.expectedHost = expectedHost;
         }
 
         public String getExpectedDomain() {
             return expectedDomain;
         }
 
-        public void setExpectedDomain(String expectedDomain) {
-            this.expectedDomain = expectedDomain;
-        }
-
         public String getErrorMessage() {
             return errorMessage;
-        }
-
-        public void setErrorMessage(String errorMessage) {
-            this.errorMessage = errorMessage;
         }
 
         public Map<String, UUID> getDomainsAsMap() {
