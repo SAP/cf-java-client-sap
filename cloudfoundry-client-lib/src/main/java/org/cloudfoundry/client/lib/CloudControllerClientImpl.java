@@ -422,7 +422,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
 
     @Override
     public List<CloudApplication> getApplicationsByMetadata(String labelSelector) {
-        return cc.getApplicationsByMetadata(labelSelector);
+        return handleExceptions(() -> delegate.getApplicationsByMetadata(labelSelector));
     }
 
     @Override
@@ -635,7 +635,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
 
     @Override
     public List<CloudService> getServicesByMetadata(String labelSelector) {
-        return cc.getServicesByMetadata(labelSelector);
+        return handleExceptions(() -> delegate.getServicesByMetadata(labelSelector));
     }
 
     @Override
@@ -890,7 +890,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
 
     @Override
     public void updateApplicationMetadata(UUID guid, Metadata metadata) {
-        cc.updateApplicationMetadata(guid, metadata);
+        handleExceptions(() -> delegate.updateApplicationMetadata(guid, metadata));
     }
 
     @Override
@@ -935,7 +935,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
 
     @Override
     public void updateServiceMetadata(UUID guid, Metadata metadata) {
-        cc.updateServiceMetadata(guid, metadata);
+        handleExceptions(() -> delegate.updateServiceMetadata(guid, metadata));
     }
 
     @Override

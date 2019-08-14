@@ -25,7 +25,6 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -99,6 +98,8 @@ import org.cloudfoundry.client.lib.domain.CrashesInfo;
 import org.cloudfoundry.client.lib.domain.Derivable;
 import org.cloudfoundry.client.lib.domain.DockerInfo;
 import org.cloudfoundry.client.lib.domain.ErrorDetails;
+import org.cloudfoundry.client.lib.domain.ImmutableCloudApplication;
+import org.cloudfoundry.client.lib.domain.ImmutableCloudService;
 import org.cloudfoundry.client.lib.domain.ImmutableErrorDetails;
 import org.cloudfoundry.client.lib.domain.ImmutableUpload;
 import org.cloudfoundry.client.lib.domain.ImmutableUploadToken;
@@ -184,6 +185,7 @@ import org.cloudfoundry.client.v2.stacks.StackEntity;
 import org.cloudfoundry.client.v2.userprovidedserviceinstances.CreateUserProvidedServiceInstanceRequest;
 import org.cloudfoundry.client.v2.userprovidedserviceinstances.ListUserProvidedServiceInstanceServiceBindingsRequest;
 import org.cloudfoundry.client.v2.users.UserEntity;
+import org.cloudfoundry.client.v3.Metadata;
 import org.cloudfoundry.client.v3.Relationship;
 import org.cloudfoundry.client.v3.ToOneRelationship;
 import org.cloudfoundry.client.v3.applications.ListApplicationBuildsRequest;
@@ -197,8 +199,7 @@ import org.cloudfoundry.client.v3.packages.PackageRelationships;
 import org.cloudfoundry.client.v3.packages.PackageType;
 import org.cloudfoundry.client.v3.packages.UploadPackageRequest;
 import org.cloudfoundry.client.v3.serviceInstances.ListServiceInstancesRequest;
-import org.cloudfoundry.client.v3.serviceInstances.ListServiceInstancesResponse;
-import org.cloudfoundry.client.v3.serviceInstances.ServiceInstanceResource;
+import org.cloudfoundry.client.v3.serviceInstances.UpdateServiceInstanceRequest;
 import org.cloudfoundry.client.v3.tasks.CancelTaskRequest;
 import org.cloudfoundry.client.v3.tasks.CreateTaskRequest;
 import org.cloudfoundry.client.v3.tasks.GetTaskRequest;
@@ -233,28 +234,31 @@ import reactor.util.function.Tuples;
  */
 public class CloudControllerRestClientImpl implements CloudControllerRestClient {
 
-    private static final String MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED = "Feature is not yet implemented.";
     private static final String DEFAULT_HOST_DOMAIN_SEPARATOR = "\\.";
+
     private static final String DEFAULT_PATH_SEPARATOR = "/";
-    private static final String USER_PROVIDED_SERVICE_INSTANCE_TYPE = "user_provided_service_instance";
+
     private static final long JOB_POLLING_PERIOD = TimeUnit.SECONDS.toMillis(5);
 
+    private static final String MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED = "Feature is not yet implemented.";
+
+    private static final String USER_PROVIDED_SERVICE_INSTANCE_TYPE = "user_provided_service_instance";
+
     private final Log logger = LogFactory.getLog(getClass().getName());
-    private CloudCredentials credentials;
+
     private URL controllerUrl;
+
+    private CloudCredentials credentials;
+
     private OAuthClient oAuthClient;
+
     private CloudEntityResourceMapper resourceMapper = new CloudEntityResourceMapper();
+
     private RestTemplate restTemplate;
+
     private CloudSpace target;
 
     private CloudFoundryClient v3Client;
-
-    /**
-     * Only for unit tests. This works around the fact that the initialize method is called within the constructor and hence can not be
-     * overloaded, making it impossible to write unit tests that don't trigger network calls.
-     */
-    protected CloudControllerRestClientImpl() {
-    }
 
     public CloudControllerRestClientImpl(URL controllerUrl, CloudCredentials credentials, RestTemplate restTemplate,
                                          OAuthClient oAuthClient, CloudFoundryClient v3Client) {
@@ -276,19 +280,11 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         this.v3Client = v3Client;
     }
 
-    @Override
-    public RestTemplate getRestTemplate() {
-        return restTemplate;
-    }
-
-    @Override
-    public OAuthClient getOAuthClient() {
-        return oAuthClient;
-    }
-
-    @Override
-    public URL getControllerUrl() {
-        return controllerUrl;
+    /**
+     * Only for unit tests. This works around the fact that the initialize method is called within the constructor and hence can not be
+     * overloaded, making it impossible to write unit tests that don't trigger network calls.
+     */
+    protected CloudControllerRestClientImpl() {
     }
 
     @Override
@@ -323,6 +319,25 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
+    public UploadToken asyncUploadApplication(String applicationName, File file, UploadStatusCallback callback) throws IOException {
+        UploadToken uploadToken = startUpload(applicationName, file);
+        processAsyncUploadInBackground(uploadToken, callback);
+        return uploadToken;
+    }
+
+    @Override
+    public void bindDropletToApp(UUID dropletGuid, UUID applicationGuid) {
+        v3Client.applicationsV3()
+                .setCurrentDroplet(SetApplicationCurrentDropletRequest.builder()
+                                                                      .applicationId(applicationGuid.toString())
+                                                                      .data(Relationship.builder()
+                                                                                        .id(dropletGuid.toString())
+                                                                                        .build())
+                                                                      .build())
+                .block();
+    }
+
+    @Override
     public void bindRunningSecurityGroup(String securityGroupName) {
         throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
     }
@@ -354,6 +369,11 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     @Override
     public void bindStagingSecurityGroup(String securityGroupName) {
         throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
+    }
+
+    @Override
+    public CloudTask cancelTask(UUID taskGuid) {
+        return fetch(() -> cancelTaskResource(taskGuid), ImmutableRawCloudTask::of);
     }
 
     @Override
@@ -395,6 +415,11 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         if (!CollectionUtils.isEmpty(uris)) {
             addUris(uris, newAppGuid);
         }
+    }
+
+    @Override
+    public CloudBuild createBuild(UUID packageGuid) {
+        return fetch(() -> createBuildResource(packageGuid), ImmutableRawCloudBuild::of);
     }
 
     @Override
@@ -596,7 +621,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                 return;
             }
         }
-        throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Service key " + serviceKeyName + " not found.");
+        throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Service key " + serviceKeyName + " not " + "found.");
     }
 
     @Override
@@ -606,17 +631,27 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public CloudApplication getApplication(String applicationName) {
-        return getApplication(applicationName, true);
+        final CloudApplication application = getApplication(applicationName, true);
+        return getApplicationWithMetadata(application);
     }
 
     @Override
     public CloudApplication getApplication(String applicationName, boolean required) {
-        return findApplicationByName(applicationName, required);
+        final CloudApplication application = findApplicationByName(applicationName, required);
+        return getApplicationWithMetadata(application);
     }
 
     @Override
     public CloudApplication getApplication(UUID applicationGuid) {
-        return findApplication(applicationGuid);
+        final CloudApplication application = findApplication(applicationGuid);
+        return getApplicationWithMetadata(application);
+    }
+
+    private CloudApplication getApplicationWithMetadata(CloudApplication application) {
+        final Map<String, Metadata> applicationsMetadata = getApplicationsMetadata(Collections.singletonList(application.getMetadata()
+                                                                                                                        .getGuid()
+                                                                                                                        .toString()));
+        return getApplicationsWithMetadata(Collections.singletonList(application), applicationsMetadata).get(0);
     }
 
     @Override
@@ -657,15 +692,64 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public List<CloudApplication> getApplications() {
-        return fetchListWithAuxiliaryContent(this::getApplicationResources, this::zipWithAuxiliaryApplicationContent);
+        final List<CloudApplication> cloudApplications = fetchListWithAuxiliaryContent(this::getApplicationResources,
+                                                                                       this::zipWithAuxiliaryApplicationContent);
+        final Map<String, Metadata> applicationsMetadata = getApplicationsMetadata(cloudApplications.stream()
+                                                                                                    .map(app -> app.getMetadata()
+                                                                                                                   .getGuid()
+                                                                                                                   .toString())
+                                                                                                    .collect(Collectors.toList()));
+        return getApplicationsWithMetadata(cloudApplications, applicationsMetadata);
     }
 
     @Override
     public List<CloudApplication> getApplicationsByMetadata(String labelSelector) {
-       Mono<ListApplicationsResponse> monoApplicationResponses = v3Client.applicationsV3().list(ListApplicationsRequest.builder().labelSelector(labelSelector).build());
-       Flux<ApplicationResource> fluxApplicationResources = PaginationUtils.requestClientV3Resources(page -> monoApplicationResponses);
-       List<ApplicationResource> applicationResources = fluxApplicationResources.collect(Collectors.toList()).block();
-       return applicationResources.stream().map(this::v3AppToV2App).collect(Collectors.toList());
+        IntFunction<org.cloudfoundry.client.v3.applications.ListApplicationsRequest> pageRequestSupplier = page -> org.cloudfoundry.client.v3.applications.ListApplicationsRequest.builder()
+                                                                                                                                                                                  .labelSelector(labelSelector)
+                                                                                                                                                                                  .page(page)
+                                                                                                                                                                                  .build();
+        final Map<String, Metadata> applicationsMetadata = PaginationUtils.requestClientV3Resources(page -> v3Client.applicationsV3()
+                                                                                                                    .list(pageRequestSupplier.apply(page)))
+                                                                          .collectMap(resource -> resource.getName(),
+                                                                                      resource -> resource.getMetadata())
+                                                                          .block();
+        final List<CloudApplication> cloudApplications = fetchListWithAuxiliaryContent(() -> getApplicationResourcesByNames(applicationsMetadata.keySet()),
+                                                                                       this::zipWithAuxiliaryApplicationContent);
+        return getApplicationsWithMetadata(cloudApplications, applicationsMetadata);
+    }
+
+    public Map<String, Metadata> getApplicationsMetadata(List<String> guids) {
+        IntFunction<org.cloudfoundry.client.v3.applications.ListApplicationsRequest> pageRequestSupplier = page -> org.cloudfoundry.client.v3.applications.ListApplicationsRequest.builder()
+                                                                                                                                                                                  .spaceId(getTargetSpaceGuid().toString())
+                                                                                                                                                                                  .addAllApplicationIds(guids)
+                                                                                                                                                                                  .page(page)
+                                                                                                                                                                                  .build();
+        return PaginationUtils.requestClientV3Resources(page -> v3Client.applicationsV3()
+                                                                        .list(pageRequestSupplier.apply(page)))
+                              .collectMap(response -> response.getId(), response -> response.getMetadata())
+                              .block();
+    }
+
+    @Override
+    public CloudBuild getBuild(UUID buildGuid) {
+        return fetch(() -> getBuildResource(buildGuid), ImmutableRawCloudBuild::of);
+    }
+
+    @Override
+    public List<CloudBuild> getBuildsForApplication(UUID applicationGuid) {
+        return fetchList(() -> getBuildResourcesByApplicationGuid(applicationGuid), ImmutableRawCloudBuild::of);
+    }
+
+    @Override
+    public List<CloudBuild> getBuildsForPackage(UUID packageGuid) {
+        Map<String, Object> urlVars = new HashMap<>();
+        urlVars.put("packageGuid", packageGuid);
+        return doGetResources("/v3/builds?package_guids={packageGuid}", urlVars, CloudBuild.class);
+    }
+
+    @Override
+    public URL getControllerUrl() {
+        return controllerUrl;
     }
 
     @Override
@@ -689,11 +773,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public List<CloudDomain> getSharedDomains() {
-        return fetchList(this::getSharedDomainResources, ImmutableRawCloudSharedDomain::of);
-    }
-
-    @Override
     public List<CloudDomain> getDomains() {
         return getPrivateDomains();
     }
@@ -702,11 +781,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     public List<CloudDomain> getDomainsForOrganization() {
         assertSpaceProvided("access organization domains");
         return findDomainsByOrganizationGuid(getTargetOrganizationGuid());
-    }
-
-    @Override
-    public List<CloudDomain> getPrivateDomains() {
-        return fetchList(this::getPrivateDomainResources, ImmutableRawCloudPrivateDomain::of);
     }
 
     @Override
@@ -727,6 +801,11 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     @Override
     public Map<String, String> getLogs(String applicationName) {
         throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
+    }
+
+    @Override
+    public OAuthClient getOAuthClient() {
+        return oAuthClient;
     }
 
     @Override
@@ -761,6 +840,11 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
+    public List<CloudDomain> getPrivateDomains() {
+        return fetchList(this::getPrivateDomainResources, ImmutableRawCloudPrivateDomain::of);
+    }
+
+    @Override
     public CloudQuota getQuota(String quotaName) {
         throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
     }
@@ -778,6 +862,11 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     @Override
     public List<ApplicationLog> getRecentLogs(String applicationName) {
         throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
+    }
+
+    @Override
+    public RestTemplate getRestTemplate() {
+        return restTemplate;
     }
 
     @Override
@@ -816,7 +905,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     public CloudService getService(String serviceName, boolean required) {
         CloudService service = findServiceByName(serviceName);
         if (service == null && required) {
-            throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Service " + serviceName + " not found.");
+            throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Service " + serviceName + " not " + "found.");
         }
         return service;
     }
@@ -830,7 +919,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     public CloudServiceBroker getServiceBroker(String name, boolean required) {
         CloudServiceBroker serviceBroker = findServiceBrokerByName(name);
         if (serviceBroker == null && required) {
-            throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Service broker " + name + " not found.");
+            throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Service broker " + name + " not " + "found.");
         }
         return serviceBroker;
     }
@@ -861,25 +950,76 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public Map<String, Object> getServiceParameters(UUID guid) {
-        return fetchParameters(String.format("/v2/service_instances/%s/parameters", guid));
-    }
-
-    @Override
     public List<CloudServiceOffering> getServiceOfferings() {
         return fetchListWithAuxiliaryContent(this::getServiceResources, this::zipWithAuxiliaryServiceOfferingContent);
     }
 
     @Override
+    public Map<String, Object> getServiceParameters(UUID guid) {
+        return fetchParameters(String.format("/v2/service_instances/%s/parameters", guid));
+    }
+
+    @Override
     public List<CloudService> getServices() {
-        return fetchListWithAuxiliaryContent(this::getServiceInstanceResources, this::zipWithAuxiliaryServiceContent);
+        final List<CloudService> cloudServices = fetchListWithAuxiliaryContent(this::getServiceInstanceResources,
+                                                                               this::zipWithAuxiliaryServiceContent);
+        final Map<String, Metadata> serviceInstancesMetadata = getServiceInstancesMetadata(cloudServices.stream()
+                                                                                                        .map(service -> service.getName())
+                                                                                                        .collect(Collectors.toList()));
+        return getServicesWithMetadata(cloudServices, serviceInstancesMetadata);
+    }
+
+    private List<CloudService> getServicesWithMetadata(List<CloudService> cloudServices, Map<String, Metadata> serviceInstancesMetadata) {
+        List<CloudService> cloudServicesWithMetadata = new ArrayList<>();
+        for (int i = 0; i < cloudServices.size(); i++) {
+            final CloudService cloudService = cloudServices.get(i);
+            final String serviceName = cloudService.getName();
+            final ImmutableCloudService cloudServiceWithMetadata = ImmutableCloudService.builder()
+                                                                                        .from(cloudService)
+                                                                                        .v3Metadata(serviceInstancesMetadata.get(serviceName))
+                                                                                        .build();
+            cloudServicesWithMetadata.add(cloudServiceWithMetadata);
+        }
+        return cloudServicesWithMetadata;
+    }
+
+    private Map<String, Metadata> getServiceInstancesMetadata(List<String> names) {
+        String spaceGuid = getTargetSpaceGuid().toString();
+        IntFunction<ListServiceInstancesRequest> pageRequestSupplier = page -> ListServiceInstancesRequest.builder()
+                                                                                                          .spaceId(spaceGuid)
+                                                                                                          .addAllServiceInstanceNames(names)
+                                                                                                          .page(page)
+                                                                                                          .build();
+        return PaginationUtils.requestClientV3Resources(page -> v3Client.serviceInstancesV3()
+                                                                        .list(pageRequestSupplier.apply(page)))
+                              .collectMap(response -> response.getName(), response -> response.getMetadata())
+                              .block();
     }
 
     @Override
     public List<CloudService> getServicesByMetadata(String labelSelector) {
-        Mono<ListServiceInstancesResponse> monoServicesResponse = v3Client.serviceInstancesV3().list(ListServiceInstancesRequest.builder().labelSelector(labelSelector).build());
-        Flux<ServiceInstanceResource> fluxServicesResources = PaginationUtils.requestClientV3Resources(page -> monoServicesResponse);
-        return fluxServicesResources.map(this::v3ServiceToV2Service).collect(Collectors.toList()).block();
+        String spaceGuid = getTargetSpaceGuid().toString();
+        IntFunction<ListServiceInstancesRequest> listServiceInstancesPageRequestSupplier = page -> ListServiceInstancesRequest.builder()
+                                                                                                                              .labelSelector(labelSelector)
+                                                                                                                              .spaceId(spaceGuid)
+                                                                                                                              .page(page)
+                                                                                                                              .build();
+
+        final Map<String, Metadata> serviceInstancesMetadata = PaginationUtils.requestClientV3Resources(page -> v3Client.serviceInstancesV3()
+                                                                                                                        .list(listServiceInstancesPageRequestSupplier.apply(page)))
+                                                                              .collectMap(response -> response.getName(),
+                                                                                          response -> response.getMetadata())
+                                                                              .block();
+
+        final List<CloudService> cloudServices = fetchListWithAuxiliaryContent(() -> getServiceInstanceResourcesByNames(serviceInstancesMetadata.keySet()),
+                                                                               this::zipWithAuxiliaryServiceContent);
+
+        return getServicesWithMetadata(cloudServices, serviceInstancesMetadata);
+    }
+
+    @Override
+    public List<CloudDomain> getSharedDomains() {
+        return fetchList(this::getSharedDomainResources, ImmutableRawCloudSharedDomain::of);
     }
 
     @Override
@@ -1056,6 +1196,31 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
+    public CloudTask getTask(UUID taskGuid) {
+        return fetch(() -> getTaskResource(taskGuid), ImmutableRawCloudTask::of);
+    }
+
+    @Override
+    public List<CloudTask> getTasks(String applicationName) {
+        UUID applicationGuid = getRequiredApplicationGuid(applicationName);
+        return fetchList(() -> getTaskResourcesByApplicationGuid(applicationGuid), ImmutableRawCloudTask::of);
+    }
+
+    @Override
+    public Upload getUploadStatus(UUID packageGuid) {
+        CloudPackage cloudPackage = findPackage(packageGuid);
+        ErrorDetails errorDetails = ImmutableErrorDetails.builder()
+                                                         .description(cloudPackage.getData()
+                                                                                  .getError())
+                                                         .build();
+
+        return ImmutableUpload.builder()
+                              .status(cloudPackage.getStatus())
+                              .errorDetails(errorDetails)
+                              .build();
+    }
+
+    @Override
     public OAuth2AccessToken login() {
         oAuthClient.init(credentials);
         return oAuthClient.getToken();
@@ -1103,6 +1268,12 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     public StartingInfo restartApplication(String applicationName) {
         stopApplication(applicationName);
         return startApplication(applicationName);
+    }
+
+    @Override
+    public CloudTask runTask(String applicationName, CloudTask task) {
+        UUID applicationGuid = getRequiredApplicationGuid(applicationName);
+        return createTask(applicationGuid, task);
     }
 
     @Override
@@ -1222,16 +1393,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public void updateApplicationMetadata(UUID guid, org.cloudfoundry.client.v3.Metadata metadata) {
-        v3Client.applicationsV3()
-                .update(org.cloudfoundry.client.v3.applications.UpdateApplicationRequest.builder()
-                                                                                        .applicationId(guid.toString())
-                                                                                        .metadata(metadata)
-                                                                                        .build())
-                .block();
-    }
-
-    @Override
     public void updateApplicationMemory(String applicationName, int memory) {
         UUID applicationGuid = getRequiredApplicationGuid(applicationName);
         v3Client.applicationsV2()
@@ -1243,10 +1404,22 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
+    public void updateApplicationMetadata(UUID guid, org.cloudfoundry.client.v3.Metadata metadata) {
+        v3Client.applicationsV3()
+                .update(org.cloudfoundry.client.v3.applications.UpdateApplicationRequest.builder()
+                                                                                        .applicationId(guid.toString())
+                                                                                        .metadata(metadata)
+                                                                                        .build())
+                .block();
+    }
+
+    @Override
     public List<String> updateApplicationServices(String applicationName,
                                                   Map<String, Map<String, Object>> serviceNamesWithBindingParameters) {
-        // No implementation here is needed because the logic is moved in ApplicationServicesUpdater in order to be used in other
-        // implementations of the client. Currently, the ApplicationServicesUpdater is used only in CloudControllerClientImpl. Check
+        // No implementation here is needed because the logic is moved in ApplicationServicesUpdater in order to be
+        // used in other
+        // implementations of the client. Currently, the ApplicationServicesUpdater is used only in
+        // CloudControllerClientImpl. Check
         // CloudControllerClientImpl.updateApplicationServices
         throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
     }
@@ -1320,16 +1493,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public void updateServiceMetadata(UUID guid, org.cloudfoundry.client.v3.Metadata metadata) {
-        v3Client.serviceInstancesV3()
-                .update(UpdateServiceInstanceRequest.builder()
-                        .serviceInstanceId(guid.toString())
-                        .metadata(metadata)
-                        .build())
-                .block();
-    }
-
-    @Override
     public void updateServiceBroker(CloudServiceBroker serviceBroker) {
         Assert.notNull(serviceBroker, "Service broker must not be null.");
 
@@ -1349,34 +1512,22 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
+    public void updateServiceMetadata(UUID guid, org.cloudfoundry.client.v3.Metadata metadata) {
+        v3Client.serviceInstancesV3()
+                .update(UpdateServiceInstanceRequest.builder()
+                                                    .serviceInstanceId(guid.toString())
+                                                    .metadata(metadata)
+                                                    .build())
+                .block();
+    }
+
+    @Override
     public void updateServicePlanVisibilityForBroker(String name, boolean visibility) {
         CloudServiceBroker broker = getServiceBroker(name);
         List<CloudServicePlan> servicePlans = findServicePlansByBrokerGuid(getGuid(broker));
         for (CloudServicePlan servicePlan : servicePlans) {
             updateServicePlanVisibility(servicePlan, visibility);
         }
-    }
-
-    @Override
-    public CloudTask getTask(UUID taskGuid) {
-        return fetch(() -> getTaskResource(taskGuid), ImmutableRawCloudTask::of);
-    }
-
-    @Override
-    public List<CloudTask> getTasks(String applicationName) {
-        UUID applicationGuid = getRequiredApplicationGuid(applicationName);
-        return fetchList(() -> getTaskResourcesByApplicationGuid(applicationGuid), ImmutableRawCloudTask::of);
-    }
-
-    @Override
-    public CloudTask runTask(String applicationName, CloudTask task) {
-        UUID applicationGuid = getRequiredApplicationGuid(applicationName);
-        return createTask(applicationGuid, task);
-    }
-
-    @Override
-    public CloudTask cancelTask(UUID taskGuid) {
-        return fetch(() -> cancelTaskResource(taskGuid), ImmutableRawCloudTask::of);
     }
 
     @Override
@@ -1399,524 +1550,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                 file.delete();
             }
         }
-    }
-
-    @Override
-    public UploadToken asyncUploadApplication(String applicationName, File file, UploadStatusCallback callback) throws IOException {
-        UploadToken uploadToken = startUpload(applicationName, file);
-        processAsyncUploadInBackground(uploadToken, callback);
-        return uploadToken;
-    }
-
-    @Override
-    public Upload getUploadStatus(UUID packageGuid) {
-        CloudPackage cloudPackage = findPackage(packageGuid);
-        ErrorDetails errorDetails = ImmutableErrorDetails.builder()
-                                                         .description(cloudPackage.getData()
-                                                                                  .getError())
-                                                         .build();
-
-        return ImmutableUpload.builder()
-                              .status(cloudPackage.getStatus())
-                              .errorDetails(errorDetails)
-                              .build();
-    }
-
-    @Override
-    public CloudBuild getBuild(UUID buildGuid) {
-        return fetch(() -> getBuildResource(buildGuid), ImmutableRawCloudBuild::of);
-    }
-
-    @Override
-    public List<CloudBuild> getBuildsForApplication(UUID applicationGuid) {
-        return fetchList(() -> getBuildResourcesByApplicationGuid(applicationGuid), ImmutableRawCloudBuild::of);
-    }
-
-    @Override
-    public List<CloudBuild> getBuildsForPackage(UUID packageGuid) {
-        Map<String, Object> urlVars = new HashMap<>();
-        urlVars.put("packageGuid", packageGuid);
-        return doGetResources("/v3/builds?package_guids={packageGuid}", urlVars, CloudBuild.class);
-    }
-
-    @Override
-    public CloudBuild createBuild(UUID packageGuid) {
-        return fetch(() -> createBuildResource(packageGuid), ImmutableRawCloudBuild::of);
-    }
-
-    @Override
-    public void bindDropletToApp(UUID dropletGuid, UUID applicationGuid) {
-        v3Client.applicationsV3()
-                .setCurrentDroplet(SetApplicationCurrentDropletRequest.builder()
-                                                                      .applicationId(applicationGuid.toString())
-                                                                      .data(Relationship.builder()
-                                                                                        .id(dropletGuid.toString())
-                                                                                        .build())
-                                                                      .build())
-                .block();
-    }
-
-    private <R> List<R> doGetResources(String urlPath, Map<String, Object> urlVariables, Class<R> resourceClass) {
-        List<Map<String, Object>> resourceList = getAllResources(urlPath, urlVariables);
-        List<R> resources = new ArrayList<>();
-        for (Map<String, Object> resource : resourceList) {
-            if (resource != null) {
-                resources.add(resourceMapper.mapResource(resource, resourceClass));
-            }
-        }
-        return resources;
-    }
-
-    private List<Map<String, Object>> getAllResources(String urlPath, Map<String, Object> urlVars) {
-        Map<String, Object> responseMap = getResponseMap(urlPath, urlVars);
-        List<Map<String, Object>> allResources = new ArrayList<>();
-        List<Map<String, Object>> newResources = (List<Map<String, Object>>) responseMap.get("resources");
-        if (newResources != null && !newResources.isEmpty()) {
-            allResources.addAll(newResources);
-        }
-        addAllRemainingResources(responseMap, allResources);
-        return allResources;
-    }
-
-    private Map<String, Object> getResponseMap(String urlPath, Map<String, Object> urlVars) {
-        String response = getResponse(urlPath, urlVars);
-        return JsonUtil.convertJsonToMap(response);
-    }
-
-    private String getResponse(String urlPath, Map<String, Object> urlVars) {
-        return urlVars == null ? getRestTemplate().getForObject(getUrl(urlPath), String.class)
-            : getRestTemplate().getForObject(getUrl(urlPath), String.class, urlVars);
-    }
-
-    private void addAllRemainingResources(Map<String, Object> responseMap, List<Map<String, Object>> allResources) {
-        String nextUrl = getNextUrl(responseMap);
-
-        while (nextUrl != null && !nextUrl.isEmpty()) {
-            nextUrl = addPageOfResources(nextUrl, allResources);
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    private String addPageOfResources(String nextUrl, List<Map<String, Object>> allResources) {
-        String response = getRestTemplate().getForObject(nextUrl, String.class);
-        Map<String, Object> respMap = JsonUtil.convertJsonToMap(response);
-        List<Map<String, Object>> newResources = (List<Map<String, Object>>) respMap.get("resources");
-        if (newResources != null && !newResources.isEmpty()) {
-            allResources.addAll(newResources);
-        }
-        return getNextUrl(respMap);
-    }
-
-    private String getNextUrl(Map<String, Object> responseMap) {
-        String nextUrl = getNextUrlValue(responseMap);
-        if (nextUrl != null && !nextUrl.isEmpty()) {
-            return getUrl(nextUrl);
-        }
-        Map<String, Object> paginationMap = getPaginationMap(responseMap);
-        if (paginationMap == null) {
-            return null;
-        }
-        return getNextUrlValueV3(paginationMap);
-    }
-
-    @SuppressWarnings("unchecked")
-    private Map<String, Object> getPaginationMap(Map<String, Object> responseMap) {
-        return (Map<String, Object>) responseMap.get("pagination");
-    }
-
-    private String getNextUrlValue(Map<String, Object> map) {
-        return (String) map.get("next_url");
-    }
-
-    private String getNextUrlValueV3(Map<String, Object> map) {
-        Map<String, Object> next = (Map<String, Object>) map.get("next");
-        return next == null ? null : (String) next.get("href");
-    }
-
-    private CloudApplication findApplicationByName(String name, boolean required) {
-        CloudApplication application = findApplicationByName(name);
-        if (application == null && required) {
-            throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Application " + name + " not found.");
-        }
-        return application;
-    }
-
-    private CloudApplication findApplicationByName(String name) {
-        return fetchWithAuxiliaryContent(() -> getApplicationResourceByName(name), this::zipWithAuxiliaryApplicationContent);
-    }
-
-    private CloudApplication findApplication(UUID guid) {
-        return fetchWithAuxiliaryContent(() -> getApplicationResource(guid), this::zipWithAuxiliaryApplicationContent);
-    }
-
-    private Flux<? extends Resource<ApplicationEntity>> getApplicationResources() {
-        IntFunction<ListSpaceApplicationsRequest> pageRequestSupplier = page -> ListSpaceApplicationsRequest.builder()
-                                                                                                            .spaceId(getTargetSpaceGuid().toString())
-                                                                                                            .page(page)
-                                                                                                            .build();
-        return PaginationUtils.requestClientV2Resources(page -> v3Client.spaces()
-                                                                        .listApplications(pageRequestSupplier.apply(page)));
-    }
-
-    private Mono<? extends Resource<ApplicationEntity>> getApplicationResource(UUID guid) {
-        GetApplicationRequest request = GetApplicationRequest.builder()
-                                                             .applicationId(guid.toString())
-                                                             .build();
-        return v3Client.applicationsV2()
-                       .get(request);
-    }
-
-    private Mono<? extends Resource<ApplicationEntity>> getApplicationResourceByName(String name) {
-        IntFunction<ListApplicationsRequest> pageRequestSupplier = page -> ListApplicationsRequest.builder()
-                                                                                                  .spaceId(getTargetSpaceGuid().toString())
-                                                                                                  .name(name)
-                                                                                                  .page(page)
-                                                                                                  .build();
-        return PaginationUtils.requestClientV2Resources(page -> v3Client.applicationsV2()
-                                                                        .list(pageRequestSupplier.apply(page)))
-                              .singleOrEmpty();
-    }
-
-    private Mono<Derivable<CloudApplication>> zipWithAuxiliaryApplicationContent(Resource<ApplicationEntity> applicationResource) {
-        UUID applicationGuid = getGuid(applicationResource);
-        return getApplicationSummary(applicationGuid).zipWhen(this::getApplicationStackResource)
-                                                     .map(tuple -> ImmutableRawCloudApplication.builder()
-                                                                                               .resource(applicationResource)
-                                                                                               .summary(tuple.getT1())
-                                                                                               .stack(ImmutableRawCloudStack.of(tuple.getT2()))
-                                                                                               .space(target)
-                                                                                               .build());
-    }
-
-    private Mono<SummaryApplicationResponse> getApplicationSummary(UUID guid) {
-        SummaryApplicationRequest request = SummaryApplicationRequest.builder()
-                                                                     .applicationId(guid.toString())
-                                                                     .build();
-        return v3Client.applicationsV2()
-                       .summary(request);
-    }
-
-    private Mono<? extends Resource<StackEntity>> getApplicationStackResource(SummaryApplicationResponse summary) {
-        UUID stackGuid = UUID.fromString(summary.getStackId());
-        return getStackResource(stackGuid);
-    }
-
-    private CloudServiceInstance findServiceInstanceByName(String name) {
-        return fetchWithAuxiliaryContent(() -> getServiceInstanceResourceByName(name), this::zipWithAuxiliaryServiceInstanceContent);
-    }
-
-    private CloudService findServiceByName(String name) {
-        return fetchWithAuxiliaryContent(() -> getServiceInstanceResourceByName(name), this::zipWithAuxiliaryServiceContent);
-    }
-
-    private Flux<? extends Resource<UnionServiceInstanceEntity>> getServiceInstanceResources() {
-        IntFunction<ListSpaceServiceInstancesRequest> pageRequestSupplier = page -> ListSpaceServiceInstancesRequest.builder()
-                                                                                                                    .returnUserProvidedServiceInstances(true)
-                                                                                                                    .spaceId(getTargetSpaceGuid().toString())
-                                                                                                                    .page(page)
-                                                                                                                    .build();
-        return getServiceInstanceResources(pageRequestSupplier);
-    }
-
-    private Mono<? extends Resource<UnionServiceInstanceEntity>> getServiceInstanceResourceByName(String name) {
-        IntFunction<ListSpaceServiceInstancesRequest> pageRequestSupplier = page -> ListSpaceServiceInstancesRequest.builder()
-                                                                                                                    .returnUserProvidedServiceInstances(true)
-                                                                                                                    .spaceId(getTargetSpaceGuid().toString())
-                                                                                                                    .name(name)
-                                                                                                                    .page(page)
-                                                                                                                    .build();
-        return getServiceInstanceResources(pageRequestSupplier).singleOrEmpty();
-    }
-
-    private Flux<? extends Resource<UnionServiceInstanceEntity>>
-            getServiceInstanceResources(IntFunction<ListSpaceServiceInstancesRequest> pageRequestSupplier) {
-        return PaginationUtils.requestClientV2Resources(page -> v3Client.spaces()
-                                                                        .listServiceInstances(pageRequestSupplier.apply(page)));
-    }
-
-    private Mono<Derivable<CloudServiceInstance>>
-            zipWithAuxiliaryServiceInstanceContent(Resource<UnionServiceInstanceEntity> serviceInstanceResource) {
-        Mono<List<CloudServiceBinding>> serviceBindings = getServiceInstanceBindingsFlux(getGuid(serviceInstanceResource)).collectList();
-        Mono<Derivable<CloudService>> service = zipWithAuxiliaryServiceContent(serviceInstanceResource);
-        return Mono.zip(service, serviceBindings)
-                   .map(tuple -> ImmutableRawCloudServiceInstance.builder()
-                                                                 .resource(serviceInstanceResource)
-                                                                 .serviceBindings(tuple.getT2())
-                                                                 .service(tuple.getT1())
-                                                                 .build());
-    }
-
-    private Flux<CloudServiceBinding> getServiceInstanceBindingsFlux(UUID serviceInstanceGuid) {
-        return fetchFluxWithAuxiliaryContent(() -> getServiceBindingResourcesByServiceInstanceGuid(serviceInstanceGuid),
-                                             this::zipWithAuxiliaryServiceBindingContent);
-    }
-
-    private Mono<Derivable<CloudService>> zipWithAuxiliaryServiceContent(Resource<UnionServiceInstanceEntity> serviceInstanceResource) {
-        UnionServiceInstanceEntity serviceInstance = serviceInstanceResource.getEntity();
-        if (isUserProvided(serviceInstance)) {
-            return Mono.just(ImmutableRawCloudService.of(serviceInstanceResource));
-        }
-        UUID serviceGuid = UUID.fromString(serviceInstance.getServiceId());
-        UUID servicePlanGuid = UUID.fromString(serviceInstance.getServicePlanId());
-        return Mono.zip(Mono.just(serviceInstanceResource), getServiceResource(serviceGuid), getServicePlanResource(servicePlanGuid))
-                   .map(tuple -> ImmutableRawCloudService.builder()
-                                                         .resource(tuple.getT1())
-                                                         .serviceResource(tuple.getT2())
-                                                         .servicePlanResource(tuple.getT3())
-                                                         .build());
-    }
-
-    private boolean isUserProvided(UnionServiceInstanceEntity serviceInstance) {
-        return USER_PROVIDED_SERVICE_INSTANCE_TYPE.equals(serviceInstance.getType());
-    }
-
-    private List<UUID> getServiceBindingGuids(CloudService service) {
-        Flux<? extends Resource<ServiceBindingEntity>> bindings = getServiceBindingResources(service);
-        return getGuids(bindings);
-    }
-
-    private List<UUID> getServiceBindingGuids(UUID applicationGuid) {
-        Flux<? extends Resource<ServiceBindingEntity>> bindings = getServiceBindingResourcesByApplicationGuid(applicationGuid);
-        return getGuids(bindings);
-    }
-
-    private Flux<? extends Resource<ServiceBindingEntity>> getServiceBindingResources(CloudService service) {
-        UUID serviceGuid = getGuid(service);
-        if (service.isUserProvided()) {
-            return getUserProvidedServiceBindingResourcesByServiceInstanceGuid(serviceGuid);
-        }
-        return getServiceBindingResourcesByServiceInstanceGuid(serviceGuid);
-    }
-
-    private Flux<? extends Resource<ServiceBindingEntity>>
-            getUserProvidedServiceBindingResourcesByServiceInstanceGuid(UUID serviceInstanceGuid) {
-        IntFunction<ListUserProvidedServiceInstanceServiceBindingsRequest> pageRequestSupplier = page -> ListUserProvidedServiceInstanceServiceBindingsRequest.builder()
-                                                                                                                                                              .userProvidedServiceInstanceId(serviceInstanceGuid.toString())
-                                                                                                                                                              .page(page)
-                                                                                                                                                              .build();
-        return PaginationUtils.requestClientV2Resources(page -> v3Client.userProvidedServiceInstances()
-                                                                        .listServiceBindings(pageRequestSupplier.apply(page)));
-    }
-
-    private Flux<? extends Resource<ServiceBindingEntity>> getServiceBindingResourcesByServiceInstanceGuid(UUID serviceInstanceGuid) {
-        IntFunction<ListServiceBindingsRequest> pageRequestSupplier = page -> ListServiceBindingsRequest.builder()
-                                                                                                        .serviceInstanceId(serviceInstanceGuid.toString())
-                                                                                                        .page(page)
-                                                                                                        .build();
-        return PaginationUtils.requestClientV2Resources(page -> v3Client.serviceBindingsV2()
-                                                                        .list(pageRequestSupplier.apply(page)));
-    }
-
-    private Mono<? extends Resource<ServiceBindingEntity>>
-            getServiceBindingResourceByApplicationGuidAndServiceInstanceGuid(UUID applicationGuid, UUID serviceInstanceGuid) {
-        IntFunction<ListApplicationServiceBindingsRequest> pageRequestSupplier = page -> ListApplicationServiceBindingsRequest.builder()
-                                                                                                                              .applicationId(applicationGuid.toString())
-                                                                                                                              .serviceInstanceId(serviceInstanceGuid.toString())
-                                                                                                                              .page(page)
-                                                                                                                              .build();
-        return getApplicationServiceBindingResources(pageRequestSupplier).singleOrEmpty();
-    }
-
-    private Flux<? extends Resource<ServiceBindingEntity>> getServiceBindingResourcesByApplicationGuid(UUID applicationGuid) {
-        IntFunction<ListApplicationServiceBindingsRequest> pageRequestSupplier = page -> ListApplicationServiceBindingsRequest.builder()
-                                                                                                                              .applicationId(applicationGuid.toString())
-                                                                                                                              .page(page)
-                                                                                                                              .build();
-        return getApplicationServiceBindingResources(pageRequestSupplier);
-    }
-
-    private Flux<? extends Resource<ServiceBindingEntity>>
-            getApplicationServiceBindingResources(IntFunction<ListApplicationServiceBindingsRequest> pageRequestSupplier) {
-        return PaginationUtils.requestClientV2Resources(page -> v3Client.applicationsV2()
-                                                                        .listServiceBindings(pageRequestSupplier.apply(page)));
-    }
-
-    private Mono<Derivable<CloudServiceBinding>> zipWithAuxiliaryServiceBindingContent(Resource<ServiceBindingEntity> resource) {
-        Map<String, Object> parameters = fetchParametersQuietly(resource.getEntity()
-                                                                        .getServiceBindingParametersUrl());
-        return Mono.just(ImmutableRawCloudServiceBinding.builder()
-                                                        .resource(resource)
-                                                        .parameters(parameters)
-                                                        .build());
-    }
-
-    private List<CloudServicePlan> findServicePlansByBrokerGuid(UUID brokerGuid) {
-        List<CloudServiceOffering> offerings = findServiceOfferingsByBrokerGuid(brokerGuid);
-        return getPlans(offerings);
-    }
-
-    private List<CloudServicePlan> getPlans(List<CloudServiceOffering> offerings) {
-        return offerings.stream()
-                        .map(CloudServiceOffering::getServicePlans)
-                        .flatMap(Collection::stream)
-                        .collect(Collectors.toList());
-    }
-
-    private void updateServicePlanVisibility(CloudServicePlan servicePlan, boolean visibility) {
-        updateServicePlanVisibility(getGuid(servicePlan), visibility);
-    }
-
-    private void updateServicePlanVisibility(UUID servicePlanGuid, boolean visibility) {
-        UpdateServicePlanRequest request = UpdateServicePlanRequest.builder()
-                                                                   .servicePlanId(servicePlanGuid.toString())
-                                                                   .publiclyVisible(visibility)
-                                                                   .build();
-        v3Client.servicePlans()
-                .update(request)
-                .block();
-    }
-
-    private Flux<? extends Resource<UserEntity>> getSpaceAuditorResourcesBySpaceGuid(UUID spaceGuid) {
-        IntFunction<ListSpaceAuditorsRequest> pageRequestSupplier = page -> ListSpaceAuditorsRequest.builder()
-                                                                                                    .spaceId(spaceGuid.toString())
-                                                                                                    .page(page)
-                                                                                                    .build();
-        return PaginationUtils.requestClientV2Resources(page -> v3Client.spaces()
-                                                                        .listAuditors(pageRequestSupplier.apply(page)));
-    }
-
-    private Flux<? extends Resource<UserEntity>> getSpaceDeveloperResourcesBySpaceGuid(UUID spaceGuid) {
-        IntFunction<ListSpaceDevelopersRequest> pageRequestSupplier = page -> ListSpaceDevelopersRequest.builder()
-                                                                                                        .spaceId(spaceGuid.toString())
-                                                                                                        .page(page)
-                                                                                                        .build();
-        return PaginationUtils.requestClientV2Resources(page -> v3Client.spaces()
-                                                                        .listDevelopers(pageRequestSupplier.apply(page)));
-    }
-
-    private Flux<? extends Resource<UserEntity>> getSpaceManagerResourcesBySpaceGuid(UUID spaceGuid) {
-        IntFunction<ListSpaceManagersRequest> pageRequestSupplier = page -> ListSpaceManagersRequest.builder()
-                                                                                                    .spaceId(spaceGuid.toString())
-                                                                                                    .page(page)
-                                                                                                    .build();
-        return PaginationUtils.requestClientV2Resources(page -> v3Client.spaces()
-                                                                        .listManagers(pageRequestSupplier.apply(page)));
-    }
-
-    private Mono<? extends Task> getTaskResource(UUID guid) {
-        GetTaskRequest request = GetTaskRequest.builder()
-                                               .taskId(guid.toString())
-                                               .build();
-        return v3Client.tasks()
-                       .get(request);
-    }
-
-    private Flux<? extends Task> getTaskResourcesByApplicationGuid(UUID applicationGuid) {
-        IntFunction<ListTasksRequest> pageRequestSupplier = page -> ListTasksRequest.builder()
-                                                                                    .applicationId(applicationGuid.toString())
-                                                                                    .page(page)
-                                                                                    .build();
-        return PaginationUtils.requestClientV3Resources(page -> v3Client.tasks()
-                                                                        .list(pageRequestSupplier.apply(page)));
-    }
-
-    private CloudTask createTask(UUID applicationGuid, CloudTask task) {
-        return fetch(() -> createTaskResource(applicationGuid, task), ImmutableRawCloudTask::of);
-    }
-
-    private Mono<? extends Task> createTaskResource(UUID applicationGuid, CloudTask task) {
-        CreateTaskRequest request = CreateTaskRequest.builder()
-                                                     .applicationId(applicationGuid.toString())
-                                                     .command(task.getCommand())
-                                                     .name(task.getName())
-                                                     .memoryInMb(task.getLimits()
-                                                                     .getMemory())
-                                                     .diskInMb(task.getLimits()
-                                                                   .getDisk())
-                                                     .build();
-        return v3Client.tasks()
-                       .create(request);
-    }
-
-    private Mono<? extends Task> cancelTaskResource(UUID taskGuid) {
-        CancelTaskRequest request = CancelTaskRequest.builder()
-                                                     .taskId(taskGuid.toString())
-                                                     .build();
-        return v3Client.tasks()
-                       .cancel(request);
-    }
-
-    private File createTemporaryUploadFile(InputStream inputStream) throws IOException {
-        File file = File.createTempFile("cfjava", null);
-        FileOutputStream outputStream = new FileOutputStream(file);
-        FileCopyUtils.copy(inputStream, outputStream);
-        outputStream.close();
-        return file;
-    }
-
-    private UploadToken startUpload(String applicationName, File file) {
-        Assert.notNull(applicationName, "AppName must not be null");
-        Assert.notNull(file, "File must not be null");
-
-        UUID applicationGuid = getRequiredApplicationGuid(applicationName);
-        UUID packageGuid = getGuid(createPackageForApplication(applicationGuid));
-
-        v3Client.packages()
-                .upload(UploadPackageRequest.builder()
-                                            .bits(file.toPath())
-                                            .packageId(packageGuid.toString())
-                                            .build())
-                .block();
-
-        return ImmutableUploadToken.builder()
-                                   .packageGuid(packageGuid)
-                                   .build();
-    }
-
-    private CloudPackage createPackageForApplication(UUID applicationGuid) {
-        return fetch(() -> createPackageResource(applicationGuid), ImmutableRawCloudPackage::of);
-    }
-
-    private Mono<? extends org.cloudfoundry.client.v3.packages.Package> createPackageResource(UUID applicationGuid) {
-        CreatePackageRequest request = CreatePackageRequest.builder()
-                                                           .type(PackageType.BITS)
-                                                           .relationships(buildPackageRelationships(applicationGuid))
-                                                           .build();
-        return v3Client.packages()
-                       .create(request);
-    }
-
-    private PackageRelationships buildPackageRelationships(UUID applicationGuid) {
-        return PackageRelationships.builder()
-                                   .application(buildToOneRelationship(applicationGuid))
-                                   .build();
-    }
-
-    private ToOneRelationship buildToOneRelationship(UUID guid) {
-        return ToOneRelationship.builder()
-                                .data(buildRelationship(guid))
-                                .build();
-    }
-
-    private Relationship buildRelationship(UUID guid) {
-        return Relationship.builder()
-                           .id(guid.toString())
-                           .build();
-    }
-
-    private Mono<? extends Build> createBuildResource(UUID packageGuid) {
-        CreateBuildRequest request = CreateBuildRequest.builder()
-                                                       .getPackage(buildRelationship(packageGuid))
-                                                       .build();
-        return v3Client.builds()
-                       .create(request);
-    }
-
-    private Mono<? extends Build> getBuildResource(UUID buildGuid) {
-        GetBuildRequest request = GetBuildRequest.builder()
-                                                 .buildId(buildGuid.toString())
-                                                 .build();
-        return v3Client.builds()
-                       .get(request);
-    }
-
-    private Flux<? extends Build> getBuildResourcesByApplicationGuid(UUID applicationGuid) {
-        IntFunction<ListApplicationBuildsRequest> pageRequestSupplier = page -> ListApplicationBuildsRequest.builder()
-                                                                                                            .applicationId(applicationGuid.toString())
-                                                                                                            .page(page)
-                                                                                                            .build();
-        return PaginationUtils.requestClientV3Resources(page -> v3Client.applicationsV3()
-                                                                        .listBuilds(pageRequestSupplier.apply(page)));
     }
 
     protected void extractUriInfo(Map<String, UUID> existingDomains, String uri, Map<String, String> uriInfo) {
@@ -1946,19 +1579,27 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         }
     }
 
-    private void extractDomainInfo(Map<String, UUID> existingDomains, Map<String, String> uriInfo, String domain, String hostName,
-                                   String path) {
-        for (String existingDomain : existingDomains.keySet()) {
-            if (domain.equals(existingDomain)) {
-                uriInfo.put("domainName", existingDomain);
-                uriInfo.put("host", hostName);
-                uriInfo.put("path", path);
-            }
+    protected String getUrl(String path) {
+        return controllerUrl + (path.startsWith(DEFAULT_PATH_SEPARATOR) ? path : DEFAULT_PATH_SEPARATOR + path);
+    }
+
+    private void addAllRemainingResources(Map<String, Object> responseMap, List<Map<String, Object>> allResources) {
+        String nextUrl = getNextUrl(responseMap);
+
+        while (nextUrl != null && !nextUrl.isEmpty()) {
+            nextUrl = addPageOfResources(nextUrl, allResources);
         }
     }
 
-    protected String getUrl(String path) {
-        return controllerUrl + (path.startsWith(DEFAULT_PATH_SEPARATOR) ? path : DEFAULT_PATH_SEPARATOR + path);
+    @SuppressWarnings("unchecked")
+    private String addPageOfResources(String nextUrl, List<Map<String, Object>> allResources) {
+        String response = getRestTemplate().getForObject(nextUrl, String.class);
+        Map<String, Object> respMap = JsonUtil.convertJsonToMap(response);
+        List<Map<String, Object>> newResources = (List<Map<String, Object>>) respMap.get("resources");
+        if (newResources != null && !newResources.isEmpty()) {
+            allResources.addAll(newResources);
+        }
+        return getNextUrl(respMap);
     }
 
     private void addStagingToRequest(Staging staging, Map<String, Object> appRequest) {
@@ -2021,12 +1662,82 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                 .block();
     }
 
-    private UUID getOrAddRoute(UUID domainGuid, String host, String path) {
-        UUID routeGuid = getRouteGuid(domainGuid, host, path);
-        if (routeGuid == null) {
-            routeGuid = doAddRoute(domainGuid, host, path);
-        }
-        return routeGuid;
+    private PackageRelationships buildPackageRelationships(UUID applicationGuid) {
+        return PackageRelationships.builder()
+                                   .application(buildToOneRelationship(applicationGuid))
+                                   .build();
+    }
+
+    private Relationship buildRelationship(UUID guid) {
+        return Relationship.builder()
+                           .id(guid.toString())
+                           .build();
+    }
+
+    private ToOneRelationship buildToOneRelationship(UUID guid) {
+        return ToOneRelationship.builder()
+                                .data(buildRelationship(guid))
+                                .build();
+    }
+
+    private Mono<? extends Task> cancelTaskResource(UUID taskGuid) {
+        CancelTaskRequest request = CancelTaskRequest.builder()
+                                                     .taskId(taskGuid.toString())
+                                                     .build();
+        return v3Client.tasks()
+                       .cancel(request);
+    }
+
+    private Predicate<Resource<RouteEntity>> checkForEmptyHost() {
+        return routeEntity -> StringUtils.isEmpty(routeEntity.getEntity()
+                                                             .getHost());
+    }
+
+    private Mono<? extends Build> createBuildResource(UUID packageGuid) {
+        CreateBuildRequest request = CreateBuildRequest.builder()
+                                                       .getPackage(buildRelationship(packageGuid))
+                                                       .build();
+        return v3Client.builds()
+                       .create(request);
+    }
+
+    private CloudPackage createPackageForApplication(UUID applicationGuid) {
+        return fetch(() -> createPackageResource(applicationGuid), ImmutableRawCloudPackage::of);
+    }
+
+    private Mono<? extends org.cloudfoundry.client.v3.packages.Package> createPackageResource(UUID applicationGuid) {
+        CreatePackageRequest request = CreatePackageRequest.builder()
+                                                           .type(PackageType.BITS)
+                                                           .relationships(buildPackageRelationships(applicationGuid))
+                                                           .build();
+        return v3Client.packages()
+                       .create(request);
+    }
+
+    private CloudTask createTask(UUID applicationGuid, CloudTask task) {
+        return fetch(() -> createTaskResource(applicationGuid, task), ImmutableRawCloudTask::of);
+    }
+
+    private Mono<? extends Task> createTaskResource(UUID applicationGuid, CloudTask task) {
+        CreateTaskRequest request = CreateTaskRequest.builder()
+                                                     .applicationId(applicationGuid.toString())
+                                                     .command(task.getCommand())
+                                                     .name(task.getName())
+                                                     .memoryInMb(task.getLimits()
+                                                                     .getMemory())
+                                                     .diskInMb(task.getLimits()
+                                                                   .getDisk())
+                                                     .build();
+        return v3Client.tasks()
+                       .create(request);
+    }
+
+    private File createTemporaryUploadFile(InputStream inputStream) throws IOException {
+        File file = File.createTempFile("cfjava", null);
+        FileOutputStream outputStream = new FileOutputStream(file);
+        FileCopyUtils.copy(inputStream, outputStream);
+        outputStream.close();
+        return file;
     }
 
     private UUID doAddRoute(UUID domainGuid, String host, String path) {
@@ -2083,6 +1794,25 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                 .block();
     }
 
+    private void doDeleteServiceKey(UUID guid) {
+        v3Client.serviceKeys()
+                .delete(DeleteServiceKeyRequest.builder()
+                                               .serviceKeyId(guid.toString())
+                                               .build())
+                .block();
+    }
+
+    private <R> List<R> doGetResources(String urlPath, Map<String, Object> urlVariables, Class<R> resourceClass) {
+        List<Map<String, Object>> resourceList = getAllResources(urlPath, urlVariables);
+        List<R> resources = new ArrayList<>();
+        for (Map<String, Object> resource : resourceList) {
+            if (resource != null) {
+                resources.add(resourceMapper.mapResource(resource, resourceClass));
+            }
+        }
+        return resources;
+    }
+
     private void doUnbindService(UUID applicationGuid, UUID serviceGuid) {
         UUID serviceBindingGuid = getServiceBindingGuid(applicationGuid, serviceGuid);
         doUnbindService(serviceBindingGuid);
@@ -2096,12 +1826,104 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                 .block();
     }
 
-    private void doDeleteServiceKey(UUID guid) {
-        v3Client.serviceKeys()
-                .delete(DeleteServiceKeyRequest.builder()
-                                               .serviceKeyId(guid.toString())
-                                               .build())
-                .block();
+    private void extractDomainInfo(Map<String, UUID> existingDomains, Map<String, String> uriInfo, String domain, String hostName,
+                                   String path) {
+        for (String existingDomain : existingDomains.keySet()) {
+            if (domain.equals(existingDomain)) {
+                uriInfo.put("domainName", existingDomain);
+                uriInfo.put("host", hostName);
+                uriInfo.put("path", path);
+            }
+        }
+    }
+
+    private <T, R, D extends Derivable<T>> T fetch(Supplier<Mono<R>> resourceSupplier, Function<R, D> resourceMapper) {
+        return fetchMono(resourceSupplier, resourceMapper).block();
+    }
+
+    private <T, R, D extends Derivable<T>> Flux<T> fetchFlux(Supplier<Flux<R>> resourceSupplier, Function<R, D> resourceMapper) {
+        return resourceSupplier.get()
+                               .map(resourceMapper)
+                               .map(Derivable::derive);
+    }
+
+    private <T, R, D extends Derivable<T>> Flux<T> fetchFluxWithAuxiliaryContent(Supplier<Flux<R>> resourceSupplier,
+                                                                                 Function<R, Mono<D>> resourceMapper) {
+        return resourceSupplier.get()
+                               .flatMap(resourceMapper)
+                               .map(Derivable::derive);
+    }
+
+    private <T, R, D extends Derivable<T>> List<T> fetchList(Supplier<Flux<R>> resourceSupplier, Function<R, D> resourceMapper) {
+        return fetchFlux(resourceSupplier, resourceMapper).collectList()
+                                                          .block();
+    }
+
+    private <T, R, D extends Derivable<T>> List<T> fetchListWithAuxiliaryContent(Supplier<Flux<R>> resourceSupplier,
+                                                                                 Function<R, Mono<D>> resourceMapper) {
+        return fetchFluxWithAuxiliaryContent(resourceSupplier, resourceMapper).collectList()
+                                                                              .block();
+    }
+
+    private <T, R, D extends Derivable<T>> Mono<T> fetchMono(Supplier<Mono<R>> resourceSupplier, Function<R, D> resourceMapper) {
+        return resourceSupplier.get()
+                               .map(resourceMapper)
+                               .map(Derivable::derive);
+    }
+
+    private <T, R, D extends Derivable<T>> Mono<T> fetchMonoWithAuxiliaryContent(Supplier<Mono<R>> resourceSupplier,
+                                                                                 Function<R, Mono<D>> resourceMapper) {
+        return resourceSupplier.get()
+                               .flatMap(resourceMapper)
+                               .map(Derivable::derive);
+    }
+
+    private List<CloudRoute> fetchOrphanRoutes(String domainName) {
+        List<CloudRoute> orphanRoutes = new ArrayList<>();
+        for (CloudRoute route : getRoutes(domainName)) {
+            if (!route.isUsed()) {
+                orphanRoutes.add(route);
+            }
+        }
+        return orphanRoutes;
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> fetchParameters(String url) {
+        return getRestTemplate().getForObject(getUrl(url), Map.class);
+    }
+
+    private Map<String, Object> fetchParametersQuietly(String url) {
+        try {
+            return fetchParameters(url);
+        } catch (CloudOperationException e) {
+            return null;
+        }
+    }
+
+    private <T, R, D extends Derivable<T>> T fetchWithAuxiliaryContent(Supplier<Mono<R>> resourceSupplier,
+                                                                       Function<R, Mono<D>> resourceMapper) {
+        return fetchMonoWithAuxiliaryContent(resourceSupplier, resourceMapper).block();
+    }
+
+    private CloudApplication findApplication(UUID guid) {
+        return fetchWithAuxiliaryContent(() -> getApplicationResource(guid), this::zipWithAuxiliaryApplicationContent);
+    }
+
+    private CloudApplication findApplicationByName(String name, boolean required) {
+        CloudApplication application = findApplicationByName(name);
+        if (application == null && required) {
+            throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Application " + name + " not found.");
+        }
+        return application;
+    }
+
+    private CloudApplication findApplicationByName(String name) {
+        return fetchWithAuxiliaryContent(() -> getApplicationResourceByName(name), this::zipWithAuxiliaryApplicationContent);
+    }
+
+    private InstancesInfo findApplicationInstances(UUID applicationGuid) {
+        return fetch(() -> getApplicationInstances(applicationGuid), ImmutableRawInstancesInfo::of);
     }
 
     private CloudDomain findDomainByName(String name, boolean required) {
@@ -2120,6 +1942,216 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return fetchList(() -> getPrivateDomainResourcesByOrganizationGuid(organizationGuid), ImmutableRawCloudPrivateDomain::of);
     }
 
+    private List<CloudEvent> findEventsByActee(String actee) {
+        return fetchList(() -> getEventResourcesByActee(actee), ImmutableRawCloudEvent::of);
+    }
+
+    private CloudOrganization findOrganization(String name) {
+        return fetch(() -> getOrganizationResourceByName(name), ImmutableRawCloudOrganization::of);
+    }
+
+    private CloudPackage findPackage(UUID guid) {
+        return fetch(() -> getPackageResource(guid), ImmutableRawCloudPackage::of);
+    }
+
+    private CloudServicePlan findPlanForService(CloudService service) {
+        List<CloudServiceOffering> offerings = findServiceOfferingsByLabel(service.getLabel());
+        for (CloudServiceOffering offering : offerings) {
+            if (service.getVersion() == null || service.getVersion()
+                                                       .equals(offering.getVersion())) {
+                for (CloudServicePlan plan : offering.getServicePlans()) {
+                    if (service.getPlan() != null && service.getPlan()
+                                                            .equals(plan.getName())) {
+                        return plan;
+                    }
+                }
+            }
+        }
+        throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Service plan " + service.getPlan() + " " + "not found.");
+    }
+
+    private List<CloudRoute> findRoutes(CloudDomain domain) {
+        return fetchListWithAuxiliaryContent(() -> getRouteTuple(domain, getTargetSpaceGuid()), this::zipWithAuxiliaryRouteContent);
+    }
+
+    private CloudServiceBroker findServiceBrokerByName(String name) {
+        return fetch(() -> getServiceBrokerResourceByName(name), ImmutableRawCloudServiceBroker::of);
+    }
+
+    private CloudService findServiceByName(String name) {
+        return fetchWithAuxiliaryContent(() -> getServiceInstanceResourceByName(name), this::zipWithAuxiliaryServiceContent);
+    }
+
+    private CloudServiceInstance findServiceInstanceByName(String name) {
+        return fetchWithAuxiliaryContent(() -> getServiceInstanceResourceByName(name), this::zipWithAuxiliaryServiceInstanceContent);
+    }
+
+    private List<CloudServiceOffering> findServiceOfferingsByBrokerGuid(UUID brokerGuid) {
+        return fetchListWithAuxiliaryContent(() -> getServiceResourcesByBrokerGuid(brokerGuid),
+                                             this::zipWithAuxiliaryServiceOfferingContent);
+    }
+
+    private List<CloudServiceOffering> findServiceOfferingsByLabel(String label) {
+        Assert.notNull(label, "Service label must not be null");
+        return fetchListWithAuxiliaryContent(() -> getServiceResourcesByLabel(label), this::zipWithAuxiliaryServiceOfferingContent);
+    }
+
+    private List<CloudServicePlan> findServicePlansByBrokerGuid(UUID brokerGuid) {
+        List<CloudServiceOffering> offerings = findServiceOfferingsByBrokerGuid(brokerGuid);
+        return getPlans(offerings);
+    }
+
+    private CloudSpace findSpaceByOrganizationGuidAndName(UUID organizationGuid, String spaceName, boolean required) {
+        CloudSpace space = findSpaceByOrganizationGuidAndName(organizationGuid, spaceName);
+        if (space == null && required) {
+            throw new CloudOperationException(HttpStatus.NOT_FOUND,
+                                              "Not Found",
+                                              "Space " + spaceName + " not found in organization with GUID " + organizationGuid + ".");
+        }
+        return space;
+    }
+
+    private CloudSpace findSpaceByOrganizationGuidAndName(UUID organizationGuid, String spaceName) {
+        return fetchWithAuxiliaryContent(() -> getSpaceResourceByOrganizationGuidAndName(organizationGuid, spaceName),
+                                         this::zipWithAuxiliarySpaceContent);
+    }
+
+    private List<UUID> findSpaceUsers(String organizationName, String spaceName, Function<UUID, List<UUID>> usersRetriever) {
+        CloudSpace space = getSpace(organizationName, spaceName);
+        return usersRetriever.apply(getGuid(space));
+    }
+
+    private List<CloudSpace> findSpacesByOrganizationGuid(UUID organizationGuid) {
+        return fetchListWithAuxiliaryContent(() -> getSpaceResourcesByOrganizationGuid(organizationGuid),
+                                             this::zipWithAuxiliarySpaceContent);
+    }
+
+    private CloudStack findStackResource(String name) {
+        return fetch(() -> getStackResourceByName(name), ImmutableRawCloudStack::of);
+    }
+
+    private List<Map<String, Object>> getAllResources(String urlPath, Map<String, Object> urlVars) {
+        Map<String, Object> responseMap = getResponseMap(urlPath, urlVars);
+        List<Map<String, Object>> allResources = new ArrayList<>();
+        List<Map<String, Object>> newResources = (List<Map<String, Object>>) responseMap.get("resources");
+        if (newResources != null && !newResources.isEmpty()) {
+            allResources.addAll(newResources);
+        }
+        addAllRemainingResources(responseMap, allResources);
+        return allResources;
+    }
+
+    private Mono<ApplicationInstancesResponse> getApplicationInstances(UUID applicationGuid) {
+        ApplicationInstancesRequest request = ApplicationInstancesRequest.builder()
+                                                                         .applicationId(applicationGuid.toString())
+                                                                         .build();
+        return v3Client.applicationsV2()
+                       .instances(request);
+    }
+
+    private Mono<? extends Resource<ApplicationEntity>> getApplicationResource(UUID guid) {
+        GetApplicationRequest request = GetApplicationRequest.builder()
+                                                             .applicationId(guid.toString())
+                                                             .build();
+        return v3Client.applicationsV2()
+                       .get(request);
+    }
+
+    private Mono<? extends Resource<ApplicationEntity>> getApplicationResourceByName(String name) {
+        IntFunction<ListApplicationsRequest> pageRequestSupplier = page -> ListApplicationsRequest.builder()
+                                                                                                  .spaceId(getTargetSpaceGuid().toString())
+                                                                                                  .name(name)
+                                                                                                  .page(page)
+                                                                                                  .build();
+        return PaginationUtils.requestClientV2Resources(page -> v3Client.applicationsV2()
+                                                                        .list(pageRequestSupplier.apply(page)))
+                              .singleOrEmpty();
+    }
+
+    private Flux<? extends Resource<ApplicationEntity>> getApplicationResources() {
+        IntFunction<ListSpaceApplicationsRequest> pageRequestSupplier = page -> ListSpaceApplicationsRequest.builder()
+                                                                                                            .spaceId(getTargetSpaceGuid().toString())
+                                                                                                            .page(page)
+                                                                                                            .build();
+        return PaginationUtils.requestClientV2Resources(page -> v3Client.spaces()
+                                                                        .listApplications(pageRequestSupplier.apply(page)));
+    }
+
+    private Flux<? extends Resource<ApplicationEntity>> getApplicationResourcesByNames(Collection<String> names) {
+        IntFunction<ListSpaceApplicationsRequest> pageRequestSupplier = page -> ListSpaceApplicationsRequest.builder()
+                                                                                                            .spaceId(getTargetSpaceGuid().toString())
+                                                                                                            .addAllNames(names)
+                                                                                                            .page(page)
+                                                                                                            .build();
+        return PaginationUtils.requestClientV2Resources(page -> v3Client.spaces()
+                                                                        .listApplications(pageRequestSupplier.apply(page)));
+    }
+
+    private Flux<? extends Resource<ServiceBindingEntity>>
+            getApplicationServiceBindingResources(IntFunction<ListApplicationServiceBindingsRequest> pageRequestSupplier) {
+        return PaginationUtils.requestClientV2Resources(page -> v3Client.applicationsV2()
+                                                                        .listServiceBindings(pageRequestSupplier.apply(page)));
+    }
+
+    private Mono<? extends Resource<StackEntity>> getApplicationStackResource(SummaryApplicationResponse summary) {
+        UUID stackGuid = UUID.fromString(summary.getStackId());
+        return getStackResource(stackGuid);
+    }
+
+    private Mono<SummaryApplicationResponse> getApplicationSummary(UUID guid) {
+        SummaryApplicationRequest request = SummaryApplicationRequest.builder()
+                                                                     .applicationId(guid.toString())
+                                                                     .build();
+        return v3Client.applicationsV2()
+                       .summary(request);
+    }
+
+    private List<CloudApplication> getApplicationsWithMetadata(List<CloudApplication> cloudApplications,
+                                                               Map<String, Metadata> applicationsMetadata) {
+        List<CloudApplication> applicationsWithMetadata = new ArrayList<>();
+        for (int i = 0; i < cloudApplications.size(); i++) {
+            final CloudApplication cloudApplication = cloudApplications.get(i);
+            final String applicationGuid = cloudApplication.getMetadata()
+                                                           .getGuid()
+                                                           .toString();
+            final ImmutableCloudApplication cloudApplicationWithMetadata = ImmutableCloudApplication.builder()
+                                                                                                    .from(cloudApplication)
+                                                                                                    .v3Metadata(applicationsMetadata.get(applicationGuid))
+                                                                                                    .build();
+            applicationsWithMetadata.add(cloudApplicationWithMetadata);
+        }
+        return applicationsWithMetadata;
+    }
+
+    private Mono<? extends Build> getBuildResource(UUID buildGuid) {
+        GetBuildRequest request = GetBuildRequest.builder()
+                                                 .buildId(buildGuid.toString())
+                                                 .build();
+        return v3Client.builds()
+                       .get(request);
+    }
+
+    private Flux<? extends Build> getBuildResourcesByApplicationGuid(UUID applicationGuid) {
+        IntFunction<ListApplicationBuildsRequest> pageRequestSupplier = page -> ListApplicationBuildsRequest.builder()
+                                                                                                            .applicationId(applicationGuid.toString())
+                                                                                                            .page(page)
+                                                                                                            .build();
+        return PaginationUtils.requestClientV3Resources(page -> v3Client.applicationsV3()
+                                                                        .listBuilds(pageRequestSupplier.apply(page)));
+    }
+
+    private Map<String, UUID> getDomainGuids() {
+        List<CloudDomain> availableDomains = new ArrayList<>();
+        availableDomains.addAll(getDomainsForOrganization());
+        availableDomains.addAll(getSharedDomains());
+        Map<String, UUID> domains = new HashMap<>(availableDomains.size());
+        for (CloudDomain availableDomain : availableDomains) {
+            domains.put(availableDomain.getName(), availableDomain.getMetadata()
+                                                                  .getGuid());
+        }
+        return domains;
+    }
+
     private Mono<? extends Resource<DomainEntity>> getDomainResourceByName(String name) {
         IntFunction<ListDomainsRequest> pageRequestSupplier = page -> ListDomainsRequest.builder()
                                                                                         .name(name)
@@ -2130,12 +2162,149 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                               .singleOrEmpty();
     }
 
-    private Flux<? extends Resource<SharedDomainEntity>> getSharedDomainResources() {
-        IntFunction<ListSharedDomainsRequest> pageRequestSupplier = page -> ListSharedDomainsRequest.builder()
+    private Flux<? extends Resource<EventEntity>> getEventResources() {
+        IntFunction<ListEventsRequest> pageRequestSupplier = page -> ListEventsRequest.builder()
+                                                                                      .page(page)
+                                                                                      .build();
+        return PaginationUtils.requestClientV2Resources(page -> v3Client.events()
+                                                                        .list(pageRequestSupplier.apply(page)));
+    }
+
+    private Flux<? extends Resource<EventEntity>> getEventResourcesByActee(String actee) {
+        IntFunction<ListEventsRequest> pageRequestSupplier = page -> ListEventsRequest.builder()
+                                                                                      .actee(actee)
+                                                                                      .page(page)
+                                                                                      .build();
+        return PaginationUtils.requestClientV2Resources(page -> v3Client.events()
+                                                                        .list(pageRequestSupplier.apply(page)));
+    }
+
+    private UUID getFirstEmptyRoute(List<? extends Resource<RouteEntity>> routeEntities) {
+        return routeEntities.stream()
+                            .filter(checkForEmptyHost())
+                            .findFirst()
+                            .map(this::getGuid)
+                            .orElse(null);
+    }
+
+    private UUID getGuid(org.cloudfoundry.client.v2.Resource<?> resource) {
+        return Optional.ofNullable(resource)
+                       .map(org.cloudfoundry.client.v2.Resource::getMetadata)
+                       .map(org.cloudfoundry.client.v2.Metadata::getId)
+                       .map(UUID::fromString)
+                       .orElse(null);
+    }
+
+    private UUID getGuid(CloudEntity entity) {
+        return Optional.ofNullable(entity)
+                       .map(CloudEntity::getMetadata)
+                       .map(CloudMetadata::getGuid)
+                       .orElse(null);
+    }
+
+    private List<UUID> getGuids(Flux<? extends Resource<?>> resources) {
+        return resources.map(this::getGuid)
+                        .collectList()
+                        .block();
+    }
+
+    private Mono<GetInfoResponse> getInfoResource() {
+        return v3Client.info()
+                       .get(GetInfoRequest.builder()
+                                          .build());
+    }
+
+    private String getName(CloudEntity entity) {
+        return entity == null ? null : entity.getName();
+    }
+
+    private String getNextUrl(Map<String, Object> responseMap) {
+        String nextUrl = getNextUrlValue(responseMap);
+        if (nextUrl != null && !nextUrl.isEmpty()) {
+            return getUrl(nextUrl);
+        }
+        Map<String, Object> paginationMap = getPaginationMap(responseMap);
+        if (paginationMap == null) {
+            return null;
+        }
+        return getNextUrlValueV3(paginationMap);
+    }
+
+    private String getNextUrlValue(Map<String, Object> map) {
+        return (String) map.get("next_url");
+    }
+
+    private String getNextUrlValueV3(Map<String, Object> map) {
+        Map<String, Object> next = (Map<String, Object>) map.get("next");
+        return next == null ? null : (String) next.get("href");
+    }
+
+    private UUID getOrAddRoute(UUID domainGuid, String host, String path) {
+        UUID routeGuid = getRouteGuid(domainGuid, host, path);
+        if (routeGuid == null) {
+            routeGuid = doAddRoute(domainGuid, host, path);
+        }
+        return routeGuid;
+    }
+
+    private UUID getOrganizationGuid(String organizationName, boolean required) {
+        CloudOrganization organization = getOrganization(organizationName, required);
+        return organization != null ? organization.getMetadata()
+                                                  .getGuid()
+            : null;
+    }
+
+    private Mono<? extends Derivable<CloudOrganization>> getOrganizationMono(UUID guid) {
+        return fetchMono(() -> getOrganizationResource(guid), ImmutableRawCloudOrganization::of);
+    }
+
+    private Mono<? extends Resource<OrganizationEntity>> getOrganizationResource(UUID guid) {
+        GetOrganizationRequest request = GetOrganizationRequest.builder()
+                                                               .organizationId(guid.toString())
+                                                               .build();
+        return v3Client.organizations()
+                       .get(request);
+    }
+
+    private Mono<? extends Resource<OrganizationEntity>> getOrganizationResourceByName(String name) {
+        IntFunction<ListOrganizationsRequest> pageRequestSupplier = page -> ListOrganizationsRequest.builder()
+                                                                                                    .name(name)
                                                                                                     .page(page)
                                                                                                     .build();
-        return PaginationUtils.requestClientV2Resources(page -> v3Client.sharedDomains()
+        return getOrganizationResources(pageRequestSupplier).singleOrEmpty();
+    }
+
+    private Flux<? extends Resource<OrganizationEntity>> getOrganizationResources() {
+        IntFunction<ListOrganizationsRequest> pageRequestSupplier = page -> ListOrganizationsRequest.builder()
+                                                                                                    .page(page)
+                                                                                                    .build();
+        return getOrganizationResources(pageRequestSupplier);
+    }
+
+    private Flux<? extends Resource<OrganizationEntity>>
+            getOrganizationResources(IntFunction<ListOrganizationsRequest> pageRequestSupplier) {
+        return PaginationUtils.requestClientV2Resources(page -> v3Client.organizations()
                                                                         .list(pageRequestSupplier.apply(page)));
+    }
+
+    private Mono<? extends org.cloudfoundry.client.v3.packages.Package> getPackageResource(UUID guid) {
+        GetPackageRequest request = GetPackageRequest.builder()
+                                                     .packageId(guid.toString())
+                                                     .build();
+        return v3Client.packages()
+                       .get(request);
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> getPaginationMap(Map<String, Object> responseMap) {
+        return (Map<String, Object>) responseMap.get("pagination");
+    }
+
+    private List<CloudServicePlan> getPlans(List<CloudServiceOffering> offerings) {
+        return offerings.stream()
+                        .map(CloudServiceOffering::getServicePlans)
+                        .flatMap(Collection::stream)
+                        .collect(Collectors.toList());
     }
 
     private Flux<? extends Resource<PrivateDomainEntity>> getPrivateDomainResources() {
@@ -2155,118 +2324,46 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                         .listPrivateDomains(pageRequestSupplier.apply(page)));
     }
 
-    private List<CloudSpace> findSpacesByOrganizationGuid(UUID organizationGuid) {
-        return fetchListWithAuxiliaryContent(() -> getSpaceResourcesByOrganizationGuid(organizationGuid),
-                                             this::zipWithAuxiliarySpaceContent);
+    private UUID getRequiredApplicationGuid(String name) {
+        return getGuid(findApplicationByName(name, true));
     }
 
-    private CloudSpace findSpaceByOrganizationGuidAndName(UUID organizationGuid, String spaceName, boolean required) {
-        CloudSpace space = findSpaceByOrganizationGuidAndName(organizationGuid, spaceName);
-        if (space == null && required) {
-            throw new CloudOperationException(HttpStatus.NOT_FOUND,
-                                              "Not Found",
-                                              "Space " + spaceName + " not found in organization with GUID " + organizationGuid + ".");
+    private UUID getRequiredDomainGuid(String name) {
+        return getGuid(findDomainByName(name, true));
+    }
+
+    private String getResponse(String urlPath, Map<String, Object> urlVars) {
+        return urlVars == null ? getRestTemplate().getForObject(getUrl(urlPath), String.class)
+            : getRestTemplate().getForObject(getUrl(urlPath), String.class, urlVars);
+    }
+
+    private Map<String, Object> getResponseMap(String urlPath, Map<String, Object> urlVars) {
+        String response = getResponse(urlPath, urlVars);
+        return JsonUtil.convertJsonToMap(response);
+    }
+
+    private UUID getRouteGuid(UUID domainGuid, String host, String path) {
+        List<? extends Resource<RouteEntity>> routeEntitiesResource = getRouteResourcesByDomainGuidHostAndPath(domainGuid, host,
+                                                                                                               path).collect(Collectors.toList())
+                                                                                                                    .block();
+        if (CollectionUtils.isEmpty(routeEntitiesResource)) {
+            return null;
         }
-        return space;
+        if (!StringUtils.isEmpty(host)) {
+            return getGuid(routeEntitiesResource.get(0));
+        }
+        // TODO: Remove this logic when this pull request is merged: https://github
+        // .com/cloudfoundry/cf-java-client/pull/978
+        return getFirstEmptyRoute(routeEntitiesResource);
     }
 
-    private CloudSpace findSpaceByOrganizationGuidAndName(UUID organizationGuid, String spaceName) {
-        return fetchWithAuxiliaryContent(() -> getSpaceResourceByOrganizationGuidAndName(organizationGuid, spaceName),
-                                         this::zipWithAuxiliarySpaceContent);
-    }
-
-    private Flux<? extends Resource<SpaceEntity>> getSpaceResources() {
-        IntFunction<ListSpacesRequest> pageRequestSupplier = page -> ListSpacesRequest.builder()
-                                                                                      .page(page)
-                                                                                      .build();
-        return getSpaceResources(pageRequestSupplier);
-    }
-
-    private Mono<? extends Resource<SpaceEntity>> getSpaceResource(UUID guid) {
-        GetSpaceRequest request = GetSpaceRequest.builder()
-                                                 .spaceId(guid.toString())
-                                                 .build();
-        return v3Client.spaces()
-                       .get(request);
-    }
-
-    private Flux<? extends Resource<SpaceEntity>> getSpaceResourcesByOrganizationGuid(UUID organizationGuid) {
-        IntFunction<ListSpacesRequest> pageRequestSupplier = page -> ListSpacesRequest.builder()
-                                                                                      .organizationId(organizationGuid.toString())
-                                                                                      .page(page)
-                                                                                      .build();
-        return getSpaceResources(pageRequestSupplier);
-    }
-
-    private Mono<? extends Resource<SpaceEntity>> getSpaceResourceByOrganizationGuidAndName(UUID organizationGuid, String name) {
-        IntFunction<ListOrganizationSpacesRequest> pageRequestSupplier = page -> ListOrganizationSpacesRequest.builder()
-                                                                                                              .organizationId(organizationGuid.toString())
-                                                                                                              .name(name)
-                                                                                                              .page(page)
-                                                                                                              .build();
-        return PaginationUtils.requestClientV2Resources(page -> v3Client.organizations()
-                                                                        .listSpaces(pageRequestSupplier.apply(page)))
-                              .singleOrEmpty();
-    }
-
-    private Flux<? extends Resource<SpaceEntity>> getSpaceResources(IntFunction<ListSpacesRequest> requestForPage) {
-        return PaginationUtils.requestClientV2Resources(page -> v3Client.spaces()
-                                                                        .list(requestForPage.apply(page)));
-    }
-
-    private Mono<Derivable<CloudSpace>> zipWithAuxiliarySpaceContent(Resource<SpaceEntity> resource) {
-        UUID organizationGuid = UUID.fromString(resource.getEntity()
-                                                        .getOrganizationId());
-        return getOrganizationMono(organizationGuid).map(organization -> ImmutableRawCloudSpace.builder()
-                                                                                               .resource(resource)
-                                                                                               .organization(organization)
-                                                                                               .build());
-    }
-
-    private Mono<? extends Derivable<CloudOrganization>> getOrganizationMono(UUID guid) {
-        return fetchMono(() -> getOrganizationResource(guid), ImmutableRawCloudOrganization::of);
-    }
-
-    private CloudOrganization findOrganization(String name) {
-        return fetch(() -> getOrganizationResourceByName(name), ImmutableRawCloudOrganization::of);
-    }
-
-    private Flux<? extends Resource<OrganizationEntity>> getOrganizationResources() {
-        IntFunction<ListOrganizationsRequest> pageRequestSupplier = page -> ListOrganizationsRequest.builder()
+    private Flux<? extends Resource<RouteMappingEntity>> getRouteMappingResourcesByRouteGuid(UUID routeGuid) {
+        IntFunction<ListRouteMappingsRequest> pageRequestSupplier = page -> ListRouteMappingsRequest.builder()
+                                                                                                    .routeId(routeGuid.toString())
                                                                                                     .page(page)
                                                                                                     .build();
-        return getOrganizationResources(pageRequestSupplier);
-    }
-
-    private Mono<? extends Resource<OrganizationEntity>> getOrganizationResource(UUID guid) {
-        GetOrganizationRequest request = GetOrganizationRequest.builder()
-                                                               .organizationId(guid.toString())
-                                                               .build();
-        return v3Client.organizations()
-                       .get(request);
-    }
-
-    private Mono<? extends Resource<OrganizationEntity>> getOrganizationResourceByName(String name) {
-        IntFunction<ListOrganizationsRequest> pageRequestSupplier = page -> ListOrganizationsRequest.builder()
-                                                                                                    .name(name)
-                                                                                                    .page(page)
-                                                                                                    .build();
-        return getOrganizationResources(pageRequestSupplier).singleOrEmpty();
-    }
-
-    private Flux<? extends Resource<OrganizationEntity>>
-            getOrganizationResources(IntFunction<ListOrganizationsRequest> pageRequestSupplier) {
-        return PaginationUtils.requestClientV2Resources(page -> v3Client.organizations()
+        return PaginationUtils.requestClientV2Resources(page -> v3Client.routeMappings()
                                                                         .list(pageRequestSupplier.apply(page)));
-    }
-
-    private List<CloudRoute> findRoutes(CloudDomain domain) {
-        return fetchListWithAuxiliaryContent(() -> getRouteTuple(domain, getTargetSpaceGuid()), this::zipWithAuxiliaryRouteContent);
-    }
-
-    private Flux<Tuple2<? extends Resource<RouteEntity>, CloudDomain>> getRouteTuple(CloudDomain domain, UUID spaceGuid) {
-        UUID domainGuid = getGuid(domain);
-        return getRouteResourcesByDomainGuidAndSpaceGuid(domainGuid, spaceGuid).map(routeResource -> Tuples.of(routeResource, domain));
     }
 
     private Flux<? extends Resource<RouteEntity>> getRouteResourcesByDomainGuidAndSpaceGuid(UUID domainGuid, UUID spaceGuid) {
@@ -2295,82 +2392,142 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                                                   .build()));
     }
 
-    private Mono<Derivable<CloudRoute>> zipWithAuxiliaryRouteContent(Tuple2<? extends Resource<RouteEntity>, CloudDomain> routeTuple) {
-        UUID routeGuid = getGuid(routeTuple.getT1());
-        return getRouteMappingResourcesByRouteGuid(routeGuid).collectList()
-                                                             .map(routeMappingResources -> ImmutableRawCloudRoute.builder()
-                                                                                                                 .resource(routeTuple.getT1())
-                                                                                                                 .domain(routeTuple.getT2())
-                                                                                                                 .routeMappingResources(routeMappingResources)
-                                                                                                                 .build());
+    private Flux<Tuple2<? extends Resource<RouteEntity>, CloudDomain>> getRouteTuple(CloudDomain domain, UUID spaceGuid) {
+        UUID domainGuid = getGuid(domain);
+        return getRouteResourcesByDomainGuidAndSpaceGuid(domainGuid, spaceGuid).map(routeResource -> Tuples.of(routeResource, domain));
     }
 
-    private Flux<? extends Resource<RouteMappingEntity>> getRouteMappingResourcesByRouteGuid(UUID routeGuid) {
-        IntFunction<ListRouteMappingsRequest> pageRequestSupplier = page -> ListRouteMappingsRequest.builder()
-                                                                                                    .routeId(routeGuid.toString())
-                                                                                                    .page(page)
-                                                                                                    .build();
-        return PaginationUtils.requestClientV2Resources(page -> v3Client.routeMappings()
+    private UUID getServiceBindingGuid(UUID applicationGuid, UUID serviceGuid) {
+        return getServiceBindingResourceByApplicationGuidAndServiceInstanceGuid(applicationGuid, serviceGuid).map(this::getGuid)
+                                                                                                             .block();
+    }
+
+    private List<UUID> getServiceBindingGuids(CloudService service) {
+        Flux<? extends Resource<ServiceBindingEntity>> bindings = getServiceBindingResources(service);
+        return getGuids(bindings);
+    }
+
+    private List<UUID> getServiceBindingGuids(UUID applicationGuid) {
+        Flux<? extends Resource<ServiceBindingEntity>> bindings = getServiceBindingResourcesByApplicationGuid(applicationGuid);
+        return getGuids(bindings);
+    }
+
+    private Mono<? extends Resource<ServiceBindingEntity>>
+            getServiceBindingResourceByApplicationGuidAndServiceInstanceGuid(UUID applicationGuid, UUID serviceInstanceGuid) {
+        IntFunction<ListApplicationServiceBindingsRequest> pageRequestSupplier = page -> ListApplicationServiceBindingsRequest.builder()
+                                                                                                                              .applicationId(applicationGuid.toString())
+                                                                                                                              .serviceInstanceId(serviceInstanceGuid.toString())
+                                                                                                                              .page(page)
+                                                                                                                              .build();
+        return getApplicationServiceBindingResources(pageRequestSupplier).singleOrEmpty();
+    }
+
+    private Flux<? extends Resource<ServiceBindingEntity>> getServiceBindingResources(CloudService service) {
+        UUID serviceGuid = getGuid(service);
+        if (service.isUserProvided()) {
+            return getUserProvidedServiceBindingResourcesByServiceInstanceGuid(serviceGuid);
+        }
+        return getServiceBindingResourcesByServiceInstanceGuid(serviceGuid);
+    }
+
+    private Flux<? extends Resource<ServiceBindingEntity>> getServiceBindingResourcesByApplicationGuid(UUID applicationGuid) {
+        IntFunction<ListApplicationServiceBindingsRequest> pageRequestSupplier = page -> ListApplicationServiceBindingsRequest.builder()
+                                                                                                                              .applicationId(applicationGuid.toString())
+                                                                                                                              .page(page)
+                                                                                                                              .build();
+        return getApplicationServiceBindingResources(pageRequestSupplier);
+    }
+
+    private Flux<? extends Resource<ServiceBindingEntity>> getServiceBindingResourcesByServiceInstanceGuid(UUID serviceInstanceGuid) {
+        IntFunction<ListServiceBindingsRequest> pageRequestSupplier = page -> ListServiceBindingsRequest.builder()
+                                                                                                        .serviceInstanceId(serviceInstanceGuid.toString())
+                                                                                                        .page(page)
+                                                                                                        .build();
+        return PaginationUtils.requestClientV2Resources(page -> v3Client.serviceBindingsV2()
                                                                         .list(pageRequestSupplier.apply(page)));
     }
 
-    private List<CloudServiceOffering> findServiceOfferingsByBrokerGuid(UUID brokerGuid) {
-        return fetchListWithAuxiliaryContent(() -> getServiceResourcesByBrokerGuid(brokerGuid),
-                                             this::zipWithAuxiliaryServiceOfferingContent);
+    private Mono<? extends Resource<ServiceBrokerEntity>> getServiceBrokerResourceByName(String name) {
+        IntFunction<ListServiceBrokersRequest> pageRequestSupplier = page -> ListServiceBrokersRequest.builder()
+                                                                                                      .page(page)
+                                                                                                      .name(name)
+                                                                                                      .build();
+        return getServiceBrokerResources(pageRequestSupplier).singleOrEmpty();
     }
 
-    private List<CloudServiceOffering> findServiceOfferingsByLabel(String label) {
-        Assert.notNull(label, "Service label must not be null");
-        return fetchListWithAuxiliaryContent(() -> getServiceResourcesByLabel(label), this::zipWithAuxiliaryServiceOfferingContent);
+    private Flux<? extends Resource<ServiceBrokerEntity>> getServiceBrokerResources() {
+        IntFunction<ListServiceBrokersRequest> pageRequestSupplier = page -> ListServiceBrokersRequest.builder()
+                                                                                                      .page(page)
+                                                                                                      .build();
+        return getServiceBrokerResources(pageRequestSupplier);
     }
 
-    private Flux<? extends Resource<ServiceEntity>> getServiceResources() {
-        IntFunction<ListServicesRequest> pageRequestSupplier = page -> ListServicesRequest.builder()
-                                                                                          .page(page)
-                                                                                          .build();
-        return getServiceResources(pageRequestSupplier);
-    }
-
-    private Mono<? extends Resource<ServiceEntity>> getServiceResource(UUID serviceGuid) {
-        GetServiceRequest request = GetServiceRequest.builder()
-                                                     .serviceId(serviceGuid.toString())
-                                                     .build();
-        return v3Client.services()
-                       .get(request);
-    }
-
-    private Flux<? extends Resource<ServiceEntity>> getServiceResourcesByBrokerGuid(UUID brokerGuid) {
-        IntFunction<ListServicesRequest> pageRequestSupplier = page -> ListServicesRequest.builder()
-                                                                                          .serviceBrokerId(brokerGuid.toString())
-                                                                                          .page(page)
-                                                                                          .build();
-        return getServiceResources(pageRequestSupplier);
-    }
-
-    private Flux<? extends Resource<ServiceEntity>> getServiceResourcesByLabel(String label) {
-        IntFunction<ListServicesRequest> pageRequestSupplier = page -> ListServicesRequest.builder()
-                                                                                          .label(label)
-                                                                                          .page(page)
-                                                                                          .build();
-        return getServiceResources(pageRequestSupplier);
-    }
-
-    private Flux<? extends Resource<ServiceEntity>> getServiceResources(IntFunction<ListServicesRequest> pageRequestSupplier) {
-        return PaginationUtils.requestClientV2Resources(page -> v3Client.services()
+    private Flux<? extends Resource<ServiceBrokerEntity>>
+            getServiceBrokerResources(IntFunction<ListServiceBrokersRequest> pageRequestSupplier) {
+        return PaginationUtils.requestClientV2Resources(page -> v3Client.serviceBrokers()
                                                                         .list(pageRequestSupplier.apply(page)));
     }
 
-    private Mono<Derivable<CloudServiceOffering>> zipWithAuxiliaryServiceOfferingContent(Resource<ServiceEntity> resource) {
-        UUID serviceGuid = getGuid(resource);
-        return getServicePlansFlux(serviceGuid).collectList()
-                                               .map(servicePlans -> ImmutableRawCloudServiceOffering.builder()
-                                                                                                    .resource(resource)
-                                                                                                    .servicePlans(servicePlans)
-                                                                                                    .build());
+    private Flux<CloudServiceBinding> getServiceInstanceBindingsFlux(UUID serviceInstanceGuid) {
+        return fetchFluxWithAuxiliaryContent(() -> getServiceBindingResourcesByServiceInstanceGuid(serviceInstanceGuid),
+                                             this::zipWithAuxiliaryServiceBindingContent);
     }
 
-    private Flux<CloudServicePlan> getServicePlansFlux(UUID serviceGuid) {
-        return fetchFlux(() -> getServicePlanResourcesByServiceGuid(serviceGuid), ImmutableRawCloudServicePlan::of);
+    private Mono<? extends Resource<UnionServiceInstanceEntity>> getServiceInstanceResourceByName(String name) {
+        IntFunction<ListSpaceServiceInstancesRequest> pageRequestSupplier = page -> ListSpaceServiceInstancesRequest.builder()
+                                                                                                                    .returnUserProvidedServiceInstances(true)
+                                                                                                                    .spaceId(getTargetSpaceGuid().toString())
+                                                                                                                    .name(name)
+                                                                                                                    .page(page)
+                                                                                                                    .build();
+        return getServiceInstanceResources(pageRequestSupplier).singleOrEmpty();
+    }
+
+    private Flux<? extends Resource<UnionServiceInstanceEntity>> getServiceInstanceResources() {
+        IntFunction<ListSpaceServiceInstancesRequest> pageRequestSupplier = page -> ListSpaceServiceInstancesRequest.builder()
+                                                                                                                    .returnUserProvidedServiceInstances(true)
+                                                                                                                    .spaceId(getTargetSpaceGuid().toString())
+                                                                                                                    .page(page)
+                                                                                                                    .build();
+        return getServiceInstanceResources(pageRequestSupplier);
+    }
+
+    private Flux<? extends Resource<UnionServiceInstanceEntity>> getServiceInstanceResourcesByNames(Collection<String> names) {
+        IntFunction<ListSpaceServiceInstancesRequest> pageRequestSupplier = page -> ListSpaceServiceInstancesRequest.builder()
+                                                                                                                    .returnUserProvidedServiceInstances(true)
+                                                                                                                    .spaceId(getTargetSpaceGuid().toString())
+                                                                                                                    .addAllNames(names)
+                                                                                                                    .page(page)
+                                                                                                                    .build();
+        return getServiceInstanceResources(pageRequestSupplier);
+    }
+
+    private Flux<? extends Resource<UnionServiceInstanceEntity>>
+            getServiceInstanceResources(IntFunction<ListSpaceServiceInstancesRequest> pageRequestSupplier) {
+        return PaginationUtils.requestClientV2Resources(page -> v3Client.spaces()
+                                                                        .listServiceInstances(pageRequestSupplier.apply(page)));
+    }
+
+    private Flux<? extends Resource<ServiceKeyEntity>> getServiceKeyResourcesByServiceInstanceGuid(UUID serviceInstanceGuid) {
+        IntFunction<ListServiceKeysRequest> pageRequestSupplier = page -> ListServiceKeysRequest.builder()
+                                                                                                .serviceInstanceId(serviceInstanceGuid.toString())
+                                                                                                .page(page)
+                                                                                                .build();
+        return PaginationUtils.requestClientV2Resources(page -> v3Client.serviceKeys()
+                                                                        .list(pageRequestSupplier.apply(page)));
+    }
+
+    private Flux<Tuple2<? extends Resource<ServiceKeyEntity>, CloudService>> getServiceKeyTuple(CloudService service) {
+        UUID serviceInstanceGuid = getGuid(service);
+        return getServiceKeyResourcesByServiceInstanceGuid(serviceInstanceGuid).map(serviceKeyResource -> Tuples.of(serviceKeyResource,
+                                                                                                                    service));
+    }
+
+    private List<CloudServiceKey> getServiceKeys(CloudService service) {
+        return fetchList(() -> getServiceKeyTuple(service), tuple -> ImmutableRawCloudServiceKey.builder()
+                                                                                                .resource(tuple.getT1())
+                                                                                                .service(tuple.getT2())
+                                                                                                .build());
     }
 
     private Mono<? extends Resource<ServicePlanEntity>> getServicePlanResource(UUID servicePlanGuid) {
@@ -2390,60 +2547,118 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                         .list(pageRequestSupplier.apply(page)));
     }
 
-    private Map<String, Object> fetchParametersQuietly(String url) {
-        try {
-            return fetchParameters(url);
-        } catch (CloudOperationException e) {
-            return null;
-        }
+    private Flux<CloudServicePlan> getServicePlansFlux(UUID serviceGuid) {
+        return fetchFlux(() -> getServicePlanResourcesByServiceGuid(serviceGuid), ImmutableRawCloudServicePlan::of);
     }
 
-    @SuppressWarnings("unchecked")
-    private Map<String, Object> fetchParameters(String url) {
-        return getRestTemplate().getForObject(getUrl(url), Map.class);
+    private Mono<? extends Resource<ServiceEntity>> getServiceResource(UUID serviceGuid) {
+        GetServiceRequest request = GetServiceRequest.builder()
+                                                     .serviceId(serviceGuid.toString())
+                                                     .build();
+        return v3Client.services()
+                       .get(request);
     }
 
-    private List<CloudServiceKey> getServiceKeys(CloudService service) {
-        return fetchList(() -> getServiceKeyTuple(service), tuple -> ImmutableRawCloudServiceKey.builder()
-                                                                                                .resource(tuple.getT1())
-                                                                                                .service(tuple.getT2())
-                                                                                                .build());
+    private Flux<? extends Resource<ServiceEntity>> getServiceResources() {
+        IntFunction<ListServicesRequest> pageRequestSupplier = page -> ListServicesRequest.builder()
+                                                                                          .page(page)
+                                                                                          .build();
+        return getServiceResources(pageRequestSupplier);
     }
 
-    private Flux<Tuple2<? extends Resource<ServiceKeyEntity>, CloudService>> getServiceKeyTuple(CloudService service) {
-        UUID serviceInstanceGuid = getGuid(service);
-        return getServiceKeyResourcesByServiceInstanceGuid(serviceInstanceGuid).map(serviceKeyResource -> Tuples.of(serviceKeyResource,
-                                                                                                                    service));
-    }
-
-    private Flux<? extends Resource<ServiceKeyEntity>> getServiceKeyResourcesByServiceInstanceGuid(UUID serviceInstanceGuid) {
-        IntFunction<ListServiceKeysRequest> pageRequestSupplier = page -> ListServiceKeysRequest.builder()
-                                                                                                .serviceInstanceId(serviceInstanceGuid.toString())
-                                                                                                .page(page)
-                                                                                                .build();
-        return PaginationUtils.requestClientV2Resources(page -> v3Client.serviceKeys()
+    private Flux<? extends Resource<ServiceEntity>> getServiceResources(IntFunction<ListServicesRequest> pageRequestSupplier) {
+        return PaginationUtils.requestClientV2Resources(page -> v3Client.services()
                                                                         .list(pageRequestSupplier.apply(page)));
     }
 
-    private List<CloudRoute> fetchOrphanRoutes(String domainName) {
-        List<CloudRoute> orphanRoutes = new ArrayList<>();
-        for (CloudRoute route : getRoutes(domainName)) {
-            if (!route.isUsed()) {
-                orphanRoutes.add(route);
-            }
-        }
-        return orphanRoutes;
+    private Flux<? extends Resource<ServiceEntity>> getServiceResourcesByBrokerGuid(UUID brokerGuid) {
+        IntFunction<ListServicesRequest> pageRequestSupplier = page -> ListServicesRequest.builder()
+                                                                                          .serviceBrokerId(brokerGuid.toString())
+                                                                                          .page(page)
+                                                                                          .build();
+        return getServiceResources(pageRequestSupplier);
     }
 
-    private CloudStack findStackResource(String name) {
-        return fetch(() -> getStackResourceByName(name), ImmutableRawCloudStack::of);
+    private Flux<? extends Resource<ServiceEntity>> getServiceResourcesByLabel(String label) {
+        IntFunction<ListServicesRequest> pageRequestSupplier = page -> ListServicesRequest.builder()
+                                                                                          .label(label)
+                                                                                          .page(page)
+                                                                                          .build();
+        return getServiceResources(pageRequestSupplier);
     }
 
-    private Flux<? extends Resource<StackEntity>> getStackResources() {
-        IntFunction<ListStacksRequest> pageRequestSupplier = page -> ListStacksRequest.builder()
+    private Flux<? extends Resource<SharedDomainEntity>> getSharedDomainResources() {
+        IntFunction<ListSharedDomainsRequest> pageRequestSupplier = page -> ListSharedDomainsRequest.builder()
+                                                                                                    .page(page)
+                                                                                                    .build();
+        return PaginationUtils.requestClientV2Resources(page -> v3Client.sharedDomains()
+                                                                        .list(pageRequestSupplier.apply(page)));
+    }
+
+    private Flux<? extends Resource<UserEntity>> getSpaceAuditorResourcesBySpaceGuid(UUID spaceGuid) {
+        IntFunction<ListSpaceAuditorsRequest> pageRequestSupplier = page -> ListSpaceAuditorsRequest.builder()
+                                                                                                    .spaceId(spaceGuid.toString())
+                                                                                                    .page(page)
+                                                                                                    .build();
+        return PaginationUtils.requestClientV2Resources(page -> v3Client.spaces()
+                                                                        .listAuditors(pageRequestSupplier.apply(page)));
+    }
+
+    private Flux<? extends Resource<UserEntity>> getSpaceDeveloperResourcesBySpaceGuid(UUID spaceGuid) {
+        IntFunction<ListSpaceDevelopersRequest> pageRequestSupplier = page -> ListSpaceDevelopersRequest.builder()
+                                                                                                        .spaceId(spaceGuid.toString())
+                                                                                                        .page(page)
+                                                                                                        .build();
+        return PaginationUtils.requestClientV2Resources(page -> v3Client.spaces()
+                                                                        .listDevelopers(pageRequestSupplier.apply(page)));
+    }
+
+    private Flux<? extends Resource<UserEntity>> getSpaceManagerResourcesBySpaceGuid(UUID spaceGuid) {
+        IntFunction<ListSpaceManagersRequest> pageRequestSupplier = page -> ListSpaceManagersRequest.builder()
+                                                                                                    .spaceId(spaceGuid.toString())
+                                                                                                    .page(page)
+                                                                                                    .build();
+        return PaginationUtils.requestClientV2Resources(page -> v3Client.spaces()
+                                                                        .listManagers(pageRequestSupplier.apply(page)));
+    }
+
+    private Mono<? extends Resource<SpaceEntity>> getSpaceResource(UUID guid) {
+        GetSpaceRequest request = GetSpaceRequest.builder()
+                                                 .spaceId(guid.toString())
+                                                 .build();
+        return v3Client.spaces()
+                       .get(request);
+    }
+
+    private Mono<? extends Resource<SpaceEntity>> getSpaceResourceByOrganizationGuidAndName(UUID organizationGuid, String name) {
+        IntFunction<ListOrganizationSpacesRequest> pageRequestSupplier = page -> ListOrganizationSpacesRequest.builder()
+                                                                                                              .organizationId(organizationGuid.toString())
+                                                                                                              .name(name)
+                                                                                                              .page(page)
+                                                                                                              .build();
+        return PaginationUtils.requestClientV2Resources(page -> v3Client.organizations()
+                                                                        .listSpaces(pageRequestSupplier.apply(page)))
+                              .singleOrEmpty();
+    }
+
+    private Flux<? extends Resource<SpaceEntity>> getSpaceResources() {
+        IntFunction<ListSpacesRequest> pageRequestSupplier = page -> ListSpacesRequest.builder()
                                                                                       .page(page)
                                                                                       .build();
-        return getStackResources(pageRequestSupplier);
+        return getSpaceResources(pageRequestSupplier);
+    }
+
+    private Flux<? extends Resource<SpaceEntity>> getSpaceResources(IntFunction<ListSpacesRequest> requestForPage) {
+        return PaginationUtils.requestClientV2Resources(page -> v3Client.spaces()
+                                                                        .list(requestForPage.apply(page)));
+    }
+
+    private Flux<? extends Resource<SpaceEntity>> getSpaceResourcesByOrganizationGuid(UUID organizationGuid) {
+        IntFunction<ListSpacesRequest> pageRequestSupplier = page -> ListSpacesRequest.builder()
+                                                                                      .organizationId(organizationGuid.toString())
+                                                                                      .page(page)
+                                                                                      .build();
+        return getSpaceResources(pageRequestSupplier);
     }
 
     private Mono<? extends Resource<StackEntity>> getStackResource(UUID guid) {
@@ -2462,164 +2677,59 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return getStackResources(pageRequestSupplier).singleOrEmpty();
     }
 
+    private Flux<? extends Resource<StackEntity>> getStackResources() {
+        IntFunction<ListStacksRequest> pageRequestSupplier = page -> ListStacksRequest.builder()
+                                                                                      .page(page)
+                                                                                      .build();
+        return getStackResources(pageRequestSupplier);
+    }
+
     private Flux<? extends Resource<StackEntity>> getStackResources(IntFunction<ListStacksRequest> requestForPage) {
         return PaginationUtils.requestClientV2Resources(page -> v3Client.stacks()
                                                                         .list(requestForPage.apply(page)));
     }
 
-    private List<CloudEvent> findEventsByActee(String actee) {
-        return fetchList(() -> getEventResourcesByActee(actee), ImmutableRawCloudEvent::of);
+    private UUID getTargetOrganizationGuid() {
+        return getGuid(target.getOrganization());
     }
 
-    private Flux<? extends Resource<EventEntity>> getEventResources() {
-        IntFunction<ListEventsRequest> pageRequestSupplier = page -> ListEventsRequest.builder()
-                                                                                      .page(page)
-                                                                                      .build();
-        return PaginationUtils.requestClientV2Resources(page -> v3Client.events()
+    private String getTargetOrganizationName() {
+        return getName(target.getOrganization());
+    }
+
+    private UUID getTargetSpaceGuid() {
+        return getGuid(target);
+    }
+
+    private Mono<? extends Task> getTaskResource(UUID guid) {
+        GetTaskRequest request = GetTaskRequest.builder()
+                                               .taskId(guid.toString())
+                                               .build();
+        return v3Client.tasks()
+                       .get(request);
+    }
+
+    private Flux<? extends Task> getTaskResourcesByApplicationGuid(UUID applicationGuid) {
+        IntFunction<ListTasksRequest> pageRequestSupplier = page -> ListTasksRequest.builder()
+                                                                                    .applicationId(applicationGuid.toString())
+                                                                                    .page(page)
+                                                                                    .build();
+        return PaginationUtils.requestClientV3Resources(page -> v3Client.tasks()
                                                                         .list(pageRequestSupplier.apply(page)));
     }
 
-    private Flux<? extends Resource<EventEntity>> getEventResourcesByActee(String actee) {
-        IntFunction<ListEventsRequest> pageRequestSupplier = page -> ListEventsRequest.builder()
-                                                                                      .actee(actee)
-                                                                                      .page(page)
-                                                                                      .build();
-        return PaginationUtils.requestClientV2Resources(page -> v3Client.events()
-                                                                        .list(pageRequestSupplier.apply(page)));
+    private Flux<? extends Resource<ServiceBindingEntity>>
+            getUserProvidedServiceBindingResourcesByServiceInstanceGuid(UUID serviceInstanceGuid) {
+        IntFunction<ListUserProvidedServiceInstanceServiceBindingsRequest> pageRequestSupplier = page -> ListUserProvidedServiceInstanceServiceBindingsRequest.builder()
+                                                                                                                                                              .userProvidedServiceInstanceId(serviceInstanceGuid.toString())
+                                                                                                                                                              .page(page)
+                                                                                                                                                              .build();
+        return PaginationUtils.requestClientV2Resources(page -> v3Client.userProvidedServiceInstances()
+                                                                        .listServiceBindings(pageRequestSupplier.apply(page)));
     }
 
-    private InstancesInfo findApplicationInstances(UUID applicationGuid) {
-        return fetch(() -> getApplicationInstances(applicationGuid), ImmutableRawInstancesInfo::of);
-    }
-
-    private Mono<ApplicationInstancesResponse> getApplicationInstances(UUID applicationGuid) {
-        ApplicationInstancesRequest request = ApplicationInstancesRequest.builder()
-                                                                         .applicationId(applicationGuid.toString())
-                                                                         .build();
-        return v3Client.applicationsV2()
-                       .instances(request);
-    }
-
-    private Mono<GetInfoResponse> getInfoResource() {
-        return v3Client.info()
-                       .get(GetInfoRequest.builder()
-                                          .build());
-    }
-
-    private CloudServiceBroker findServiceBrokerByName(String name) {
-        return fetch(() -> getServiceBrokerResourceByName(name), ImmutableRawCloudServiceBroker::of);
-    }
-
-    private Flux<? extends Resource<ServiceBrokerEntity>> getServiceBrokerResources() {
-        IntFunction<ListServiceBrokersRequest> pageRequestSupplier = page -> ListServiceBrokersRequest.builder()
-                                                                                                      .page(page)
-                                                                                                      .build();
-        return getServiceBrokerResources(pageRequestSupplier);
-    }
-
-    private Mono<? extends Resource<ServiceBrokerEntity>> getServiceBrokerResourceByName(String name) {
-        IntFunction<ListServiceBrokersRequest> pageRequestSupplier = page -> ListServiceBrokersRequest.builder()
-                                                                                                      .page(page)
-                                                                                                      .name(name)
-                                                                                                      .build();
-        return getServiceBrokerResources(pageRequestSupplier).singleOrEmpty();
-    }
-
-    private Flux<? extends Resource<ServiceBrokerEntity>>
-            getServiceBrokerResources(IntFunction<ListServiceBrokersRequest> pageRequestSupplier) {
-        return PaginationUtils.requestClientV2Resources(page -> v3Client.serviceBrokers()
-                                                                        .list(pageRequestSupplier.apply(page)));
-    }
-
-    private List<UUID> findSpaceUsers(String organizationName, String spaceName, Function<UUID, List<UUID>> usersRetriever) {
-        CloudSpace space = getSpace(organizationName, spaceName);
-        return usersRetriever.apply(getGuid(space));
-    }
-
-    private CloudServicePlan findPlanForService(CloudService service) {
-        List<CloudServiceOffering> offerings = findServiceOfferingsByLabel(service.getLabel());
-        for (CloudServiceOffering offering : offerings) {
-            if (service.getVersion() == null || service.getVersion()
-                                                       .equals(offering.getVersion())) {
-                for (CloudServicePlan plan : offering.getServicePlans()) {
-                    if (service.getPlan() != null && service.getPlan()
-                                                            .equals(plan.getName())) {
-                        return plan;
-                    }
-                }
-            }
-        }
-        throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Service plan " + service.getPlan() + " not found.");
-    }
-
-    private UUID getRequiredApplicationGuid(String name) {
-        return getGuid(findApplicationByName(name, true));
-    }
-
-    private UUID getRequiredDomainGuid(String name) {
-        return getGuid(findDomainByName(name, true));
-    }
-
-    private UUID getOrganizationGuid(String organizationName, boolean required) {
-        CloudOrganization organization = getOrganization(organizationName, required);
-        return organization != null ? organization.getMetadata()
-                                                  .getGuid()
-            : null;
-    }
-
-    private Map<String, UUID> getDomainGuids() {
-        List<CloudDomain> availableDomains = new ArrayList<>();
-        availableDomains.addAll(getDomainsForOrganization());
-        availableDomains.addAll(getSharedDomains());
-        Map<String, UUID> domains = new HashMap<>(availableDomains.size());
-        for (CloudDomain availableDomain : availableDomains) {
-            domains.put(availableDomain.getName(), availableDomain.getMetadata()
-                                                                  .getGuid());
-        }
-        return domains;
-    }
-
-    private UUID getRouteGuid(UUID domainGuid, String host, String path) {
-        List<? extends Resource<RouteEntity>> routeEntitiesResource = getRouteResourcesByDomainGuidHostAndPath(domainGuid, host,
-                                                                                                               path).collect(Collectors.toList())
-                                                                                                                    .block();
-        if (CollectionUtils.isEmpty(routeEntitiesResource)) {
-            return null;
-        }
-        if (!StringUtils.isEmpty(host)) {
-            return getGuid(routeEntitiesResource.get(0));
-        }
-        // TODO: Remove this logic when this pull request is merged: https://github.com/cloudfoundry/cf-java-client/pull/978
-        return getFirstEmptyRoute(routeEntitiesResource);
-    }
-
-    private UUID getFirstEmptyRoute(List<? extends Resource<RouteEntity>> routeEntities) {
-        return routeEntities.stream()
-                            .filter(checkForEmptyHost())
-                            .findFirst()
-                            .map(this::getGuid)
-                            .orElse(null);
-    }
-
-    private Predicate<Resource<RouteEntity>> checkForEmptyHost() {
-        return routeEntity -> StringUtils.isEmpty(routeEntity.getEntity()
-                                                             .getHost());
-    }
-
-    private UUID getServiceBindingGuid(UUID applicationGuid, UUID serviceGuid) {
-        return getServiceBindingResourceByApplicationGuidAndServiceInstanceGuid(applicationGuid, serviceGuid).map(this::getGuid)
-                                                                                                             .block();
-    }
-
-    private List<UUID> getGuids(Flux<? extends Resource<?>> resources) {
-        return resources.map(this::getGuid)
-                        .collectList()
-                        .block();
-    }
-
-    private void processAsyncUploadInBackground(UploadToken uploadToken, UploadStatusCallback callback) {
-        String threadName = String.format("App upload monitor: %s", uploadToken.getPackageGuid());
-        new Thread(() -> processAsyncUpload(uploadToken, callback), threadName).start();
+    private boolean isUserProvided(UnionServiceInstanceEntity serviceInstance) {
+        return USER_PROVIDED_SERVICE_INSTANCE_TYPE.equals(serviceInstance.getType());
     }
 
     private void processAsyncUpload(UploadToken uploadToken, UploadStatusCallback callback) {
@@ -2647,16 +2757,9 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         }
     }
 
-    private CloudPackage findPackage(UUID guid) {
-        return fetch(() -> getPackageResource(guid), ImmutableRawCloudPackage::of);
-    }
-
-    private Mono<? extends org.cloudfoundry.client.v3.packages.Package> getPackageResource(UUID guid) {
-        GetPackageRequest request = GetPackageRequest.builder()
-                                                     .packageId(guid.toString())
-                                                     .build();
-        return v3Client.packages()
-                       .get(request);
+    private void processAsyncUploadInBackground(UploadToken uploadToken, UploadStatusCallback callback) {
+        String threadName = String.format("App upload monitor: %s", uploadToken.getPackageGuid());
+        new Thread(() -> processAsyncUpload(uploadToken, callback), threadName).start();
     }
 
     private void removeUris(List<String> uris, UUID applicationGuid) {
@@ -2669,6 +2772,25 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
             String path = uriInfo.get("path");
             unbindRoute(domainGuid, host, path, applicationGuid);
         }
+    }
+
+    private UploadToken startUpload(String applicationName, File file) {
+        Assert.notNull(applicationName, "AppName must not be null");
+        Assert.notNull(file, "File must not be null");
+
+        UUID applicationGuid = getRequiredApplicationGuid(applicationName);
+        UUID packageGuid = getGuid(createPackageForApplication(applicationGuid));
+
+        v3Client.packages()
+                .upload(UploadPackageRequest.builder()
+                                            .bits(file.toPath())
+                                            .packageId(packageGuid.toString())
+                                            .build())
+                .block();
+
+        return ImmutableUploadToken.builder()
+                                   .packageGuid(packageGuid)
+                                   .build();
     }
 
     private void unbindRoute(UUID domainGuid, String host, String path, UUID applicationGuid) {
@@ -2684,80 +2806,92 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                 .block();
     }
 
-    private String getTargetOrganizationName() {
-        return getName(target.getOrganization());
+    private void updateServicePlanVisibility(CloudServicePlan servicePlan, boolean visibility) {
+        updateServicePlanVisibility(getGuid(servicePlan), visibility);
     }
 
-    private String getName(CloudEntity entity) {
-        return entity == null ? null : entity.getName();
+    private void updateServicePlanVisibility(UUID servicePlanGuid, boolean visibility) {
+        UpdateServicePlanRequest request = UpdateServicePlanRequest.builder()
+                                                                   .servicePlanId(servicePlanGuid.toString())
+                                                                   .publiclyVisible(visibility)
+                                                                   .build();
+        v3Client.servicePlans()
+                .update(request)
+                .block();
     }
 
-    private UUID getTargetOrganizationGuid() {
-        return getGuid(target.getOrganization());
+    private Mono<Derivable<CloudApplication>> zipWithAuxiliaryApplicationContent(Resource<ApplicationEntity> applicationResource) {
+        UUID applicationGuid = getGuid(applicationResource);
+        return getApplicationSummary(applicationGuid).zipWhen(this::getApplicationStackResource)
+                                                     .map(tuple -> ImmutableRawCloudApplication.builder()
+                                                                                               .resource(applicationResource)
+                                                                                               .summary(tuple.getT1())
+                                                                                               .stack(ImmutableRawCloudStack.of(tuple.getT2()))
+                                                                                               .space(target)
+                                                                                               .build());
     }
 
-    private UUID getTargetSpaceGuid() {
-        return getGuid(target);
+    private Mono<Derivable<CloudRoute>> zipWithAuxiliaryRouteContent(Tuple2<? extends Resource<RouteEntity>, CloudDomain> routeTuple) {
+        UUID routeGuid = getGuid(routeTuple.getT1());
+        return getRouteMappingResourcesByRouteGuid(routeGuid).collectList()
+                                                             .map(routeMappingResources -> ImmutableRawCloudRoute.builder()
+                                                                                                                 .resource(routeTuple.getT1())
+                                                                                                                 .domain(routeTuple.getT2())
+                                                                                                                 .routeMappingResources(routeMappingResources)
+                                                                                                                 .build());
     }
 
-    private UUID getGuid(org.cloudfoundry.client.v2.Resource<?> resource) {
-        return Optional.ofNullable(resource)
-                       .map(org.cloudfoundry.client.v2.Resource::getMetadata)
-                       .map(org.cloudfoundry.client.v2.Metadata::getId)
-                       .map(UUID::fromString)
-                       .orElse(null);
+    private Mono<Derivable<CloudServiceBinding>> zipWithAuxiliaryServiceBindingContent(Resource<ServiceBindingEntity> resource) {
+        Map<String, Object> parameters = fetchParametersQuietly(resource.getEntity()
+                                                                        .getServiceBindingParametersUrl());
+        return Mono.just(ImmutableRawCloudServiceBinding.builder()
+                                                        .resource(resource)
+                                                        .parameters(parameters)
+                                                        .build());
     }
 
-    private UUID getGuid(CloudEntity entity) {
-        return Optional.ofNullable(entity)
-                       .map(CloudEntity::getMetadata)
-                       .map(CloudMetadata::getGuid)
-                       .orElse(null);
+    private Mono<Derivable<CloudService>> zipWithAuxiliaryServiceContent(Resource<UnionServiceInstanceEntity> serviceInstanceResource) {
+        UnionServiceInstanceEntity serviceInstance = serviceInstanceResource.getEntity();
+        if (isUserProvided(serviceInstance)) {
+            return Mono.just(ImmutableRawCloudService.of(serviceInstanceResource));
+        }
+        UUID serviceGuid = UUID.fromString(serviceInstance.getServiceId());
+        UUID servicePlanGuid = UUID.fromString(serviceInstance.getServicePlanId());
+        return Mono.zip(Mono.just(serviceInstanceResource), getServiceResource(serviceGuid), getServicePlanResource(servicePlanGuid))
+                   .map(tuple -> ImmutableRawCloudService.builder()
+                                                         .resource(tuple.getT1())
+                                                         .serviceResource(tuple.getT2())
+                                                         .servicePlanResource(tuple.getT3())
+                                                         .build());
     }
 
-    private <T, R, D extends Derivable<T>> Flux<T> fetchFluxWithAuxiliaryContent(Supplier<Flux<R>> resourceSupplier,
-                                                                                 Function<R, Mono<D>> resourceMapper) {
-        return resourceSupplier.get()
-                               .flatMap(resourceMapper)
-                               .map(Derivable::derive);
+    private Mono<Derivable<CloudServiceInstance>>
+            zipWithAuxiliaryServiceInstanceContent(Resource<UnionServiceInstanceEntity> serviceInstanceResource) {
+        Mono<List<CloudServiceBinding>> serviceBindings = getServiceInstanceBindingsFlux(getGuid(serviceInstanceResource)).collectList();
+        Mono<Derivable<CloudService>> service = zipWithAuxiliaryServiceContent(serviceInstanceResource);
+        return Mono.zip(service, serviceBindings)
+                   .map(tuple -> ImmutableRawCloudServiceInstance.builder()
+                                                                 .resource(serviceInstanceResource)
+                                                                 .serviceBindings(tuple.getT2())
+                                                                 .service(tuple.getT1())
+                                                                 .build());
     }
 
-    private <T, R, D extends Derivable<T>> List<T> fetchListWithAuxiliaryContent(Supplier<Flux<R>> resourceSupplier,
-                                                                                 Function<R, Mono<D>> resourceMapper) {
-        return fetchFluxWithAuxiliaryContent(resourceSupplier, resourceMapper).collectList()
-                                                                              .block();
+    private Mono<Derivable<CloudServiceOffering>> zipWithAuxiliaryServiceOfferingContent(Resource<ServiceEntity> resource) {
+        UUID serviceGuid = getGuid(resource);
+        return getServicePlansFlux(serviceGuid).collectList()
+                                               .map(servicePlans -> ImmutableRawCloudServiceOffering.builder()
+                                                                                                    .resource(resource)
+                                                                                                    .servicePlans(servicePlans)
+                                                                                                    .build());
     }
 
-    private <T, R, D extends Derivable<T>> List<T> fetchList(Supplier<Flux<R>> resourceSupplier, Function<R, D> resourceMapper) {
-        return fetchFlux(resourceSupplier, resourceMapper).collectList()
-                                                          .block();
-    }
-
-    private <T, R, D extends Derivable<T>> Flux<T> fetchFlux(Supplier<Flux<R>> resourceSupplier, Function<R, D> resourceMapper) {
-        return resourceSupplier.get()
-                               .map(resourceMapper)
-                               .map(Derivable::derive);
-    }
-
-    private <T, R, D extends Derivable<T>> T fetchWithAuxiliaryContent(Supplier<Mono<R>> resourceSupplier,
-                                                                       Function<R, Mono<D>> resourceMapper) {
-        return fetchMonoWithAuxiliaryContent(resourceSupplier, resourceMapper).block();
-    }
-
-    private <T, R, D extends Derivable<T>> T fetch(Supplier<Mono<R>> resourceSupplier, Function<R, D> resourceMapper) {
-        return fetchMono(resourceSupplier, resourceMapper).block();
-    }
-
-    private <T, R, D extends Derivable<T>> Mono<T> fetchMonoWithAuxiliaryContent(Supplier<Mono<R>> resourceSupplier,
-                                                                                 Function<R, Mono<D>> resourceMapper) {
-        return resourceSupplier.get()
-                               .flatMap(resourceMapper)
-                               .map(Derivable::derive);
-    }
-
-    private <T, R, D extends Derivable<T>> Mono<T> fetchMono(Supplier<Mono<R>> resourceSupplier, Function<R, D> resourceMapper) {
-        return resourceSupplier.get()
-                               .map(resourceMapper)
-                               .map(Derivable::derive);
+    private Mono<Derivable<CloudSpace>> zipWithAuxiliarySpaceContent(Resource<SpaceEntity> resource) {
+        UUID organizationGuid = UUID.fromString(resource.getEntity()
+                                                        .getOrganizationId());
+        return getOrganizationMono(organizationGuid).map(organization -> ImmutableRawCloudSpace.builder()
+                                                                                               .resource(resource)
+                                                                                               .organization(organization)
+                                                                                               .build());
     }
 }
