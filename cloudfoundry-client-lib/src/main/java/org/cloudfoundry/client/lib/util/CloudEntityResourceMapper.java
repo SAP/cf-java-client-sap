@@ -18,6 +18,7 @@ package org.cloudfoundry.client.lib.util;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -389,7 +390,7 @@ public class CloudEntityResourceMapper {
         DockerInfo dockerInfo = createDockerInfo(dockerImage, dockerCredentials);
 
         Staging staging = new Staging.StagingBuilder().command(command)
-            .buildpackUrl(buildpack)
+            .buildpacks(Arrays.asList(buildpack))
             .stack(stackName)
             .healthCheckTimeout(healthCheckTimeout)
             .detectedBuildpack(detectedBuildpack)
