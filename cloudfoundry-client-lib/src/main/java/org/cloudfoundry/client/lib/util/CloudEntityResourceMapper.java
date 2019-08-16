@@ -390,7 +390,7 @@ public class CloudEntityResourceMapper {
         DockerInfo dockerInfo = createDockerInfo(dockerImage, dockerCredentials);
 
         Staging staging = new Staging.StagingBuilder().command(command)
-            .buildpacks(Arrays.asList(buildpack))
+            .buildpacks(buildpack != null ? Arrays.asList(buildpack) : Collections.emptyList())
             .stack(stackName)
             .healthCheckTimeout(healthCheckTimeout)
             .detectedBuildpack(detectedBuildpack)
