@@ -116,7 +116,7 @@ public class RawCloudApplicationTest {
 
     private static ImmutableStaging buildExpectedStaging(DockerInfo dockerInfo) {
         return ImmutableStaging.builder()
-                               .buildpackUrl(BUILDPACK)
+                               .buildpacks(Arrays.asList(BUILDPACK))
                                .command(COMMAND)
                                .detectedBuildpack(DETECTED_BUILDPACK)
                                .dockerInfo(dockerInfo)

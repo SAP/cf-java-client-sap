@@ -68,7 +68,7 @@ public abstract class RawCloudApplication extends RawCloudEntity<CloudApplicatio
 
     private static Staging parseStaging(SummaryApplicationResponse summary, Derivable<CloudStack> stack) {
         return ImmutableStaging.builder()
-                               .buildpackUrl(summary.getBuildpack())
+                               .addBuildpack(summary.getBuildpack())
                                .command(summary.getCommand())
                                .detectedBuildpack(summary.getDetectedBuildpack())
                                .healthCheckHttpEndpoint(summary.getHealthCheckHttpEndpoint())
