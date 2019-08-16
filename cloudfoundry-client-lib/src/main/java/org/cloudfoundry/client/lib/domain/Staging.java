@@ -16,6 +16,10 @@
 
 package org.cloudfoundry.client.lib.domain;
 
+import java.util.List;
+
+import org.springframework.util.CollectionUtils;
+
 /**
  * The staging information related to an application. Used for creating the application
  *
@@ -25,7 +29,7 @@ package org.cloudfoundry.client.lib.domain;
  */
 public class Staging {
 
-    private String buildpackUrl;
+    private List<String> buildpacks;
     private String command;
     private String detectedBuildpack;
     private String stack;
@@ -44,7 +48,7 @@ public class Staging {
 
     private Staging(StagingBuilder builder) {
         this.command = builder.command;
-        this.buildpackUrl = builder.buildpackUrl;
+        this.buildpacks = builder.buildpacks;
         this.stack = builder.stack;
         this.detectedBuildpack = builder.detectedBuildpack;
         this.healthCheckTimeout = builder.healthCheckTimeout;
@@ -56,7 +60,7 @@ public class Staging {
 
     public static class StagingBuilder {
         private String command;
-        private String buildpackUrl;
+        private List<String> buildpacks;
         private String stack;
         private String detectedBuildpack;
         private Integer healthCheckTimeout;
@@ -71,9 +75,9 @@ public class Staging {
             return this;
         }
 
-        // @param buildpackUrl a custom buildpack url (e.g. https://github.com/cloudfoundry/java-buildpack.git); may be null
-        public StagingBuilder buildpackUrl(String buildpackUrl) {
-            this.buildpackUrl = buildpackUrl;
+        // @param a list of buildpacks (names or urls) (e.g. https://github.com/cloudfoundry/java-buildpack.git); may be null
+        public StagingBuilder buildpacks(List<String> buildpacks) {
+            this.buildpacks = buildpacks;
             return this;
         }
 
@@ -129,10 +133,17 @@ public class Staging {
     }
 
     /**
-     * @return The buildpack url, or null to use the default buildpack detected based on application content
+     * @return The first buildpack in the list, or null to use the default buildpack detected based on application content
      */
-    public String getBuildpackUrl() {
-        return buildpackUrl;
+    public String getBuildpack() {
+        return CollectionUtils.isEmpty(buildpacks) ? null : buildpacks.get(0);
+    }
+
+    /**
+     * @return The buildpacks list, or null to use the default buildpack detected based on application content
+     */
+    public List<String> getBuildpacks() {
+        return buildpacks;
     }
 
     /**
@@ -194,7 +205,7 @@ public class Staging {
 
     @Override
     public String toString() {
-        return "Staging [command=" + getCommand() + " buildpack=" + getBuildpackUrl() + " stack=" + getStack() + " healthCheckTimeout="
+        return "Staging [command=" + getCommand() + " buildpacks=" + getBuildpacks() + " stack=" + getStack() + " healthCheckTimeout="
             + getHealthCheckTimeout() + " healthCheckType" + getHealthCheckType() + " healthCheckHttpEndpoint="
             + getHealthCheckHttpEndpoint() + " sshEnabled=" + isSshEnabled() + "]";
     }

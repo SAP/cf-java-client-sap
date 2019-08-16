@@ -649,7 +649,7 @@ public class CloudControllerClientTest {
         assertEquals(CloudApplication.State.STOPPED, application.getState());
 
         assertEquals(buildpackUrl, application.getStaging()
-            .getBuildpackUrl());
+            .getBuildpack());
         assertNull(application.getStaging()
             .getDetectedBuildpack());
     }
@@ -894,7 +894,7 @@ public class CloudControllerClientTest {
         assertNull(application.getStaging()
             .getCommand());
         assertNull(application.getStaging()
-            .getBuildpackUrl());
+            .getBuildpack());
         assertNull(application.getStaging()
             .getHealthCheckTimeout());
     }
@@ -1859,7 +1859,7 @@ public class CloudControllerClientTest {
         connectedClient.stopApplication(applicationName);
 
         Staging newStaging = new Staging.StagingBuilder().command("ruby simple.rb test")
-            .buildpackUrl("https://github" + ".com/cloudfoundry/heroku-buildpack-ruby")
+            .buildpacks(Arrays.asList("https://github.com/cloudfoundry/heroku-buildpack-ruby"))
             .build();
         connectedClient.updateApplicationStaging(applicationName, newStaging);
         application = connectedClient.getApplication(applicationName);
@@ -1868,7 +1868,7 @@ public class CloudControllerClientTest {
         assertEquals("ruby simple.rb test", application.getStaging()
             .getCommand());
         assertEquals("https://github.com/cloudfoundry/heroku-buildpack-ruby", application.getStaging()
-            .getBuildpackUrl());
+            .getBuildpacks().get(0));
     }
 
     @Test
@@ -2286,7 +2286,7 @@ public class CloudControllerClientTest {
     }
 
     private void createSpringApplication(String applicationName, String buildpackUrl) {
-        createTestApp(applicationName, null, new Staging.StagingBuilder().buildpackUrl(buildpackUrl)
+        createTestApp(applicationName, null, new Staging.StagingBuilder().buildpacks(Arrays.asList(buildpackUrl))
             .build());
     }
 
