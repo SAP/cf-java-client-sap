@@ -5,7 +5,7 @@
     <artifactId>cf-java-client</artifactId>
     <packaging>pom</packaging>
     <name>Cloud Foundry Java Client Parent</name>
-    <version>1.13.5</version>
+    <version>1.13.6</version>
     <description>SAP fork of CF Java Client</description>
     <url>https://github.com/SAP/cf-java-client-sap</url>
 
