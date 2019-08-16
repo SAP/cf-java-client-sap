@@ -420,7 +420,7 @@ public class CloudEntityResourceMapper {
 
         Staging staging = ImmutableStaging.builder()
                                           .command(command)
-                                          .buildpackUrl(buildpack)
+                                          .addBuildpack(buildpack)
                                           .stack(stackName)
                                           .healthCheckTimeout(healthCheckTimeout)
                                           .detectedBuildpack(detectedBuildpack)

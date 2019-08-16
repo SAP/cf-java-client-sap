@@ -183,6 +183,9 @@ import org.cloudfoundry.client.v2.stacks.StackEntity;
 import org.cloudfoundry.client.v2.userprovidedserviceinstances.CreateUserProvidedServiceInstanceRequest;
 import org.cloudfoundry.client.v2.userprovidedserviceinstances.ListUserProvidedServiceInstanceServiceBindingsRequest;
 import org.cloudfoundry.client.v2.users.UserEntity;
+import org.cloudfoundry.client.v3.BuildpackData;
+import org.cloudfoundry.client.v3.Lifecycle;
+import org.cloudfoundry.client.v3.LifecycleType;
 import org.cloudfoundry.client.v3.Relationship;
 import org.cloudfoundry.client.v3.ToOneRelationship;
 import org.cloudfoundry.client.v3.applications.ListApplicationBuildsRequest;
@@ -384,6 +387,10 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         UUID newAppGuid = CloudEntityResourceMapper.getV2Metadata(appEntity)
                                                    .getGuid();
 
+        if (shouldUpdateWithV3Buildpacks(staging)) {
+            updateBuildpacks(newAppGuid, staging.getBuildpacks());
+        }
+
         if (!CollectionUtils.isEmpty(serviceNames)) {
             updateApplicationServices(name, Collections.emptyMap());
         }
@@ -391,6 +398,25 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         if (!CollectionUtils.isEmpty(uris)) {
             addUris(uris, newAppGuid);
         }
+    }
+
+    private boolean shouldUpdateWithV3Buildpacks(Staging staging) {
+        return staging.getBuildpacks()
+                      .size() > 1;
+    }
+
+    private void updateBuildpacks(UUID appGuid, List<String> buildpacks) {
+        v3Client.applicationsV3()
+                .update(org.cloudfoundry.client.v3.applications.UpdateApplicationRequest.builder()
+                                                                                        .applicationId(appGuid.toString())
+                                                                                        .lifecycle(Lifecycle.builder()
+                                                                                                            .type(LifecycleType.BUILDPACK)
+                                                                                                            .data(BuildpackData.builder()
+                                                                                                                               .addAllBuildpacks(buildpacks)
+                                                                                                                               .build())
+                                                                                                            .build())
+                                                                                        .build())
+                .block();
     }
 
     @Override
@@ -1228,7 +1254,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         UpdateApplicationRequest.Builder requestBuilder = UpdateApplicationRequest.builder();
         requestBuilder.applicationId(applicationGuid.toString());
         if (staging != null) {
-            requestBuilder.buildpack(staging.getBuildpackUrl())
+            requestBuilder.buildpack(staging.getBuildpack())
                           .command(staging.getCommand())
                           .healthCheckHttpEndpoint(staging.getHealthCheckHttpEndpoint())
                           .healthCheckTimeout(staging.getHealthCheckTimeout())
@@ -1244,6 +1270,10 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         v3Client.applicationsV2()
                 .update(requestBuilder.build())
                 .block();
+
+        if (shouldUpdateWithV3Buildpacks(staging)) {
+            updateBuildpacks(applicationGuid, staging.getBuildpacks());
+        }
     }
 
     @Override
@@ -1923,8 +1953,8 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     private void addStagingToRequest(Staging staging, Map<String, Object> appRequest) {
-        if (staging.getBuildpackUrl() != null) {
-            appRequest.put("buildpack", staging.getBuildpackUrl());
+        if (staging.getBuildpack() != null) {
+            appRequest.put("buildpack", staging.getBuildpack());
         }
         if (staging.getCommand() != null) {
             appRequest.put("command", staging.getCommand());

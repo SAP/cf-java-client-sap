@@ -1,6 +1,9 @@
 package org.cloudfoundry.client.lib.domain;
 
+import java.util.List;
+
 import org.cloudfoundry.client.lib.domain.annotation.Nullable;
+import org.cloudfoundry.client.lib.domain.annotation.SkipNulls;
 import org.immutables.value.Value;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -12,10 +15,10 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 public interface Staging {
 
     /**
-     * @return The buildpack url, or null to use the default buildpack detected based on application content
+     * @return The buildpacks, or empty to use the default buildpack detected based on application content
      */
-    @Nullable
-    String getBuildpackUrl();
+    @SkipNulls
+    List<String> getBuildpacks();
 
     /**
      * @return The start command to use
@@ -62,5 +65,9 @@ public interface Staging {
 
     @Nullable
     DockerInfo getDockerInfo();
+
+    default String getBuildpack() {
+        return getBuildpacks().isEmpty() ? null : getBuildpacks().get(0);
+    }
 
 }
