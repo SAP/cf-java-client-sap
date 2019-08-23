@@ -17,6 +17,7 @@
 package org.cloudfoundry.client.lib.util;
 
 import java.text.SimpleDateFormat;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -27,6 +28,8 @@ import java.util.Map.Entry;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.cloudfoundry.client.lib.domain.CloudBuild;
 import org.cloudfoundry.client.lib.domain.CloudDomain;
@@ -88,8 +91,14 @@ import org.cloudfoundry.client.lib.domain.Status;
  */
 // TODO: use some more advanced JSON mapping framework?
 public class CloudEntityResourceMapper {
+    
+    
+    protected static final Log logger = LogFactory.getLog(CloudEntityResourceMapper.class);
 
     private static SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
+    //TODO This moment is randomly chosen in the near past to detect if controller returns wrong dates for creation/update time of app or service
+    private static String PAST_DATE = "2000-01-01T00:00:00+00:00";
+    private static long PAST_DATE_MILLISECONDS = ZonedDateTime.parse(PAST_DATE).toInstant().toEpochMilli();
 
     @SuppressWarnings("unchecked")
     public static Map<String, Object> getEmbeddedResource(Map<String, Object> resource, String embeddedResourceName) {
@@ -187,7 +196,13 @@ public class CloudEntityResourceMapper {
                 // then remove it before parsing
                 String isoDateString = dateString.replaceFirst(":(?=[0-9]{2}$)", "")
                     .replaceFirst("Z$", "+0000");
-                return dateFormatter.parse(isoDateString);
+                Date date = dateFormatter.parse(isoDateString);
+               
+                long timestamp = date.getTime();
+                if (timestamp < PAST_DATE_MILLISECONDS) {
+                    logger.warn("Controller returns date " + dateString + " that is before " + PAST_DATE + " considering parsed timestamp: " + timestamp);
+                }
+                return date;
             } catch (Exception ignore) {
             }
         }
