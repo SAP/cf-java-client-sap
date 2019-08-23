@@ -56,7 +56,7 @@ public class LoggregatorHttpMessageConverter extends AbstractHttpMessageConverte
 
     @Override
     protected void writeInternal(ApplicationLogs logs, HttpOutputMessage outputMessage)
-        throws IOException, HttpMessageNotWritableException {
+        throws HttpMessageNotWritableException {
         throw new UnsupportedOperationException("Writing to LoggregatorHttpMessageConverter is not supported");
     }
 

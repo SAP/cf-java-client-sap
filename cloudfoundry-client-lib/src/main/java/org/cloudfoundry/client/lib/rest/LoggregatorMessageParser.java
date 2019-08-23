@@ -4,12 +4,12 @@ import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
 import org.cloudfoundry.client.lib.domain.ApplicationLog;
+import org.cloudfoundry.client.lib.domain.ImmutableApplicationLog;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.TextFormat;
 
 import loggregator.LogMessages;
-import org.cloudfoundry.client.lib.domain.ImmutableApplicationLog;
 
 public class LoggregatorMessageParser {
 
@@ -34,14 +34,13 @@ public class LoggregatorMessageParser {
         Date timestamp = new Date(TimeUnit.NANOSECONDS.toMillis(message.getTimestamp()));
 
         return ImmutableApplicationLog.builder()
-                .applicationGuid(message.getAppId())
-                .message(message.getMessage()
-                        .toStringUtf8())
-                .messageType(messageType)
-                .timestamp(timestamp)
-                .sourceName(message.getSourceName())
-                .sourceId(message.getSourceId())
-                .build();
+                                      .applicationGuid(message.getAppId())
+                                      .message(message.getMessage()
+                                                      .toStringUtf8())
+                                      .timestamp(timestamp)
+                                      .messageType(messageType)
+                                      .sourceName(message.getSourceName())
+                                      .sourceId(message.getSourceId())
+                                      .build();
     }
-
 }
