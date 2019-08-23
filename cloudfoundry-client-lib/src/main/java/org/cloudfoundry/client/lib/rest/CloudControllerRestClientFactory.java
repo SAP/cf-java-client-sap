@@ -20,19 +20,24 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.text.MessageFormat;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import org.cloudfoundry.client.CloudFoundryClient;
 import org.cloudfoundry.client.lib.CloudCredentials;
 import org.cloudfoundry.client.lib.HttpProxyConfiguration;
 import org.cloudfoundry.client.lib.adapters.CloudControllerV3ClientFactory;
+import org.cloudfoundry.client.lib.adapters.ImmutableCloudControllerV3ClientFactory;
 import org.cloudfoundry.client.lib.domain.CloudSpace;
+import org.cloudfoundry.client.lib.domain.annotation.Nullable;
 import org.cloudfoundry.client.lib.oauth2.OAuthClient;
 import org.cloudfoundry.client.lib.util.RestUtil;
 import org.cloudfoundry.reactor.ConnectionContext;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.type.TypeReference;
+import org.immutables.value.Value;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
@@ -43,41 +48,38 @@ import org.springframework.web.client.RestTemplate;
  * @author Thgomas Risberg
  * @author Ramnivas Laddad
  */
-public class CloudControllerRestClientFactory {
+@Value.Immutable
+public abstract class CloudControllerRestClientFactory {
 
-    private final HttpProxyConfiguration httpProxyConfiguration;
     private final Map<URL, Map<String, Object>> infoCache = new HashMap<>();
     private final ObjectMapper objectMapper = new ObjectMapper();
-    private final RestTemplate generalPurposeRestTemplate;
     private final RestUtil restUtil = new RestUtil();
-    private final boolean trustSelfSignedCerts;
-    private final CloudControllerV3ClientFactory v3ClientFactory;
 
-    public CloudControllerRestClientFactory(boolean trustSelfSignedCerts) {
-        this(trustSelfSignedCerts, null);
+    public abstract Optional<Integer> getClientConnectionPoolSize();
+
+    public abstract Optional<Integer> getClientThreadPoolSize();
+
+    @Nullable
+    public abstract HttpProxyConfiguration getHttpProxyConfiguration();
+
+    @Value.Default
+    public boolean shouldTrustSelfSignedCertificates() {
+        return false;
     }
 
-    public CloudControllerRestClientFactory(boolean trustSelfSignedCerts, HttpProxyConfiguration httpProxyConfiguration) {
-        this(new CloudControllerV3ClientFactory(), trustSelfSignedCerts, httpProxyConfiguration);
+    public abstract Optional<Duration> getClientConnectTimeout();
+
+    @Value.Derived
+    public CloudControllerV3ClientFactory getV3ClientFactory() {
+        ImmutableCloudControllerV3ClientFactory.Builder builder = ImmutableCloudControllerV3ClientFactory.builder();
+        getClientConnectTimeout().ifPresent(builder::clientConnectTimeout);
+        getClientConnectionPoolSize().ifPresent(builder::clientConnectionPoolSize);
+        getClientThreadPoolSize().ifPresent(builder::clientThreadPoolSize);
+        return builder.build();
     }
 
-    public CloudControllerRestClientFactory(int clientConnectionPoolSize, int clientThreadPoolSize, boolean trustSelfSignedCerts) {
-        this(clientConnectionPoolSize, clientThreadPoolSize, trustSelfSignedCerts, null);
-    }
-
-    public CloudControllerRestClientFactory(int clientConnectionPoolSize, int clientThreadPoolSize, boolean trustSelfSignedCerts,
-                                            HttpProxyConfiguration httpProxyConfiguration) {
-        this(new CloudControllerV3ClientFactory(clientConnectionPoolSize, clientThreadPoolSize),
-             trustSelfSignedCerts,
-             httpProxyConfiguration);
-    }
-
-    private CloudControllerRestClientFactory(CloudControllerV3ClientFactory v3ClientFactory, boolean trustSelfSignedCerts,
-                                             HttpProxyConfiguration httpProxyConfiguration) {
-        this.httpProxyConfiguration = httpProxyConfiguration;
-        this.trustSelfSignedCerts = trustSelfSignedCerts;
-        this.generalPurposeRestTemplate = restUtil.createRestTemplate(httpProxyConfiguration, trustSelfSignedCerts);
-        this.v3ClientFactory = v3ClientFactory;
+    public RestTemplate getGeneralPurposeRestTemplate() {
+        return restUtil.createRestTemplate(getHttpProxyConfiguration(), shouldTrustSelfSignedCertificates());
     }
 
     public CloudControllerRestClient createClient(URL controllerUrl, CloudCredentials credentials) {
@@ -109,7 +111,7 @@ public class CloudControllerRestClientFactory {
     public CloudControllerRestClient createClient(URL controllerUrl, CloudCredentials credentials, CloudSpace target,
                                                   OAuthClient oAuthClient) {
         RestTemplate restTemplate = createAuthorizationSettingRestTemplate(credentials, oAuthClient);
-        CloudFoundryClient v3Client = v3ClientFactory.createClient(controllerUrl, oAuthClient);
+        CloudFoundryClient v3Client = getV3ClientFactory().createClient(controllerUrl, oAuthClient);
 
         return new CloudControllerRestClientImpl(controllerUrl, credentials, restTemplate, oAuthClient, v3Client, target);
     }
@@ -118,10 +120,11 @@ public class CloudControllerRestClientFactory {
         Map<String, Object> infoMap = getInfoMap(controllerUrl);
         URL authorizationEndpoint = getAuthorizationEndpoint(infoMap);
         if (StringUtils.isEmpty(origin)) {
-            return restUtil.createOAuthClient(authorizationEndpoint, httpProxyConfiguration, trustSelfSignedCerts);
+            return restUtil.createOAuthClient(authorizationEndpoint, getHttpProxyConfiguration(), shouldTrustSelfSignedCertificates());
         }
-        ConnectionContext connectionContext = v3ClientFactory.getOrCreateConnectionContext(controllerUrl.getHost());
-        return restUtil.createOAuthClient(authorizationEndpoint, httpProxyConfiguration, trustSelfSignedCerts, connectionContext, origin);
+        ConnectionContext connectionContext = getV3ClientFactory().getOrCreateConnectionContext(controllerUrl.getHost());
+        return restUtil.createOAuthClient(authorizationEndpoint, getHttpProxyConfiguration(), shouldTrustSelfSignedCertificates(),
+                                          connectionContext, origin);
     }
 
     private URL getAuthorizationEndpoint(Map<String, Object> infoMap) {
@@ -140,7 +143,7 @@ public class CloudControllerRestClientFactory {
             return infoCache.get(controllerUrl);
         }
 
-        String infoResponse = generalPurposeRestTemplate.getForObject(controllerUrl + "/v2/info", String.class);
+        String infoResponse = getGeneralPurposeRestTemplate().getForObject(controllerUrl + "/v2/info", String.class);
         try {
             return objectMapper.readValue(infoResponse, new TypeReference<Map<String, Object>>() {
             });
@@ -150,7 +153,7 @@ public class CloudControllerRestClientFactory {
     }
 
     private RestTemplate createAuthorizationSettingRestTemplate(CloudCredentials credentials, OAuthClient oAuthClient) {
-        RestTemplate restTemplate = restUtil.createRestTemplate(httpProxyConfiguration, trustSelfSignedCerts);
+        RestTemplate restTemplate = restUtil.createRestTemplate(getHttpProxyConfiguration(), shouldTrustSelfSignedCertificates());
         oAuthClient.init(credentials);
         setAuthorizingRequestFactory(restTemplate, credentials, oAuthClient);
         return restTemplate;

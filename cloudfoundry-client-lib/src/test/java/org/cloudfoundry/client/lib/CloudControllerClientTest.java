@@ -68,6 +68,7 @@ import org.cloudfoundry.client.lib.domain.Staging;
 import org.cloudfoundry.client.lib.oauth2.OAuthClient;
 import org.cloudfoundry.client.lib.rest.CloudControllerRestClient;
 import org.cloudfoundry.client.lib.rest.CloudControllerRestClientFactory;
+import org.cloudfoundry.client.lib.rest.ImmutableCloudControllerRestClientFactory;
 import org.cloudfoundry.client.lib.util.RestUtil;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ConnectHandler;
@@ -1442,7 +1443,10 @@ public class CloudControllerClientTest {
         URL cloudControllerUrl = new URL(CCNG_API_URL);
         CloudCredentials credentials = new CloudCredentials(CCNG_USER_EMAIL, CCNG_USER_PASS);
 
-        CloudControllerRestClientFactory factory = new CloudControllerRestClientFactory(CCNG_API_SSL, httpProxyConfiguration);
+        CloudControllerRestClientFactory factory = ImmutableCloudControllerRestClientFactory.builder()
+                                                                                            .httpProxyConfiguration(httpProxyConfiguration)
+                                                                                            .shouldTrustSelfSignedCertificates(CCNG_API_SSL)
+                                                                                            .build();
         CloudControllerRestClient client = factory.createClient(cloudControllerUrl, credentials, CCNG_USER_ORG, CCNG_USER_SPACE);
 
         client.login();
