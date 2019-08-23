@@ -26,7 +26,7 @@ public interface UploadStatusCallback {
     /**
      * Empty implementation
      */
-    public static final UploadStatusCallback NONE = new UploadStatusCallback() {
+    UploadStatusCallback NONE = new UploadStatusCallback() {
         @Override
         public void onCheckResources() {
         }

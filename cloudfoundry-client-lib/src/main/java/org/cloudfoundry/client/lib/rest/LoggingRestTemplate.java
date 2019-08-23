@@ -16,7 +16,6 @@
 
 package org.cloudfoundry.client.lib.rest;
 
-import java.io.IOException;
 import java.net.URI;
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -26,7 +25,6 @@ import org.cloudfoundry.client.lib.RestLogCallback;
 import org.cloudfoundry.client.lib.RestLogEntry;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RequestCallback;
 import org.springframework.web.client.ResponseExtractor;
@@ -59,27 +57,24 @@ public class LoggingRestTemplate extends RestTemplate {
         T results = null;
         RestClientException exception = null;
         try {
-            results = super.doExecute(url, method, requestCallback, new ResponseExtractor<T>() {
-                @SuppressWarnings("rawtypes")
-                public T extractData(ClientHttpResponse response) throws IOException {
-                    httpStatus[0] = response.getStatusCode();
-                    headers[0] = response.getHeaders();
-                    T data = null;
-                    if (responseExtractor != null && (data = responseExtractor.extractData(response)) != null) {
-                        if (data instanceof String) {
-                            message[0] = ((String) data).length() + " bytes";
-                        } else if (data instanceof Map) {
-                            message[0] = ((Map) data).keySet()
-                                                     .toString();
-                        } else {
-                            message[0] = data.getClass()
-                                             .getName();
-                        }
-                        return data;
+            results = super.doExecute(url, method, requestCallback, response -> {
+                httpStatus[0] = response.getStatusCode();
+                headers[0] = response.getHeaders();
+                T data;
+                if (responseExtractor != null && (data = responseExtractor.extractData(response)) != null) {
+                    if (data instanceof String) {
+                        message[0] = ((String) data).length() * 2 + " bytes";
+                    } else if (data instanceof Map) {
+                        message[0] = ((Map) data).keySet()
+                                                 .toString();
                     } else {
-                        message[0] = "<no data>";
-                        return null;
+                        message[0] = data.getClass()
+                                         .getName();
                     }
+                    return data;
+                } else {
+                    message[0] = "<no data>";
+                    return null;
                 }
             });
             status[0] = "OK";

@@ -27,6 +27,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -468,11 +469,11 @@ public class CloudEntityResourceMapper {
 
     private Map<String, String> convertEnvironmentValuesToJson(Map<String, Object> envMap) {
         if (envMap == null) {
-            return Collections.<String, String> emptyMap();
+            return Collections.emptyMap();
         }
         return envMap.entrySet()
                      .stream()
-                     .collect(Collectors.toMap(entry -> entry.getKey(), entry -> convertValueToString(entry)));
+                     .collect(Collectors.toMap(Entry::getKey, this::convertValueToString));
     }
 
     private String convertValueToString(Entry<String, Object> entry) {
@@ -496,15 +497,11 @@ public class CloudEntityResourceMapper {
         if (serviceBindings == null) {
             return Collections.emptyList();
         }
-        List<String> applicationServices = new ArrayList<>();
-        for (Map<String, Object> binding : serviceBindings) {
-            Map<String, Object> service = getV2ResourceAttribute(binding, "service_instance", Map.class);
-            String serviceName = getV2ResourceName(service);
-            if (serviceName != null) {
-                applicationServices.add(serviceName);
-            }
-        }
-        return applicationServices;
+        return serviceBindings.stream()
+                .map(binding -> (Map<String, Object>) getV2ResourceAttribute(binding, "service_instance", Map.class))
+                .map(this::getV2ResourceName)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
     }
 
     private DockerInfo createDockerInfo(String dockerImage, Map<String, String> dockerCredentials) {
@@ -703,10 +700,9 @@ public class CloudEntityResourceMapper {
         builder.service(service);
 
         List<Map<String, Object>> bindingsResource = getEmbeddedResourceList(getEntity(resource), "service_bindings");
-        List<CloudServiceBinding> bindings = new ArrayList<>(bindingsResource.size());
-        for (Map<String, Object> bindingResource : bindingsResource) {
-            bindings.add(mapServiceBinding(bindingResource));
-        }
+        List<CloudServiceBinding> bindings = bindingsResource.stream()
+                                                             .map(this::mapServiceBinding)
+                                                             .collect(Collectors.toList());
         builder.bindings(bindings);
 
         return builder.build();
