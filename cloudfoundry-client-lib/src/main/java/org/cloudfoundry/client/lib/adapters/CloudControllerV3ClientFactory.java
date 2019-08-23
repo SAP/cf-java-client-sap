@@ -8,10 +8,12 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.cloudfoundry.client.CloudFoundryClient;
 import org.cloudfoundry.client.lib.oauth2.OAuthClient;
+import org.cloudfoundry.doppler.DopplerClient;
 import org.cloudfoundry.reactor.ConnectionContext;
 import org.cloudfoundry.reactor.DefaultConnectionContext;
 import org.cloudfoundry.reactor.client.ReactorCloudFoundryClient;
 import org.immutables.value.Value;
+import org.cloudfoundry.reactor.doppler.ReactorDopplerClient;
 
 @Value.Immutable
 public abstract class CloudControllerV3ClientFactory {
@@ -29,6 +31,13 @@ public abstract class CloudControllerV3ClientFactory {
                                         .connectionContext(getOrCreateConnectionContext(controllerUrl.getHost()))
                                         .tokenProvider(oAuthClient.getTokenProvider())
                                         .build();
+    }
+
+    public DopplerClient createDopplerClient(URL controllerUrl, OAuthClient oAuthClient) {
+        return ReactorDopplerClient.builder()
+                                   .connectionContext(getOrCreateConnectionContext(controllerUrl.getHost()))
+                                   .tokenProvider(oAuthClient.getTokenProvider())
+                                   .build();
     }
 
     public ConnectionContext getOrCreateConnectionContext(String controllerApiHost) {

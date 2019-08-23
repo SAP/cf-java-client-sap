@@ -669,6 +669,16 @@ public interface CloudControllerClient {
     List<ApplicationLog> getRecentLogs(String applicationName);
 
     /**
+     * Get recent log entries.
+     *
+     * Get logs that were recently produced for an app.
+     *
+     * @param applicationGuid the guid of the application
+     * @return the list of recent log entries
+     */
+    List<ApplicationLog> getRecentLogs(UUID applicationGuid);
+
+    /**
      * Get the info for all routes for a domain.
      *
      * @param domainName the domain the routes belong to
