@@ -1,7 +1,9 @@
 package org.cloudfoundry.client.lib.adapters;
 
 import java.net.URL;
+import java.time.Duration;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.cloudfoundry.client.CloudFoundryClient;
@@ -14,24 +16,18 @@ import org.cloudfoundry.reactor.ConnectionContext;
 import org.cloudfoundry.reactor.DefaultConnectionContext;
 import org.cloudfoundry.reactor.client.ReactorCloudFoundryClient;
 import org.springframework.util.Assert;
+import org.immutables.value.Value;
 
-public class CloudControllerV3ClientFactory {
-
-    private static final int DEFAULT_CLIENT_CONNECTION_POOL_SIZE = 75;
-    private static final int DEFAULT_CLIENT_THREAD_POOL_SIZE = 75;
+@Value.Immutable
+public abstract class CloudControllerV3ClientFactory {
 
     private final Map<String, ConnectionContext> connectionContextCache = new ConcurrentHashMap<>();
-    private final int clientCoonectionPoolSize;
-    private final int clientThreadPoolSize;
 
-    public CloudControllerV3ClientFactory() {
-        this(DEFAULT_CLIENT_CONNECTION_POOL_SIZE, DEFAULT_CLIENT_THREAD_POOL_SIZE);
-    }
+    public abstract Optional<Duration> getClientConnectTimeout();
 
-    public CloudControllerV3ClientFactory(int clientCoonectionPoolSize, int clientThreadPoolSize) {
-        this.clientCoonectionPoolSize = clientCoonectionPoolSize;
-        this.clientThreadPoolSize = clientThreadPoolSize;
-    }
+    public abstract Optional<Integer> getClientConnectionPoolSize();
+
+    public abstract Optional<Integer> getClientThreadPoolSize();
 
     public CloudFoundryOperations createOperationsClient(URL controllerUrl, CloudFoundryClient cloudControllerClient, CloudSpace target) {
         DefaultCloudFoundryOperations.Builder builder = DefaultCloudFoundryOperations.builder()
@@ -71,11 +67,12 @@ public class CloudControllerV3ClientFactory {
     }
 
     private ConnectionContext createConnectionContext(String controllerApiHost) {
-        return DefaultConnectionContext.builder()
-            .apiHost(controllerApiHost)
-            .threadPoolSize(clientThreadPoolSize)
-            .connectionPoolSize(clientCoonectionPoolSize)
-            .build();
+        DefaultConnectionContext.Builder builder = DefaultConnectionContext.builder()
+                                                                           .apiHost(controllerApiHost);
+        getClientConnectTimeout().ifPresent(builder::connectTimeout);
+        getClientConnectionPoolSize().ifPresent(builder::connectionPoolSize);
+        getClientThreadPoolSize().ifPresent(builder::threadPoolSize);
+        return builder.build();
     }
 
 }
