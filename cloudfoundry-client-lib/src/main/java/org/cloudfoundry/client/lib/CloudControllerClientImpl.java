@@ -54,6 +54,7 @@ import org.cloudfoundry.client.lib.domain.UploadToken;
 import org.cloudfoundry.client.lib.rest.ApplicationServicesUpdater;
 import org.cloudfoundry.client.lib.rest.CloudControllerRestClient;
 import org.cloudfoundry.client.lib.rest.CloudControllerRestClientFactory;
+import org.cloudfoundry.client.lib.rest.ImmutableCloudControllerRestClientFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.util.Assert;
@@ -135,9 +136,11 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     public CloudControllerClientImpl(URL controllerUrl, CloudCredentials credentials, CloudSpace target,
                                      HttpProxyConfiguration httpProxyConfiguration, boolean trustSelfSignedCerts) {
         Assert.notNull(controllerUrl, "URL for cloud controller cannot be null");
-        CloudControllerRestClientFactory cloudControllerClientFactory = new CloudControllerRestClientFactory(trustSelfSignedCerts,
-                                                                                                             httpProxyConfiguration);
-        this.delegate = cloudControllerClientFactory.createClient(controllerUrl, credentials, target);
+        CloudControllerRestClientFactory restClientFactory = ImmutableCloudControllerRestClientFactory.builder()
+                                                                                                      .httpProxyConfiguration(httpProxyConfiguration)
+                                                                                                      .shouldTrustSelfSignedCertificates(trustSelfSignedCerts)
+                                                                                                      .build();
+        this.delegate = restClientFactory.createClient(controllerUrl, credentials, target);
     }
 
     /**
@@ -161,9 +164,11 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     public CloudControllerClientImpl(URL controllerUrl, CloudCredentials credentials, String organizationName, String spaceName,
                                      HttpProxyConfiguration httpProxyConfiguration, boolean trustSelfSignedCerts) {
         Assert.notNull(controllerUrl, "URL for cloud controller cannot be null");
-        CloudControllerRestClientFactory cloudControllerClientFactory = new CloudControllerRestClientFactory(trustSelfSignedCerts,
-                                                                                                             httpProxyConfiguration);
-        this.delegate = cloudControllerClientFactory.createClient(controllerUrl, credentials, organizationName, spaceName);
+        CloudControllerRestClientFactory restClientFactory = ImmutableCloudControllerRestClientFactory.builder()
+                                                                                                      .httpProxyConfiguration(httpProxyConfiguration)
+                                                                                                      .shouldTrustSelfSignedCertificates(trustSelfSignedCerts)
+                                                                                                      .build();
+        this.delegate = restClientFactory.createClient(controllerUrl, credentials, organizationName, spaceName);
     }
 
     /**

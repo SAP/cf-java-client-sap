@@ -1,4 +1,4 @@
 @GenerationStyle
-package org.cloudfoundry.client.lib.adapters;
+package org.cloudfoundry.client.lib;
 
 import org.cloudfoundry.client.lib.domain.annotation.GenerationStyle;
