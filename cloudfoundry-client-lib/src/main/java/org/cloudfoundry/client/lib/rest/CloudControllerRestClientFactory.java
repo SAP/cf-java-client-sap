@@ -34,6 +34,7 @@ import org.cloudfoundry.client.lib.domain.CloudSpace;
 import org.cloudfoundry.client.lib.domain.annotation.Nullable;
 import org.cloudfoundry.client.lib.oauth2.OAuthClient;
 import org.cloudfoundry.client.lib.util.RestUtil;
+import org.cloudfoundry.doppler.DopplerClient;
 import org.cloudfoundry.reactor.ConnectionContext;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.type.TypeReference;
@@ -112,8 +113,10 @@ public abstract class CloudControllerRestClientFactory {
                                                   OAuthClient oAuthClient) {
         RestTemplate restTemplate = createAuthorizationSettingRestTemplate(credentials, oAuthClient);
         CloudFoundryClient v3Client = getV3ClientFactory().createClient(controllerUrl, oAuthClient);
+        DopplerClient dopplerClient = getV3ClientFactory().createDopplerClient(controllerUrl, oAuthClient);
 
-        return new CloudControllerRestClientImpl(controllerUrl, credentials, restTemplate, oAuthClient, v3Client, target);
+        return new CloudControllerRestClientImpl(controllerUrl, credentials, restTemplate, oAuthClient, v3Client,
+                dopplerClient, target);
     }
 
     private OAuthClient createOAuthClient(URL controllerUrl, String origin) {

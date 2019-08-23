@@ -199,6 +199,8 @@ public interface CloudControllerRestClient {
 
     List<ApplicationLog> getRecentLogs(String applicationName);
 
+    List<ApplicationLog> getRecentLogs(UUID applicationGuid);
+
     List<CloudRoute> getRoutes(String domainName);
 
     List<CloudSecurityGroup> getRunningSecurityGroups();

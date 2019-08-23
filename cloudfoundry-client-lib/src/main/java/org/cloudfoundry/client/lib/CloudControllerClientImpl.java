@@ -553,6 +553,11 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
+    public List<ApplicationLog> getRecentLogs(UUID applicationGuid) {
+        return handleExceptions(() -> delegate.getRecentLogs(applicationGuid));
+    }
+
+    @Override
     public List<CloudRoute> getRoutes(String domainName) {
         return handleExceptions(() -> delegate.getRoutes(domainName));
     }

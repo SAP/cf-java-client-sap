@@ -25,6 +25,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -49,6 +50,7 @@ import org.cloudfoundry.client.lib.RestLogCallback;
 import org.cloudfoundry.client.lib.StartingInfo;
 import org.cloudfoundry.client.lib.StreamingLogToken;
 import org.cloudfoundry.client.lib.UploadStatusCallback;
+import org.cloudfoundry.client.lib.adapters.ImmutableRawApplicationLog;
 import org.cloudfoundry.client.lib.adapters.ImmutableRawCloudApplication;
 import org.cloudfoundry.client.lib.adapters.ImmutableRawCloudBuild;
 import org.cloudfoundry.client.lib.adapters.ImmutableRawCloudDomain;
@@ -203,6 +205,9 @@ import org.cloudfoundry.client.v3.tasks.CreateTaskRequest;
 import org.cloudfoundry.client.v3.tasks.GetTaskRequest;
 import org.cloudfoundry.client.v3.tasks.ListTasksRequest;
 import org.cloudfoundry.client.v3.tasks.Task;
+import org.cloudfoundry.doppler.DopplerClient;
+import org.cloudfoundry.doppler.Envelope;
+import org.cloudfoundry.doppler.RecentLogsRequest;
 import org.cloudfoundry.util.PaginationUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
@@ -247,6 +252,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     private CloudSpace target;
 
     private CloudFoundryClient v3Client;
+    private DopplerClient dopplerClient;
 
     /**
      * Only for unit tests. This works around the fact that the initialize method is called within the constructor and hence can not be
@@ -257,11 +263,12 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     public CloudControllerRestClientImpl(URL controllerUrl, CloudCredentials credentials, RestTemplate restTemplate,
                                          OAuthClient oAuthClient, CloudFoundryClient v3Client) {
-        this(controllerUrl, credentials, restTemplate, oAuthClient, v3Client, null);
+        this(controllerUrl, credentials, restTemplate, oAuthClient, v3Client, null, null);
     }
 
     public CloudControllerRestClientImpl(URL controllerUrl, CloudCredentials credentials, RestTemplate restTemplate,
-                                         OAuthClient oAuthClient, CloudFoundryClient v3Client, CloudSpace target) {
+                                         OAuthClient oAuthClient, CloudFoundryClient v3Client, DopplerClient dopplerClient,
+                                         CloudSpace target) {
         Assert.notNull(controllerUrl, "CloudControllerUrl cannot be null");
         Assert.notNull(restTemplate, "RestTemplate cannot be null");
         Assert.notNull(oAuthClient, "OAuthClient cannot be null");
@@ -273,6 +280,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         this.target = target;
 
         this.v3Client = v3Client;
+        this.dopplerClient = dopplerClient;
     }
 
     @Override
@@ -501,6 +509,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                 .spaceId(getTargetSpaceGuid().toString())
                                                                 .name(service.getName())
                                                                 .credentials(credentials)
+                                                                .syslogDrainUrl(syslogDrainUrl)
                                                                 .build())
                 .block();
     }
@@ -791,7 +800,18 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public List<ApplicationLog> getRecentLogs(String applicationName) {
-        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
+        UUID appGuid = getRequiredApplicationGuid(applicationName);
+        return getRecentLogs(appGuid);
+    }
+
+    @Override
+    public List<ApplicationLog> getRecentLogs(UUID applicationGuid) {
+        RecentLogsRequest request = RecentLogsRequest.builder()
+                .applicationId(applicationGuid.toString())
+                .build();
+        return fetchFlux(() -> dopplerClient.recentLogs(request), ImmutableRawApplicationLog::of)
+                .collectSortedList(Comparator.comparing(ApplicationLog::getTimestamp))
+                .block();
     }
 
     @Override

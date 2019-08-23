@@ -1,6 +1,7 @@
 package org.cloudfoundry.client.lib.rest;
 
 import java.util.Date;
+import java.util.concurrent.TimeUnit;
 
 import org.cloudfoundry.client.lib.domain.ApplicationLog;
 
@@ -8,10 +9,9 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.TextFormat;
 
 import loggregator.LogMessages;
+import org.cloudfoundry.client.lib.domain.ImmutableApplicationLog;
 
 public class LoggregatorMessageParser {
-
-    private static final long NANOSECONDS_IN_MILLISECOND = 1000000;
 
     public ApplicationLog parseMessage(byte[] rawMessage) throws InvalidProtocolBufferException {
         LogMessages.Message message = LogMessages.Message.parseFrom(rawMessage);
@@ -31,14 +31,17 @@ public class LoggregatorMessageParser {
         ApplicationLog.MessageType messageType = message.getMessageType() == LogMessages.Message.MessageType.OUT
             ? ApplicationLog.MessageType.STDOUT
             : ApplicationLog.MessageType.STDERR;
+        Date timestamp = new Date(TimeUnit.NANOSECONDS.toMillis(message.getTimestamp()));
 
-        return new ApplicationLog(message.getAppId(),
-                                  message.getMessage()
-                                         .toStringUtf8(),
-                                  new Date(message.getTimestamp() / NANOSECONDS_IN_MILLISECOND),
-                                  messageType,
-                                  message.getSourceName(),
-                                  message.getSourceId());
+        return ImmutableApplicationLog.builder()
+                .applicationGuid(message.getAppId())
+                .message(message.getMessage()
+                        .toStringUtf8())
+                .messageType(messageType)
+                .timestamp(timestamp)
+                .sourceName(message.getSourceName())
+                .sourceId(message.getSourceId())
+                .build();
     }
 
 }
