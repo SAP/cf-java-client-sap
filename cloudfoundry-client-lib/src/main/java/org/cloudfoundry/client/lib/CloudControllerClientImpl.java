@@ -300,8 +300,8 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public void createServiceKey(String serviceName, String serviceKeyName, Map<String, Object> parameters) {
-        handleExceptions(() -> delegate.createServiceKey(serviceName, serviceKeyName, parameters));
+    public CloudServiceKey createServiceKey(String serviceName, String serviceKeyName, Map<String, Object> parameters) {
+        return handleExceptions(() -> delegate.createServiceKey(serviceName, serviceKeyName, parameters));
     }
 
     @Override
