@@ -294,7 +294,7 @@ public interface CloudControllerClient {
      * @param parameters parameters of service-key
      * @return
      */
-    void createServiceKey(String serviceName, String serviceKeyName, Map<String, Object> parameters);
+    CloudServiceKey createServiceKey(String serviceName, String serviceKeyName, Map<String, Object> parameters);
 
     /**
      * Create a space with the specified name

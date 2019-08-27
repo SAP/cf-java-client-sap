@@ -157,6 +157,7 @@ import org.cloudfoundry.client.v2.servicebrokers.UpdateServiceBrokerRequest;
 import org.cloudfoundry.client.v2.serviceinstances.CreateServiceInstanceRequest;
 import org.cloudfoundry.client.v2.serviceinstances.DeleteServiceInstanceRequest;
 import org.cloudfoundry.client.v2.serviceinstances.UnionServiceInstanceEntity;
+import org.cloudfoundry.client.v2.servicekeys.AbstractServiceKeyResource;
 import org.cloudfoundry.client.v2.servicekeys.CreateServiceKeyRequest;
 import org.cloudfoundry.client.v2.servicekeys.DeleteServiceKeyRequest;
 import org.cloudfoundry.client.v2.servicekeys.ListServiceKeysRequest;
@@ -475,18 +476,12 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public void createServiceKey(String serviceName, String name, Map<String, Object> parameters) {
+    public CloudServiceKey createServiceKey(String serviceName, String name, Map<String, Object> parameters) {
         CloudService service = getService(serviceName);
-        UUID serviceGuid = service.getMetadata()
-                                  .getGuid();
-
-        v3Client.serviceKeys()
-                .create(CreateServiceKeyRequest.builder()
-                                               .serviceInstanceId(serviceGuid.toString())
-                                               .name(name)
-                                               .parameters(parameters)
-                                               .build())
-                .block();
+        return fetch(() -> createServiceKeyResource(service, name, parameters), resource -> ImmutableRawCloudServiceKey.builder()
+                                                                                                                       .service(service)
+                                                                                                                       .resource(resource)
+                                                                                                                       .build());
     }
 
     @Override
@@ -1845,6 +1840,18 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                      .build();
         return v3Client.tasks()
                        .cancel(request);
+    }
+    
+    private Mono<? extends Resource<ServiceKeyEntity>> createServiceKeyResource(CloudService service, String name,
+                                                                                Map<String, Object> parameters) {
+        UUID serviceGuid = getGuid(service);
+
+        return v3Client.serviceKeys()
+                       .create(CreateServiceKeyRequest.builder()
+                                                      .serviceInstanceId(serviceGuid.toString())
+                                                      .name(name)
+                                                      .parameters(parameters)
+                                                      .build());
     }
 
     private File createTemporaryUploadFile(InputStream inputStream) throws IOException {
