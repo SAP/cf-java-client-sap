@@ -1935,7 +1935,9 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         String host = newUri.getScheme() != null ? newUri.getHost() : newUri.getPath();
         String[] hostAndDomain = host.split(DEFAULT_HOST_DOMAIN_SEPARATOR, 2);
         if (hostAndDomain.length != 2) {
-            throw new IllegalArgumentException("Invalid URI " + uri + " -- host or domain is not specified");
+            throw new CloudOperationException(HttpStatus.BAD_REQUEST,
+                                              HttpStatus.BAD_REQUEST.getReasonPhrase(),
+                                              "Invalid URI " + uri + " -- host or domain is not specified");
         }
         String hostName = hostAndDomain[0];
         int indexOfPathSeparator = hostAndDomain[1].indexOf(DEFAULT_PATH_SEPARATOR);
@@ -1953,7 +1955,9 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
             extractDomainInfo(existingDomains, uriInfo, domain, "", path);
         }
         if (uriInfo.get("domainName") == null) {
-            throw new IllegalArgumentException("Domain not found for URI " + uri);
+            throw new CloudOperationException(HttpStatus.NOT_FOUND,
+                                              HttpStatus.NOT_FOUND.getReasonPhrase(),
+                                              "Domain not found for URI " + uri);
         }
     }
 

@@ -1,5 +1,5 @@
 {
   "uri": "xyz",
   "domains": [],
-  "errorMessage": "Invalid URI xyz -- host or domain is not specified"
+  "errorMessage": "400 Bad Request: Invalid URI xyz -- host or domain is not specified"
 }
