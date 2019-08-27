@@ -15,5 +15,5 @@
     }
   ],
   "expectedDomain": "domain.com",
-  "errorMessage": "Domain not found for URI domain.com"
+  "errorMessage": "404 Not Found: Domain not found for URI domain.com"
 }
