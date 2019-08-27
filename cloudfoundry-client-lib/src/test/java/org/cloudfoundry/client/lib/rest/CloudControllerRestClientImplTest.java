@@ -7,6 +7,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.cloudfoundry.client.lib.CloudOperationException;
 import org.cloudfoundry.client.lib.TestUtil;
 import org.cloudfoundry.client.lib.domain.CloudDomain;
 import org.junit.jupiter.api.Assertions;
@@ -30,13 +31,13 @@ public class CloudControllerRestClientImplTest {
                 // Test with route path
                 Arguments.of("domain-3.json", null),
                 // Test with invalid uri, should throw an exception
-                Arguments.of("domain-4.json", IllegalArgumentException.class),
+                Arguments.of("domain-4.json", CloudOperationException.class),
                 // Uri equals the domain -> no host
                 Arguments.of("domain-5.json", null),
                 // Uri equals the domain (with path)
                 Arguments.of("domain-6.json", null),
                 // Test with domain which does not exist, should throw exception
-                Arguments.of("domain-7.json", IllegalArgumentException.class)
+                Arguments.of("domain-7.json", CloudOperationException.class)
         );
     }
     // @formatter:on
