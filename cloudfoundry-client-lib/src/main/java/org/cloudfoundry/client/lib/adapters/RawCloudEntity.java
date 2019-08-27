@@ -22,6 +22,12 @@ public abstract class RawCloudEntity<T> implements Derivable<T> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CloudEntityResourceMapper.class);
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssZ");
+    // TODO This moment is randomly chosen in the near past to detect if controller returns wrong dates for creation/update time of app or
+    // service
+    private static String PAST_DATE = "2000-01-01T00:00:00+00:00";
+    private static long PAST_DATE_MILLISECONDS = ZonedDateTime.parse(PAST_DATE)
+                                                              .toInstant()
+                                                              .toEpochMilli();
 
     protected RawCloudEntity() {
         // Recommended by Sonar.
@@ -62,12 +68,18 @@ public abstract class RawCloudEntity<T> implements Derivable<T> {
         return date == null ? null : parseDate(date);
     }
 
-    protected static Date parseDate(String date) {
+    protected static Date parseDate(String dateString) {
         try {
-            Instant instant = parseInstant(date);
-            return Date.from(instant);
+            Instant instant = parseInstant(dateString);
+            Date date = Date.from(instant);
+            long timestamp = date.getTime();
+            if (timestamp < PAST_DATE_MILLISECONDS) {
+                LOGGER.warn("Controller returns date \"{}\" that is before \"{}\" considering parsed timestamp: \"{}\"", dateString,
+                            PAST_DATE, timestamp);
+            }
+            return date;
         } catch (DateTimeParseException e) {
-            LOGGER.warn(MessageFormat.format("Could not parse date string: \"{0}\"", date), e);
+            LOGGER.warn(MessageFormat.format("Could not parse date string: \"{0}\"", dateString), e);
             return null;
         }
     }
