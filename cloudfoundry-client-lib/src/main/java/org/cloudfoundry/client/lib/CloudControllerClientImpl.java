@@ -296,8 +296,8 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public void createServiceKey(String serviceName, String serviceKeyName, Map<String, Object> parameters) {
-        cc.createServiceKey(serviceName, serviceKeyName, parameters);
+    public CloudServiceKey createServiceKey(String serviceName, String serviceKeyName, Map<String, Object> parameters) {
+        return cc.createServiceKey(serviceName, serviceKeyName, parameters);
     }
 
     @Override

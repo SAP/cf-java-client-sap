@@ -110,7 +110,7 @@ public interface CloudControllerRestClient {
 
     void createServiceBroker(CloudServiceBroker serviceBroker);
 
-    void createServiceKey(String service, String serviceKey, Map<String, Object> parameters);
+    CloudServiceKey createServiceKey(String service, String serviceKey, Map<String, Object> parameters);
 
     void createSpace(String spaceName);
 

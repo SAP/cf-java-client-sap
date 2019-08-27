@@ -73,6 +73,7 @@ import org.cloudfoundry.client.lib.domain.DockerInfo;
 import org.cloudfoundry.client.lib.domain.ErrorDetails;
 import org.cloudfoundry.client.lib.domain.ImmutableCloudApplication;
 import org.cloudfoundry.client.lib.domain.ImmutableCloudInfo;
+import org.cloudfoundry.client.lib.domain.ImmutableCloudMetadata;
 import org.cloudfoundry.client.lib.domain.ImmutableCloudServiceKey;
 import org.cloudfoundry.client.lib.domain.InstanceState;
 import org.cloudfoundry.client.lib.domain.InstanceStats;
@@ -107,7 +108,9 @@ import org.cloudfoundry.client.v2.serviceinstances.CreateServiceInstanceRequest;
 import org.cloudfoundry.client.v2.serviceinstances.DeleteServiceInstanceRequest;
 import org.cloudfoundry.client.v2.serviceinstances.ListServiceInstanceServiceBindingsRequest;
 import org.cloudfoundry.client.v2.servicekeys.CreateServiceKeyRequest;
+import org.cloudfoundry.client.v2.servicekeys.CreateServiceKeyResponse;
 import org.cloudfoundry.client.v2.servicekeys.DeleteServiceKeyRequest;
+import org.cloudfoundry.client.v2.servicekeys.ServiceKeyEntity;
 import org.cloudfoundry.client.v2.spaces.ListSpaceRoutesRequest;
 import org.cloudfoundry.client.v2.userprovidedserviceinstances.CreateUserProvidedServiceInstanceRequest;
 import org.cloudfoundry.client.v2.userprovidedserviceinstances.ListUserProvidedServiceInstanceServiceBindingsRequest;
@@ -396,18 +399,25 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public void createServiceKey(String serviceName, String name, Map<String, Object> parameters) {
+    public CloudServiceKey createServiceKey(String serviceName, String name, Map<String, Object> parameters) {
         CloudService service = getService(serviceName);
         UUID serviceGuid = service.getMetadata()
             .getGuid();
 
-        convertV3ClientExceptions(() -> v3Client.serviceKeys()
+        CreateServiceKeyResponse response = convertV3ClientExceptions(() -> v3Client.serviceKeys()
             .create(CreateServiceKeyRequest.builder()
                 .serviceInstanceId(serviceGuid.toString())
                 .name(name)
                 .parameters(parameters)
                 .build())
             .block());
+        ServiceKeyEntity entity = response.getEntity();
+        return ImmutableCloudServiceKey.builder()
+            .parameters(parameters)
+            .credentials(entity.getCredentials())
+            .name(entity.getName())
+            .service(service)
+            .build();
     }
 
     @Override
