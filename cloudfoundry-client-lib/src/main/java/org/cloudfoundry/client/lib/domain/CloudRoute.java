@@ -21,6 +21,9 @@ public interface CloudRoute extends CloudEntity, Derivable<CloudRoute> {
 
     @Nullable
     String getHost();
+    
+    @Nullable
+    String getPath();
 
     @Override
     default String getName() {

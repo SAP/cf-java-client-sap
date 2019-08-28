@@ -184,8 +184,8 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public void addRoute(String host, String domainName) {
-        handleExceptions(() -> delegate.addRoute(host, domainName));
+    public void addRoute(String host, String domainName, String path) {
+        handleExceptions(() -> delegate.addRoute(host, domainName, path));
     }
 
     @Override
@@ -350,8 +350,8 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public void deleteRoute(String host, String domainName) {
-        handleExceptions(() -> delegate.deleteRoute(host, domainName));
+    public void deleteRoute(String host, String domainName, String path) {
+        handleExceptions(() -> delegate.deleteRoute(host, domainName, path));
     }
 
     @Override
