@@ -309,10 +309,10 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public void addRoute(String host, String domainName) {
+    public void addRoute(String host, String domainName, String path) {
         assertSpaceProvided("add route for domain");
         UUID domainGuid = getRequiredDomainGuid(domainName);
-        doAddRoute(domainGuid, host, null);
+        doAddRoute(domainGuid, host, path);
     }
 
     @Override
@@ -565,7 +565,8 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         List<CloudRoute> deletedRoutes = new ArrayList<>();
         for (CloudRoute orphanRoute : orphanRoutes) {
             deleteRoute(orphanRoute.getHost(), orphanRoute.getDomain()
-                                                          .getName());
+                                                          .getName(),
+                        orphanRoute.getPath());
             deletedRoutes.add(orphanRoute);
         }
         return deletedRoutes;
@@ -577,9 +578,9 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public void deleteRoute(String host, String domainName) {
+    public void deleteRoute(String host, String domainName, String path) {
         assertSpaceProvided("delete route for domain");
-        UUID routeGuid = getRouteGuid(getRequiredDomainGuid(domainName), host, null);
+        UUID routeGuid = getRouteGuid(getRequiredDomainGuid(domainName), host, path);
         if (routeGuid == null) {
             throw new CloudOperationException(HttpStatus.NOT_FOUND,
                                               "Not Found",
@@ -802,11 +803,11 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     @Override
     public List<ApplicationLog> getRecentLogs(UUID applicationGuid) {
         RecentLogsRequest request = RecentLogsRequest.builder()
-                .applicationId(applicationGuid.toString())
-                .build();
-        return fetchFlux(() -> dopplerClient.recentLogs(request), ImmutableRawApplicationLog::of)
-                .collectSortedList(Comparator.comparing(ApplicationLog::getTimestamp))
-                .block();
+                                                     .applicationId(applicationGuid.toString())
+                                                     .build();
+        return fetchFlux(() -> dopplerClient.recentLogs(request),
+                         ImmutableRawApplicationLog::of).collectSortedList(Comparator.comparing(ApplicationLog::getTimestamp))
+                                                        .block();
     }
 
     @Override
@@ -1841,7 +1842,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return v3Client.tasks()
                        .cancel(request);
     }
-    
+
     private Mono<? extends Resource<ServiceKeyEntity>> createServiceKeyResource(CloudService service, String name,
                                                                                 Map<String, Object> parameters) {
         UUID serviceGuid = getGuid(service);

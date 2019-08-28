@@ -330,14 +330,14 @@ public class CloudControllerClientTest {
     @Test
     public void addAndDeleteRoute() {
         connectedClient.addDomain(TEST_DOMAIN);
-        connectedClient.addRoute("my_route1", TEST_DOMAIN);
-        connectedClient.addRoute("my_route2", TEST_DOMAIN);
+        connectedClient.addRoute("my_route1", TEST_DOMAIN, null);
+        connectedClient.addRoute("my_route2", TEST_DOMAIN, null);
 
         List<CloudRoute> routes = connectedClient.getRoutes(TEST_DOMAIN);
         assertNotNull(getRouteWithHost("my_route1", routes));
         assertNotNull(getRouteWithHost("my_route2", routes));
 
-        connectedClient.deleteRoute("my_route2", TEST_DOMAIN);
+        connectedClient.deleteRoute("my_route2", TEST_DOMAIN, null);
         routes = connectedClient.getRoutes(TEST_DOMAIN);
         assertNotNull(getRouteWithHost("my_route1", routes));
         assertNull(getRouteWithHost("my_route2", routes));
@@ -845,7 +845,7 @@ public class CloudControllerClientTest {
     @Test
     public void deleteOrphanedRoutes() {
         connectedClient.addDomain(TEST_DOMAIN);
-        connectedClient.addRoute("unbound_route", TEST_DOMAIN);
+        connectedClient.addRoute("unbound_route", TEST_DOMAIN, null);
 
         List<CloudRoute> routes = connectedClient.getRoutes(TEST_DOMAIN);
         CloudRoute unboundRoute = getRouteWithHost("unbound_route", routes);
@@ -2149,7 +2149,8 @@ public class CloudControllerClientTest {
             List<CloudRoute> routes = connectedClient.getRoutes(domain.getName());
             for (CloudRoute route : routes) {
                 connectedClient.deleteRoute(route.getHost(), route.getDomain()
-                                                                  .getName());
+                                                                  .getName(),
+                                            route.getPath());
             }
             connectedClient.deleteDomain(domain.getName());
         }
