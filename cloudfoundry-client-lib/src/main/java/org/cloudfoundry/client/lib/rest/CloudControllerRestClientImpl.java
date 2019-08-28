@@ -228,10 +228,10 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public void addRoute(String host, String domainName) {
+    public void addRoute(String host, String domainName, String path) {
         assertSpaceProvided("add route for domain");
         UUID domainGuid = getDomainGuid(domainName, true);
-        doAddRoute(domainGuid, host, null);
+        doAddRoute(domainGuid, host, path);
     }
 
     @Override
@@ -507,7 +507,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         List<CloudRoute> deletedRoutes = new ArrayList<>();
         for (CloudRoute orphanRoute : orphanRoutes) {
             deleteRoute(orphanRoute.getHost(), orphanRoute.getDomain()
-                .getName());
+                .getName(), orphanRoute.getPath());
             deletedRoutes.add(orphanRoute);
         }
         return deletedRoutes;
@@ -519,9 +519,9 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public void deleteRoute(String host, String domainName) {
+    public void deleteRoute(String host, String domainName, String path) {
         assertSpaceProvided("delete route for domain");
-        UUID routeGuid = getRouteGuid(getDomainGuid(domainName, true), host, null);
+        UUID routeGuid = getRouteGuid(getDomainGuid(domainName, true), host, path);
         if (routeGuid == null) {
             throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found",
                 "Host " + host + " not found for domain " + domainName + ".");
@@ -2289,11 +2289,15 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         for (Map<String, Object> resource : resourceList) {
             Map<String, Object> domainResource = CloudEntityResourceMapper.getEmbeddedResource(resource, "domain");
             String host = CloudEntityResourceMapper.getV2ResourceAttribute(resource, "host", String.class);
+            String path = CloudEntityResourceMapper.getV2ResourceAttribute(resource, "path", String.class);
             String domain = CloudEntityResourceMapper.getV2ResourceAttribute(domainResource, "name", String.class);
+            if (path == null) {
+                path = "";
+            }
             if (host != null && host.length() > 0)
-                uris.add(host + "." + domain);
+                uris.add(host + "." + domain + path);
             else
-                uris.add(domain);
+                uris.add(domain + path);
         }
         return uris;
     }

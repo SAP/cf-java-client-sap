@@ -639,11 +639,13 @@ public class CloudEntityResourceMapper {
         @SuppressWarnings("unchecked")
         List<Object> apps = getV2ResourceAttribute(resource, "apps", List.class);
         String host = getV2ResourceAttribute(resource, "host", String.class);
+        String path = getV2ResourceAttribute(resource, "path", String.class);
         CloudDomain domain = mapDomainResource(getEmbeddedResource(resource, "domain"));
         return ImmutableCloudRoute.builder()
             .metadata(getV2Metadata(resource))
             .host(host)
             .domain(domain)
+            .path(path)
             .appsUsingRoute(apps.size())
             .build();
     }
