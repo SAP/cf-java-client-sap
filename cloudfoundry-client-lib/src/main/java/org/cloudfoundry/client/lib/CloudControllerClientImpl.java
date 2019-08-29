@@ -184,8 +184,8 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public void addRoute(String host, String domainName) {
-        cc.addRoute(host, domainName);
+    public void addRoute(String host, String domainName, String path) {
+        cc.addRoute(host, domainName, path);
     }
 
     @Override
@@ -346,8 +346,8 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public void deleteRoute(String host, String domainName) {
-        cc.deleteRoute(host, domainName);
+    public void deleteRoute(String host, String domainName, String path) {
+        cc.deleteRoute(host, domainName, path);
     }
 
     @Override

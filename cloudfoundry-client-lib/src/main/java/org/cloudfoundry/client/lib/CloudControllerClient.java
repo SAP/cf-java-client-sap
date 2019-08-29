@@ -78,7 +78,7 @@ public interface CloudControllerClient {
      * @param host the host of the route to register
      * @param domainName the domain of the route to register
      */
-    void addRoute(String host, String domainName);
+    void addRoute(String host, String domainName, String path);
 
     /**
      * Associate current user to the space auditors role
@@ -363,7 +363,7 @@ public interface CloudControllerClient {
      * @param host the host of the route to delete
      * @param domainName the domain of the route to delete
      */
-    void deleteRoute(String host, String domainName);
+    void deleteRoute(String host, String domainName, String path);
 
     /**
      * Deletes the security group with the given name.

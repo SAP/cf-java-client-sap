@@ -74,7 +74,7 @@ public interface CloudControllerRestClient {
 
     void addDomain(String domainName);
 
-    void addRoute(String host, String domainName);
+    void addRoute(String host, String domainName, String path);
 
     void associateAuditorWithSpace(String organizationName, String spaceName, String userGuid);
 
@@ -132,7 +132,7 @@ public interface CloudControllerRestClient {
 
     // App methods
 
-    void deleteRoute(String host, String domainName);
+    void deleteRoute(String host, String domainName, String path);
 
     void deleteSecurityGroup(String securityGroupName);
 
