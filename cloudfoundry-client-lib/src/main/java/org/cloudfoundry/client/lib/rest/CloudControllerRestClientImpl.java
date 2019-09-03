@@ -469,7 +469,10 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public void deleteApplication(String applicationName) {
-        UUID applicationGuid = getRequiredApplicationGuid(applicationName);
+        UUID applicationGuid = getApplicationGuid(applicationName);
+        if (applicationGuid == null) {
+            return;
+        }
         List<UUID> serviceBindingGuids = getServiceBindingGuids(applicationGuid);
         for (UUID serviceBindingGuid : serviceBindingGuids) {
             doUnbindService(serviceBindingGuid);
