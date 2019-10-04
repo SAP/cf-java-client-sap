@@ -20,10 +20,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.util.Date;
-import java.util.Locale;
 
 /**
  * Some helper utilities used by the Cloud Foundry Java client.
@@ -78,7 +76,7 @@ public class CloudUtil {
         try {
             if (clazz == Date.class) {
                 String stringValue = parse(String.class, object);
-                return clazz.cast(new SimpleDateFormat("EEE MMM d HH:mm:ss Z yyyy", Locale.US).parse(stringValue));
+                return clazz.cast(Date.from(Instant.parse(stringValue)));
             }
 
             if (clazz == Integer.class) {
@@ -118,7 +116,7 @@ public class CloudUtil {
             }
 
             return clazz.cast(object);
-        } catch (ClassCastException | ParseException e) {
+        } catch (ClassCastException e) {
             // ignore
         }
         return defaultValue;
