@@ -26,13 +26,13 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -80,7 +80,9 @@ import org.cloudfoundry.client.lib.domain.DockerCredentials;
 import org.cloudfoundry.client.lib.domain.DockerInfo;
 import org.cloudfoundry.client.lib.domain.ErrorDetails;
 import org.cloudfoundry.client.lib.domain.ImmutableCloudApplication;
+import org.cloudfoundry.client.lib.domain.ImmutableCloudDomain;
 import org.cloudfoundry.client.lib.domain.ImmutableCloudInfo;
+import org.cloudfoundry.client.lib.domain.ImmutableCloudMetadata;
 import org.cloudfoundry.client.lib.domain.ImmutableCloudServiceKey;
 import org.cloudfoundry.client.lib.domain.InstanceState;
 import org.cloudfoundry.client.lib.domain.InstanceStats;
@@ -146,7 +148,6 @@ import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.FileCopyUtils;
-import org.springframework.util.StringUtils;
 import org.springframework.web.client.RequestCallback;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.ResponseErrorHandler;
@@ -735,12 +736,26 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public CloudDomain getDefaultDomain() {
-        List<CloudDomain> sharedDomains = getSharedDomains();
-        if (sharedDomains.isEmpty()) {
-            return null;
-        } else {
-            return sharedDomains.get(0);
-        }
+        Map<String, Object> urlVars = new HashMap<>();
+        urlVars.put("guid", target.getOrganization()
+                                  .getMetadata()
+                                  .getGuid());
+        Map<String, Object> resources = getResponseMap("/v3/organizations/{guid}/domains/default", urlVars);
+
+        String domainName = CloudUtil.parse(resources.get("name"));
+        Date createdAt = CloudUtil.parse(Date.class, resources.get("created_at"));
+        Date updatedAt = CloudUtil.parse(Date.class, resources.get("updated_at"));
+        String domainGuidString = CloudUtil.parse(resources.get("guid"));
+        UUID domainGuid = domainGuidString != null ? UUID.fromString(domainGuidString) : null;
+
+        return ImmutableCloudDomain.builder()
+                                   .name(domainName)
+                                   .metadata(ImmutableCloudMetadata.builder()
+                                                                   .createdAt(createdAt)
+                                                                   .updatedAt(updatedAt)
+                                                                   .guid(domainGuid)
+                                                                   .build())
+                                   .build();
     }
 
     @Override
