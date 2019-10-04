@@ -2523,24 +2523,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         if (CollectionUtils.isEmpty(routeEntitiesResource)) {
             return null;
         }
-        if (!StringUtils.isEmpty(host)) {
-            return getGuid(routeEntitiesResource.get(0));
-        }
-        // TODO: Remove this logic when this pull request is merged: https://github.com/cloudfoundry/cf-java-client/pull/978
-        return getFirstEmptyRoute(routeEntitiesResource);
-    }
-
-    private UUID getFirstEmptyRoute(List<? extends Resource<RouteEntity>> routeEntities) {
-        return routeEntities.stream()
-                            .filter(checkForEmptyHost())
-                            .findFirst()
-                            .map(this::getGuid)
-                            .orElse(null);
-    }
-
-    private Predicate<Resource<RouteEntity>> checkForEmptyHost() {
-        return routeEntity -> StringUtils.isEmpty(routeEntity.getEntity()
-                                                             .getHost());
+        return getGuid(routeEntitiesResource.get(0));
     }
 
     private UUID getServiceBindingGuid(UUID applicationGuid, UUID serviceGuid) {
