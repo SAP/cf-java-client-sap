@@ -56,8 +56,8 @@ public class CloudControllerResponseErrorHandler extends DefaultResponseErrorHan
 
     private static String concatenateErrorMessages(List<Map<String, Object>> errors) {
         return errors.stream()
-            .map(error -> (String) error.get("detail"))
-            .collect(Collectors.joining("\n"));
+                     .map(error -> (String) error.get("detail"))
+                     .collect(Collectors.joining("\n"));
     }
 
     @Override

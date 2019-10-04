@@ -42,19 +42,21 @@ import org.springframework.web.client.RestTemplate;
 public class RestUtil {
 
     public OAuthClient createOAuthClient(URL authorizationUrl, HttpProxyConfiguration httpProxyConfiguration,
-        boolean trustSelfSignedCerts) {
+                                         boolean trustSelfSignedCerts) {
         return new OAuthClient(authorizationUrl, createRestTemplate(httpProxyConfiguration, trustSelfSignedCerts));
     }
 
-    public OAuthClient createOAuthClient(URL authorizationUrl, HttpProxyConfiguration httpProxyConfiguration,
-        boolean trustSelfSignedCerts, ConnectionContext connectionContext, String origin) {
-        return new OAuthClientWithLoginHint(authorizationUrl, createRestTemplate(httpProxyConfiguration, trustSelfSignedCerts),
-            connectionContext, origin);
+    public OAuthClient createOAuthClient(URL authorizationUrl, HttpProxyConfiguration httpProxyConfiguration, boolean trustSelfSignedCerts,
+                                         ConnectionContext connectionContext, String origin) {
+        return new OAuthClientWithLoginHint(authorizationUrl,
+                                            createRestTemplate(httpProxyConfiguration, trustSelfSignedCerts),
+                                            connectionContext,
+                                            origin);
     }
 
     public ClientHttpRequestFactory createRequestFactory(HttpProxyConfiguration httpProxyConfiguration, boolean trustSelfSignedCerts) {
         HttpClientBuilder httpClientBuilder = HttpClients.custom()
-            .useSystemProperties();
+                                                         .useSystemProperties();
 
         if (trustSelfSignedCerts) {
             httpClientBuilder.setSslcontext(buildSslContext());
@@ -67,9 +69,10 @@ public class RestUtil {
 
             if (httpProxyConfiguration.isAuthRequired()) {
                 BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
-                credentialsProvider.setCredentials(
-                    new AuthScope(httpProxyConfiguration.getProxyHost(), httpProxyConfiguration.getProxyPort()),
-                    new UsernamePasswordCredentials(httpProxyConfiguration.getUsername(), httpProxyConfiguration.getPassword()));
+                credentialsProvider.setCredentials(new AuthScope(httpProxyConfiguration.getProxyHost(),
+                                                                 httpProxyConfiguration.getProxyPort()),
+                                                   new UsernamePasswordCredentials(httpProxyConfiguration.getUsername(),
+                                                                                   httpProxyConfiguration.getPassword()));
                 httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider);
             }
 
@@ -95,8 +98,8 @@ public class RestUtil {
     private javax.net.ssl.SSLContext buildSslContext() {
         try {
             return new SSLContextBuilder().useSSL()
-                .loadTrustMaterial(null, new TrustSelfSignedStrategy())
-                .build();
+                                          .loadTrustMaterial(null, new TrustSelfSignedStrategy())
+                                          .build();
         } catch (GeneralSecurityException gse) {
             throw new RuntimeException("An error occurred setting up the SSLContext", gse);
         }

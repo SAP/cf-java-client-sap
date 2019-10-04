@@ -61,7 +61,8 @@ public class TargetInfos extends HashMap<String, HashMap<String, String>> {
 
     public void putToken(HashMap<String, String> target, OAuth2AccessToken token) {
         target.put(ACCESS_TOKEN_KEY, String.format("%s %s", token.getTokenType()
-            .toLowerCase(), token.getValue()));
+                                                                 .toLowerCase(),
+                                                   token.getValue()));
     }
 
     public void putVersion(HashMap<String, String> target, String version) {

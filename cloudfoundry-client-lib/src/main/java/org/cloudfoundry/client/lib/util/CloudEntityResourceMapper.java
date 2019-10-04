@@ -91,14 +91,16 @@ import org.cloudfoundry.client.lib.domain.Status;
  */
 // TODO: use some more advanced JSON mapping framework?
 public class CloudEntityResourceMapper {
-    
-    
+
     protected static final Log logger = LogFactory.getLog(CloudEntityResourceMapper.class);
 
     private static SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
-    //TODO This moment is randomly chosen in the near past to detect if controller returns wrong dates for creation/update time of app or service
+    // TODO This moment is randomly chosen in the near past to detect if controller returns wrong dates for creation/update time of app or
+    // service
     private static String PAST_DATE = "2000-01-01T00:00:00+00:00";
-    private static long PAST_DATE_MILLISECONDS = ZonedDateTime.parse(PAST_DATE).toInstant().toEpochMilli();
+    private static long PAST_DATE_MILLISECONDS = ZonedDateTime.parse(PAST_DATE)
+                                                              .toInstant()
+                                                              .toEpochMilli();
 
     @SuppressWarnings("unchecked")
     public static Map<String, Object> getEmbeddedResource(Map<String, Object> resource, String embeddedResourceName) {
@@ -174,11 +176,11 @@ public class CloudEntityResourceMapper {
             return null;
         }
         return ImmutableCloudMetadata.builder()
-            .guid(guid)
-            .createdAt(getValue(metadata, "created_at", Date.class))
-            .updatedAt(getValue(metadata, "updated_at", Date.class))
-            .url(getValue(metadata, "url", String.class))
-            .build();
+                                     .guid(guid)
+                                     .createdAt(getValue(metadata, "created_at", Date.class))
+                                     .updatedAt(getValue(metadata, "updated_at", Date.class))
+                                     .url(getValue(metadata, "url", String.class))
+                                     .build();
     }
 
     private static UUID parseGuid(String guid) {
@@ -195,12 +197,13 @@ public class CloudEntityResourceMapper {
                 // if the time zone part of the dateString contains a colon (e.g. 2013-09-19T21:56:36+00:00)
                 // then remove it before parsing
                 String isoDateString = dateString.replaceFirst(":(?=[0-9]{2}$)", "")
-                    .replaceFirst("Z$", "+0000");
+                                                 .replaceFirst("Z$", "+0000");
                 Date date = dateFormatter.parse(isoDateString);
-               
+
                 long timestamp = date.getTime();
                 if (timestamp < PAST_DATE_MILLISECONDS) {
-                    logger.warn("Controller returns date " + dateString + " that is before " + PAST_DATE + " considering parsed timestamp: " + timestamp);
+                    logger.warn("Controller returns date " + dateString + " that is before " + PAST_DATE + " considering parsed timestamp: "
+                        + timestamp);
                 }
                 return date;
             } catch (Exception ignore) {
@@ -290,11 +293,11 @@ public class CloudEntityResourceMapper {
 
     private CloudPackage mapPackageResource(Map<String, Object> resource) {
         return ImmutableCloudPackage.builder()
-            .metadata(getV3Metadata(resource))
-            .status(getPackageStatus(resource))
-            .data(getPackageData(resource))
-            .type(getPackageType(resource))
-            .build();
+                                    .metadata(getV3Metadata(resource))
+                                    .status(getPackageStatus(resource))
+                                    .data(getPackageData(resource))
+                                    .type(getPackageType(resource))
+                                    .build();
     }
 
     private Status getPackageStatus(Map<String, Object> resource) {
@@ -306,16 +309,16 @@ public class CloudEntityResourceMapper {
     private CloudPackage.Data getPackageData(Map<String, Object> resource) {
         Map<String, Object> data = getV3ResourceAttribute(resource, "data", Map.class);
         return ImmutableCloudPackage.ImmutableData.builder()
-            .checksum(parseChecksumMap(getValue(data, "checksum", Map.class)))
-            .error(getValue(data, "error", String.class))
-            .build();
+                                                  .checksum(parseChecksumMap(getValue(data, "checksum", Map.class)))
+                                                  .error(getValue(data, "error", String.class))
+                                                  .build();
     }
 
     private CloudPackage.Checksum parseChecksumMap(Map<String, Object> checksumMap) {
         return ImmutableCloudPackage.ImmutableChecksum.builder()
-            .algorithm(getValue(checksumMap, "type", String.class))
-            .value(getValue(checksumMap, "value", String.class))
-            .build();
+                                                      .algorithm(getValue(checksumMap, "type", String.class))
+                                                      .value(getValue(checksumMap, "value", String.class))
+                                                      .build();
     }
 
     private CloudPackage.Type getPackageType(Map<String, Object> resource) {
@@ -325,13 +328,13 @@ public class CloudEntityResourceMapper {
 
     private CloudBuild mapBuildResource(Map<String, Object> resource) {
         return ImmutableCloudBuild.builder()
-            .metadata(getV3Metadata(resource))
-            .state(getBuildState(resource))
-            .createdBy(getCreatedBy(resource))
-            .dropletInfo(getDropletInfo(resource))
-            .packageInfo(getPackageInfo(resource))
-            .error(getError(resource))
-            .build();
+                                  .metadata(getV3Metadata(resource))
+                                  .state(getBuildState(resource))
+                                  .createdBy(getCreatedBy(resource))
+                                  .dropletInfo(getDropletInfo(resource))
+                                  .packageInfo(getPackageInfo(resource))
+                                  .error(getError(resource))
+                                  .build();
     }
 
     private CloudBuild.State getBuildState(Map<String, Object> resource) {
@@ -343,9 +346,9 @@ public class CloudEntityResourceMapper {
     private CloudBuild.CreatedBy getCreatedBy(Map<String, Object> resource) {
         Map<String, Object> createdByMap = getV3ResourceAttribute(resource, "created_by", Map.class);
         return ImmutableCloudBuild.ImmutableCreatedBy.builder()
-            .guid(getValue(createdByMap, "guid", UUID.class))
-            .name(getValue(createdByMap, "name", String.class))
-            .build();
+                                                     .guid(getValue(createdByMap, "guid", UUID.class))
+                                                     .name(getValue(createdByMap, "name", String.class))
+                                                     .build();
     }
 
     private String getError(Map<String, Object> resource) {
@@ -359,8 +362,8 @@ public class CloudEntityResourceMapper {
             return null;
         }
         return ImmutableCloudBuild.ImmutableDropletInfo.builder()
-            .guid(getValue(dropletMap, "guid", UUID.class))
-            .build();
+                                                       .guid(getValue(dropletMap, "guid", UUID.class))
+                                                       .build();
     }
 
     @SuppressWarnings("unchecked")
@@ -370,8 +373,8 @@ public class CloudEntityResourceMapper {
             return null;
         }
         return ImmutableCloudBuild.ImmutablePackageInfo.builder()
-            .guid(getValue(packageMap, "guid", UUID.class))
-            .build();
+                                                       .guid(getValue(packageMap, "guid", UUID.class))
+                                                       .build();
     }
 
     @SuppressWarnings("unchecked")
@@ -379,9 +382,12 @@ public class CloudEntityResourceMapper {
         List<SecurityGroupRule> rules = new ArrayList<>();
         List<Map<String, Object>> jsonRules = getV2ResourceAttribute(resource, "rules", List.class);
         for (Map<String, Object> jsonRule : jsonRules) {
-            rules.add(new SecurityGroupRule((String) jsonRule.get("protocol"), (String) jsonRule.get("ports"),
-                (String) jsonRule.get("destination"), (Boolean) jsonRule.get("log"), (Integer) jsonRule.get("type"),
-                (Integer) jsonRule.get("code")));
+            rules.add(new SecurityGroupRule((String) jsonRule.get("protocol"),
+                                            (String) jsonRule.get("ports"),
+                                            (String) jsonRule.get("destination"),
+                                            (Boolean) jsonRule.get("log"),
+                                            (Integer) jsonRule.get("type"),
+                                            (Integer) jsonRule.get("code")));
         }
         return rules;
     }
@@ -389,8 +395,8 @@ public class CloudEntityResourceMapper {
     @SuppressWarnings({ "unchecked", "rawtypes" })
     private CloudApplication mapApplicationResource(Map<String, Object> resource) {
         ImmutableCloudApplication.Builder builder = ImmutableCloudApplication.builder()
-            .metadata(getV2Metadata(resource))
-            .name(getV2ResourceName(resource));
+                                                                             .metadata(getV2Metadata(resource))
+                                                                             .name(getV2ResourceName(resource));
 
         String command = getV2ResourceAttribute(resource, "command", String.class);
         String buildpack = getV2ResourceAttribute(resource, "buildpack", String.class);
@@ -405,18 +411,18 @@ public class CloudEntityResourceMapper {
         DockerInfo dockerInfo = createDockerInfo(dockerImage, dockerCredentials);
 
         Staging staging = new Staging.StagingBuilder().command(command)
-            .buildpacks(buildpack != null ? Arrays.asList(buildpack) : Collections.emptyList())
-            .stack(stackName)
-            .healthCheckTimeout(healthCheckTimeout)
-            .detectedBuildpack(detectedBuildpack)
-            .healthCheckType(healthCheckType)
-            .healthCheckHttpEndpoint(healthCheckHttpEndpoint)
-            .sshEnabled(sshEnabled)
-            .dockerInfo(dockerInfo)
-            .build();
+                                                      .buildpacks(buildpack != null ? Arrays.asList(buildpack) : Collections.emptyList())
+                                                      .stack(stackName)
+                                                      .healthCheckTimeout(healthCheckTimeout)
+                                                      .detectedBuildpack(detectedBuildpack)
+                                                      .healthCheckType(healthCheckType)
+                                                      .healthCheckHttpEndpoint(healthCheckHttpEndpoint)
+                                                      .sshEnabled(sshEnabled)
+                                                      .dockerInfo(dockerInfo)
+                                                      .build();
 
         builder.instances(getV2ResourceAttribute(resource, "instances", Integer.class))
-            .state(CloudApplication.State.valueOf(getV2ResourceAttribute(resource, "state", String.class)));
+               .state(CloudApplication.State.valueOf(getV2ResourceAttribute(resource, "state", String.class)));
 
         Integer runningInstancesAttribute = getV2ResourceAttribute(resource, "running_instances", Integer.class);
         if (runningInstancesAttribute != null) {
@@ -446,9 +452,9 @@ public class CloudEntityResourceMapper {
         }
 
         return builder.memory(getV2ResourceAttribute(resource, "memory", Integer.class))
-            .diskQuota(getV2ResourceAttribute(resource, "disk_quota", Integer.class))
-            .services(getApplicationServices(resource))
-            .build();
+                      .diskQuota(getV2ResourceAttribute(resource, "disk_quota", Integer.class))
+                      .services(getApplicationServices(resource))
+                      .build();
     }
 
     private Map<String, String> convertEnvironmentValuesToJson(Map<String, Object> envMap) {
@@ -456,8 +462,8 @@ public class CloudEntityResourceMapper {
             return Collections.<String, String> emptyMap();
         }
         return envMap.entrySet()
-            .stream()
-            .collect(Collectors.toMap(entry -> entry.getKey(), entry -> convertValueToString(entry)));
+                     .stream()
+                     .collect(Collectors.toMap(entry -> entry.getKey(), entry -> convertValueToString(entry)));
     }
 
     private String convertValueToString(Entry<String, Object> entry) {
@@ -510,12 +516,12 @@ public class CloudEntityResourceMapper {
 
     private CloudSecurityGroup mapApplicationSecurityGroupResource(Map<String, Object> resource) {
         return ImmutableCloudSecurityGroup.builder()
-            .metadata(getV2Metadata(resource))
-            .name(getV2ResourceName(resource))
-            .isRunningDefault(getV2ResourceAttribute(resource, "running_default", Boolean.class))
-            .isStagingDefault(getV2ResourceAttribute(resource, "staging_default", Boolean.class))
-            .rules(getSecurityGroupRules(resource))
-            .build();
+                                          .metadata(getV2Metadata(resource))
+                                          .name(getV2ResourceName(resource))
+                                          .isRunningDefault(getV2ResourceAttribute(resource, "running_default", Boolean.class))
+                                          .isStagingDefault(getV2ResourceAttribute(resource, "staging_default", Boolean.class))
+                                          .rules(getSecurityGroupRules(resource))
+                                          .build();
     }
 
     private CloudDomain mapDomainResource(Map<String, Object> resource) {
@@ -524,28 +530,28 @@ public class CloudEntityResourceMapper {
         CloudOrganization owner;
         if (ownerResource == null) {
             owner = ImmutableCloudOrganization.builder()
-                .metadata(CloudMetadata.defaultMetadata())
-                .name("none")
-                .build();
+                                              .metadata(CloudMetadata.defaultMetadata())
+                                              .name("none")
+                                              .build();
         } else {
             owner = mapOrganizationResource(ownerResource);
         }
         return ImmutableCloudDomain.builder()
-            .metadata(getV2Metadata(resource))
-            .name(getV2ResourceName(resource))
-            .owningOrganization(owner)
-            .build();
+                                   .metadata(getV2Metadata(resource))
+                                   .name(getV2ResourceName(resource))
+                                   .owningOrganization(owner)
+                                   .build();
     }
 
     private CloudEvent mapEventResource(Map<String, Object> resource) {
         return ImmutableCloudEvent.builder()
-            .metadata(getV2Metadata(resource))
-            .name(getV2ResourceName(resource))
-            .actor(getActor(resource))
-            .actee(getActee(resource))
-            .timestamp(parseDate(getV2ResourceAttribute(resource, "timestamp", String.class)))
-            .type(getV2ResourceAttribute(resource, "type", String.class))
-            .build();
+                                  .metadata(getV2Metadata(resource))
+                                  .name(getV2ResourceName(resource))
+                                  .actor(getActor(resource))
+                                  .actee(getActee(resource))
+                                  .timestamp(parseDate(getV2ResourceAttribute(resource, "timestamp", String.class)))
+                                  .type(getV2ResourceAttribute(resource, "type", String.class))
+                                  .build();
     }
 
     private Participant getActor(Map<String, Object> resource) {
@@ -553,10 +559,10 @@ public class CloudEntityResourceMapper {
         String actorType = getV2ResourceAttribute(resource, "actor_type", String.class);
         String actorName = getV2ResourceAttribute(resource, "actor_name", String.class);
         return ImmutableParticipant.builder()
-            .guid(actorGuid)
-            .name(actorName)
-            .type(actorType)
-            .build();
+                                   .guid(actorGuid)
+                                   .name(actorName)
+                                   .type(actorType)
+                                   .build();
     }
 
     private Participant getActee(Map<String, Object> resource) {
@@ -564,22 +570,22 @@ public class CloudEntityResourceMapper {
         String acteeType = getV2ResourceAttribute(resource, "actee_type", String.class);
         String acteeName = getV2ResourceAttribute(resource, "actee_name", String.class);
         return ImmutableParticipant.builder()
-            .guid(acteeGuid)
-            .name(acteeName)
-            .type(acteeType)
-            .build();
+                                   .guid(acteeGuid)
+                                   .name(acteeName)
+                                   .type(acteeType)
+                                   .build();
     }
 
     private CloudTask mapTaskResource(Map<String, Object> resource) {
         return ImmutableCloudTask.builder()
-            .metadata(getV3Metadata(resource))
-            .name(getV3ResourceName(resource))
-            .command(getV3ResourceAttribute(resource, "command", String.class))
-            .memory(getV3ResourceAttribute(resource, "memory_in_mb", Integer.class))
-            .diskQuota(getV3ResourceAttribute(resource, "disk_in_mb", Integer.class))
-            .state(getTaskState(resource))
-            .result(getTaskResult(resource))
-            .build();
+                                 .metadata(getV3Metadata(resource))
+                                 .name(getV3ResourceName(resource))
+                                 .command(getV3ResourceAttribute(resource, "command", String.class))
+                                 .memory(getV3ResourceAttribute(resource, "memory_in_mb", Integer.class))
+                                 .diskQuota(getV3ResourceAttribute(resource, "disk_in_mb", Integer.class))
+                                 .state(getTaskState(resource))
+                                 .result(getTaskResult(resource))
+                                 .build();
     }
 
     private CloudTask.State getTaskState(Map<String, Object> resource) {
@@ -592,16 +598,16 @@ public class CloudEntityResourceMapper {
         Map<String, Object> result = getV3ResourceAttribute(resource, "result", Map.class);
         String failureReason = getValue(result, "failure_reason", String.class);
         return ImmutableCloudTask.ImmutableResult.builder()
-            .failureReason(failureReason)
-            .build();
+                                                 .failureReason(failureReason)
+                                                 .build();
     }
 
     private CloudJob mapJobResource(Map<String, Object> resource) {
         return ImmutableCloudJob.builder()
-            .metadata(getV2Metadata(resource))
-            .status(getJobStatus(resource))
-            .errorDetails(getJobErrorDetails(resource))
-            .build();
+                                .metadata(getV2Metadata(resource))
+                                .status(getJobStatus(resource))
+                                .errorDetails(getJobErrorDetails(resource))
+                                .build();
     }
 
     private CloudJob.Status getJobStatus(Map<String, Object> resource) {
@@ -623,16 +629,16 @@ public class CloudEntityResourceMapper {
 
     private CloudOrganization mapOrganizationResource(Map<String, Object> resource) {
         return ImmutableCloudOrganization.builder()
-            .metadata(getV2Metadata(resource))
-            .name(getV2ResourceName(resource))
-            .build();
+                                         .metadata(getV2Metadata(resource))
+                                         .name(getV2ResourceName(resource))
+                                         .build();
     }
 
     private CloudQuota mapQuotaResource(Map<String, Object> resource) {
         return ImmutableCloudQuota.builder()
-            .metadata(getV2Metadata(resource))
-            .name(getV2ResourceName(resource))
-            .build();
+                                  .metadata(getV2Metadata(resource))
+                                  .name(getV2ResourceName(resource))
+                                  .build();
     }
 
     private CloudRoute mapRouteResource(Map<String, Object> resource) {
@@ -642,12 +648,12 @@ public class CloudEntityResourceMapper {
         String path = getV2ResourceAttribute(resource, "path", String.class);
         CloudDomain domain = mapDomainResource(getEmbeddedResource(resource, "domain"));
         return ImmutableCloudRoute.builder()
-            .metadata(getV2Metadata(resource))
-            .host(host)
-            .domain(domain)
-            .path(path)
-            .appsUsingRoute(apps.size())
-            .build();
+                                  .metadata(getV2Metadata(resource))
+                                  .host(host)
+                                  .domain(domain)
+                                  .path(path)
+                                  .appsUsingRoute(apps.size())
+                                  .build();
     }
 
     @SuppressWarnings("unchecked")
@@ -655,31 +661,31 @@ public class CloudEntityResourceMapper {
         Map<String, Object> bindingParameters = getV2ResourceAttribute(resource, "service_binding_parameters", Map.class);
         bindingParameters = bindingParameters == null ? Collections.emptyMap() : bindingParameters;
         return ImmutableCloudServiceBinding.builder()
-            .metadata(getV2Metadata(resource))
-            .name(getV2ResourceName(resource))
-            .applicationGuid(getV2ResourceAttribute(resource, "app_guid", UUID.class))
-            .syslogDrainUrl(getV2ResourceAttribute(resource, "syslog_drain_url", String.class))
-            .credentials(getV2ResourceAttribute(resource, "credentials", Map.class))
-            .bindingOptions(getV2ResourceAttribute(resource, "binding_options", Map.class))
-            .bindingParameters(bindingParameters)
-            .build();
+                                           .metadata(getV2Metadata(resource))
+                                           .name(getV2ResourceName(resource))
+                                           .applicationGuid(getV2ResourceAttribute(resource, "app_guid", UUID.class))
+                                           .syslogDrainUrl(getV2ResourceAttribute(resource, "syslog_drain_url", String.class))
+                                           .credentials(getV2ResourceAttribute(resource, "credentials", Map.class))
+                                           .bindingOptions(getV2ResourceAttribute(resource, "binding_options", Map.class))
+                                           .bindingParameters(bindingParameters)
+                                           .build();
     }
 
     private CloudServiceBroker mapServiceBrokerResource(Map<String, Object> resource) {
         return ImmutableCloudServiceBroker.builder()
-            .metadata(getV2Metadata(resource))
-            .name(getV2ResourceAttribute(resource, "name", String.class))
-            .url(getV2ResourceAttribute(resource, "broker_url", String.class))
-            .username(getV2ResourceAttribute(resource, "auth_username", String.class))
-            .spaceGuid(getV2ResourceAttribute(resource, "space_guid", String.class))
-            .build();
+                                          .metadata(getV2Metadata(resource))
+                                          .name(getV2ResourceAttribute(resource, "name", String.class))
+                                          .url(getV2ResourceAttribute(resource, "broker_url", String.class))
+                                          .username(getV2ResourceAttribute(resource, "auth_username", String.class))
+                                          .spaceGuid(getV2ResourceAttribute(resource, "space_guid", String.class))
+                                          .build();
     }
 
     @SuppressWarnings("unchecked")
     private CloudServiceInstance mapServiceInstanceResource(Map<String, Object> resource) {
         ImmutableCloudServiceInstance.Builder builder = ImmutableCloudServiceInstance.builder()
-            .metadata(getV2Metadata(resource))
-            .name(getV2ResourceName(resource));
+                                                                                     .metadata(getV2Metadata(resource))
+                                                                                     .name(getV2ResourceName(resource));
 
         builder.type(getV2ResourceAttribute(resource, "type", String.class));
         builder.dashboardUrl(getV2ResourceAttribute(resource, "dashboard_url", String.class));
@@ -705,18 +711,32 @@ public class CloudEntityResourceMapper {
 
     private CloudServiceOffering mapServiceOfferingResource(Map<String, Object> resource) {
         ImmutableCloudServiceOffering.Builder builder = ImmutableCloudServiceOffering.builder()
-            .metadata(getV2Metadata(resource))
-            .name(getV2ResourceAttribute(resource, "label", String.class))
-            .provider(getV2ResourceAttribute(resource, "provider", String.class))
-            .version(getV2ResourceAttribute(resource, "version", String.class))
-            .description(getV2ResourceAttribute(resource, "description", String.class))
-            .isActive(getV2ResourceAttribute(resource, "active", Boolean.class))
-            .isBindable(getV2ResourceAttribute(resource, "bindable", Boolean.class))
-            .url(getV2ResourceAttribute(resource, "url", String.class))
-            .infoUrl(getV2ResourceAttribute(resource, "info_url", String.class))
-            .uniqueId(getV2ResourceAttribute(resource, "unique_id", String.class))
-            .extra(getV2ResourceAttribute(resource, "extra", String.class))
-            .docUrl(getV2ResourceAttribute(resource, "documentation_url", String.class));
+                                                                                     .metadata(getV2Metadata(resource))
+                                                                                     .name(getV2ResourceAttribute(resource, "label",
+                                                                                                                  String.class))
+                                                                                     .provider(getV2ResourceAttribute(resource, "provider",
+                                                                                                                      String.class))
+                                                                                     .version(getV2ResourceAttribute(resource, "version",
+                                                                                                                     String.class))
+                                                                                     .description(getV2ResourceAttribute(resource,
+                                                                                                                         "description",
+                                                                                                                         String.class))
+                                                                                     .isActive(getV2ResourceAttribute(resource, "active",
+                                                                                                                      Boolean.class))
+                                                                                     .isBindable(getV2ResourceAttribute(resource,
+                                                                                                                        "bindable",
+                                                                                                                        Boolean.class))
+                                                                                     .url(getV2ResourceAttribute(resource, "url",
+                                                                                                                 String.class))
+                                                                                     .infoUrl(getV2ResourceAttribute(resource, "info_url",
+                                                                                                                     String.class))
+                                                                                     .uniqueId(getV2ResourceAttribute(resource, "unique_id",
+                                                                                                                      String.class))
+                                                                                     .extra(getV2ResourceAttribute(resource, "extra",
+                                                                                                                   String.class))
+                                                                                     .docUrl(getV2ResourceAttribute(resource,
+                                                                                                                    "documentation_url",
+                                                                                                                    String.class));
         List<Map<String, Object>> servicePlanList = getEmbeddedResourceList(getEntity(resource), "service_plans");
         if (servicePlanList != null) {
             for (Map<String, Object> servicePlanResource : servicePlanList) {
@@ -730,30 +750,30 @@ public class CloudEntityResourceMapper {
     @SuppressWarnings("unchecked")
     private CloudServiceKey mapServiceKeyResource(Map<String, Object> resource) {
         return ImmutableCloudServiceKey.builder()
-            .metadata(getV2Metadata(resource))
-            .name(getV2ResourceAttribute(resource, "name", String.class))
-            .credentials(getV2ResourceAttribute(resource, "credentials", Map.class))
-            .build();
+                                       .metadata(getV2Metadata(resource))
+                                       .name(getV2ResourceAttribute(resource, "name", String.class))
+                                       .credentials(getV2ResourceAttribute(resource, "credentials", Map.class))
+                                       .build();
     }
 
     private CloudServicePlan mapServicePlanResource(Map<String, Object> servicePlanResource) {
         Boolean publicPlan = getV2ResourceAttribute(servicePlanResource, "public", Boolean.class);
         publicPlan = publicPlan == null ? true : publicPlan;
         return ImmutableCloudServicePlan.builder()
-            .metadata(getV2Metadata(servicePlanResource))
-            .name(getV2ResourceAttribute(servicePlanResource, "name", String.class))
-            .description(getV2ResourceAttribute(servicePlanResource, "description", String.class))
-            .isFree(getV2ResourceAttribute(servicePlanResource, "free", Boolean.class))
-            .extra(getV2ResourceAttribute(servicePlanResource, "extra", String.class))
-            .uniqueId(getV2ResourceAttribute(servicePlanResource, "unique_id", String.class))
-            .isPublic(publicPlan)
-            .build();
+                                        .metadata(getV2Metadata(servicePlanResource))
+                                        .name(getV2ResourceAttribute(servicePlanResource, "name", String.class))
+                                        .description(getV2ResourceAttribute(servicePlanResource, "description", String.class))
+                                        .isFree(getV2ResourceAttribute(servicePlanResource, "free", Boolean.class))
+                                        .extra(getV2ResourceAttribute(servicePlanResource, "extra", String.class))
+                                        .uniqueId(getV2ResourceAttribute(servicePlanResource, "unique_id", String.class))
+                                        .isPublic(publicPlan)
+                                        .build();
     }
 
     private CloudService mapServiceResource(Map<String, Object> resource) {
         ImmutableCloudService.Builder builder = ImmutableCloudService.builder()
-            .metadata(getV2Metadata(resource))
-            .name(getV2ResourceName(resource));
+                                                                     .metadata(getV2Metadata(resource))
+                                                                     .name(getV2ResourceName(resource));
         Map<String, Object> servicePlanResource = getEmbeddedResource(resource, "service_plan");
         if (servicePlanResource != null) {
             builder.plan(getV2ResourceAttribute(servicePlanResource, "name", String.class));
@@ -775,18 +795,18 @@ public class CloudEntityResourceMapper {
             organization = mapOrganizationResource(organizationMap);
         }
         return ImmutableCloudSpace.builder()
-            .metadata(getV2Metadata(resource))
-            .name(getV2ResourceName(resource))
-            .organization(organization)
-            .build();
+                                  .metadata(getV2Metadata(resource))
+                                  .name(getV2ResourceName(resource))
+                                  .organization(organization)
+                                  .build();
     }
 
     private CloudStack mapStackResource(Map<String, Object> resource) {
         return ImmutableCloudStack.builder()
-            .metadata(getV2Metadata(resource))
-            .name(getV2ResourceName(resource))
-            .description(getV2ResourceAttribute(resource, "description", String.class))
-            .build();
+                                  .metadata(getV2Metadata(resource))
+                                  .name(getV2ResourceName(resource))
+                                  .description(getV2ResourceAttribute(resource, "description", String.class))
+                                  .build();
     }
 
     private CloudUser mapUserResource(Map<String, Object> resource) {
@@ -795,11 +815,11 @@ public class CloudEntityResourceMapper {
         String defaultSpaceGuid = getV2ResourceAttribute(resource, "default_space_guid", String.class);
         String username = getV2ResourceAttribute(resource, "username", String.class);
         return ImmutableCloudUser.builder()
-            .metadata(getV2Metadata(resource))
-            .name(username)
-            .isAdmin(isAdminUser)
-            .isActive(isActiveUser)
-            .defaultSpaceGuid(defaultSpaceGuid)
-            .build();
+                                 .metadata(getV2Metadata(resource))
+                                 .name(username)
+                                 .isAdmin(isAdminUser)
+                                 .isActive(isActiveUser)
+                                 .defaultSpaceGuid(defaultSpaceGuid)
+                                 .build();
     }
 }

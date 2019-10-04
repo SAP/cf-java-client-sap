@@ -34,7 +34,7 @@ public class LoggregatorClient {
     }
 
     public StreamingLogTokenImpl connectToLoggregator(String endpoint, String mode, UUID applicationGuid, ApplicationLogListener listener,
-        ClientEndpointConfig.Configurator configurator) {
+                                                      ClientEndpointConfig.Configurator configurator) {
         URI loggregatorUri = loggregatorStreamUriTemplate.expand(endpoint, mode, applicationGuid);
 
         try {
@@ -60,13 +60,13 @@ public class LoggregatorClient {
         }
 
         return loggregatorRecentUriTemplate.expand(scheme, host)
-            .toString();
+                                           .toString();
     }
 
     private ClientEndpointConfig buildClientConfig(ClientEndpointConfig.Configurator configurator) {
         ClientEndpointConfig config = ClientEndpointConfig.Builder.create()
-            .configurator(configurator)
-            .build();
+                                                                  .configurator(configurator)
+                                                                  .build();
 
         if (trustSelfSignedCerts) {
             SSLContext sslContext = buildSslContext();
@@ -80,7 +80,7 @@ public class LoggregatorClient {
     private SSLContext buildSslContext() {
         try {
             SSLContextBuilder contextBuilder = new SSLContextBuilder().useTLS()
-                .loadTrustMaterial(null, new TrustSelfSignedStrategy());
+                                                                      .loadTrustMaterial(null, new TrustSelfSignedStrategy());
 
             return contextBuilder.build();
         } catch (GeneralSecurityException e) {

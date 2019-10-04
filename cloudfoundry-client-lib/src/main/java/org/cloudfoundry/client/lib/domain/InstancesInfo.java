@@ -28,7 +28,7 @@ public class InstancesInfo {
     // Required by Jackson.
     public InstancesInfo() {
     }
-    
+
     public InstancesInfo(List<Map<String, Object>> attributes) {
         List<InstanceInfo> instances = new ArrayList<>(attributes.size());
         for (Map<String, Object> data : attributes) {

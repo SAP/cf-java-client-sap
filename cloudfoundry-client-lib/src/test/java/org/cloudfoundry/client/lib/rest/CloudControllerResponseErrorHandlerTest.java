@@ -23,8 +23,9 @@ public class CloudControllerResponseErrorHandlerTest {
     public void testWithV2Error() throws IOException {
         HttpStatus statusCode = HttpStatus.UNPROCESSABLE_ENTITY;
         ClientHttpResponseMock response = new ClientHttpResponseMock(statusCode, getClass().getResourceAsStream("v2-error.json"));
-        CloudOperationException expectedException = new CloudOperationException(statusCode, statusCode.getReasonPhrase(),
-            "Request invalid due to parse error: Field: name, Error: Missing field name, Field: space_guid, Error: Missing field space_guid, Field: service_plan_guid, Error: Missing field service_plan_guid");
+        CloudOperationException expectedException = new CloudOperationException(statusCode,
+                                                                                statusCode.getReasonPhrase(),
+                                                                                "Request invalid due to parse error: Field: name, Error: Missing field name, Field: space_guid, Error: Missing field space_guid, Field: service_plan_guid, Error: Missing field service_plan_guid");
         testWithError(response, expectedException);
     }
 
@@ -32,8 +33,9 @@ public class CloudControllerResponseErrorHandlerTest {
     public void testWithV3Error() throws IOException {
         HttpStatus statusCode = HttpStatus.BAD_REQUEST;
         ClientHttpResponseMock response = new ClientHttpResponseMock(statusCode, getClass().getResourceAsStream("v3-error.json"));
-        CloudOperationException expectedException = new CloudOperationException(statusCode, statusCode.getReasonPhrase(),
-            "memory_in_mb exceeds organization memory quota\ndisk_in_mb exceeds organization disk quota");
+        CloudOperationException expectedException = new CloudOperationException(statusCode,
+                                                                                statusCode.getReasonPhrase(),
+                                                                                "memory_in_mb exceeds organization memory quota\ndisk_in_mb exceeds organization disk quota");
         testWithError(response, expectedException);
     }
 

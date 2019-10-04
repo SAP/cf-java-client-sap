@@ -23,7 +23,14 @@ import java.io.InputStream;
 import java.net.URI;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -73,7 +80,6 @@ import org.cloudfoundry.client.lib.domain.DockerInfo;
 import org.cloudfoundry.client.lib.domain.ErrorDetails;
 import org.cloudfoundry.client.lib.domain.ImmutableCloudApplication;
 import org.cloudfoundry.client.lib.domain.ImmutableCloudInfo;
-import org.cloudfoundry.client.lib.domain.ImmutableCloudMetadata;
 import org.cloudfoundry.client.lib.domain.ImmutableCloudServiceKey;
 import org.cloudfoundry.client.lib.domain.InstanceState;
 import org.cloudfoundry.client.lib.domain.InstanceStats;
@@ -97,7 +103,10 @@ import org.cloudfoundry.client.v2.domains.CreateDomainRequest;
 import org.cloudfoundry.client.v2.domains.DomainResource;
 import org.cloudfoundry.client.v2.domains.ListDomainsRequest;
 import org.cloudfoundry.client.v2.privatedomains.DeletePrivateDomainRequest;
-import org.cloudfoundry.client.v2.routes.*;
+import org.cloudfoundry.client.v2.routes.CreateRouteRequest;
+import org.cloudfoundry.client.v2.routes.CreateRouteResponse;
+import org.cloudfoundry.client.v2.routes.DeleteRouteRequest;
+import org.cloudfoundry.client.v2.routes.RouteEntity;
 import org.cloudfoundry.client.v2.servicebindings.CreateServiceBindingRequest;
 import org.cloudfoundry.client.v2.servicebindings.DeleteServiceBindingRequest;
 import org.cloudfoundry.client.v2.servicebindings.ServiceBindingResource;
@@ -118,7 +127,6 @@ import org.cloudfoundry.client.v3.BuildpackData;
 import org.cloudfoundry.client.v3.Lifecycle;
 import org.cloudfoundry.client.v3.LifecycleType;
 import org.cloudfoundry.client.v3.Relationship;
-import org.cloudfoundry.client.v3.applications.GetApplicationRequest;
 import org.cloudfoundry.client.v3.applications.SetApplicationCurrentDropletRequest;
 import org.cloudfoundry.client.v3.packages.UploadPackageRequest;
 import org.cloudfoundry.operations.CloudFoundryOperations;
@@ -135,8 +143,8 @@ import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.FileCopyUtils;
-import org.springframework.web.client.RequestCallback;
 import org.springframework.util.StringUtils;
+import org.springframework.web.client.RequestCallback;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.ResponseExtractor;
@@ -183,12 +191,13 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     public CloudControllerRestClientImpl(URL controllerUrl, CloudCredentials credentials, RestTemplate restTemplate,
-        OAuthClient oAuthClient, CloudFoundryOperations v3OperationsClient, CloudFoundryClient v3Client) {
+                                         OAuthClient oAuthClient, CloudFoundryOperations v3OperationsClient, CloudFoundryClient v3Client) {
         this(controllerUrl, credentials, restTemplate, oAuthClient, v3OperationsClient, v3Client, null);
     }
 
     public CloudControllerRestClientImpl(URL controllerUrl, CloudCredentials credentials, RestTemplate restTemplate,
-        OAuthClient oAuthClient, CloudFoundryOperations v3OperationsClient, CloudFoundryClient v3Client, CloudSpace target) {
+                                         OAuthClient oAuthClient, CloudFoundryOperations v3OperationsClient, CloudFoundryClient v3Client,
+                                         CloudSpace target) {
         Assert.notNull(controllerUrl, "CloudControllerUrl cannot be null");
         Assert.notNull(restTemplate, "RestTemplate cannot be null");
         Assert.notNull(oAuthClient, "OAuthClient cannot be null");
@@ -266,18 +275,18 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public void bindService(String applicationName, String serviceName, Map<String, Object> parameters,
-        ApplicationServicesUpdateCallback updateServicesCallback) {
+                            ApplicationServicesUpdateCallback updateServicesCallback) {
         try {
             UUID applicationGuid = getRequiredApplicationGuid(applicationName);
             UUID serviceGuid = getService(serviceName).getMetadata()
-                .getGuid();
+                                                      .getGuid();
             convertV3ClientExceptions(() -> v3Client.serviceBindingsV2()
-                .create(CreateServiceBindingRequest.builder()
-                    .applicationId(applicationGuid.toString())
-                    .serviceInstanceId(serviceGuid.toString())
-                    .parameters(parameters)
-                    .build())
-                .block());
+                                                    .create(CreateServiceBindingRequest.builder()
+                                                                                       .applicationId(applicationGuid.toString())
+                                                                                       .serviceInstanceId(serviceGuid.toString())
+                                                                                       .parameters(parameters)
+                                                                                       .build())
+                                                    .block());
         } catch (CloudOperationException e) {
             updateServicesCallback.onError(e, applicationName, serviceName);
         }
@@ -295,10 +304,10 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public void createApplication(String name, Staging staging, Integer diskQuota, Integer memory, List<String> uris,
-        List<String> serviceNames, DockerInfo dockerInfo) {
+                                  List<String> serviceNames, DockerInfo dockerInfo) {
         Map<String, Object> appRequest = new HashMap<>();
         appRequest.put("space_guid", target.getMetadata()
-            .getGuid());
+                                           .getGuid());
         appRequest.put("name", name);
         appRequest.put("memory", memory);
         if (diskQuota != null) {
@@ -317,38 +326,39 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         String appResp = getRestTemplate().postForObject(getUrl("/v2/apps"), appRequest, String.class);
         Map<String, Object> appEntity = JsonUtil.convertJsonToMap(appResp);
         UUID newAppGuid = CloudEntityResourceMapper.getV2Metadata(appEntity)
-            .getGuid();
+                                                   .getGuid();
 
-        if(shouldUpdateWithV3Buildpacks(staging)) {
+        if (shouldUpdateWithV3Buildpacks(staging)) {
             updateBuildpacks(newAppGuid, staging.getBuildpacks());
         }
-        
+
         if (!CollectionUtils.isEmpty(serviceNames)) {
             updateApplicationServices(name, Collections.emptyMap(),
-                ApplicationServicesUpdateCallback.DEFAULT_APPLICATION_SERVICES_UPDATE_CALLBACK);
+                                      ApplicationServicesUpdateCallback.DEFAULT_APPLICATION_SERVICES_UPDATE_CALLBACK);
         }
 
         if (!CollectionUtils.isEmpty(uris)) {
             addUris(uris, newAppGuid);
         }
     }
-    
+
     private boolean shouldUpdateWithV3Buildpacks(Staging staging) {
-        return staging.getBuildpacks() != null  && staging.getBuildpacks().size() > 1;
+        return staging.getBuildpacks() != null && staging.getBuildpacks()
+                                                         .size() > 1;
     }
-    
+
     private void updateBuildpacks(UUID appGuid, List<String> buildpacks) {
         convertV3ClientExceptions(() -> v3Client.applicationsV3()
-                .update(org.cloudfoundry.client.v3.applications.UpdateApplicationRequest.builder()
-                                                                                        .applicationId(appGuid.toString())
-                                                                                        .lifecycle(Lifecycle.builder()
-                                                                                                            .type(LifecycleType.BUILDPACK)
-                                                                                                            .data(BuildpackData.builder()
-                                                                                                                               .addAllBuildpacks(buildpacks)
-                                                                                                                               .build())
-                                                                                                            .build())
-                                                                                        .build())
-                .block());
+                                                .update(org.cloudfoundry.client.v3.applications.UpdateApplicationRequest.builder()
+                                                                                                                        .applicationId(appGuid.toString())
+                                                                                                                        .lifecycle(Lifecycle.builder()
+                                                                                                                                            .type(LifecycleType.BUILDPACK)
+                                                                                                                                            .data(BuildpackData.builder()
+                                                                                                                                                               .addAllBuildpacks(buildpacks)
+                                                                                                                                                               .build())
+                                                                                                                                            .build())
+                                                                                                                        .build())
+                                                .block());
     }
 
     @Override
@@ -373,14 +383,14 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
         CloudServicePlan servicePlan = findPlanForService(service);
         UUID servicePlanGuid = servicePlan.getMetadata()
-            .getGuid();
+                                          .getGuid();
         convertV3ClientExceptions(() -> v3Client.serviceInstances()
-            .create(CreateServiceInstanceRequest.builder()
-                .spaceId(getTargetSpaceId())
-                .name(service.getName())
-                .servicePlanId(servicePlanGuid.toString())
-                .build())
-            .block());
+                                                .create(CreateServiceInstanceRequest.builder()
+                                                                                    .spaceId(getTargetSpaceId())
+                                                                                    .name(service.getName())
+                                                                                    .servicePlanId(servicePlanGuid.toString())
+                                                                                    .build())
+                                                .block());
     }
 
     @Override
@@ -388,44 +398,44 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         Assert.notNull(serviceBroker, "Service broker must not be null.");
 
         convertV3ClientExceptions(() -> v3Client.serviceBrokers()
-            .create(CreateServiceBrokerRequest.builder()
-                .name(serviceBroker.getName())
-                .brokerUrl(serviceBroker.getUrl())
-                .authenticationUsername(serviceBroker.getUsername())
-                .authenticationPassword(serviceBroker.getPassword())
-                .spaceId(serviceBroker.getSpaceGuid())
-                .build())
-            .block());
+                                                .create(CreateServiceBrokerRequest.builder()
+                                                                                  .name(serviceBroker.getName())
+                                                                                  .brokerUrl(serviceBroker.getUrl())
+                                                                                  .authenticationUsername(serviceBroker.getUsername())
+                                                                                  .authenticationPassword(serviceBroker.getPassword())
+                                                                                  .spaceId(serviceBroker.getSpaceGuid())
+                                                                                  .build())
+                                                .block());
     }
 
     @Override
     public CloudServiceKey createServiceKey(String serviceName, String name, Map<String, Object> parameters) {
         CloudService service = getService(serviceName);
         UUID serviceGuid = service.getMetadata()
-            .getGuid();
+                                  .getGuid();
 
         CreateServiceKeyResponse response = convertV3ClientExceptions(() -> v3Client.serviceKeys()
-            .create(CreateServiceKeyRequest.builder()
-                .serviceInstanceId(serviceGuid.toString())
-                .name(name)
-                .parameters(parameters)
-                .build())
-            .block());
+                                                                                    .create(CreateServiceKeyRequest.builder()
+                                                                                                                   .serviceInstanceId(serviceGuid.toString())
+                                                                                                                   .name(name)
+                                                                                                                   .parameters(parameters)
+                                                                                                                   .build())
+                                                                                    .block());
         ServiceKeyEntity entity = response.getEntity();
         return ImmutableCloudServiceKey.builder()
-            .parameters(parameters)
-            .credentials(entity.getCredentials())
-            .name(entity.getName())
-            .service(service)
-            .build();
+                                       .parameters(parameters)
+                                       .credentials(entity.getCredentials())
+                                       .name(entity.getName())
+                                       .service(service)
+                                       .build();
     }
 
     @Override
     public void createSpace(String spaceName) {
         assertSpaceProvided("create a new space");
         UUID organizationGuid = target.getOrganization()
-            .getMetadata()
-            .getGuid();
+                                      .getMetadata()
+                                      .getGuid();
         UUID spaceGuid = getSpaceGuid(spaceName, organizationGuid);
         if (spaceGuid == null) {
             doCreateSpace(spaceName, organizationGuid);
@@ -443,12 +453,12 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         Assert.notNull(service, "Service must not be null.");
 
         convertV3ClientExceptions(() -> v3Client.userProvidedServiceInstances()
-            .create(CreateUserProvidedServiceInstanceRequest.builder()
-                .spaceId(getTargetSpaceId())
-                .name(service.getName())
-                .credentials(credentials)
-                .build())
-            .block());
+                                                .create(CreateUserProvidedServiceInstanceRequest.builder()
+                                                                                                .spaceId(getTargetSpaceId())
+                                                                                                .name(service.getName())
+                                                                                                .credentials(credentials)
+                                                                                                .build())
+                                                .block());
     }
 
     @Override
@@ -475,10 +485,10 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
             doUnbindService(serviceBindingGuid);
         }
         convertV3ClientExceptions(() -> v3Client.applicationsV2()
-            .delete(DeleteApplicationRequest.builder()
-                .applicationId(applicationGuid.toString())
-                .build())
-            .block());
+                                                .delete(DeleteApplicationRequest.builder()
+                                                                                .applicationId(applicationGuid.toString())
+                                                                                .build())
+                                                .block());
     }
 
     @Override
@@ -507,7 +517,8 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         List<CloudRoute> deletedRoutes = new ArrayList<>();
         for (CloudRoute orphanRoute : orphanRoutes) {
             deleteRoute(orphanRoute.getHost(), orphanRoute.getDomain()
-                .getName(), orphanRoute.getPath());
+                                                          .getName(),
+                        orphanRoute.getPath());
             deletedRoutes.add(orphanRoute);
         }
         return deletedRoutes;
@@ -523,8 +534,9 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         assertSpaceProvided("delete route for domain");
         UUID routeGuid = getRouteGuid(getDomainGuid(domainName, true), host, path);
         if (routeGuid == null) {
-            throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found",
-                "Host " + host + " not found for domain " + domainName + ".");
+            throw new CloudOperationException(HttpStatus.NOT_FOUND,
+                                              "Not Found",
+                                              "Host " + host + " not found for domain " + domainName + ".");
         }
         doDeleteRoute(routeGuid);
     }
@@ -544,12 +556,12 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     public void deleteServiceBroker(String name) {
         CloudServiceBroker broker = getServiceBroker(name);
         UUID guid = broker.getMetadata()
-            .getGuid();
+                          .getGuid();
         convertV3ClientExceptions(() -> v3Client.serviceBrokers()
-            .delete(DeleteServiceBrokerRequest.builder()
-                .serviceBrokerId(guid.toString())
-                .build())
-            .block());
+                                                .delete(DeleteServiceBrokerRequest.builder()
+                                                                                  .serviceBrokerId(guid.toString())
+                                                                                  .build())
+                                                .block());
     }
 
     @Override
@@ -557,9 +569,9 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         List<CloudServiceKey> serviceKeys = getServiceKeys(serviceName);
         for (CloudServiceKey serviceKey : serviceKeys) {
             if (serviceKey.getName()
-                .equals(serviceKeyName)) {
+                          .equals(serviceKeyName)) {
                 doDeleteServiceKey(serviceKey.getMetadata()
-                    .getGuid());
+                                             .getGuid());
                 return;
             }
         }
@@ -568,18 +580,18 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     private void doDeleteServiceKey(UUID guid) {
         convertV3ClientExceptions(() -> v3Client.serviceKeys()
-            .delete(DeleteServiceKeyRequest.builder()
-                .serviceKeyId(guid.toString())
-                .build())
-            .block());
+                                                .delete(DeleteServiceKeyRequest.builder()
+                                                                               .serviceKeyId(guid.toString())
+                                                                               .build())
+                                                .block());
     }
 
     @Override
     public void deleteSpace(String spaceName) {
         assertSpaceProvided("delete a space");
         UUID organizationGuid = target.getOrganization()
-            .getMetadata()
-            .getGuid();
+                                      .getMetadata()
+                                      .getGuid();
         UUID spaceGuid = getSpaceGuid(spaceName, organizationGuid);
         if (spaceGuid != null) {
             doDeleteSpace(spaceGuid);
@@ -612,8 +624,9 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
             application = mapCloudApplication(resource);
         }
         if (application == null) {
-            throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found",
-                "Application with GUID " + applicationGuid + " not found.");
+            throw new CloudOperationException(HttpStatus.NOT_FOUND,
+                                              "Not Found",
+                                              "Application with GUID " + applicationGuid + " not found.");
         }
         return application;
     }
@@ -651,9 +664,9 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     @Override
     public InstancesInfo getApplicationInstances(CloudApplication application) {
         if (application.getState()
-            .equals(CloudApplication.State.STARTED)) {
+                       .equals(CloudApplication.State.STARTED)) {
             return doGetApplicationInstances(application.getMetadata()
-                .getGuid());
+                                                        .getGuid());
         }
         return null;
     }
@@ -662,7 +675,8 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     public ApplicationStats getApplicationStats(String applicationName) {
         CloudApplication application = getApplication(applicationName);
         return doGetApplicationStats(application.getMetadata()
-            .getGuid(), application.getState());
+                                                .getGuid(),
+                                     application.getState());
     }
 
     @Override
@@ -676,7 +690,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         String urlPath = "/v2";
         if (target != null) {
             urlVars.put("space", target.getMetadata()
-                .getGuid());
+                                       .getGuid());
             urlPath = urlPath + "/spaces/{space}";
         }
         urlPath = urlPath + "/apps";
@@ -750,15 +764,15 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         String loggingEndpoint = CloudUtil.parse(String.class, infoV2Map.get("doppler_logging_endpoint"));
 
         return ImmutableCloudInfo.builder()
-            .name(name)
-            .user(user)
-            .support(support)
-            .version(version)
-            .authorizationEndpoint(authorizationEndpoint)
-            .loggingEndpoint(loggingEndpoint)
-            .build(build)
-            .description(description)
-            .build();
+                                 .name(name)
+                                 .user(user)
+                                 .support(support)
+                                 .version(version)
+                                 .authorizationEndpoint(authorizationEndpoint)
+                                 .loggingEndpoint(loggingEndpoint)
+                                 .build(build)
+                                 .description(description)
+                                 .build();
     }
 
     @SuppressWarnings("restriction")
@@ -985,7 +999,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         String urlPath = "/v2";
         if (target != null) {
             urlVars.put("space", target.getMetadata()
-                .getGuid());
+                                       .getGuid());
             urlPath = urlPath + "/spaces/{space}";
         }
         urlPath = urlPath + "/service_instances?inline-relations-depth=1&return_user_provided_service_instances=true";
@@ -1037,8 +1051,8 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     @Override
     public CloudSpace getSpace(String spaceName, boolean required) {
         UUID organizationGuid = target.getOrganization()
-            .getMetadata()
-            .getGuid();
+                                      .getMetadata()
+                                      .getGuid();
         return getSpace(organizationGuid, spaceName, required);
     }
 
@@ -1150,7 +1164,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                 return getRestTemplate().getForObject(stagingFile + "&tail&tail_offset={offset}", String.class, logsRequest);
             } catch (CloudOperationException e) {
                 if (e.getStatusCode()
-                    .equals(HttpStatus.NOT_FOUND)) {
+                     .equals(HttpStatus.NOT_FOUND)) {
                     // Content is no longer available
                     return null;
                 } else {
@@ -1211,11 +1225,11 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     public void rename(String applicationName, String newName) {
         UUID applicationGuid = getRequiredApplicationGuid(applicationName);
         convertV3ClientExceptions(() -> v3Client.applicationsV2()
-            .update(UpdateApplicationRequest.builder()
-                .applicationId(applicationGuid.toString())
-                .name(newName)
-                .build())
-            .block());
+                                                .update(UpdateApplicationRequest.builder()
+                                                                                .applicationId(applicationGuid.toString())
+                                                                                .name(newName)
+                                                                                .build())
+                                                .block());
     }
 
     @Override
@@ -1241,13 +1255,13 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
             return null;
         }
         UUID applicationGuid = application.getMetadata()
-            .getGuid();
+                                          .getGuid();
         convertV3ClientExceptions(() -> v3Client.applicationsV2()
-            .update(UpdateApplicationRequest.builder()
-                .applicationId(applicationGuid.toString())
-                .state(CloudApplication.State.STARTED.toString())
-                .build())
-            .block());
+                                                .update(UpdateApplicationRequest.builder()
+                                                                                .applicationId(applicationGuid.toString())
+                                                                                .state(CloudApplication.State.STARTED.toString())
+                                                                                .build())
+                                                .block());
         return null;
     }
 
@@ -1258,13 +1272,13 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
             return;
         }
         UUID applicationGuid = application.getMetadata()
-            .getGuid();
+                                          .getGuid();
         convertV3ClientExceptions(() -> v3Client.applicationsV2()
-            .update(UpdateApplicationRequest.builder()
-                .applicationId(applicationGuid.toString())
-                .state(CloudApplication.State.STOPPED.toString())
-                .build())
-            .block());
+                                                .update(UpdateApplicationRequest.builder()
+                                                                                .applicationId(applicationGuid.toString())
+                                                                                .state(CloudApplication.State.STOPPED.toString())
+                                                                                .build())
+                                                .block());
     }
 
     @Override
@@ -1296,11 +1310,11 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public void unbindService(String applicationName, String serviceName,
-        ApplicationServicesUpdateCallback applicationServicesUpdateCallback) {
+                              ApplicationServicesUpdateCallback applicationServicesUpdateCallback) {
         try {
             UUID applicationGuid = getRequiredApplicationGuid(applicationName);
             UUID serviceGuid = getService(serviceName).getMetadata()
-                .getGuid();
+                                                      .getGuid();
             doUnbindService(applicationGuid, serviceGuid);
         } catch (CloudOperationException e) {
             applicationServicesUpdateCallback.onError(e, applicationName, serviceName);
@@ -1321,22 +1335,22 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     public void updateApplicationDiskQuota(String applicationName, int diskQuota) {
         UUID applicationGuid = getRequiredApplicationGuid(applicationName);
         convertV3ClientExceptions(() -> v3Client.applicationsV2()
-            .update(UpdateApplicationRequest.builder()
-                .applicationId(applicationGuid.toString())
-                .diskQuota(diskQuota)
-                .build())
-            .block());
+                                                .update(UpdateApplicationRequest.builder()
+                                                                                .applicationId(applicationGuid.toString())
+                                                                                .diskQuota(diskQuota)
+                                                                                .build())
+                                                .block());
     }
 
     @Override
     public void updateApplicationEnv(String applicationName, Map<String, String> env) {
         UUID applicationGuid = getRequiredApplicationGuid(applicationName);
         convertV3ClientExceptions(() -> v3Client.applicationsV2()
-            .update(UpdateApplicationRequest.builder()
-                .applicationId(applicationGuid.toString())
-                .environmentJsons(env)
-                .build())
-            .block());
+                                                .update(UpdateApplicationRequest.builder()
+                                                                                .applicationId(applicationGuid.toString())
+                                                                                .environmentJsons(env)
+                                                                                .build())
+                                                .block());
     }
 
     @Override
@@ -1347,9 +1361,9 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                 throw new IllegalArgumentException("Environment setting without '=' is invalid: " + envVariable);
             }
             String key = envVariable.substring(0, envVariable.indexOf('='))
-                .trim();
+                                    .trim();
             String value = envVariable.substring(envVariable.indexOf('=') + 1)
-                .trim();
+                                      .trim();
             envHash.put(key, value);
         }
         updateApplicationEnv(applicationName, envHash);
@@ -1359,28 +1373,28 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     public void updateApplicationInstances(String applicationName, int instances) {
         UUID applicationGuid = getRequiredApplicationGuid(applicationName);
         convertV3ClientExceptions(() -> v3Client.applicationsV2()
-            .update(UpdateApplicationRequest.builder()
-                .applicationId(applicationGuid.toString())
-                .instances(instances)
-                .build())
-            .block());
+                                                .update(UpdateApplicationRequest.builder()
+                                                                                .applicationId(applicationGuid.toString())
+                                                                                .instances(instances)
+                                                                                .build())
+                                                .block());
     }
 
     @Override
     public void updateApplicationMemory(String applicationName, int memory) {
         UUID applicationGuid = getRequiredApplicationGuid(applicationName);
         convertV3ClientExceptions(() -> v3Client.applicationsV2()
-            .update(UpdateApplicationRequest.builder()
-                .applicationId(applicationGuid.toString())
-                .memory(memory)
-                .build())
-            .block());
+                                                .update(UpdateApplicationRequest.builder()
+                                                                                .applicationId(applicationGuid.toString())
+                                                                                .memory(memory)
+                                                                                .build())
+                                                .block());
     }
 
     @Override
     public List<String> updateApplicationServices(String applicationName,
-        Map<String, Map<String, Object>> serviceNamesWithBindingParameters,
-        ApplicationServicesUpdateCallback applicationServicesUpdateCallbaclk) {
+                                                  Map<String, Map<String, Object>> serviceNamesWithBindingParameters,
+                                                  ApplicationServicesUpdateCallback applicationServicesUpdateCallbaclk) {
         // No implementation here is needed because the logic is moved in ApplicationServicesUpdater in order to be used in other
         // implementations of the client. Currently, the ApplicationServicesUpdater is used only in CloudControllerClientImpl. Check
         // CloudControllerClientImpl.updateApplicationServices
@@ -1394,23 +1408,23 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         requestBuilder.applicationId(applicationGuid.toString());
         if (staging != null) {
             requestBuilder.buildpack(staging.getBuildpack())
-                .command(staging.getCommand())
-                .healthCheckHttpEndpoint(staging.getHealthCheckHttpEndpoint())
-                .healthCheckTimeout(staging.getHealthCheckTimeout())
-                .healthCheckType(staging.getHealthCheckType())
-                .enableSsh(staging.isSshEnabled());
+                          .command(staging.getCommand())
+                          .healthCheckHttpEndpoint(staging.getHealthCheckHttpEndpoint())
+                          .healthCheckTimeout(staging.getHealthCheckTimeout())
+                          .healthCheckType(staging.getHealthCheckType())
+                          .enableSsh(staging.isSshEnabled());
             String stackName = staging.getStack();
             if (stackName != null) {
                 UUID stackGuid = getStack(stackName).getMetadata()
-                    .getGuid();
+                                                    .getGuid();
                 requestBuilder.stackId(stackGuid.toString());
             }
         }
         convertV3ClientExceptions(() -> v3Client.applicationsV2()
-            .update(requestBuilder.build())
-            .block());
-        
-        if(shouldUpdateWithV3Buildpacks(staging)) {
+                                                .update(requestBuilder.build())
+                                                .block());
+
+        if (shouldUpdateWithV3Buildpacks(staging)) {
             updateBuildpacks(applicationGuid, staging.getBuildpacks());
         }
     }
@@ -1423,9 +1437,9 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         List<String> removeUris = new ArrayList<>(application.getUris());
         removeUris.removeAll(uris);
         removeUris(removeUris, application.getMetadata()
-            .getGuid());
+                                          .getGuid());
         addUris(newUris, application.getMetadata()
-            .getGuid());
+                                    .getGuid());
     }
 
     @Override
@@ -1465,17 +1479,17 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
         CloudServiceBroker existingBroker = getServiceBroker(serviceBroker.getName());
         UUID brokerGuid = existingBroker.getMetadata()
-            .getGuid();
+                                        .getGuid();
 
         convertV3ClientExceptions(() -> v3Client.serviceBrokers()
-            .update(UpdateServiceBrokerRequest.builder()
-                .serviceBrokerId(brokerGuid.toString())
-                .name(serviceBroker.getName())
-                .authenticationUsername(serviceBroker.getUsername())
-                .authenticationPassword(serviceBroker.getPassword())
-                .brokerUrl(serviceBroker.getUrl())
-                .build())
-            .block());
+                                                .update(UpdateServiceBrokerRequest.builder()
+                                                                                  .serviceBrokerId(brokerGuid.toString())
+                                                                                  .name(serviceBroker.getName())
+                                                                                  .authenticationUsername(serviceBroker.getUsername())
+                                                                                  .authenticationPassword(serviceBroker.getPassword())
+                                                                                  .brokerUrl(serviceBroker.getUrl())
+                                                                                  .build())
+                                                .block());
     }
 
     @Override
@@ -1485,7 +1499,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         String urlPath = "/v2/services?q={q}";
         Map<String, Object> urlVars = new HashMap<>();
         urlVars.put("q", "service_broker_guid:" + broker.getMetadata()
-            .getGuid());
+                                                        .getGuid());
         List<Map<String, Object>> serviceResourceList = getAllResources(urlPath, urlVars);
 
         for (Map<String, Object> serviceResource : serviceResourceList) {
@@ -1611,11 +1625,11 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         UUID packageGuid = createPackageForApplication(applicationGuid);
 
         convertV3ClientExceptions(() -> v3Client.packages()
-            .upload(UploadPackageRequest.builder()
-                .bits(file.toPath())
-                .packageId(packageGuid.toString())
-                .build())
-            .block());
+                                                .upload(UploadPackageRequest.builder()
+                                                                            .bits(file.toPath())
+                                                                            .packageId(packageGuid.toString())
+                                                                            .build())
+                                                .block());
 
         return new UploadToken(getUrl("/v3/packages/" + packageGuid), packageGuid);
     }
@@ -1635,8 +1649,8 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         Map<String, Object> packageEntity = JsonUtil.convertJsonToMap(packageResponse);
 
         return resourceMapper.mapResource(packageEntity, CloudPackage.class)
-            .getMetadata()
-            .getGuid();
+                             .getMetadata()
+                             .getGuid();
     }
 
     @Override
@@ -1662,20 +1676,21 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     @Override
     public void bindDropletToApp(UUID dropletGuid, UUID applicationGuid) {
         convertV3ClientExceptions(() -> v3Client.applicationsV3()
-            .setCurrentDroplet(SetApplicationCurrentDropletRequest.builder()
-                .applicationId(applicationGuid.toString())
-                .data(Relationship.builder()
-                    .id(dropletGuid.toString())
-                    .build())
-                .build())
-            .block());
+                                                .setCurrentDroplet(SetApplicationCurrentDropletRequest.builder()
+                                                                                                      .applicationId(applicationGuid.toString())
+                                                                                                      .data(Relationship.builder()
+                                                                                                                        .id(dropletGuid.toString())
+                                                                                                                        .build())
+                                                                                                      .build())
+                                                .block());
     }
 
     @Override
     public CloudBuild getBuild(UUID buildGuid) {
         ResponseEntity<Map<String, Object>> responseEntity = getRestTemplate().exchange(getUrl("/v3/builds/{buildGuid}"), HttpMethod.GET,
-            HttpEntity.EMPTY, new ParameterizedTypeReference<Map<String, Object>>() {
-            }, buildGuid);
+                                                                                        HttpEntity.EMPTY,
+                                                                                        new ParameterizedTypeReference<Map<String, Object>>() {
+                                                                                        }, buildGuid);
 
         return resourceMapper.mapResource(responseEntity.getBody(), CloudBuild.class);
     }
@@ -1690,14 +1705,16 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     @Override
     public Upload getUploadStatus(String uploadToken) {
         CloudPackage cloudPackage = getCloudPackage(uploadToken);
-        ErrorDetails errorDetails = new ErrorDetails(0, cloudPackage.getData()
-            .getError(), null);
+        ErrorDetails errorDetails = new ErrorDetails(0,
+                                                     cloudPackage.getData()
+                                                                 .getError(),
+                                                     null);
 
         return new Upload(cloudPackage.getStatus(), errorDetails);
     }
 
     protected String doGetFile(String urlPath, UUID applicationGuid, int instanceIndex, String filePath, int startPosition,
-        int endPosition) {
+                               int endPosition) {
         return doGetFile(urlPath, applicationGuid, String.valueOf(instanceIndex), filePath, startPosition, endPosition);
     }
 
@@ -1705,7 +1722,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         Assert.isTrue(startPosition >= -1, "Invalid start position value: " + startPosition);
         Assert.isTrue(endPosition >= -1, "Invalid end position value: " + endPosition);
         Assert.isTrue(startPosition < 0 || endPosition < 0 || endPosition >= startPosition,
-            "The end position (" + endPosition + ") can't be less than the start position (" + startPosition + ")");
+                      "The end position (" + endPosition + ") can't be less than the start position (" + startPosition + ")");
 
         int start, end;
         if (startPosition == -1 && endPosition == -1) {
@@ -1742,9 +1759,9 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @SuppressWarnings("unchecked")
     protected void doOpenFile(String urlPath, UUID applicationGuid, int instanceIndex, String filePath,
-        ClientHttpResponseCallback callback) {
+                              ClientHttpResponseCallback callback) {
         getRestTemplate().execute(getUrl(urlPath), HttpMethod.GET, null, new ResponseExtractorWrapper(callback), applicationGuid,
-            String.valueOf(instanceIndex), filePath);
+                                  String.valueOf(instanceIndex), filePath);
     }
 
     protected void extractUriInfo(Map<String, UUID> existingDomains, String uri, Map<String, String> uriInfo) {
@@ -1778,7 +1795,8 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         }
     }
 
-    private void extractDomainInfo(Map<String, UUID> existingDomains, Map<String, String> uriInfo, String domain, String hostName, String path) {
+    private void extractDomainInfo(Map<String, UUID> existingDomains, Map<String, String> uriInfo, String domain, String hostName,
+                                   String path) {
         for (String existingDomain : existingDomains.keySet()) {
             if (domain.equals(existingDomain)) {
                 uriInfo.put("domainName", existingDomain);
@@ -1821,7 +1839,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         }
         if (staging.getStack() != null) {
             appRequest.put("stack_guid", getStack(staging.getStack()).getMetadata()
-                .getGuid());
+                                                                     .getGuid());
         }
         if (staging.getHealthCheckTimeout() != null) {
             appRequest.put("health_check_timeout", staging.getHealthCheckTimeout());
@@ -1837,11 +1855,11 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         }
         if (staging.getDockerInfo() != null) {
             appRequest.put("docker_image", staging.getDockerInfo()
-                .getImage());
+                                                  .getImage());
             if (staging.getDockerInfo()
-                .getDockerCredentials() != null) {
+                       .getDockerCredentials() != null) {
                 appRequest.put("docker_credentials", staging.getDockerInfo()
-                    .getDockerCredentials());
+                                                            .getDockerCredentials());
             }
         }
     }
@@ -1865,11 +1883,11 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     private void bindRoute(UUID domainGuid, String host, String path, UUID applicationGuid) {
         UUID routeGuid = getOrAddRoute(domainGuid, host, path);
         convertV3ClientExceptions(() -> v3Client.applicationsV2()
-            .associateRoute(AssociateApplicationRouteRequest.builder()
-                .applicationId(applicationGuid.toString())
-                .routeId(routeGuid.toString())
-                .build())
-            .block());
+                                                .associateRoute(AssociateApplicationRouteRequest.builder()
+                                                                                                .applicationId(applicationGuid.toString())
+                                                                                                .routeId(routeGuid.toString())
+                                                                                                .build())
+                                                .block());
     }
 
     private UUID getOrAddRoute(UUID domainGuid, String host, String path) {
@@ -1891,25 +1909,25 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     private UUID doAddRoute(UUID domainGuid, String host, String path) {
         assertSpaceProvided("add route");
         CreateRouteResponse response = convertV3ClientExceptions(() -> v3Client.routes()
-            .create(CreateRouteRequest.builder()
-                .domainId(domainGuid.toString())
-                .host(host)
-                .path(path)
-                .spaceId(getTargetSpaceId())
-                .build())
-            .block());
+                                                                               .create(CreateRouteRequest.builder()
+                                                                                                         .domainId(domainGuid.toString())
+                                                                                                         .host(host)
+                                                                                                         .path(path)
+                                                                                                         .spaceId(getTargetSpaceId())
+                                                                                                         .build())
+                                                                               .block());
         return UUID.fromString(response.getMetadata()
-            .getId());
+                                       .getId());
     }
 
     private void doCreateDomain(String name) {
         convertV3ClientExceptions(() -> v3Client.domains()
-            .create(CreateDomainRequest.builder()
-                .wildcard(true)
-                .owningOrganizationId(getTargetOrganizationGuid())
-                .name(name)
-                .build())
-            .block());
+                                                .create(CreateDomainRequest.builder()
+                                                                           .wildcard(true)
+                                                                           .owningOrganizationId(getTargetOrganizationGuid())
+                                                                           .name(name)
+                                                                           .build())
+                                                .block());
     }
 
     private UUID doCreateSpace(String spaceName, UUID organizationGuid) {
@@ -1924,18 +1942,18 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     private void doDeleteDomain(UUID domainGuid) {
         convertV3ClientExceptions(() -> v3Client.privateDomains()
-            .delete(DeletePrivateDomainRequest.builder()
-                .privateDomainId(domainGuid.toString())
-                .build())
-            .block());
+                                                .delete(DeletePrivateDomainRequest.builder()
+                                                                                  .privateDomainId(domainGuid.toString())
+                                                                                  .build())
+                                                .block());
     }
 
     private void doDeleteRoute(UUID routeGuid) {
         convertV3ClientExceptions(() -> v3Client.routes()
-            .delete(DeleteRouteRequest.builder()
-                .routeId(routeGuid.toString())
-                .build())
-            .block());
+                                                .delete(DeleteRouteRequest.builder()
+                                                                          .routeId(routeGuid.toString())
+                                                                          .build())
+                                                .block());
     }
 
     private void doDeleteService(CloudService service) {
@@ -1944,13 +1962,13 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
             doUnbindService(serviceBindingGuid);
         }
         UUID serviceGuid = service.getMetadata()
-            .getGuid();
+                                  .getGuid();
         convertV3ClientExceptions(() -> v3Client.serviceInstances()
-            .delete(DeleteServiceInstanceRequest.builder()
-                .acceptsIncomplete(true)
-                .serviceInstanceId(serviceGuid.toString())
-                .build())
-            .block());
+                                                .delete(DeleteServiceInstanceRequest.builder()
+                                                                                    .acceptsIncomplete(true)
+                                                                                    .serviceInstanceId(serviceGuid.toString())
+                                                                                    .build())
+                                                .block());
     }
 
     private void doDeleteSpace(UUID spaceGuid) {
@@ -2000,7 +2018,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         String urlPath = "/v2";
         if (organization != null) {
             urlVars.put("organization", organization.getMetadata()
-                .getGuid());
+                                                    .getGuid());
             urlPath = urlPath + "/organizations/{organization}";
         }
         urlPath = urlPath + "/private_domains";
@@ -2035,25 +2053,25 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     private String doGetFileByRange(String urlPath, UUID applicationGuid, String instance, String filePath, int start, int end,
-        String range) {
+                                    String range) {
         boolean supportsRanges;
         try {
             supportsRanges = getRestTemplate().execute(getUrl(urlPath), HttpMethod.HEAD, new RequestCallback() {
                 @Override
                 public void doWithRequest(ClientHttpRequest request) throws IOException {
                     request.getHeaders()
-                        .set("Range", "bytes=0-");
+                           .set("Range", "bytes=0-");
                 }
             }, new ResponseExtractor<Boolean>() {
                 @Override
                 public Boolean extractData(ClientHttpResponse response) throws IOException {
                     return response.getStatusCode()
-                        .equals(HttpStatus.PARTIAL_CONTENT);
+                                   .equals(HttpStatus.PARTIAL_CONTENT);
                 }
             }, applicationGuid, instance, filePath);
         } catch (CloudOperationException e) {
             if (e.getStatusCode()
-                .equals(HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE)) {
+                 .equals(HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE)) {
                 // must be a 0 byte file
                 return "";
             } else {
@@ -2066,11 +2084,11 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         }
         HttpEntity<Object> requestEntity = new HttpEntity<Object>(headers);
         ResponseEntity<String> responseEntity = getRestTemplate().exchange(getUrl(urlPath), HttpMethod.GET, requestEntity, String.class,
-            applicationGuid, instance, filePath);
+                                                                           applicationGuid, instance, filePath);
         String response = responseEntity.getBody();
         boolean partialFile = false;
         if (responseEntity.getStatusCode()
-            .equals(HttpStatus.PARTIAL_CONTENT)) {
+                          .equals(HttpStatus.PARTIAL_CONTENT)) {
             partialFile = true;
         }
         if (!partialFile && response != null) {
@@ -2082,7 +2100,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                         return "";
                     }
                     throw new CloudOperationException(HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE,
-                        "The starting position " + start + " is past the end of the file content.");
+                                                      "The starting position " + start + " is past the end of the file content.");
                 }
                 if (end != -1) {
                     if (end >= response.length()) {
@@ -2113,8 +2131,9 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
             UUID space = CloudEntityResourceMapper.getV2ResourceAttribute(route, "space_guid", UUID.class);
             UUID domain = CloudEntityResourceMapper.getV2ResourceAttribute(route, "domain_guid", UUID.class);
             if (target.getMetadata()
-                .getGuid()
-                .equals(space) && domainGuid.equals(domain)) {
+                      .getGuid()
+                      .equals(space)
+                && domainGuid.equals(domain)) {
                 // routes.add(CloudEntityResourceMapper.getEntityAttribute(route, "host", String.class));
                 routes.add(resourceMapper.mapResource(route, CloudRoute.class));
             }
@@ -2127,7 +2146,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         Map<String, Object> urlVars = new HashMap<>();
         if (target != null) {
             urlVars.put("space", target.getMetadata()
-                .getGuid());
+                                       .getGuid());
             urlPath = urlPath + "/spaces/{space}";
         }
         urlVars.put("q", "name:" + serviceName);
@@ -2158,13 +2177,13 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         String urlPath = "/v2/service_instances/{serviceId}/service_keys";
         Map<String, Object> pathVariables = new HashMap<>();
         pathVariables.put("serviceId", service.getMetadata()
-            .getGuid());
+                                              .getGuid());
         List<Map<String, Object>> resourceList = getAllResources(urlPath, pathVariables);
         List<CloudServiceKey> serviceKeys = new ArrayList<>();
         for (Map<String, Object> resource : resourceList) {
             CloudServiceKey serviceKey = resourceMapper.mapResource(resource, CloudServiceKey.class);
             serviceKey = ImmutableCloudServiceKey.copyOf(serviceKey)
-                .withService(service);
+                                                 .withService(service);
             serviceKeys.add(serviceKey);
         }
         return serviceKeys;
@@ -2177,10 +2196,10 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     private void doUnbindService(UUID serviceBindingGuid) {
         convertV3ClientExceptions(() -> v3Client.serviceBindingsV2()
-            .delete(DeleteServiceBindingRequest.builder()
-                .serviceBindingId(serviceBindingGuid.toString())
-                .build())
-            .block());
+                                                .delete(DeleteServiceBindingRequest.builder()
+                                                                                   .serviceBindingId(serviceBindingGuid.toString())
+                                                                                   .build())
+                                                .block());
     }
 
     private List<CloudRoute> fetchOrphanRoutes(String domainName) {
@@ -2212,7 +2231,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
         if (!entity.containsKey(headKey)) {
             String pathUrl = entity.get(headKey + "_url")
-                .toString();
+                                   .toString();
             Object response = retrieveResponse(getUrl(pathUrl), isFailSafe);
             if (response == null) {
                 fillInEmbeddedResource(resource, isFailSafe, tailPath);
@@ -2265,7 +2284,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         String urlPath = "/v2";
         if (target != null) {
             urlVars.put("space", target.getMetadata()
-                .getGuid());
+                                       .getGuid());
             urlPath = urlPath + "/spaces/{space}";
         }
         urlVars.put("q", "name:" + applicationName);
@@ -2359,10 +2378,10 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         List<CloudServiceOffering> offerings = getServiceOfferings(service.getLabel());
         for (CloudServiceOffering offering : offerings) {
             if (service.getVersion() == null || service.getVersion()
-                .equals(offering.getVersion())) {
+                                                       .equals(offering.getVersion())) {
                 for (CloudServicePlan plan : offering.getCloudServicePlans()) {
                     if (service.getPlan() != null && service.getPlan()
-                        .equals(plan.getName())) {
+                                                            .equals(plan.getName())) {
                         return plan;
                     }
                 }
@@ -2452,7 +2471,8 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     private UUID getOrganizationGuid(String organizationName, boolean required) {
         CloudOrganization organization = getOrganization(organizationName, required);
         return organization != null ? organization.getMetadata()
-            .getGuid() : null;
+                                                  .getGuid()
+            : null;
     }
 
     private CloudSpace getSpace(UUID organizationGuid, String spaceName, boolean required) {
@@ -2462,8 +2482,9 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
             space = resourceMapper.mapResource(resource, CloudSpace.class);
         }
         if (space == null && required) {
-            throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found",
-                "Space " + spaceName + " not found in organization with GUID " + organizationGuid + ".");
+            throw new CloudOperationException(HttpStatus.NOT_FOUND,
+                                              "Not Found",
+                                              "Space " + spaceName + " not found in organization with GUID " + organizationGuid + ".");
         }
         return space;
     }
@@ -2478,17 +2499,16 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     private List<UUID> getServiceBindingGuids(UUID applicationGuid) {
-        Flux<ServiceBindingResource> bindings = convertV3ClientExceptions(
-            () -> getServiceBindingResourceByApplicationGuid(applicationGuid));
+        Flux<ServiceBindingResource> bindings = convertV3ClientExceptions(() -> getServiceBindingResourceByApplicationGuid(applicationGuid));
         return getGuids(bindings);
     }
 
     private Flux<ServiceBindingResource> getServiceBindingResourceByApplicationGuid(UUID applicationGuid) {
         return convertV3ClientExceptions(() -> PaginationUtils.requestClientV2Resources(page -> v3Client.applicationsV2()
-            .listServiceBindings(ListApplicationServiceBindingsRequest.builder()
-                .applicationId(applicationGuid.toString())
-                .page(page)
-                .build())));
+                                                                                                        .listServiceBindings(ListApplicationServiceBindingsRequest.builder()
+                                                                                                                                                                  .applicationId(applicationGuid.toString())
+                                                                                                                                                                  .page(page)
+                                                                                                                                                                  .build())));
     }
 
     private List<UUID> getServiceBindingGuids(CloudService service) {
@@ -2498,7 +2518,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     private Flux<ServiceBindingResource> getServiceBindingResources(CloudService service) {
         UUID serviceGuid = service.getMetadata()
-            .getGuid();
+                                  .getGuid();
         if (service.isUserProvided()) {
             return getUserProvidedServiceBindingResources(serviceGuid);
         }
@@ -2507,35 +2527,35 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     private Flux<ServiceBindingResource> getUserProvidedServiceBindingResources(UUID serviceGuid) {
         return convertV3ClientExceptions(() -> PaginationUtils.requestClientV2Resources(page -> v3Client.userProvidedServiceInstances()
-            .listServiceBindings(ListUserProvidedServiceInstanceServiceBindingsRequest.builder()
-                .userProvidedServiceInstanceId(serviceGuid.toString())
-                .page(page)
-                .build())));
+                                                                                                        .listServiceBindings(ListUserProvidedServiceInstanceServiceBindingsRequest.builder()
+                                                                                                                                                                                  .userProvidedServiceInstanceId(serviceGuid.toString())
+                                                                                                                                                                                  .page(page)
+                                                                                                                                                                                  .build())));
     }
 
     private Flux<ServiceBindingResource> getServiceBindingResources(UUID serviceGuid) {
         return convertV3ClientExceptions(() -> PaginationUtils.requestClientV2Resources(page -> v3Client.serviceInstances()
-            .listServiceBindings(ListServiceInstanceServiceBindingsRequest.builder()
-                .serviceInstanceId(serviceGuid.toString())
-                .page(page)
-                .build())));
+                                                                                                        .listServiceBindings(ListServiceInstanceServiceBindingsRequest.builder()
+                                                                                                                                                                      .serviceInstanceId(serviceGuid.toString())
+                                                                                                                                                                      .page(page)
+                                                                                                                                                                      .build())));
     }
 
     private List<UUID> getGuids(Flux<? extends Resource<?>> resources) {
         return resources.map(Resource::getMetadata)
-            .map(Metadata::getId)
-            .map(UUID::fromString)
-            .collectList()
-            .block();
+                        .map(Metadata::getId)
+                        .map(UUID::fromString)
+                        .collectList()
+                        .block();
     }
 
     private UUID getDomainGuid(String name, boolean required) {
         List<DomainResource> domains = convertV3ClientExceptions(() -> getDomainResources(name)).collectList()
-            .block();
+                                                                                                .block();
         if (!domains.isEmpty()) {
             DomainResource domain = domains.get(0);
             return UUID.fromString(domain.getMetadata()
-                .getId());
+                                         .getId());
         }
         if (required) {
             throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Domain " + name + " not found.");
@@ -2545,10 +2565,10 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     private Flux<DomainResource> getDomainResources(String name) {
         return PaginationUtils.requestClientV2Resources(page -> v3Client.domains()
-            .list(ListDomainsRequest.builder()
-                .name(name)
-                .page(page)
-                .build()));
+                                                                        .list(ListDomainsRequest.builder()
+                                                                                                .name(name)
+                                                                                                .page(page)
+                                                                                                .build()));
     }
 
     private Map<String, UUID> getDomainGuids() {
@@ -2558,7 +2578,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         Map<String, UUID> domains = new HashMap<>(availableDomains.size());
         for (CloudDomain availableDomain : availableDomains) {
             domains.put(availableDomain.getName(), availableDomain.getMetadata()
-                .getGuid());
+                                                                  .getGuid());
         }
         return domains;
     }
@@ -2589,11 +2609,11 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
             requestBuilder.path(path);
         }
         requestBuilder.spaceId(getTargetSpaceId())
-            .domainId(domainGuid.toString());
+                      .domainId(domainGuid.toString());
 
         return PaginationUtils.requestClientV2Resources(page -> v3Client.spaces()
-            .listRoutes(requestBuilder.page(page)
-                .build()));
+                                                                        .listRoutes(requestBuilder.page(page)
+                                                                                                  .build()));
     }
 
     private int getRunningInstances(UUID applicationGuid, CloudApplication.State appState) {
@@ -2666,11 +2686,11 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         UUID spaceGuid;
         if (spaceName == null) {
             spaceGuid = target.getMetadata()
-                .getGuid();
+                              .getGuid();
         } else {
             CloudOrganization organization = (organizationName == null ? target.getOrganization() : getOrganization(organizationName));
             spaceGuid = getSpaceGuid(spaceName, organization.getMetadata()
-                .getGuid());
+                                                            .getGuid());
         }
         return getSpaceUserGuids(spaceGuid, urlPath);
     }
@@ -2691,7 +2711,8 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     private UUID getRouteGuid(UUID domainGuid, String host, String path) {
 
-        List<? extends Resource<RouteEntity>> routeEntitiesResource = getRouteResourcesByDomainGuidHostAndPath(domainGuid, host, path).collect(Collectors.toList())
+        List<? extends Resource<RouteEntity>> routeEntitiesResource = getRouteResourcesByDomainGuidHostAndPath(domainGuid, host,
+                                                                                                               path).collect(Collectors.toList())
                                                                                                                     .block();
         if (CollectionUtils.isEmpty(routeEntitiesResource)) {
             return null;
@@ -2713,10 +2734,10 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     private UUID getGuid(org.cloudfoundry.client.v2.Resource<?> resource) {
         return Optional.ofNullable(resource)
-                .map(org.cloudfoundry.client.v2.Resource::getMetadata)
-                .map(org.cloudfoundry.client.v2.Metadata::getId)
-                .map(UUID::fromString)
-                .orElse(null);
+                       .map(org.cloudfoundry.client.v2.Resource::getMetadata)
+                       .map(org.cloudfoundry.client.v2.Metadata::getId)
+                       .map(UUID::fromString)
+                       .orElse(null);
     }
 
     private Predicate<Resource<RouteEntity>> checkForEmptyHost() {
@@ -2740,13 +2761,15 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         CloudApplication application = null;
         if (resource != null) {
             int running = getRunningInstances(applicationGuid,
-                CloudApplication.State.valueOf(CloudEntityResourceMapper.getV2ResourceAttribute(resource, "state", String.class)));
+                                              CloudApplication.State.valueOf(CloudEntityResourceMapper.getV2ResourceAttribute(resource,
+                                                                                                                              "state",
+                                                                                                                              String.class)));
             ((Map<String, Object>) resource.get("entity")).put("running_instances", running);
             application = resourceMapper.mapResource(resource, CloudApplication.class);
             List<String> uris = findApplicationUris(application.getMetadata()
-                .getGuid());
+                                                               .getGuid());
             application = ImmutableCloudApplication.copyOf(application)
-                .withUris(uris);
+                                                   .withUris(uris);
         }
         return application;
     }
@@ -2775,13 +2798,13 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         while (true) {
             Upload upload = getUploadStatus(packageUrl);
             boolean unsubscribe = callback.onProgress(upload.getStatus()
-                .toString());
+                                                            .toString());
             if (unsubscribe || upload.getStatus() == Status.READY) {
                 return;
             }
             if (upload.getStatus() == Status.EXPIRED) {
                 callback.onError(upload.getErrorDetails()
-                    .getDescription());
+                                       .getDescription());
                 return;
             }
 
@@ -2795,8 +2818,8 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     private CloudPackage getCloudPackage(String packageUrl) {
         ResponseEntity<Map<String, Object>> cloudPackageEntity = getRestTemplate().exchange(packageUrl, HttpMethod.GET, HttpEntity.EMPTY,
-            new ParameterizedTypeReference<Map<String, Object>>() {
-            });
+                                                                                            new ParameterizedTypeReference<Map<String, Object>>() {
+                                                                                            });
 
         return resourceMapper.mapResource(cloudPackageEntity.getBody(), CloudPackage.class);
     }
@@ -2819,11 +2842,11 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
             return;
         }
         convertV3ClientExceptions(() -> v3Client.applicationsV2()
-            .removeRoute(RemoveApplicationRouteRequest.builder()
-                .applicationId(applicationGuid.toString())
-                .routeId(routeGuid.toString())
-                .build())
-            .block());
+                                                .removeRoute(RemoveApplicationRouteRequest.builder()
+                                                                                          .applicationId(applicationGuid.toString())
+                                                                                          .routeId(routeGuid.toString())
+                                                                                          .build())
+                                                .block());
     }
 
     private <T> T convertV3ClientExceptions(Supplier<T> runnable) {
@@ -2842,15 +2865,15 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     private String getTargetOrganizationGuid() {
         return target.getOrganization()
-            .getMetadata()
-            .getGuid()
-            .toString();
+                     .getMetadata()
+                     .getGuid()
+                     .toString();
     }
 
     private String getTargetSpaceId() {
         return target.getMetadata()
-            .getGuid()
-            .toString();
+                     .getGuid()
+                     .toString();
     }
 
     private static class ResponseExtractorWrapper implements ResponseExtractor {

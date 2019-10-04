@@ -10,8 +10,10 @@ public class CloudServiceBrokerException extends CloudOperationException {
     private static final String DEFAULT_SERVICE_BROKER_ERROR_MESSAGE = "Service broker operation failed: {0}";
 
     public CloudServiceBrokerException(CloudOperationException cloudOperationException) {
-        super(cloudOperationException.getStatusCode(), cloudOperationException.getStatusText(), cloudOperationException.getDescription(),
-            cloudOperationException);
+        super(cloudOperationException.getStatusCode(),
+              cloudOperationException.getStatusText(),
+              cloudOperationException.getDescription(),
+              cloudOperationException);
     }
 
     public CloudServiceBrokerException(HttpStatus statusCode) {

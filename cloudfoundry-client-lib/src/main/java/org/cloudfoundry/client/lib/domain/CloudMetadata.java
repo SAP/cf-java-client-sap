@@ -28,7 +28,7 @@ public interface CloudMetadata {
 
     static CloudMetadata defaultMetadata() {
         return ImmutableCloudMetadata.builder()
-            .build();
+                                     .build();
     }
 
 }

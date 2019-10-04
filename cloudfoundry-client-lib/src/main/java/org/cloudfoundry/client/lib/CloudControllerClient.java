@@ -191,7 +191,7 @@ public interface CloudControllerClient {
      * @param applicationServicesUpdateCallback callback used for error handling
      */
     void bindService(String applicationName, String serviceName, Map<String, Object> parameters,
-        ApplicationServicesUpdateCallback updateServicesCallback);
+                     ApplicationServicesUpdateCallback updateServicesCallback);
 
     /**
      * Bind a security group to the list of security groups to be used for staging applications.
@@ -223,7 +223,7 @@ public interface CloudControllerClient {
      * @param dockerInfo docker params(image, username, password)
      */
     public void createApplication(String applicationName, Staging staging, Integer disk, Integer memory, List<String> uris,
-        List<String> serviceNames, DockerInfo dockerInfo);
+                                  List<String> serviceNames, DockerInfo dockerInfo);
 
     /**
      * Create quota
@@ -1170,7 +1170,7 @@ public interface CloudControllerClient {
      * @return
      */
     List<String> updateApplicationServices(String applicationName, Map<String, Map<String, Object>> serviceNamesWithBindingParameters,
-        ApplicationServicesUpdateCallback applicationServicesUpdateCallback);
+                                           ApplicationServicesUpdateCallback applicationServicesUpdateCallback);
 
     /**
      * Update application staging information.

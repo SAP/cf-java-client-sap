@@ -70,7 +70,7 @@ public class CloudEntityResourceMapperTest {
     public void testGetV2MetaWithV2Resource() {
         CloudMetadata meta = CloudEntityResourceMapper.getV2Metadata(V2_RESOURCE);
         assertEquals(V2_RESOURCE_GUID, meta.getGuid()
-            .toString());
+                                           .toString());
         assertNotNull(meta.getCreatedAt());
         assertNotNull(meta.getUpdatedAt());
     }
@@ -85,7 +85,7 @@ public class CloudEntityResourceMapperTest {
     public void testGetV3MetaWithV3Resource() {
         CloudMetadata meta = CloudEntityResourceMapper.getV3Metadata(V3_RESOURCE);
         assertEquals(V3_RESOURCE_GUID, meta.getGuid()
-            .toString());
+                                           .toString());
         assertNotNull(meta.getCreatedAt());
         assertNotNull(meta.getUpdatedAt());
     }
@@ -137,13 +137,13 @@ public class CloudEntityResourceMapperTest {
         CloudTask task = resourceMapper.mapResource(V3_RESOURCE, CloudTask.class);
         assertEquals(TASK_NAME, task.getName());
         assertEquals(TASK_GUID, task.getMetadata()
-            .getGuid()
-            .toString());
+                                    .getGuid()
+                                    .toString());
         assertEquals("rake db:migrate", task.getCommand());
         assertEquals(Integer.valueOf(512), task.getMemory());
         assertEquals(Integer.valueOf(1024), task.getDiskQuota());
     }
-    
+
     @Test
     public void testMapApplicationResourceEnvironmentNull() {
         CloudApplication cloudApp = resourceMapper.mapResource(V2_APPLICATION_RESOURCE, CloudApplication.class);
@@ -156,16 +156,16 @@ public class CloudEntityResourceMapperTest {
     public void testV3MapCloudPackageResource() throws ParseException {
         CloudPackage cloudPackage = resourceMapper.mapResource(V3_PACKAGE_RESOURCE, CloudPackage.class);
         assertEquals(UUID.fromString("44f7c078-0934-470f-9883-4fcddc5b8f13"), cloudPackage.getMetadata()
-            .getGuid());
+                                                                                          .getGuid());
         assertEquals(CloudPackage.Type.BITS, cloudPackage.getType());
         assertEquals("sha256", cloudPackage.getData()
-            .getChecksum()
-            .getAlgorithm());
+                                           .getChecksum()
+                                           .getAlgorithm());
         assertEquals(null, cloudPackage.getData()
-            .getChecksum()
-            .getValue());
+                                       .getChecksum()
+                                       .getValue());
         assertEquals(null, cloudPackage.getData()
-            .getError());
+                                       .getError());
         assertEquals(Status.PROCESSING_UPLOAD, cloudPackage.getStatus());
     }
 
@@ -173,16 +173,16 @@ public class CloudEntityResourceMapperTest {
     public void testV3MapCloudBuildResource() throws ParseException {
         CloudBuild cloudBuild = resourceMapper.mapResource(V3_BUILD_RESOURCE, CloudBuild.class);
         assertEquals(UUID.fromString("585bc3c1-3743-497d-88b0-403ad6b56d16"), cloudBuild.getMetadata()
-            .getGuid());
+                                                                                        .getGuid());
         assertEquals("3cb4e243-bed4-49d5-8739-f8b45abdec1c", cloudBuild.getCreatedBy()
-            .getGuid()
-            .toString());
+                                                                       .getGuid()
+                                                                       .toString());
         assertEquals("bill", cloudBuild.getCreatedBy()
-            .getName());
+                                       .getName());
         assertEquals(CloudBuild.State.STAGING, cloudBuild.getState());
         assertEquals(null, cloudBuild.getError());
         assertEquals(UUID.fromString("8e4da443-f255-499c-8b47-b3729b5b7432"), cloudBuild.getPackageInfo()
-            .getGuid());
+                                                                                        .getGuid());
         assertEquals(null, cloudBuild.getDropletInfo());
     }
 

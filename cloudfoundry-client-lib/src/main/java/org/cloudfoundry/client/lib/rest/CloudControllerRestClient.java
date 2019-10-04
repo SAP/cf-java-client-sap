@@ -89,14 +89,14 @@ public interface CloudControllerRestClient {
     void bindService(String applicationName, String serviceName);
 
     void bindService(String applicationName, String serviceName, Map<String, Object> parameters,
-        ApplicationServicesUpdateCallback updateServicesCallback);
+                     ApplicationServicesUpdateCallback updateServicesCallback);
 
     void bindStagingSecurityGroup(String securityGroupName);
 
     void createApplication(String applicationName, Staging staging, Integer memory, List<String> uris, List<String> serviceNames);
 
     void createApplication(String applicationName, Staging staging, Integer disk, Integer memory, List<String> uris,
-        List<String> serviceNames, DockerInfo dockerInfo);
+                           List<String> serviceNames, DockerInfo dockerInfo);
 
     // Service methods
 
@@ -333,7 +333,7 @@ public interface CloudControllerRestClient {
     void updateApplicationMemory(String applicationName, int memory);
 
     List<String> updateApplicationServices(String applicationName, Map<String, Map<String, Object>> serviceIdsWithBindingParameters,
-        ApplicationServicesUpdateCallback applicationServicesUpdateCallbaclk);
+                                           ApplicationServicesUpdateCallback applicationServicesUpdateCallbaclk);
 
     void updateApplicationStaging(String applicationName, Staging staging);
 

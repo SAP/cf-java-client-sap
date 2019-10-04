@@ -21,7 +21,7 @@ public interface CloudRoute extends CloudEntity {
 
     @Nullable
     String getHost();
-    
+
     @Nullable
     String getPath();
 

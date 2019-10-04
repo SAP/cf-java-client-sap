@@ -225,8 +225,11 @@ public class CloudControllerClientTest {
 
         if (CCNG_API_PROXY_HOST != null) {
             if (CCNG_API_PROXY_USER != null) {
-                httpProxyConfiguration = new HttpProxyConfiguration(CCNG_API_PROXY_HOST, CCNG_API_PROXY_PORT, true, CCNG_API_PROXY_USER,
-                    CCNG_API_PROXY_PASSWD);
+                httpProxyConfiguration = new HttpProxyConfiguration(CCNG_API_PROXY_HOST,
+                                                                    CCNG_API_PROXY_PORT,
+                                                                    true,
+                                                                    CCNG_API_PROXY_USER,
+                                                                    CCNG_API_PROXY_PASSWD);
             } else {
                 httpProxyConfiguration = new HttpProxyConfiguration(CCNG_API_PROXY_HOST, CCNG_API_PROXY_PORT);
             }
@@ -245,7 +248,7 @@ public class CloudControllerClientTest {
             s = email;
         }
         return s.replaceAll("\\.", "-")
-            .replaceAll("\\+", "-");
+                .replaceAll("\\+", "-");
     }
 
     private static int getNextAvailablePort(int initial) {
@@ -293,7 +296,7 @@ public class CloudControllerClientTest {
     @Test
     public void accessRandomApplicationUrl() throws Exception {
         String applicationName = UUID.randomUUID()
-            .toString();
+                                     .toString();
         CloudApplication application = createAndUploadAndStartSimpleSpringApp(applicationName);
         connectedClient.startApplication(applicationName);
         assertEquals(1, application.getInstances());
@@ -305,7 +308,8 @@ public class CloudControllerClientTest {
         RestUtil restUtil = new RestUtil();
         RestTemplate rest = restUtil.createRestTemplate(httpProxyConfiguration, false);
         String results = rest.getForObject("http://" + application.getUris()
-            .get(0), String.class);
+                                                                  .get(0),
+                                           String.class);
         assertTrue(results.contains("Hello world!"));
     }
 
@@ -345,7 +349,7 @@ public class CloudControllerClientTest {
             fail("should have thrown exception");
         } catch (IllegalStateException ex) {
             assertTrue(ex.getMessage()
-                .contains("in use"));
+                         .contains("in use"));
         }
     }
 
@@ -392,8 +396,8 @@ public class CloudControllerClientTest {
         CloudUser user = orgUsers.get(username);
         assertNotNull("Retrieved user should not be null", user);
         String userGuid = user.getMetadata()
-            .getGuid()
-            .toString();
+                              .getGuid()
+                              .toString();
 
         List<UUID> spaceManagers = connectedClient.getSpaceManagers(organizationName, spaceName);
         assertEquals("Space should have no manager when created", 0, spaceManagers.size());
@@ -458,7 +462,7 @@ public class CloudControllerClientTest {
         assumeTrue(CCNG_USER_IS_ADMIN);
 
         connectedClient.updateSecurityGroup(randomSecurityGroupName(),
-            new FileInputStream(new File("src/test/resources/security-groups/test-rules-2.json")));
+                                            new FileInputStream(new File("src/test/resources/security-groups/test-rules-2.json")));
     }
 
     //
@@ -475,23 +479,23 @@ public class CloudControllerClientTest {
         CloudApplication application = connectedClient.getApplication(applicationName);
         assertNotNull(application.getServices());
         assertTrue(application.getServices()
-            .isEmpty());
+                              .isEmpty());
 
         connectedClient.bindService(applicationName, serviceName);
 
         application = connectedClient.getApplication(applicationName);
         assertNotNull(application.getServices());
         assertEquals(1, application.getServices()
-            .size());
+                                   .size());
         assertEquals(serviceName, application.getServices()
-            .get(0));
+                                             .get(0));
 
         connectedClient.unbindService(applicationName, serviceName);
 
         application = connectedClient.getApplication(applicationName);
         assertNotNull(application.getServices());
         assertTrue(application.getServices()
-            .isEmpty());
+                              .isEmpty());
     }
 
     @Test
@@ -501,7 +505,7 @@ public class CloudControllerClientTest {
         // Given
         assertFalse(containsSecurityGroupNamed(connectedClient.getRunningSecurityGroups(), CCNG_SECURITY_GROUP_NAME_TEST));
         connectedClient.createSecurityGroup(CCNG_SECURITY_GROUP_NAME_TEST,
-            new FileInputStream(new File("src/test/resources/security-groups/test-rules-2.json")));
+                                            new FileInputStream(new File("src/test/resources/security-groups/test-rules-2.json")));
 
         // When
         connectedClient.bindRunningSecurityGroup(CCNG_SECURITY_GROUP_NAME_TEST);
@@ -526,7 +530,7 @@ public class CloudControllerClientTest {
         // Given
         assertFalse(containsSecurityGroupNamed(connectedClient.getStagingSecurityGroups(), CCNG_SECURITY_GROUP_NAME_TEST));
         connectedClient.createSecurityGroup(CCNG_SECURITY_GROUP_NAME_TEST,
-            new FileInputStream(new File("src/test/resources/security-groups/test-rules-2.json")));
+                                            new FileInputStream(new File("src/test/resources/security-groups/test-rules-2.json")));
 
         // When
         connectedClient.bindStagingSecurityGroup(CCNG_SECURITY_GROUP_NAME_TEST);
@@ -550,7 +554,7 @@ public class CloudControllerClientTest {
 
         // Given
         connectedClient.createSecurityGroup(CCNG_SECURITY_GROUP_NAME_TEST,
-            new FileInputStream(new File("src/test/resources/security-groups/test-rules-2.json")));
+                                            new FileInputStream(new File("src/test/resources/security-groups/test-rules-2.json")));
 
         // When
         connectedClient.bindSecurityGroup(CCNG_USER_ORG, CCNG_USER_SPACE, CCNG_SECURITY_GROUP_NAME_TEST);
@@ -602,18 +606,18 @@ public class CloudControllerClientTest {
 
         assertTrue(SocketDestHelper.isActivated());
         assertFalse("expected some installed rules, got:" + SocketDestHelper.getInstalledRules(), SocketDestHelper.getInstalledRules()
-            .isEmpty());
+                                                                                                                  .isEmpty());
     }
 
     @Test
     public void createAndReCreateApplication() {
         String applicationName = createSpringTravelApp("A");
         assertEquals(1, connectedClient.getApplications()
-            .size());
+                                       .size());
         connectedClient.deleteApplication(applicationName);
         applicationName = createSpringTravelApp("A");
         assertEquals(1, connectedClient.getApplications()
-            .size());
+                                       .size());
         connectedClient.deleteApplication(applicationName);
     }
 
@@ -628,13 +632,13 @@ public class CloudControllerClientTest {
         assertEquals(applicationName, application.getName());
 
         assertNotNull(application.getMetadata()
-            .getGuid());
+                                 .getGuid());
 
         final Calendar now = Calendar.getInstance();
         now.setTime(new Date());
         final Calendar createdDate = Calendar.getInstance();
         createdDate.setTime(application.getMetadata()
-            .getCreatedAt());
+                                       .getCreatedAt());
 
         assertEquals(now.get(Calendar.DATE), createdDate.get(Calendar.DATE));
     }
@@ -650,9 +654,9 @@ public class CloudControllerClientTest {
         assertEquals(CloudApplication.State.STOPPED, application.getState());
 
         assertEquals(buildpackUrl, application.getStaging()
-            .getBuildpack());
+                                              .getBuildpack());
         assertNull(application.getStaging()
-            .getDetectedBuildpack());
+                              .getDetectedBuildpack());
     }
 
     @Test
@@ -698,8 +702,8 @@ public class CloudControllerClientTest {
         assertEquals(CloudApplication.State.STOPPED, application.getState());
 
         assertEquals(2, application.getStaging()
-            .getHealthCheckTimeout()
-            .intValue());
+                                   .getHealthCheckTimeout()
+                                   .intValue());
     }
 
     @Test
@@ -712,9 +716,9 @@ public class CloudControllerClientTest {
         assertEquals(applicationName, application.getName());
         assertNotNull(application.getServices());
         assertEquals(1, application.getServices()
-            .size());
+                                   .size());
         assertEquals(serviceName, application.getServices()
-            .get(0));
+                                             .get(0));
     }
 
     @Test
@@ -727,7 +731,7 @@ public class CloudControllerClientTest {
         assertEquals(CloudApplication.State.STOPPED, application.getState());
 
         assertEquals(DEFAULT_STACK_NAME, application.getStaging()
-            .getStack());
+                                                    .getStack());
     }
 
     @Test
@@ -764,9 +768,9 @@ public class CloudControllerClientTest {
         rule = new SecurityGroupRule("icmp", null, "0.0.0.0/0", true, 0, 1);
         rules.add(rule);
         CloudSecurityGroup securityGroup = ImmutableCloudSecurityGroup.builder()
-            .name(CCNG_SECURITY_GROUP_NAME_TEST)
-            .rules(rules)
-            .build();
+                                                                      .name(CCNG_SECURITY_GROUP_NAME_TEST)
+                                                                      .rules(rules)
+                                                                      .build();
 
         // Create
         connectedClient.createSecurityGroup(securityGroup);
@@ -775,7 +779,8 @@ public class CloudControllerClientTest {
         securityGroup = connectedClient.getSecurityGroup(CCNG_SECURITY_GROUP_NAME_TEST);
         assertNotNull(securityGroup);
         assertThat(securityGroup.getRules()
-            .size(), is(3));
+                                .size(),
+                   is(3));
         assertRulesMatchTestData(securityGroup);
 
         // Update group
@@ -783,15 +788,16 @@ public class CloudControllerClientTest {
         rule = new SecurityGroupRule("all", null, "0.0.0.0-255.255.255.255");
         rules.add(rule);
         securityGroup = ImmutableCloudSecurityGroup.builder()
-            .name(CCNG_SECURITY_GROUP_NAME_TEST)
-            .rules(rules)
-            .build();
+                                                   .name(CCNG_SECURITY_GROUP_NAME_TEST)
+                                                   .rules(rules)
+                                                   .build();
         connectedClient.updateSecurityGroup(securityGroup);
 
         // Verify update
         securityGroup = connectedClient.getSecurityGroup(CCNG_SECURITY_GROUP_NAME_TEST);
         assertThat(securityGroup.getRules()
-            .size(), is(1));
+                                .size(),
+                   is(1));
 
         // Delete group
         connectedClient.deleteSecurityGroup(CCNG_SECURITY_GROUP_NAME_TEST);
@@ -809,10 +815,10 @@ public class CloudControllerClientTest {
     public void deleteApplication() {
         String applicationName = createSpringTravelApp("4");
         assertEquals(1, connectedClient.getApplications()
-            .size());
+                                       .size());
         connectedClient.deleteApplication(applicationName);
         assertEquals(0, connectedClient.getApplications()
-            .size());
+                                       .size());
     }
 
     //
@@ -836,7 +842,7 @@ public class CloudControllerClientTest {
         boolean found = false;
         for (CloudRoute route : deletedRoutes) {
             if (route.getHost()
-                .equals("unbound_route")) {
+                     .equals("unbound_route")) {
                 found = true;
             }
         }
@@ -851,9 +857,9 @@ public class CloudControllerClientTest {
         CloudApplication application = connectedClient.getApplication(applicationName);
         assertNotNull(application.getServices());
         assertEquals(1, application.getServices()
-            .size());
+                                   .size());
         assertEquals(serviceName, application.getServices()
-            .get(0));
+                                             .get(0));
 
         connectedClient.deleteService(serviceName);
     }
@@ -869,7 +875,7 @@ public class CloudControllerClientTest {
         String applicationName = createSpringTravelApp("3");
         CloudApplication application = connectedClient.getApplication(applicationName);
         CloudApplication guidApplication = connectedClient.getApplication(application.getMetadata()
-            .getGuid());
+                                                                                     .getGuid());
         assertEquals(application.getName(), guidApplication.getName());
     }
 
@@ -882,22 +888,22 @@ public class CloudControllerClientTest {
         assertEquals(applicationName, application.getName());
 
         assertEquals(1, application.getServices()
-            .size());
+                                   .size());
         assertEquals(serviceName, application.getServices()
-            .get(0));
+                                             .get(0));
         assertEquals(CCNG_USER_SPACE, application.getSpace()
-            .getName());
+                                                 .getName());
 
         assertEquals(1, application.getInstances());
         assertEquals(DEFAULT_MEMORY, application.getMemory());
         assertEquals(DEFAULT_DISK, application.getDiskQuota());
 
         assertNull(application.getStaging()
-            .getCommand());
+                              .getCommand());
         assertNull(application.getStaging()
-            .getBuildpack());
+                              .getBuildpack());
         assertNull(application.getStaging()
-            .getHealthCheckTimeout());
+                              .getHealthCheckTimeout());
     }
 
     @Test
@@ -909,7 +915,7 @@ public class CloudControllerClientTest {
         connectedClient.updateApplicationEnv(applicationName, Collections.singletonMap("testKey", "testValue"));
         CloudApplication application = connectedClient.getApplication(applicationName);
         Map<String, Object> env = connectedClient.getApplicationEnvironment(application.getMetadata()
-            .getGuid());
+                                                                                       .getGuid());
         assertAppEnvironment(env);
     }
 
@@ -967,7 +973,7 @@ public class CloudControllerClientTest {
         assertNotNull(stats);
         assertNotNull(stats.getRecords());
         assertEquals(instanceCount, stats.getRecords()
-            .size());
+                                         .size());
 
         for (InstanceStats instanceStats : stats.getRecords()) {
             assertNotNull(instanceStats.getUris());
@@ -984,7 +990,8 @@ public class CloudControllerClientTest {
             assertTrue(usage.getMem() > 0);
 
             assertTimeWithinRange("Usage time should be very recent", usage.getTime()
-                .getTime(), FIVE_MINUTES);
+                                                                           .getTime(),
+                                  FIVE_MINUTES);
         }
     }
 
@@ -1000,7 +1007,7 @@ public class CloudControllerClientTest {
 
         ApplicationStats stats = connectedClient.getApplicationStats(applicationName);
         assertTrue(stats.getRecords()
-            .isEmpty());
+                        .isEmpty());
     }
 
     @Test
@@ -1014,12 +1021,12 @@ public class CloudControllerClientTest {
         assertEquals(applicationName, application.getName());
         assertNotNull(application.getMetadata());
         assertNotNull(application.getMetadata()
-            .getGuid());
+                                 .getGuid());
 
         assertEquals(1, application.getServices()
-            .size());
+                                   .size());
         assertEquals(serviceName, application.getServices()
-            .get(0));
+                                             .get(0));
 
         createSpringTravelApp("3");
         apps = connectedClient.getApplications();
@@ -1033,30 +1040,30 @@ public class CloudControllerClientTest {
         assertEquals(1, applications.size());
         CloudApplication application = connectedClient.getApplication(applicationName);
         assertEquals(application.getName(), applications.get(0)
-            .getName());
+                                                        .getName());
         assertEquals(application.getState(), applications.get(0)
-            .getState());
+                                                         .getState());
         assertEquals(application.getInstances(), applications.get(0)
-            .getInstances());
+                                                             .getInstances());
         assertEquals(application.getMemory(), applications.get(0)
-            .getMemory());
+                                                          .getMemory());
         assertEquals(application.getMetadata()
-            .getGuid(),
-            applications.get(0)
-                .getMetadata()
-                .getGuid());
+                                .getGuid(),
+                     applications.get(0)
+                                 .getMetadata()
+                                 .getGuid());
         assertEquals(application.getMetadata()
-            .getCreatedAt(),
-            applications.get(0)
-                .getMetadata()
-                .getCreatedAt());
+                                .getCreatedAt(),
+                     applications.get(0)
+                                 .getMetadata()
+                                 .getCreatedAt());
         assertEquals(application.getMetadata()
-            .getUpdatedAt(),
-            applications.get(0)
-                .getMetadata()
-                .getUpdatedAt());
+                                .getUpdatedAt(),
+                     applications.get(0)
+                                 .getMetadata()
+                                 .getUpdatedAt());
         assertEquals(application.getUris(), applications.get(0)
-            .getUris());
+                                                        .getUris());
     }
 
     @Test
@@ -1092,7 +1099,7 @@ public class CloudControllerClientTest {
         CrashesInfo crashes = connectedClient.getCrashes(applicationName);
         assertNotNull(crashes);
         assertTrue(!crashes.getCrashes()
-            .isEmpty());
+                           .isEmpty());
         for (CrashInfo info : crashes.getCrashes()) {
             assertNotNull(info.getInstance());
             assertNotNull(info.getSince());
@@ -1108,8 +1115,9 @@ public class CloudControllerClientTest {
         assertNotNull(service);
         assertEquals(serviceName, service.getName());
         assertTimeWithinRange("Creation time should be very recent", service.getMetadata()
-            .getCreatedAt()
-            .getTime(), FIVE_MINUTES);
+                                                                            .getCreatedAt()
+                                                                            .getTime(),
+                              FIVE_MINUTES);
 
         connectedClient.deleteService(serviceName);
 
@@ -1239,13 +1247,14 @@ public class CloudControllerClientTest {
         assertEquals(1, bindings.size());
         CloudServiceBinding binding = bindings.get(0);
         assertEquals(application.getMetadata()
-            .getGuid(), binding.getApplicationGuid());
+                                .getGuid(),
+                     binding.getApplicationGuid());
         assertNotNull(binding.getCredentials());
         assertTrue(binding.getCredentials()
-            .size() > 0);
+                          .size() > 0);
         assertNotNull(binding.getBindingOptions());
         assertEquals(0, binding.getBindingOptions()
-            .size());
+                               .size());
         assertNull(binding.getSyslogDrainUrl());
     }
 
@@ -1259,7 +1268,7 @@ public class CloudControllerClientTest {
         CloudServiceOffering offering = null;
         for (CloudServiceOffering so : offerings) {
             if (so.getName()
-                .equals(MYSQL_SERVICE_LABEL)) {
+                  .equals(MYSQL_SERVICE_LABEL)) {
                 offering = so;
                 break;
             }
@@ -1269,13 +1278,13 @@ public class CloudControllerClientTest {
         assertEquals(MYSQL_SERVICE_LABEL, offering.getName());
         assertNotNull(offering.getCloudServicePlans());
         assertTrue(offering.getCloudServicePlans()
-            .size() > 0);
+                           .size() > 0);
         assertNotNull(offering.getDescription());
         assertNotNull(offering.getUniqueId());
         assertNotNull(offering.getExtra());
 
         CloudServicePlan plan = offering.getCloudServicePlans()
-            .get(0);
+                                        .get(0);
         assertNotNull(plan.getName());
         assertNotNull(plan.getUniqueId());
         assertNotNull(plan.getDescription());
@@ -1297,7 +1306,8 @@ public class CloudControllerClientTest {
     @Test
     public void getServices() {
         List<CloudService> expectedServices = Arrays.asList(createMySqlService("mysql-test"),
-            createUserProvidedService("user-provided-test"), createMySqlService("mysql-child"));
+                                                            createUserProvidedService("user-provided-test"),
+                                                            createMySqlService("mysql-child"));
 
         List<CloudService> services = connectedClient.getServices();
         assertNotNull(services);
@@ -1312,7 +1322,7 @@ public class CloudControllerClientTest {
         CloudStack stack = connectedClient.getStack(DEFAULT_STACK_NAME);
         assertNotNull(stack);
         assertNotNull(stack.getMetadata()
-            .getGuid());
+                           .getGuid());
         assertEquals(DEFAULT_STACK_NAME, stack.getName());
         assertNotNull(stack.getDescription());
     }
@@ -1330,7 +1340,7 @@ public class CloudControllerClientTest {
         }
         assertNotNull(stack);
         assertNotNull(stack.getMetadata()
-            .getGuid());
+                           .getGuid());
         assertEquals(DEFAULT_STACK_NAME, stack.getName());
         assertNotNull(stack.getDescription());
     }
@@ -1508,23 +1518,25 @@ public class CloudControllerClientTest {
 
         // Create
         connectedClient.createSecurityGroup(CCNG_SECURITY_GROUP_NAME_TEST,
-            new FileInputStream(new File("src/test/resources/security-groups/test-rules-1.json")));
+                                            new FileInputStream(new File("src/test/resources/security-groups/test-rules-1.json")));
 
         // Verify created
         CloudSecurityGroup securityGroup = connectedClient.getSecurityGroup(CCNG_SECURITY_GROUP_NAME_TEST);
         assertNotNull(securityGroup);
         assertThat(securityGroup.getRules()
-            .size(), is(4));
+                                .size(),
+                   is(4));
         assertRulesMatchThoseInJsonFile1(securityGroup);
 
         // Update group
         connectedClient.updateSecurityGroup(CCNG_SECURITY_GROUP_NAME_TEST,
-            new FileInputStream(new File("src/test/resources/security-groups/test-rules-2.json")));
+                                            new FileInputStream(new File("src/test/resources/security-groups/test-rules-2.json")));
 
         // Verify update
         securityGroup = connectedClient.getSecurityGroup(CCNG_SECURITY_GROUP_NAME_TEST);
         assertThat(securityGroup.getRules()
-            .size(), is(1));
+                                .size(),
+                   is(1));
 
         // Clean up after ourselves
         connectedClient.deleteSecurityGroup(CCNG_SECURITY_GROUP_NAME_TEST);
@@ -1540,13 +1552,13 @@ public class CloudControllerClientTest {
         assertTrue("haash-broker failed to start", pass);
 
         CloudServiceBroker newBroker = ImmutableCloudServiceBroker.builder()
-            .metadata(ImmutableCloudMetadata.builder()
-                .build())
-            .name("haash-broker")
-            .username("warreng")
-            .password("snoopdogg")
-            .url("http://haash-broker.cf.deepsouthcloud.com")
-            .build();
+                                                                  .metadata(ImmutableCloudMetadata.builder()
+                                                                                                  .build())
+                                                                  .name("haash-broker")
+                                                                  .username("warreng")
+                                                                  .password("snoopdogg")
+                                                                  .url("http://haash-broker.cf.deepsouthcloud.com")
+                                                                  .build();
         connectedClient.createServiceBroker(newBroker);
 
         CloudServiceBroker broker = connectedClient.getServiceBroker("haash-broker");
@@ -1588,7 +1600,7 @@ public class CloudControllerClientTest {
         String applicationName = createSpringTravelApp("env3");
         CloudApplication application = connectedClient.getApplication(applicationName);
         assertTrue(application.getEnv()
-            .isEmpty());
+                              .isEmpty());
 
         Map<String, String> env1 = new HashMap<String, String>();
         env1.put("foo", "bar");
@@ -1608,7 +1620,7 @@ public class CloudControllerClientTest {
         connectedClient.updateApplicationEnv(applicationName, new HashMap<String, String>());
         application = connectedClient.getApplication(application.getName());
         assertTrue(application.getEnv()
-            .isEmpty());
+                              .isEmpty());
     }
 
     @Test
@@ -1616,7 +1628,7 @@ public class CloudControllerClientTest {
         String applicationName = createSpringTravelApp("env4");
         CloudApplication application = connectedClient.getApplication(applicationName);
         assertTrue(application.getEnv()
-            .isEmpty());
+                              .isEmpty());
 
         Map<String, String> env1 = new HashMap<String, String>();
         env1.put("key", "foo=bar,fu=baz");
@@ -1628,7 +1640,7 @@ public class CloudControllerClientTest {
         connectedClient.updateApplicationEnv(applicationName, new HashMap<String, String>());
         application = connectedClient.getApplication(application.getName());
         assertTrue(application.getEnv()
-            .isEmpty());
+                              .isEmpty());
     }
 
     @Before
@@ -1636,11 +1648,15 @@ public class CloudControllerClientTest {
         URL cloudControllerUrl;
 
         cloudControllerUrl = new URL(CCNG_API_URL);
-        connectedClient = new CloudControllerClientImpl(cloudControllerUrl, new CloudCredentials(CCNG_USER_EMAIL, CCNG_USER_PASS),
-            CCNG_USER_ORG, CCNG_USER_SPACE, httpProxyConfiguration, CCNG_API_SSL);
+        connectedClient = new CloudControllerClientImpl(cloudControllerUrl,
+                                                        new CloudCredentials(CCNG_USER_EMAIL, CCNG_USER_PASS),
+                                                        CCNG_USER_ORG,
+                                                        CCNG_USER_SPACE,
+                                                        httpProxyConfiguration,
+                                                        CCNG_API_SSL);
         connectedClient.login();
         defaultDomainName = connectedClient.getDefaultDomain()
-            .getName();
+                                           .getName();
 
         // Optimization to avoid redoing the work already done is tearDown()
         if (!tearDownComplete) {
@@ -1688,7 +1704,7 @@ public class CloudControllerClientTest {
 
         String url = computeApplicationUrlNoProtocol(applicationName);
         assertEquals(url, application.getUris()
-            .get(0));
+                                     .get(0));
 
         StartingInfo info = connectedClient.startApplication(applicationName);
         application = connectedClient.getApplication(applicationName);
@@ -1716,16 +1732,16 @@ public class CloudControllerClientTest {
 
         for (int index = 0; index < logs.size() - 1; index++) {
             int comparison = logs.get(index)
-                .getTimestamp()
-                .compareTo(logs.get(index + 1)
-                    .getTimestamp());
+                                 .getTimestamp()
+                                 .compareTo(logs.get(index + 1)
+                                                .getTimestamp());
             assertTrue("Logs are not properly sorted", comparison <= 0);
         }
 
         AccumulatingApplicationLogListener testListener = new AccumulatingApplicationLogListener();
         connectedClient.streamLogs(applicationName, testListener);
         String appUri = "http://" + application.getUris()
-            .get(0);
+                                               .get(0);
         RestTemplate appTemplate = new RestTemplate();
         int attempt = 0;
         do {
@@ -1794,16 +1810,16 @@ public class CloudControllerClientTest {
         String applicationName = createSpringTravelApp("7");
 
         connectedClient.updateApplicationServices(applicationName, Collections.emptyMap(),
-            ApplicationServicesUpdateCallback.DEFAULT_APPLICATION_SERVICES_UPDATE_CALLBACK);
+                                                  ApplicationServicesUpdateCallback.DEFAULT_APPLICATION_SERVICES_UPDATE_CALLBACK);
         CloudApplication application = connectedClient.getApplication(applicationName);
         assertNotNull(application.getServices());
         assertTrue(application.getServices()
-            .size() > 0);
+                              .size() > 0);
         assertEquals(serviceName, application.getServices()
-            .get(0));
+                                             .get(0));
 
         connectedClient.updateApplicationServices(applicationName, Collections.emptyMap(),
-            ApplicationServicesUpdateCallback.DEFAULT_APPLICATION_SERVICES_UPDATE_CALLBACK);
+                                                  ApplicationServicesUpdateCallback.DEFAULT_APPLICATION_SERVICES_UPDATE_CALLBACK);
         application = connectedClient.getApplication(applicationName);
         assertNotNull(application.getServices());
     }
@@ -1839,7 +1855,9 @@ public class CloudControllerClientTest {
         String newPassword = "newPass123";
         connectedClient.updatePassword(newPassword);
         CloudControllerClientImpl clientWithChangedPassword = new CloudControllerClientImpl(new URL(CCNG_API_URL),
-            new CloudCredentials(CCNG_USER_EMAIL, newPassword), httpProxyConfiguration);
+                                                                                            new CloudCredentials(CCNG_USER_EMAIL,
+                                                                                                                 newPassword),
+                                                                                            httpProxyConfiguration);
         clientWithChangedPassword.login();
 
         // Revert
@@ -1859,20 +1877,21 @@ public class CloudControllerClientTest {
         assertEquals(CloudApplication.State.STARTED, application.getState());
         assertEquals(uris, application.getUris());
         assertEquals("ruby simple.rb", application.getStaging()
-            .getCommand());
+                                                  .getCommand());
         connectedClient.stopApplication(applicationName);
 
         Staging newStaging = new Staging.StagingBuilder().command("ruby simple.rb test")
-            .buildpacks(Arrays.asList("https://github.com/cloudfoundry/heroku-buildpack-ruby"))
-            .build();
+                                                         .buildpacks(Arrays.asList("https://github.com/cloudfoundry/heroku-buildpack-ruby"))
+                                                         .build();
         connectedClient.updateApplicationStaging(applicationName, newStaging);
         application = connectedClient.getApplication(applicationName);
         assertNotNull(application);
         assertEquals(uris, application.getUris());
         assertEquals("ruby simple.rb test", application.getStaging()
-            .getCommand());
+                                                       .getCommand());
         assertEquals("https://github.com/cloudfoundry/heroku-buildpack-ruby", application.getStaging()
-            .getBuildpacks().get(0));
+                                                                                         .getBuildpacks()
+                                                                                         .get(0));
     }
 
     @Test
@@ -1972,7 +1991,7 @@ public class CloudControllerClientTest {
         uris.add(computeApplicationUrl(applicationName));
         List<String> services = new ArrayList<String>();
         Staging staging = new Staging.StagingBuilder().command("node app.js")
-            .build();
+                                                      .build();
         File file = SampleProjects.standaloneNode();
         connectedClient.createApplication(applicationName, staging, 64, uris, services);
         connectedClient.uploadApplication(applicationName, file.getCanonicalPath());
@@ -2009,7 +2028,8 @@ public class CloudControllerClientTest {
         for (CloudEvent event : events) {
             if (event.getTimestamp() != null) {
                 assertTimeWithinRange("Event time should be very recent", event.getTimestamp()
-                    .getTime(), FIVE_MINUTES);
+                                                                               .getTime(),
+                                      FIVE_MINUTES);
             }
         }
     }
@@ -2021,18 +2041,18 @@ public class CloudControllerClientTest {
         for (CloudEvent event : events) {
             assertNotNull(event.getActee());
             assertNotNull(event.getActee()
-                .getGuid());
+                               .getGuid());
             assertNotNull(event.getActee()
-                .getName());
+                               .getName());
             assertNotNull(event.getActee()
-                .getType());
+                               .getType());
             assertNotNull(event.getActor());
             assertNotNull(event.getActor()
-                .getGuid());
+                               .getGuid());
             assertNotNull(event.getActor()
-                .getName());
+                               .getName());
             assertNotNull(event.getActor()
-                .getType());
+                               .getType());
         }
     }
 
@@ -2048,7 +2068,8 @@ public class CloudControllerClientTest {
         }
 
         assertTrue(value.getClass()
-            .getName(), value instanceof Map);
+                        .getName(),
+                   value instanceof Map);
         Map map = (Map) value;
         assertTrue(map.size() >= expectedKeys.length);
 
@@ -2077,7 +2098,7 @@ public class CloudControllerClientTest {
         // This asserts against the test data defined in the crudSecurityGroups method
         // Rule ordering is preserved so we can depend on it here
         SecurityGroupRule rule = securityGroup.getRules()
-            .get(0);
+                                              .get(0);
         assertThat(rule.getProtocol(), is("tcp"));
         assertThat(rule.getPorts(), is("80, 443"));
         assertThat(rule.getDestination(), is("205.158.11.29"));
@@ -2086,7 +2107,7 @@ public class CloudControllerClientTest {
         assertNull(rule.getCode());
 
         rule = securityGroup.getRules()
-            .get(1);
+                            .get(1);
         assertThat(rule.getProtocol(), is("all"));
         assertNull(rule.getPorts());
         assertThat(rule.getDestination(), is("0.0.0.0-255.255.255.255"));
@@ -2095,7 +2116,7 @@ public class CloudControllerClientTest {
         assertNull(rule.getCode());
 
         rule = securityGroup.getRules()
-            .get(2);
+                            .get(2);
         assertThat(rule.getProtocol(), is("icmp"));
         assertNull(rule.getPorts());
         assertThat(rule.getDestination(), is("0.0.0.0/0"));
@@ -2108,7 +2129,7 @@ public class CloudControllerClientTest {
         // Rule ordering is preserved so we can depend on it here
 
         SecurityGroupRule rule = securityGroup.getRules()
-            .get(0);
+                                              .get(0);
         assertThat(rule.getProtocol(), is("icmp"));
         assertNull(rule.getPorts());
         assertThat(rule.getDestination(), is("0.0.0.0/0"));
@@ -2117,7 +2138,7 @@ public class CloudControllerClientTest {
         assertThat(rule.getCode(), is(1));
 
         rule = securityGroup.getRules()
-            .get(1);
+                            .get(1);
         assertThat(rule.getProtocol(), is("tcp"));
         assertThat(rule.getPorts(), is("2048-3000"));
         assertThat(rule.getDestination(), is("1.0.0.0/0"));
@@ -2126,7 +2147,7 @@ public class CloudControllerClientTest {
         assertNull(rule.getCode());
 
         rule = securityGroup.getRules()
-            .get(2);
+                            .get(2);
         assertThat(rule.getProtocol(), is("udp"));
         assertThat(rule.getPorts(), is("53, 5353"));
         assertThat(rule.getDestination(), is("2.0.0.0/0"));
@@ -2135,7 +2156,7 @@ public class CloudControllerClientTest {
         assertNull(rule.getCode());
 
         rule = securityGroup.getRules()
-            .get(3);
+                            .get(3);
         assertThat(rule.getProtocol(), is("all"));
         assertNull(rule.getPorts());
         assertThat(rule.getDestination(), is("3.0.0.0/0"));
@@ -2147,7 +2168,7 @@ public class CloudControllerClientTest {
     private void assertServiceMatching(CloudService expectedService, List<CloudService> services) {
         for (CloudService service : services) {
             if (service.getName()
-                .equals(expectedService.getName())) {
+                       .equals(expectedService.getName())) {
                 assertServicesEqual(expectedService, service);
                 return;
             }
@@ -2173,7 +2194,8 @@ public class CloudControllerClientTest {
             List<CloudRoute> routes = connectedClient.getRoutes(domain.getName());
             for (CloudRoute route : routes) {
                 connectedClient.deleteRoute(route.getHost(), route.getDomain()
-                    .getName(), route.getPath());
+                                                                  .getName(),
+                                            route.getPath());
             }
             connectedClient.deleteDomain(domain.getName());
         }
@@ -2247,12 +2269,12 @@ public class CloudControllerClientTest {
 
     private CloudService createMySqlService(String serviceName) {
         CloudService service = ImmutableCloudService.builder()
-            .metadata(ImmutableCloudMetadata.builder()
-                .build())
-            .name(serviceName)
-            .label(MYSQL_SERVICE_LABEL)
-            .plan(MYSQL_SERVICE_PLAN)
-            .build();
+                                                    .metadata(ImmutableCloudMetadata.builder()
+                                                                                    .build())
+                                                    .name(serviceName)
+                                                    .label(MYSQL_SERVICE_LABEL)
+                                                    .plan(MYSQL_SERVICE_PLAN)
+                                                    .build();
 
         connectedClient.createService(service);
 
@@ -2263,14 +2285,14 @@ public class CloudControllerClientTest {
         CloudServiceOffering databaseServiceOffering = getCloudServiceOffering(MYSQL_SERVICE_LABEL);
 
         CloudService service = ImmutableCloudService.builder()
-            .metadata(ImmutableCloudMetadata.builder()
-                .build())
-            .name(serviceName)
-            .provider(databaseServiceOffering.getProvider())
-            .label(databaseServiceOffering.getName())
-            .version(databaseServiceOffering.getVersion())
-            .plan(MYSQL_SERVICE_PLAN)
-            .build();
+                                                    .metadata(ImmutableCloudMetadata.builder()
+                                                                                    .build())
+                                                    .name(serviceName)
+                                                    .provider(databaseServiceOffering.getProvider())
+                                                    .label(databaseServiceOffering.getName())
+                                                    .version(databaseServiceOffering.getVersion())
+                                                    .plan(MYSQL_SERVICE_PLAN)
+                                                    .build();
 
         connectedClient.createService(service);
 
@@ -2291,13 +2313,13 @@ public class CloudControllerClientTest {
 
     private void createSpringApplication(String applicationName, String buildpackUrl) {
         createTestApp(applicationName, null, new Staging.StagingBuilder().buildpacks(Arrays.asList(buildpackUrl))
-            .build());
+                                                                         .build());
     }
 
     private void createSpringApplication(String applicationName, String stack, Integer healthCheckTimeout) {
         createTestApp(applicationName, null, new Staging.StagingBuilder().stack(stack)
-            .healthCheckTimeout(healthCheckTimeout)
-            .build());
+                                                                         .healthCheckTimeout(healthCheckTimeout)
+                                                                         .build());
     }
 
     private String createSpringTravelApp(String suffix) {
@@ -2312,7 +2334,7 @@ public class CloudControllerClientTest {
 
     private void createStandaloneRubyTestApp(String applicationName, List<String> uris, List<String> services) throws IOException {
         Staging staging = new Staging.StagingBuilder().command("ruby simple.rb")
-            .build();
+                                                      .build();
         File file = SampleProjects.standaloneRuby();
         connectedClient.createApplication(applicationName, staging, 128, uris, services);
         connectedClient.uploadApplication(applicationName, file.getCanonicalPath());
@@ -2331,10 +2353,10 @@ public class CloudControllerClientTest {
 
     private CloudService createUserProvidedService(String serviceName) {
         CloudService service = ImmutableCloudService.builder()
-            .metadata(ImmutableCloudMetadata.builder()
-                .build())
-            .name(serviceName)
-            .build();
+                                                    .metadata(ImmutableCloudMetadata.builder()
+                                                                                    .build())
+                                                    .name(serviceName)
+                                                    .build();
 
         Map<String, Object> credentials = new HashMap<String, Object>();
         credentials.put("host", "example.com");
@@ -2413,7 +2435,7 @@ public class CloudControllerClientTest {
             fail("should have thrown exception");
         } catch (CloudOperationException e) {
             assertTrue(e.getStatusCode()
-                .equals(HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE));
+                        .equals(HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE));
         }
 
         // Test downloading empty file
@@ -2426,35 +2448,35 @@ public class CloudControllerClientTest {
             fail("should have thrown exception");
         } catch (IllegalArgumentException e) {
             assertTrue(e.getMessage()
-                .contains("start position"));
+                        .contains("start position"));
         }
         try {
             client.getFile(applicationName, 0, fileName, 10, -2);
             fail("should have thrown exception");
         } catch (IllegalArgumentException e) {
             assertTrue(e.getMessage()
-                .contains("end position"));
+                        .contains("end position"));
         }
         try {
             client.getFile(applicationName, 0, fileName, 29, 28);
             fail("should have thrown exception");
         } catch (IllegalArgumentException e) {
             assertTrue(e.getMessage()
-                .contains("end position"));
+                        .contains("end position"));
         }
         try {
             client.getFile(applicationName, 0, fileName, 29, 28);
             fail("should have thrown exception");
         } catch (IllegalArgumentException e) {
             assertTrue(e.getMessage()
-                .contains("29"));
+                        .contains("29"));
         }
         try {
             client.getFileTail(applicationName, 0, fileName, 0);
             fail("should have thrown exception");
         } catch (IllegalArgumentException e) {
             assertTrue(e.getMessage()
-                .contains("length"));
+                        .contains("length"));
         }
     }
 
@@ -2548,7 +2570,7 @@ public class CloudControllerClientTest {
         List<CloudServiceOffering> serviceOfferings = connectedClient.getServiceOfferings();
         for (CloudServiceOffering so : serviceOfferings) {
             if (so.getName()
-                .equals(label)) {
+                  .equals(label)) {
                 return so;
             }
         }
@@ -2558,7 +2580,7 @@ public class CloudControllerClientTest {
     private CloudDomain getDomainNamed(String domainName, List<CloudDomain> domains) {
         for (CloudDomain domain : domains) {
             if (domain.getName()
-                .equals(domainName)) {
+                      .equals(domainName)) {
                 return domain;
             }
         }
@@ -2636,7 +2658,7 @@ public class CloudControllerClientTest {
     private CloudRoute getRouteWithHost(String hostName, List<CloudRoute> routes) {
         for (CloudRoute route : routes) {
             if (route.getHost()
-                .equals(hostName)) {
+                     .equals(hostName)) {
                 return route;
             }
         }
@@ -2663,7 +2685,7 @@ public class CloudControllerClientTest {
 
     private String randomSecurityGroupName() {
         return UUID.randomUUID()
-            .toString();
+                   .toString();
     }
 
     private CloudApplication uploadSpringTravelApp(String applicationName) throws IOException {
@@ -2682,19 +2704,19 @@ public class CloudControllerClientTest {
         // TODO: Make this pattern reusable
         ApplicationStats stats = connectedClient.getApplicationStats(applicationName);
         for (int retries = 0; retries < 10 && stats.getRecords()
-            .size() < instanceCount; retries++) {
+                                                   .size() < instanceCount; retries++) {
             Thread.sleep(1000);
             stats = connectedClient.getApplicationStats(applicationName);
         }
 
         InstanceStats firstInstance = stats.getRecords()
-            .get(0);
+                                           .get(0);
         assertEquals("0", firstInstance.getId());
         for (int retries = 0; retries < 50 && firstInstance.getUsage() == null; retries++) {
             Thread.sleep(1000);
             stats = connectedClient.getApplicationStats(applicationName);
             firstInstance = stats.getRecords()
-                .get(0);
+                                 .get(0);
         }
     }
 

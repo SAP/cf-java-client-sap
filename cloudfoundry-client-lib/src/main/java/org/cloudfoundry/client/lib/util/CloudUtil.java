@@ -22,14 +22,8 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Locale;
-import java.util.Map;
-import java.util.stream.Collectors;
-
-import org.cloudfoundry.client.lib.domain.DockerCredentials;
 
 /**
  * Some helper utilities used by the Cloud Foundry Java client.
@@ -137,7 +131,7 @@ public class CloudUtil {
         final StringBuilder hex = new StringBuilder(2 * bytes.length);
         for (final byte b : bytes) {
             hex.append(HEX_CHARS.charAt((b & 0xF0) >> 4))
-                .append(HEX_CHARS.charAt((b & 0x0F)));
+               .append(HEX_CHARS.charAt((b & 0x0F)));
         }
         return hex.toString();
     }

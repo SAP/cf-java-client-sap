@@ -37,7 +37,7 @@ public class StreamingLogTokenImpl implements StreamingLogToken {
         public void run() {
             if (session.isOpen()) {
                 session.getAsyncRemote()
-                    .sendText("keep alive");
+                       .sendText("keep alive");
             } else {
                 keepAliveTimer.cancel();
             }
