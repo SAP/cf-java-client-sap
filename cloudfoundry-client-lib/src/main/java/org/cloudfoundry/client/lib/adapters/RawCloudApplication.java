@@ -1,5 +1,6 @@
 package org.cloudfoundry.client.lib.adapters;
 
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -19,12 +20,11 @@ import org.cloudfoundry.client.lib.domain.ImmutableStaging;
 import org.cloudfoundry.client.lib.domain.PackageState;
 import org.cloudfoundry.client.lib.domain.Staging;
 import org.cloudfoundry.client.lib.util.JsonUtil;
-import org.cloudfoundry.client.v2.Resource;
-import org.cloudfoundry.client.v2.applications.ApplicationEntity;
 import org.cloudfoundry.client.v2.applications.SummaryApplicationResponse;
 import org.cloudfoundry.client.v2.domains.Domain;
 import org.cloudfoundry.client.v2.routes.Route;
 import org.cloudfoundry.client.v2.serviceinstances.ServiceInstance;
+import org.cloudfoundry.client.v3.applications.Application;
 import org.immutables.value.Value;
 
 @Value.Immutable
@@ -33,7 +33,7 @@ public abstract class RawCloudApplication extends RawCloudEntity<CloudApplicatio
     private static final String HOST_SEPARATOR = ".";
     private static final String PORT_SEPARATOR = ":";
 
-    public abstract Resource<ApplicationEntity> getResource();
+    public abstract Application getResource();
 
     public abstract SummaryApplicationResponse getSummary();
 
@@ -44,6 +44,7 @@ public abstract class RawCloudApplication extends RawCloudEntity<CloudApplicatio
     @Override
     public CloudApplication derive() {
         SummaryApplicationResponse summary = getSummary();
+        Map<String, Object> environmentJsons = summary.getEnvironmentJsons();
         return ImmutableCloudApplication.builder()
                                         .metadata(parseResourceMetadata(getResource()))
                                         .name(summary.getName())
@@ -57,7 +58,7 @@ public abstract class RawCloudApplication extends RawCloudEntity<CloudApplicatio
                                         .packageState(parsePackageState(summary.getPackageState()))
                                         .stagingError(summary.getStagingFailedDescription())
                                         .services(getNames(summary.getServices()))
-                                        .env(parseEnv(summary.getEnvironmentJsons()))
+                                        .env(parseEnv(environmentJsons == null ? Collections.emptyMap() : environmentJsons))
                                         .space(getSpace().derive())
                                         .build();
     }

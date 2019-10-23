@@ -15,11 +15,13 @@ import org.cloudfoundry.client.lib.domain.Derivable;
 import org.cloudfoundry.client.lib.domain.ImmutableCloudMetadata;
 import org.cloudfoundry.client.lib.util.CloudEntityResourceMapper;
 import org.cloudfoundry.client.v2.Metadata;
+import org.cloudfoundry.client.v3.Link;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public abstract class RawCloudEntity<T> implements Derivable<T> {
 
+    private static final String SELF_LINK = "self";
     private static final Logger LOGGER = LoggerFactory.getLogger(CloudEntityResourceMapper.class);
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssZ");
     // TODO This moment is randomly chosen in the near past to detect if controller returns wrong dates for creation/update time of app or
@@ -48,7 +50,14 @@ public abstract class RawCloudEntity<T> implements Derivable<T> {
                                      .guid(parseNullableGuid(resource.getId()))
                                      .createdAt(parseNullableDate(resource.getCreatedAt()))
                                      .updatedAt(parseNullableDate(resource.getUpdatedAt()))
+                                     .url(getSelfUrl(resource))
                                      .build();
+    }
+
+    private static String getSelfUrl(org.cloudfoundry.client.v3.Resource resource) {
+        Link selfLink = resource.getLinks()
+                                .get(SELF_LINK);
+        return selfLink == null ? null : selfLink.getHref();
     }
 
     protected static UUID parseNullableGuid(String guid) {

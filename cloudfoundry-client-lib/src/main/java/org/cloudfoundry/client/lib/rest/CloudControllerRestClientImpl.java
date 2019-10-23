@@ -34,7 +34,6 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.IntFunction;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -112,25 +111,19 @@ import org.cloudfoundry.client.lib.domain.Upload;
 import org.cloudfoundry.client.lib.domain.UploadToken;
 import org.cloudfoundry.client.lib.oauth2.OAuthClient;
 import org.cloudfoundry.client.v2.Resource;
-import org.cloudfoundry.client.v2.applications.ApplicationEntity;
 import org.cloudfoundry.client.v2.applications.ApplicationInstancesRequest;
 import org.cloudfoundry.client.v2.applications.ApplicationInstancesResponse;
 import org.cloudfoundry.client.v2.applications.AssociateApplicationRouteRequest;
-import org.cloudfoundry.client.v2.applications.CreateApplicationRequest;
-import org.cloudfoundry.client.v2.applications.CreateApplicationResponse;
-import org.cloudfoundry.client.v2.applications.DeleteApplicationRequest;
-import org.cloudfoundry.client.v2.applications.GetApplicationRequest;
 import org.cloudfoundry.client.v2.applications.ListApplicationServiceBindingsRequest;
-import org.cloudfoundry.client.v2.applications.ListApplicationsRequest;
 import org.cloudfoundry.client.v2.applications.RemoveApplicationRouteRequest;
 import org.cloudfoundry.client.v2.applications.SummaryApplicationRequest;
 import org.cloudfoundry.client.v2.applications.SummaryApplicationResponse;
-import org.cloudfoundry.client.v2.applications.UpdateApplicationRequest;
 import org.cloudfoundry.client.v2.domains.CreateDomainRequest;
 import org.cloudfoundry.client.v2.domains.DomainEntity;
 import org.cloudfoundry.client.v2.domains.ListDomainsRequest;
 import org.cloudfoundry.client.v2.events.EventEntity;
 import org.cloudfoundry.client.v2.events.ListEventsRequest;
+import org.cloudfoundry.client.v2.featureflags.SetFeatureFlagRequest;
 import org.cloudfoundry.client.v2.info.GetInfoRequest;
 import org.cloudfoundry.client.v2.info.GetInfoResponse;
 import org.cloudfoundry.client.v2.organizations.GetOrganizationRequest;
@@ -177,7 +170,6 @@ import org.cloudfoundry.client.v2.services.ServiceEntity;
 import org.cloudfoundry.client.v2.shareddomains.ListSharedDomainsRequest;
 import org.cloudfoundry.client.v2.shareddomains.SharedDomainEntity;
 import org.cloudfoundry.client.v2.spaces.GetSpaceRequest;
-import org.cloudfoundry.client.v2.spaces.ListSpaceApplicationsRequest;
 import org.cloudfoundry.client.v2.spaces.ListSpaceAuditorsRequest;
 import org.cloudfoundry.client.v2.spaces.ListSpaceDevelopersRequest;
 import org.cloudfoundry.client.v2.spaces.ListSpaceManagersRequest;
@@ -196,8 +188,21 @@ import org.cloudfoundry.client.v3.Lifecycle;
 import org.cloudfoundry.client.v3.LifecycleType;
 import org.cloudfoundry.client.v3.Relationship;
 import org.cloudfoundry.client.v3.ToOneRelationship;
+import org.cloudfoundry.client.v3.applications.Application;
+import org.cloudfoundry.client.v3.applications.ApplicationRelationships;
+import org.cloudfoundry.client.v3.applications.CreateApplicationRequest;
+import org.cloudfoundry.client.v3.applications.CreateApplicationResponse;
+import org.cloudfoundry.client.v3.applications.DeleteApplicationRequest;
+import org.cloudfoundry.client.v3.applications.GetApplicationProcessRequest;
+import org.cloudfoundry.client.v3.applications.GetApplicationProcessResponse;
+import org.cloudfoundry.client.v3.applications.GetApplicationRequest;
 import org.cloudfoundry.client.v3.applications.ListApplicationBuildsRequest;
+import org.cloudfoundry.client.v3.applications.ListApplicationsRequest;
 import org.cloudfoundry.client.v3.applications.SetApplicationCurrentDropletRequest;
+import org.cloudfoundry.client.v3.applications.StartApplicationRequest;
+import org.cloudfoundry.client.v3.applications.StopApplicationRequest;
+import org.cloudfoundry.client.v3.applications.UpdateApplicationEnvironmentVariablesRequest;
+import org.cloudfoundry.client.v3.applications.UpdateApplicationRequest;
 import org.cloudfoundry.client.v3.builds.Build;
 import org.cloudfoundry.client.v3.builds.CreateBuildRequest;
 import org.cloudfoundry.client.v3.builds.GetBuildRequest;
@@ -207,6 +212,11 @@ import org.cloudfoundry.client.v3.packages.GetPackageRequest;
 import org.cloudfoundry.client.v3.packages.PackageRelationships;
 import org.cloudfoundry.client.v3.packages.PackageType;
 import org.cloudfoundry.client.v3.packages.UploadPackageRequest;
+import org.cloudfoundry.client.v3.processes.Data;
+import org.cloudfoundry.client.v3.processes.HealthCheck;
+import org.cloudfoundry.client.v3.processes.HealthCheckType;
+import org.cloudfoundry.client.v3.processes.ScaleProcessRequest;
+import org.cloudfoundry.client.v3.processes.UpdateProcessRequest;
 import org.cloudfoundry.client.v3.tasks.CancelTaskRequest;
 import org.cloudfoundry.client.v3.tasks.CreateTaskRequest;
 import org.cloudfoundry.client.v3.tasks.GetTaskRequest;
@@ -374,44 +384,93 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     @Override
     public void createApplication(String name, Staging staging, Integer diskQuota, Integer memory, List<String> uris,
                                   List<String> serviceNames, DockerInfo dockerInfo) {
-        CreateApplicationRequest.Builder requestBuilder = CreateApplicationRequest.builder()
-                                                                                  .spaceId(getTargetSpaceGuid().toString())
-                                                                                  .name(name)
-                                                                                  .memory(memory)
-                                                                                  .diskQuota(diskQuota)
-                                                                                  .instances(1)
-                                                                                  .state(CloudApplication.State.STOPPED.toString());
+        CreateApplicationRequest.Builder createApplicationRequestBuilder = CreateApplicationRequest.builder()
+                                                                                                   .relationships(ApplicationRelationships.builder()
+                                                                                                                                          .space(ToOneRelationship.builder()
+                                                                                                                                                                  .data(Relationship.builder()
+                                                                                                                                                                                    .id(getTargetSpaceGuid().toString())
+                                                                                                                                                                                    .build())
+                                                                                                                                                                  .build())
+                                                                                                                                          .build())
+                                                                                                   .name(name);
         if (dockerInfo != null) {
-            requestBuilder.dockerImage(dockerInfo.getImage());
             DockerCredentials dockerCredentials = dockerInfo.getCredentials();
             if (dockerCredentials != null) {
-                requestBuilder.dockerCredentials(org.cloudfoundry.client.v2.applications.DockerCredentials.builder()
-                                                                                                          .username(dockerCredentials.getUsername())
-                                                                                                          .password(dockerCredentials.getPassword())
-                                                                                                          .build());
+                // createApplicationRequestBuilder.lifecycle(Lifecycle.builder()
+                // .type(LifecycleType.DOCKER)
+                // .data(DockerData.builder()
+                // .build())
+                // .build());
+                // TODO: Think what to do with the docker credentials
+                // .username(dockerCredentials.getUsername())
+                // .password(dockerCredentials.getPassword())
             }
         }
         if (staging != null) {
-            requestBuilder.buildpack(staging.getBuildpack())
-                          .command(staging.getCommand())
-                          .healthCheckHttpEndpoint(staging.getHealthCheckHttpEndpoint())
-                          .healthCheckTimeout(staging.getHealthCheckTimeout())
-                          .healthCheckType(staging.getHealthCheckType())
-                          .enableSsh(staging.isSshEnabled());
-            String stackName = staging.getStack();
-            if (stackName != null) {
-                CloudStack stack = getStack(stackName);
-                UUID stackGuid = stack.getMetadata()
-                                      .getGuid();
-                requestBuilder.stackId(stackGuid.toString());
+            createApplicationRequestBuilder.lifecycle(Lifecycle.builder()
+                                                               .type(LifecycleType.BUILDPACK)
+                                                               .data(BuildpackData.builder()
+                                                                     .stack(staging.getStack())
+                                                                                  .build())
+                                                               .build());
+        }
+
+        CreateApplicationResponse response = v3Client.applicationsV3()
+                                                     .create(createApplicationRequestBuilder.build())
+                                                     .block();
+
+        UUID newAppGuid = UUID.fromString(response.getId());
+        // Application process of type web
+        GetApplicationProcessResponse applicationProcessResponse = v3Client.applicationsV3()
+                                                                           .getProcess(GetApplicationProcessRequest.builder()
+                                                                                                                   .applicationId(newAppGuid.toString())
+                                                                                                                   .type("web")
+                                                                                                                   .build())
+                                                                           .block();
+
+        // Update the 'web' process type with health-check data
+        if (staging != null) {
+            if (staging.isSshEnabled() != null) {
+                v3Client.featureFlags()
+                        .set(SetFeatureFlagRequest.builder()
+                                                  .name("ssh")
+                                                  .enabled(staging.isSshEnabled())
+                                                  .build())
+                        .block();
+            }
+            if (staging.getHealthCheckType() != null) {
+                v3Client.processes()
+                        .update(UpdateProcessRequest.builder()
+                                                    .processId(applicationProcessResponse.getId())
+                                                    .command(staging.getCommand())
+                                                    .healthCheck(HealthCheck.builder()
+                                                                            .type(getHealthCheckType(staging))
+                                                                            .data(Data.builder()
+                                                                                      .endpoint(staging.getHealthCheckHttpEndpoint())
+                                                                                      .timeout(staging.getHealthCheckTimeout())
+                                                                                      .build())
+                                                                            .build())
+                                                    .build())
+                        .block();
             }
         }
 
-        CreateApplicationResponse response = v3Client.applicationsV2()
-                                                     .create(requestBuilder.build())
-                                                     .block();
-        UUID newAppGuid = UUID.fromString(response.getMetadata()
-                                                  .getId());
+        // Scale application
+        v3Client.processes()
+                .scale(ScaleProcessRequest.builder()
+                                          .processId(applicationProcessResponse.getId())
+                                          .memoryInMb(memory)
+                                          .diskInMb(diskQuota)
+                                          .build())
+                .block();
+        // v3Client.applicationsV3()
+        // .scale(ScaleApplicationRequest.builder()
+        // .applicationId(newAppGuid.toString())
+        // .memoryInMb(memory)
+        // .diskInMb(diskQuota)
+        // .type("web")
+        // .build())
+        // .block();
 
         if (shouldUpdateWithV3Buildpacks(staging)) {
             updateBuildpacks(newAppGuid, staging.getBuildpacks());
@@ -424,6 +483,10 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         if (!CollectionUtils.isEmpty(uris)) {
             addUris(uris, newAppGuid);
         }
+    }
+
+    private HealthCheckType getHealthCheckType(Staging staging) {
+        return HealthCheckType.from(staging.getHealthCheckType());
     }
 
     private boolean shouldUpdateWithV3Buildpacks(Staging staging) {
@@ -549,7 +612,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         for (UUID serviceBindingGuid : serviceBindingGuids) {
             doUnbindService(serviceBindingGuid);
         }
-        v3Client.applicationsV2()
+        v3Client.applicationsV3()
                 .delete(DeleteApplicationRequest.builder()
                                                 .applicationId(applicationGuid.toString())
                                                 .build())
@@ -1090,7 +1153,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     @Override
     public void rename(String applicationName, String newName) {
         UUID applicationGuid = getRequiredApplicationGuid(applicationName);
-        v3Client.applicationsV2()
+        v3Client.applicationsV3()
                 .update(UpdateApplicationRequest.builder()
                                                 .applicationId(applicationGuid.toString())
                                                 .name(newName)
@@ -1122,11 +1185,11 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         }
         UUID applicationGuid = application.getMetadata()
                                           .getGuid();
-        v3Client.applicationsV2()
-                .update(UpdateApplicationRequest.builder()
-                                                .applicationId(applicationGuid.toString())
-                                                .state(CloudApplication.State.STARTED.toString())
-                                                .build())
+
+        v3Client.applicationsV3()
+                .start(StartApplicationRequest.builder()
+                                              .applicationId(applicationGuid.toString())
+                                              .build())
                 .block();
         return null;
     }
@@ -1139,11 +1202,10 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         }
         UUID applicationGuid = application.getMetadata()
                                           .getGuid();
-        v3Client.applicationsV2()
-                .update(UpdateApplicationRequest.builder()
-                                                .applicationId(applicationGuid.toString())
-                                                .state(CloudApplication.State.STOPPED.toString())
-                                                .build())
+        v3Client.applicationsV3()
+                .stop(StopApplicationRequest.builder()
+                                            .applicationId(applicationGuid.toString())
+                                            .build())
                 .block();
     }
 
@@ -1190,45 +1252,82 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     @Override
     public void updateApplicationDiskQuota(String applicationName, int diskQuota) {
         UUID applicationGuid = getRequiredApplicationGuid(applicationName);
-        v3Client.applicationsV2()
-                .update(UpdateApplicationRequest.builder()
-                                                .applicationId(applicationGuid.toString())
-                                                .diskQuota(diskQuota)
-                                                .build())
+        GetApplicationProcessResponse applicationProcessResponse = getApplicationProcess(applicationGuid);
+        v3Client.processes()
+                .scale(ScaleProcessRequest.builder()
+                                          .processId(applicationProcessResponse.getId())
+                                          .diskInMb(diskQuota)
+                                          .build())
                 .block();
+        // Change to the below code after fixing the issue {issue}:
+        // v3Client.applicationsV3()
+        // .scale(ScaleApplicationRequest.builder()
+        // .applicationId(applicationGuid.toString())
+        // .diskInMb(diskQuota)
+        // .type("web")
+        // .build())
+        // .block();
     }
 
     @Override
     public void updateApplicationEnv(String applicationName, Map<String, String> env) {
         UUID applicationGuid = getRequiredApplicationGuid(applicationName);
-        v3Client.applicationsV2()
-                .update(UpdateApplicationRequest.builder()
-                                                .applicationId(applicationGuid.toString())
-                                                .environmentJsons(env)
-                                                .build())
+
+        v3Client.applicationsV3()
+                .updateEnvironmentVariables(UpdateApplicationEnvironmentVariablesRequest.builder()
+                                                                                        .applicationId(applicationGuid.toString())
+                                                                                        .putAllVars(env)
+                                                                                        .build())
                 .block();
     }
 
     @Override
     public void updateApplicationInstances(String applicationName, int instances) {
         UUID applicationGuid = getRequiredApplicationGuid(applicationName);
-        v3Client.applicationsV2()
-                .update(UpdateApplicationRequest.builder()
-                                                .applicationId(applicationGuid.toString())
-                                                .instances(instances)
-                                                .build())
+        GetApplicationProcessResponse applicationProcessResponse = getApplicationProcess(applicationGuid);
+        v3Client.processes()
+                .scale(ScaleProcessRequest.builder()
+                                          .processId(applicationProcessResponse.getId())
+                                          .instances(instances)
+                                          .build())
                 .block();
+        // Change to the below code after fixing the issue {issue}:
+        // v3Client.applicationsV3()
+        // .scale(ScaleApplicationRequest.builder()
+        // .instances(instances)
+        // .applicationId(applicationGuid.toString())
+        // .type("web")
+        // .build())
+        // .block();
     }
 
     @Override
     public void updateApplicationMemory(String applicationName, int memory) {
         UUID applicationGuid = getRequiredApplicationGuid(applicationName);
-        v3Client.applicationsV2()
-                .update(UpdateApplicationRequest.builder()
-                                                .applicationId(applicationGuid.toString())
-                                                .memory(memory)
-                                                .build())
+        GetApplicationProcessResponse applicationProcessResponse = getApplicationProcess(applicationGuid);
+        v3Client.processes()
+                .scale(ScaleProcessRequest.builder()
+                                          .processId(applicationProcessResponse.getId())
+                                          .memoryInMb(memory)
+                                          .build())
                 .block();
+        // Change to the below code after fixing the issue {issue}:
+        // v3Client.applicationsV3()
+        // .scale(ScaleApplicationRequest.builder()
+        // .memoryInMb(memory)
+        // .applicationId(applicationGuid.toString())
+        // .type("web")
+        // .build())
+        // .block();
+    }
+
+    private GetApplicationProcessResponse getApplicationProcess(UUID applicationGuid) {
+        return v3Client.applicationsV3()
+                       .getProcess(GetApplicationProcessRequest.builder()
+                                                               .applicationId(applicationGuid.toString())
+                                                               .type("web")
+                                                               .build())
+                       .block();
     }
 
     @Override
@@ -1241,26 +1340,53 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
+    // TODO: extract the common things from createApplication and this into separate method.
     public void updateApplicationStaging(String applicationName, Staging staging) {
         UUID applicationGuid = getRequiredApplicationGuid(applicationName);
         UpdateApplicationRequest.Builder requestBuilder = UpdateApplicationRequest.builder();
         requestBuilder.applicationId(applicationGuid.toString());
         if (staging != null) {
-            requestBuilder.buildpack(staging.getBuildpack())
-                          .command(staging.getCommand())
-                          .healthCheckHttpEndpoint(staging.getHealthCheckHttpEndpoint())
-                          .healthCheckTimeout(staging.getHealthCheckTimeout())
-                          .healthCheckType(staging.getHealthCheckType())
-                          .enableSsh(staging.isSshEnabled());
-            String stackName = staging.getStack();
-            if (stackName != null) {
-                UUID stackGuid = getStack(stackName).getMetadata()
-                                                    .getGuid();
-                requestBuilder.stackId(stackGuid.toString());
+            if (staging.getBuildpack() != null) {
+                BuildpackData.Builder buildpackDataBuilder = BuildpackData.builder();
+                buildpackDataBuilder.buildpack(staging.getBuildpack());
+                String stackName = staging.getStack();
+                if (stackName != null) {
+                    buildpackDataBuilder.stack(stackName);
+                }
+                requestBuilder.lifecycle(Lifecycle.builder()
+                                         .type(LifecycleType.BUILDPACK)
+                                         .data(buildpackDataBuilder.build())
+                                         .build());
             }
         }
-        v3Client.applicationsV2()
+        GetApplicationProcessResponse applicationProcess = v3Client.applicationsV3()
+                                                                   .getProcess(GetApplicationProcessRequest.builder()
+                                                                                                           .applicationId(applicationGuid.toString())
+                                                                                                           .type("web")
+                                                                                                           .build())
+                                                                   .block();
+        v3Client.applicationsV3()
                 .update(requestBuilder.build())
+                .block();
+        v3Client.processes()
+                .update(UpdateProcessRequest.builder()
+                                            .processId(applicationProcess.getId())
+                                            .command(staging.getCommand())
+                                            .healthCheck(HealthCheck.builder()
+                                                                    .type(HealthCheckType.from(staging.getHealthCheckType()))
+                                                                    .data(Data.builder()
+                                                                              .endpoint(staging.getHealthCheckHttpEndpoint())
+                                                                              .timeout(staging.getHealthCheckTimeout())
+                                                                              .build())
+                                                                    .build())
+                                            .command(staging.getCommand())
+                                            .build())
+                .block();
+        v3Client.featureFlags()
+                .set(SetFeatureFlagRequest.builder()
+                                          .name("ssh")
+                                          .enabled(staging.isSshEnabled())
+                                          .build())
                 .block();
 
         if (shouldUpdateWithV3Buildpacks(staging)) {
@@ -1453,35 +1579,35 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return fetchWithAuxiliaryContent(() -> getApplicationResource(guid), this::zipWithAuxiliaryApplicationContent);
     }
 
-    private Flux<? extends Resource<ApplicationEntity>> getApplicationResources() {
-        IntFunction<ListSpaceApplicationsRequest> pageRequestSupplier = page -> ListSpaceApplicationsRequest.builder()
-                                                                                                            .spaceId(getTargetSpaceGuid().toString())
-                                                                                                            .page(page)
-                                                                                                            .build();
-        return PaginationUtils.requestClientV2Resources(page -> v3Client.spaces()
-                                                                        .listApplications(pageRequestSupplier.apply(page)));
+    private Flux<? extends Application> getApplicationResources() {
+        IntFunction<ListApplicationsRequest> pageRequestSupplier = page -> ListApplicationsRequest.builder()
+                                                                                                  .spaceId(getTargetSpaceGuid().toString())
+                                                                                                  .page(page)
+                                                                                                  .build();
+        return PaginationUtils.requestClientV3Resources(page -> v3Client.applicationsV3()
+                                                                        .list(pageRequestSupplier.apply(page)));
     }
 
-    private Mono<? extends Resource<ApplicationEntity>> getApplicationResource(UUID guid) {
+    private Mono<? extends Application> getApplicationResource(UUID guid) {
         GetApplicationRequest request = GetApplicationRequest.builder()
                                                              .applicationId(guid.toString())
                                                              .build();
-        return v3Client.applicationsV2()
+        return v3Client.applicationsV3()
                        .get(request);
     }
 
-    private Mono<? extends Resource<ApplicationEntity>> getApplicationResourceByName(String name) {
+    private Mono<? extends Application> getApplicationResourceByName(String name) {
         IntFunction<ListApplicationsRequest> pageRequestSupplier = page -> ListApplicationsRequest.builder()
                                                                                                   .spaceId(getTargetSpaceGuid().toString())
                                                                                                   .name(name)
                                                                                                   .page(page)
                                                                                                   .build();
-        return PaginationUtils.requestClientV2Resources(page -> v3Client.applicationsV2()
+        return PaginationUtils.requestClientV3Resources(page -> v3Client.applicationsV3()
                                                                         .list(pageRequestSupplier.apply(page)))
                               .singleOrEmpty();
     }
 
-    private Mono<Derivable<CloudApplication>> zipWithAuxiliaryApplicationContent(Resource<ApplicationEntity> applicationResource) {
+    private Mono<Derivable<CloudApplication>> zipWithAuxiliaryApplicationContent(Application applicationResource) {
         UUID applicationGuid = getGuid(applicationResource);
         return getApplicationSummary(applicationGuid).zipWhen(this::getApplicationStackResource)
                                                      .map(tuple -> ImmutableRawCloudApplication.builder()
@@ -1529,6 +1655,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                                                                     .name(name)
                                                                                                                     .page(page)
                                                                                                                     .build();
+
         return getServiceInstanceResources(pageRequestSupplier).singleOrEmpty();
     }
 
@@ -1598,8 +1725,10 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                                                                                                               .userProvidedServiceInstanceId(serviceInstanceGuid.toString())
                                                                                                                                                               .page(page)
                                                                                                                                                               .build();
+
         return PaginationUtils.requestClientV2Resources(page -> v3Client.userProvidedServiceInstances()
                                                                         .listServiceBindings(pageRequestSupplier.apply(page)));
+
     }
 
     private Flux<? extends Resource<ServiceBindingEntity>> getServiceBindingResourcesByServiceInstanceGuid(UUID serviceInstanceGuid) {
@@ -2576,6 +2705,13 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return Optional.ofNullable(resource)
                        .map(org.cloudfoundry.client.v2.Resource::getMetadata)
                        .map(org.cloudfoundry.client.v2.Metadata::getId)
+                       .map(UUID::fromString)
+                       .orElse(null);
+    }
+
+    private UUID getGuid(org.cloudfoundry.client.v3.Resource resource) {
+        return Optional.ofNullable(resource)
+                       .map(org.cloudfoundry.client.v3.Resource::getId)
                        .map(UUID::fromString)
                        .orElse(null);
     }
