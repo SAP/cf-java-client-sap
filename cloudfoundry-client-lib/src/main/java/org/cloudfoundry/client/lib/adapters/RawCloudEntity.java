@@ -42,6 +42,7 @@ public abstract class RawCloudEntity<T> implements Derivable<T> {
                                      .url(metadata.getUrl())
                                      .build();
     }
+    
 
     protected static CloudMetadata parseResourceMetadata(org.cloudfoundry.client.v3.Resource resource) {
         return ImmutableCloudMetadata.builder()

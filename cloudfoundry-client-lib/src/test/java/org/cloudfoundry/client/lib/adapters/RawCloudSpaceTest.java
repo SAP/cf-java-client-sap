@@ -2,9 +2,7 @@ package org.cloudfoundry.client.lib.adapters;
 
 import org.cloudfoundry.client.lib.domain.CloudSpace;
 import org.cloudfoundry.client.lib.domain.ImmutableCloudSpace;
-import org.cloudfoundry.client.v2.Resource;
-import org.cloudfoundry.client.v2.spaces.SpaceEntity;
-import org.cloudfoundry.client.v2.spaces.SpaceResource;
+import org.cloudfoundry.client.v3.spaces.SpaceResource;
 import org.junit.jupiter.api.Test;
 
 public class RawCloudSpaceTest {
@@ -27,17 +25,14 @@ public class RawCloudSpaceTest {
         return ImmutableRawCloudSpace.of(buildTestResource());
     }
 
-    private static Resource<SpaceEntity> buildTestResource() {
+    private static SpaceResource buildTestResource() {
         return SpaceResource.builder()
-                            .metadata(RawCloudEntityTest.METADATA)
-                            .entity(buildTestEntity())
+                            .id(RawCloudEntityTest.METADATA.getId())
+                            .createdAt(RawCloudEntityTest.METADATA.getCreatedAt())
+                            .updatedAt(RawCloudEntityTest.METADATA.getCreatedAt())
+                            .name(NAME)
                             .build();
     }
 
-    private static SpaceEntity buildTestEntity() {
-        return SpaceEntity.builder()
-                          .name(NAME)
-                          .build();
-    }
 
 }

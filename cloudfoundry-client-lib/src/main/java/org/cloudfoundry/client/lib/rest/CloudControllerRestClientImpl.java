@@ -133,7 +133,6 @@ import org.cloudfoundry.client.v2.info.GetInfoRequest;
 import org.cloudfoundry.client.v2.info.GetInfoResponse;
 import org.cloudfoundry.client.v2.organizations.GetOrganizationRequest;
 import org.cloudfoundry.client.v2.organizations.ListOrganizationPrivateDomainsRequest;
-import org.cloudfoundry.client.v2.organizations.ListOrganizationSpacesRequest;
 import org.cloudfoundry.client.v2.organizations.ListOrganizationsRequest;
 import org.cloudfoundry.client.v2.organizations.OrganizationEntity;
 import org.cloudfoundry.client.v2.privatedomains.DeletePrivateDomainRequest;
@@ -174,15 +173,12 @@ import org.cloudfoundry.client.v2.services.ListServicesRequest;
 import org.cloudfoundry.client.v2.services.ServiceEntity;
 import org.cloudfoundry.client.v2.shareddomains.ListSharedDomainsRequest;
 import org.cloudfoundry.client.v2.shareddomains.SharedDomainEntity;
-import org.cloudfoundry.client.v2.spaces.GetSpaceRequest;
 import org.cloudfoundry.client.v2.spaces.ListSpaceApplicationsRequest;
 import org.cloudfoundry.client.v2.spaces.ListSpaceAuditorsRequest;
 import org.cloudfoundry.client.v2.spaces.ListSpaceDevelopersRequest;
 import org.cloudfoundry.client.v2.spaces.ListSpaceManagersRequest;
 import org.cloudfoundry.client.v2.spaces.ListSpaceRoutesRequest;
 import org.cloudfoundry.client.v2.spaces.ListSpaceServiceInstancesRequest;
-import org.cloudfoundry.client.v2.spaces.ListSpacesRequest;
-import org.cloudfoundry.client.v2.spaces.SpaceEntity;
 import org.cloudfoundry.client.v2.stacks.GetStackRequest;
 import org.cloudfoundry.client.v2.stacks.ListStacksRequest;
 import org.cloudfoundry.client.v2.stacks.StackEntity;
@@ -215,6 +211,10 @@ import org.cloudfoundry.client.v3.processes.HealthCheck;
 import org.cloudfoundry.client.v3.processes.HealthCheckType;
 import org.cloudfoundry.client.v3.processes.ScaleProcessRequest;
 import org.cloudfoundry.client.v3.processes.UpdateProcessRequest;
+import org.cloudfoundry.client.v3.spaces.GetSpaceRequest;
+import org.cloudfoundry.client.v3.spaces.GetSpaceResponse;
+import org.cloudfoundry.client.v3.spaces.ListSpacesRequest;
+import org.cloudfoundry.client.v3.spaces.SpaceResource;
 import org.cloudfoundry.client.v3.tasks.CancelTaskRequest;
 import org.cloudfoundry.client.v3.tasks.CreateTaskRequest;
 import org.cloudfoundry.client.v3.tasks.GetTaskRequest;
@@ -1077,8 +1077,9 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
+    // TODO: ask Sunny
     public List<CloudSpace> getSpaces() {
-        return fetchListWithAuxiliaryContent(this::getSpaceResources, this::zipWithAuxiliarySpaceContent);
+        return fetchListWithAuxiliaryContent(this::getSpaceResources, this::zipWithAuxiliarySpaceResourceContent);
     }
 
     @Override
@@ -2168,7 +2169,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     private List<CloudSpace> findSpacesByOrganizationGuid(UUID organizationGuid) {
         return fetchListWithAuxiliaryContent(() -> getSpaceResourcesByOrganizationGuid(organizationGuid),
-                                             this::zipWithAuxiliarySpaceContent);
+                                             this::zipWithAuxiliarySpaceResourceContent);
     }
 
     private CloudSpace findSpaceByOrganizationGuidAndName(UUID organizationGuid, String spaceName, boolean required) {
@@ -2183,25 +2184,26 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     private CloudSpace findSpaceByOrganizationGuidAndName(UUID organizationGuid, String spaceName) {
         return fetchWithAuxiliaryContent(() -> getSpaceResourceByOrganizationGuidAndName(organizationGuid, spaceName),
-                                         this::zipWithAuxiliarySpaceContent);
+                                         this::zipWithAuxiliarySpaceResourceContent);
     }
 
-    private Flux<? extends Resource<SpaceEntity>> getSpaceResources() {
+    private Flux<? extends SpaceResource> getSpaceResources() {
         IntFunction<ListSpacesRequest> pageRequestSupplier = page -> ListSpacesRequest.builder()
                                                                                       .page(page)
                                                                                       .build();
         return getSpaceResources(pageRequestSupplier);
     }
 
-    private Mono<? extends Resource<SpaceEntity>> getSpaceResource(UUID guid) {
+    private Mono<GetSpaceResponse> getSpaceResource(UUID guid) {
         GetSpaceRequest request = GetSpaceRequest.builder()
                                                  .spaceId(guid.toString())
                                                  .build();
-        return v3Client.spaces()
+
+        return v3Client.spacesV3()
                        .get(request);
     }
 
-    private Flux<? extends Resource<SpaceEntity>> getSpaceResourcesByOrganizationGuid(UUID organizationGuid) {
+    private Flux<? extends SpaceResource> getSpaceResourcesByOrganizationGuid(UUID organizationGuid) {
         IntFunction<ListSpacesRequest> pageRequestSupplier = page -> ListSpacesRequest.builder()
                                                                                       .organizationId(organizationGuid.toString())
                                                                                       .page(page)
@@ -2209,27 +2211,40 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return getSpaceResources(pageRequestSupplier);
     }
 
-    private Mono<? extends Resource<SpaceEntity>> getSpaceResourceByOrganizationGuidAndName(UUID organizationGuid, String name) {
-        IntFunction<ListOrganizationSpacesRequest> pageRequestSupplier = page -> ListOrganizationSpacesRequest.builder()
-                                                                                                              .organizationId(organizationGuid.toString())
-                                                                                                              .name(name)
-                                                                                                              .page(page)
-                                                                                                              .build();
-        return PaginationUtils.requestClientV2Resources(page -> v3Client.organizations()
-                                                                        .listSpaces(pageRequestSupplier.apply(page)))
+    private Mono<? extends SpaceResource> getSpaceResourceByOrganizationGuidAndName(UUID organizationGuid, String name) {
+        IntFunction<ListSpacesRequest> pageRequestSupplier = page -> ListSpacesRequest.builder()
+                                                                                      .organizationId(organizationGuid.toString())
+                                                                                      .name(name)
+                                                                                      .page(page)
+                                                                                      .build();
+        return PaginationUtils.requestClientV3Resources(page -> v3Client.spacesV3()
+                                                                        .list(pageRequestSupplier.apply(page)))
                               .singleOrEmpty();
     }
 
-    private Flux<? extends Resource<SpaceEntity>> getSpaceResources(IntFunction<ListSpacesRequest> requestForPage) {
-        return PaginationUtils.requestClientV2Resources(page -> v3Client.spaces()
+    private Flux<? extends SpaceResource> getSpaceResources(IntFunction<ListSpacesRequest> requestForPage) {
+        return PaginationUtils.requestClientV3Resources(page -> v3Client.spacesV3()
                                                                         .list(requestForPage.apply(page)));
     }
 
-    private Mono<Derivable<CloudSpace>> zipWithAuxiliarySpaceContent(Resource<SpaceEntity> resource) {
-        UUID organizationGuid = UUID.fromString(resource.getEntity()
-                                                        .getOrganizationId());
+    private Mono<Derivable<CloudSpace>> zipWithAuxiliarySpaceContent(GetSpaceResponse spaceResponse) {
+        UUID organizationGuid = UUID.fromString(spaceResponse.getRelationships()
+                                                             .getOrganization()
+                                                             .getData()
+                                                             .getId());
         return getOrganizationMono(organizationGuid).map(organization -> ImmutableRawCloudSpace.builder()
-                                                                                               .resource(resource)
+                                                                                               .resource(spaceResponse)
+                                                                                               .organization(organization)
+                                                                                               .build());
+    }
+
+    private Mono<Derivable<CloudSpace>> zipWithAuxiliarySpaceResourceContent(SpaceResource spaceResource) {
+        UUID organizationGuid = UUID.fromString(spaceResource.getRelationships()
+                                                             .getOrganization()
+                                                             .getData()
+                                                             .getId());
+        return getOrganizationMono(organizationGuid).map(organization -> ImmutableRawCloudSpace.builder()
+                                                                                               .resource(spaceResource)
                                                                                                .organization(organization)
                                                                                                .build());
     }
