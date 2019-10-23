@@ -1,5 +1,6 @@
 package org.cloudfoundry.client.lib.adapters;
 
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -44,6 +45,7 @@ public abstract class RawCloudApplication extends RawCloudEntity<CloudApplicatio
     @Override
     public CloudApplication derive() {
         SummaryApplicationResponse summary = getSummary();
+        Map<String, Object> environmentJsons = summary.getEnvironmentJsons();
         return ImmutableCloudApplication.builder()
                                         .metadata(parseResourceMetadata(getResource()))
                                         .name(summary.getName())
@@ -57,7 +59,7 @@ public abstract class RawCloudApplication extends RawCloudEntity<CloudApplicatio
                                         .packageState(parsePackageState(summary.getPackageState()))
                                         .stagingError(summary.getStagingFailedDescription())
                                         .services(getNames(summary.getServices()))
-                                        .env(parseEnv(summary.getEnvironmentJsons()))
+                                        .env(parseEnv(environmentJsons == null ? Collections.emptyMap() : environmentJsons))
                                         .space(getSpace().derive())
                                         .build();
     }
