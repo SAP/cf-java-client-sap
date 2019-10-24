@@ -957,17 +957,6 @@ public interface CloudControllerClient {
     List<CloudStack> getStacks();
 
     /**
-     * Get the staging log while an application is starting. A null value indicates that no further checks for staging logs should occur as
-     * staging logs are no longer available.
-     *
-     * @param info starting information containing staging log file URL. Obtained after starting an application.
-     * @param offset starting position from where content should be retrieved.
-     * @return portion of the staging log content starting from the offset. It may contain multiple lines. Returns null if no further
-     *         content is available.
-     */
-    String getStagingLogs(StartingInfo info, int offset);
-
-    /**
      * Lists security groups in the staging set for applications.
      * <p/>
      * This method requires the logged in user to have admin permissions in the cloud controller.

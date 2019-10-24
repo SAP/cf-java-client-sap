@@ -758,11 +758,6 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public String getStagingLogs(StartingInfo info, int offset) {
-        return handleExceptions(() -> delegate.getStagingLogs(info, offset));
-    }
-
-    @Override
     public List<CloudSecurityGroup> getStagingSecurityGroups() {
         return handleExceptions(() -> delegate.getStagingSecurityGroups());
     }
