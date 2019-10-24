@@ -2,9 +2,8 @@ package org.cloudfoundry.client.lib.adapters;
 
 import org.cloudfoundry.client.lib.domain.CloudOrganization;
 import org.cloudfoundry.client.lib.domain.ImmutableCloudOrganization;
-import org.cloudfoundry.client.v2.Resource;
-import org.cloudfoundry.client.v2.organizations.OrganizationEntity;
-import org.cloudfoundry.client.v2.organizations.OrganizationResource;
+import org.cloudfoundry.client.v3.organizations.Organization;
+import org.cloudfoundry.client.v3.organizations.OrganizationResource;
 import org.junit.jupiter.api.Test;
 
 public class RawCloudOrganizationTest {
@@ -27,17 +26,16 @@ public class RawCloudOrganizationTest {
         return ImmutableRawCloudOrganization.of(buildTestResource());
     }
 
-    private static Resource<OrganizationEntity> buildTestResource() {
+    private static Organization buildTestResource() {
         return OrganizationResource.builder()
-                                   .metadata(RawCloudEntityTest.METADATA)
-                                   .entity(buildTestEntity())
+                                   .name(ORGANIZATION_NAME)
+                                   .id(RawCloudEntityTest.EXPECTED_METADATA.getGuid()
+                                                                           .toString())
+                                   .createdAt(RawCloudEntityTest.EXPECTED_METADATA.getCreatedAt()
+                                                                                  .toString())
+                                   .updatedAt(RawCloudEntityTest.EXPECTED_METADATA.getUpdatedAt()
+                                                                                  .toString())
                                    .build();
-    }
-
-    private static OrganizationEntity buildTestEntity() {
-        return OrganizationEntity.builder()
-                                 .name(ORGANIZATION_NAME)
-                                 .build();
     }
 
 }
