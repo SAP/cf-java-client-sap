@@ -126,10 +126,7 @@ import org.cloudfoundry.client.v2.events.ListEventsRequest;
 import org.cloudfoundry.client.v2.featureflags.SetFeatureFlagRequest;
 import org.cloudfoundry.client.v2.info.GetInfoRequest;
 import org.cloudfoundry.client.v2.info.GetInfoResponse;
-import org.cloudfoundry.client.v2.organizations.GetOrganizationRequest;
 import org.cloudfoundry.client.v2.organizations.ListOrganizationPrivateDomainsRequest;
-import org.cloudfoundry.client.v2.organizations.ListOrganizationsRequest;
-import org.cloudfoundry.client.v2.organizations.OrganizationEntity;
 import org.cloudfoundry.client.v2.privatedomains.DeletePrivateDomainRequest;
 import org.cloudfoundry.client.v2.privatedomains.ListPrivateDomainsRequest;
 import org.cloudfoundry.client.v2.privatedomains.PrivateDomainEntity;
@@ -203,6 +200,9 @@ import org.cloudfoundry.client.v3.builds.Build;
 import org.cloudfoundry.client.v3.builds.CreateBuildRequest;
 import org.cloudfoundry.client.v3.builds.GetBuildRequest;
 import org.cloudfoundry.client.v3.builds.ListBuildsRequest;
+import org.cloudfoundry.client.v3.organizations.GetOrganizationRequest;
+import org.cloudfoundry.client.v3.organizations.ListOrganizationsRequest;
+import org.cloudfoundry.client.v3.organizations.Organization;
 import org.cloudfoundry.client.v3.packages.CreatePackageRequest;
 import org.cloudfoundry.client.v3.packages.CreatePackageResponse;
 import org.cloudfoundry.client.v3.packages.DockerData;
@@ -414,39 +414,10 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         UUID newAppGuid = UUID.fromString(response.getId());
 
         // Application process of type web
-        GetApplicationProcessResponse applicationProcessResponse = v3Client.applicationsV3()
-                                                                           .getProcess(GetApplicationProcessRequest.builder()
-                                                                                                                   .applicationId(newAppGuid.toString())
-                                                                                                                   .type("web")
-                                                                                                                   .build())
-                                                                           .block();
+        GetApplicationProcessResponse applicationProcessResponse = getApplicationProcess(newAppGuid);
 
         // Update the 'web' process type with health-check data
-        if (staging != null) {
-            if (staging.isSshEnabled() != null) {
-                v3Client.featureFlags()
-                        .set(SetFeatureFlagRequest.builder()
-                                                  .name("ssh")
-                                                  .enabled(staging.isSshEnabled())
-                                                  .build())
-                        .block();
-            }
-            if (staging.getHealthCheckType() != null) {
-                v3Client.processes()
-                        .update(UpdateProcessRequest.builder()
-                                                    .processId(applicationProcessResponse.getId())
-                                                    .command(staging.getCommand())
-                                                    .healthCheck(HealthCheck.builder()
-                                                                            .type(getHealthCheckType(staging))
-                                                                            .data(Data.builder()
-                                                                                      .endpoint(staging.getHealthCheckHttpEndpoint())
-                                                                                      .timeout(staging.getHealthCheckTimeout())
-                                                                                      .build())
-                                                                            .build())
-                                                    .build())
-                        .block();
-            }
-        }
+        updateApplicationStaging(staging, applicationProcessResponse);
 
         // Scale application
         v3Client.processes()
@@ -1368,9 +1339,9 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                     buildpackDataBuilder.stack(stackName);
                 }
                 requestBuilder.lifecycle(Lifecycle.builder()
-                                         .type(LifecycleType.BUILDPACK)
-                                         .data(buildpackDataBuilder.build())
-                                         .build());
+                                                  .type(LifecycleType.BUILDPACK)
+                                                  .data(buildpackDataBuilder.build())
+                                                  .build());
             }
         }
         GetApplicationProcessResponse applicationProcess = v3Client.applicationsV3()
@@ -1379,33 +1350,41 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                                                            .type("web")
                                                                                                            .build())
                                                                    .block();
-        v3Client.applicationsV3()
-                .update(requestBuilder.build())
-                .block();
-        v3Client.processes()
-                .update(UpdateProcessRequest.builder()
-                                            .processId(applicationProcess.getId())
-                                            .command(staging.getCommand())
-                                            .healthCheck(HealthCheck.builder()
-                                                                    .type(HealthCheckType.from(staging.getHealthCheckType()))
-                                                                    .data(Data.builder()
-                                                                              .endpoint(staging.getHealthCheckHttpEndpoint())
-                                                                              .timeout(staging.getHealthCheckTimeout())
-                                                                              .build())
-                                                                    .build())
-                                            .command(staging.getCommand())
-                                            .build())
-                .block();
-        v3Client.featureFlags()
-                .set(SetFeatureFlagRequest.builder()
-                                          .name("ssh")
-                                          .enabled(staging.isSshEnabled())
-                                          .build())
-                .block();
+        updateApplicationStaging(staging, applicationProcess);
 
         if (shouldUpdateWithV3Buildpacks(staging)) {
             updateBuildpacks(applicationGuid, staging.getBuildpacks());
         }
+    }
+
+    private void updateApplicationStaging(Staging staging, GetApplicationProcessResponse applicationProcessResponse) {
+        if (staging == null) {
+            return;
+        }
+
+        if (staging.isSshEnabled() != null) {
+            v3Client.featureFlags()
+                    .set(SetFeatureFlagRequest.builder()
+                                              .name("ssh")
+                                              .enabled(staging.isSshEnabled())
+                                              .build())
+                    .block();
+        }
+        UpdateProcessRequest.Builder updateProcessRequestBuilder = UpdateProcessRequest.builder()
+                                                                                       .processId(applicationProcessResponse.getId())
+                                                                                       .command(staging.getCommand());
+        if (staging.getHealthCheckType() != null) {
+            updateProcessRequestBuilder.healthCheck(HealthCheck.builder()
+                                                               .type(getHealthCheckType(staging))
+                                                               .data(Data.builder()
+                                                                         .endpoint(staging.getHealthCheckHttpEndpoint())
+                                                                         .timeout(staging.getHealthCheckTimeout())
+                                                                         .build())
+                                                               .build());
+        }
+        v3Client.processes()
+                .update(updateProcessRequestBuilder.build())
+                .block();
     }
 
     @Override
@@ -2311,22 +2290,22 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return fetch(() -> getOrganizationResourceByName(name), ImmutableRawCloudOrganization::of);
     }
 
-    private Flux<? extends Resource<OrganizationEntity>> getOrganizationResources() {
+    private Flux<? extends Organization> getOrganizationResources() {
         IntFunction<ListOrganizationsRequest> pageRequestSupplier = page -> ListOrganizationsRequest.builder()
                                                                                                     .page(page)
                                                                                                     .build();
         return getOrganizationResources(pageRequestSupplier);
     }
 
-    private Mono<? extends Resource<OrganizationEntity>> getOrganizationResource(UUID guid) {
+    private Mono<? extends Organization> getOrganizationResource(UUID guid) {
         GetOrganizationRequest request = GetOrganizationRequest.builder()
                                                                .organizationId(guid.toString())
                                                                .build();
-        return v3Client.organizations()
+        return v3Client.organizationsV3()
                        .get(request);
     }
 
-    private Mono<? extends Resource<OrganizationEntity>> getOrganizationResourceByName(String name) {
+    private Mono<? extends Organization> getOrganizationResourceByName(String name) {
         IntFunction<ListOrganizationsRequest> pageRequestSupplier = page -> ListOrganizationsRequest.builder()
                                                                                                     .name(name)
                                                                                                     .page(page)
@@ -2334,9 +2313,9 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return getOrganizationResources(pageRequestSupplier).singleOrEmpty();
     }
 
-    private Flux<? extends Resource<OrganizationEntity>>
+    private Flux<? extends Organization>
             getOrganizationResources(IntFunction<ListOrganizationsRequest> pageRequestSupplier) {
-        return PaginationUtils.requestClientV2Resources(page -> v3Client.organizations()
+        return PaginationUtils.requestClientV3Resources(page -> v3Client.organizationsV3()
                                                                         .list(pageRequestSupplier.apply(page)));
     }
 
