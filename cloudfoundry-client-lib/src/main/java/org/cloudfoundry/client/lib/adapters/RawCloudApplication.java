@@ -20,12 +20,11 @@ import org.cloudfoundry.client.lib.domain.ImmutableStaging;
 import org.cloudfoundry.client.lib.domain.PackageState;
 import org.cloudfoundry.client.lib.domain.Staging;
 import org.cloudfoundry.client.lib.util.JsonUtil;
-import org.cloudfoundry.client.v2.Resource;
-import org.cloudfoundry.client.v2.applications.ApplicationEntity;
 import org.cloudfoundry.client.v2.applications.SummaryApplicationResponse;
 import org.cloudfoundry.client.v2.domains.Domain;
 import org.cloudfoundry.client.v2.routes.Route;
 import org.cloudfoundry.client.v2.serviceinstances.ServiceInstance;
+import org.cloudfoundry.client.v3.applications.Application;
 import org.immutables.value.Value;
 
 @Value.Immutable
@@ -34,7 +33,7 @@ public abstract class RawCloudApplication extends RawCloudEntity<CloudApplicatio
     private static final String HOST_SEPARATOR = ".";
     private static final String PORT_SEPARATOR = ":";
 
-    public abstract Resource<ApplicationEntity> getResource();
+    public abstract Application getResource();
 
     public abstract SummaryApplicationResponse getSummary();
 

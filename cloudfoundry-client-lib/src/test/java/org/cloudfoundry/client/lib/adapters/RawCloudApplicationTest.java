@@ -16,13 +16,12 @@ import org.cloudfoundry.client.lib.domain.ImmutableDockerCredentials;
 import org.cloudfoundry.client.lib.domain.ImmutableDockerInfo;
 import org.cloudfoundry.client.lib.domain.ImmutableStaging;
 import org.cloudfoundry.client.lib.domain.PackageState;
-import org.cloudfoundry.client.v2.Resource;
-import org.cloudfoundry.client.v2.applications.ApplicationEntity;
-import org.cloudfoundry.client.v2.applications.ApplicationResource;
 import org.cloudfoundry.client.v2.applications.SummaryApplicationResponse;
 import org.cloudfoundry.client.v2.domains.Domain;
 import org.cloudfoundry.client.v2.routes.Route;
 import org.cloudfoundry.client.v2.serviceinstances.ServiceInstance;
+import org.cloudfoundry.client.v3.applications.Application;
+import org.cloudfoundry.client.v3.applications.ApplicationResource;
 import org.junit.jupiter.api.Test;
 
 public class RawCloudApplicationTest {
@@ -142,9 +141,11 @@ public class RawCloudApplicationTest {
                                            .build();
     }
 
-    private static Resource<ApplicationEntity> buildTestResource() {
+    private static Application buildTestResource() {
         return ApplicationResource.builder()
-                                  .metadata(RawCloudEntityTest.METADATA)
+                                  .id(RawCloudEntityTest.METADATA.getId())
+                                  .createdAt(RawCloudEntityTest.METADATA.getCreatedAt())
+                                  .updatedAt(RawCloudEntityTest.METADATA.getUpdatedAt())
                                   .build();
     }
 
