@@ -1346,42 +1346,6 @@ public class CloudControllerClientTest {
     }
 
     @Test
-    public void getStagingLogs() throws Exception {
-        String applicationName = createSpringTravelApp("stagingLogs");
-
-        File file = SampleProjects.springTravel();
-        connectedClient.uploadApplication(applicationName, file.getCanonicalPath());
-
-        StartingInfo startingInfo;
-        String firstLine = null;
-        int i = 0;
-        do {
-            startingInfo = connectedClient.startApplication(applicationName);
-
-            if (startingInfo != null && startingInfo.getStagingFile() != null) {
-                int offset = 0;
-                firstLine = connectedClient.getStagingLogs(startingInfo, offset);
-            }
-
-            if (startingInfo != null && startingInfo.getStagingFile() != null && firstLine != null) {
-                break;
-            } else {
-                connectedClient.stopApplication(applicationName);
-                Thread.sleep(10000);
-            }
-        } while (++i < 5);
-
-        assertNotNull(startingInfo);
-        assertNotNull(startingInfo.getStagingFile());
-        assertNotNull(firstLine);
-        assertTrue(firstLine.length() > 0);
-    }
-
-    //
-    // Files and Log tests
-    //
-
-    @Test
     public void getUserProvidedService() {
         String serviceName = "user-provided-test-service";
 

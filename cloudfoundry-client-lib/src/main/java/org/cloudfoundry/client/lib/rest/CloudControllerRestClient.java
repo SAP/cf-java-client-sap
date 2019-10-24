@@ -274,8 +274,6 @@ public interface CloudControllerRestClient {
 
     List<CloudStack> getStacks();
 
-    String getStagingLogs(StartingInfo info, int offset);
-
     List<CloudSecurityGroup> getStagingSecurityGroups();
 
     OAuth2AccessToken login();

@@ -149,7 +149,6 @@ import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.FileCopyUtils;
 import org.springframework.web.client.RequestCallback;
-import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.ResponseExtractor;
 import org.springframework.web.client.RestTemplate;
@@ -1169,52 +1168,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
             stacks.add(resourceMapper.mapResource(resource, CloudStack.class));
         }
         return stacks;
-    }
-
-    /**
-     * Returns null if no further content is available. Two errors that will lead to a null value are 404 Bad Request errors, which are
-     * handled in the implementation, meaning that no further log file contents are available, or ResourceAccessException, also handled in
-     * the implementation, indicating a possible timeout in the server serving the content. Note that any other
-     * {@link org.cloudfoundry.client.lib.CloudOperationException}s not related to the two errors mentioned above may still be thrown (e.g.
-     * 500 level errors, Unauthorized or Forbidden exceptions, etc..)
-     *
-     * @return content if available, which may contain multiple lines, or null if no further content is available.
-     */
-    @Override
-    public String getStagingLogs(StartingInfo info, int offset) {
-        String stagingFile = info.getStagingFile();
-        if (stagingFile != null) {
-            CloudControllerRestClientHttpRequestFactory cfRequestFactory = null;
-            try {
-                Map<String, Object> logsRequest = new HashMap<>();
-                logsRequest.put("offset", offset);
-
-                cfRequestFactory = getRestTemplate().getRequestFactory() instanceof CloudControllerRestClientHttpRequestFactory
-                    ? (CloudControllerRestClientHttpRequestFactory) getRestTemplate().getRequestFactory()
-                    : null;
-                if (cfRequestFactory != null) {
-                    cfRequestFactory.increaseReadTimeoutForStreamedTailedLogs(5 * 60 * 1000);
-                }
-                return getRestTemplate().getForObject(stagingFile + "&tail&tail_offset={offset}", String.class, logsRequest);
-            } catch (CloudOperationException e) {
-                if (e.getStatusCode()
-                     .equals(HttpStatus.NOT_FOUND)) {
-                    // Content is no longer available
-                    return null;
-                } else {
-                    throw e;
-                }
-            } catch (ResourceAccessException e) {
-                // Likely read timeout, the directory server won't serve
-                // the content again
-                logger.debug("Caught exception while fetching staging logs. Aborting. Caught:" + e, e);
-            } finally {
-                if (cfRequestFactory != null) {
-                    cfRequestFactory.increaseReadTimeoutForStreamedTailedLogs(-1);
-                }
-            }
-        }
-        return null;
     }
 
     @Override
