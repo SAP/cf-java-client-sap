@@ -270,8 +270,8 @@ public class CloudControllerClientImpl implements CloudControllerClient {
 
     @Override
     public void createApplication(String applicationName, Staging staging, Integer disk, Integer memory, List<String> uris,
-                                  List<String> serviceNames, DockerInfo dockerInfo) {
-        handleExceptions(() -> delegate.createApplication(applicationName, staging, disk, memory, uris, serviceNames, dockerInfo));
+                                  List<String> serviceNames) {
+        handleExceptions(() -> delegate.createApplication(applicationName, staging, disk, memory, uris, serviceNames));
     }
 
     @Override
@@ -990,6 +990,11 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     @Override
     public CloudBuild getBuild(UUID buildGuid) {
         return handleExceptions(() -> delegate.getBuild(buildGuid));
+    }
+
+    @Override
+    public UploadToken createDockerPackage(UUID applicationGuid, DockerInfo dockerInfo) {
+        return handleExceptions(() -> delegate.createDockerPackage(applicationGuid, dockerInfo));
     }
 
     @Override

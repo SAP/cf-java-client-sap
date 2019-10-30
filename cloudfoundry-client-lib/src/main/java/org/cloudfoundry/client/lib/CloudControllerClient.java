@@ -222,7 +222,7 @@ public interface CloudControllerClient {
      * @param dockerInfo docker params(image, username, password)
      */
     public void createApplication(String applicationName, Staging staging, Integer disk, Integer memory, List<String> uris,
-                                  List<String> serviceNames, DockerInfo dockerInfo);
+                                  List<String> serviceNames);
 
     /**
      * Create quota
@@ -1354,6 +1354,8 @@ public interface CloudControllerClient {
     CloudBuild createBuild(UUID packageGuid);
 
     CloudBuild getBuild(UUID buildGuid);
+    
+    UploadToken createDockerPackage(UUID applicationGuid, DockerInfo dockerInfo);
 
     void bindDropletToApp(UUID dropletGuid, UUID applicationGuid);
 

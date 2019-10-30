@@ -208,6 +208,8 @@ import org.cloudfoundry.client.v3.builds.CreateBuildRequest;
 import org.cloudfoundry.client.v3.builds.GetBuildRequest;
 import org.cloudfoundry.client.v3.builds.ListBuildsRequest;
 import org.cloudfoundry.client.v3.packages.CreatePackageRequest;
+import org.cloudfoundry.client.v3.packages.CreatePackageResponse;
+import org.cloudfoundry.client.v3.packages.DockerData;
 import org.cloudfoundry.client.v3.packages.GetPackageRequest;
 import org.cloudfoundry.client.v3.packages.PackageRelationships;
 import org.cloudfoundry.client.v3.packages.PackageType;
@@ -378,40 +380,30 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public void createApplication(String name, Staging staging, Integer memory, List<String> uris, List<String> serviceNames) {
-        createApplication(name, staging, null, memory, uris, serviceNames, null);
+        createApplication(name, staging, null, memory, uris, serviceNames);
     }
 
     @Override
     public void createApplication(String name, Staging staging, Integer diskQuota, Integer memory, List<String> uris,
-                                  List<String> serviceNames, DockerInfo dockerInfo) {
+                                  List<String> serviceNames) {
         CreateApplicationRequest.Builder createApplicationRequestBuilder = CreateApplicationRequest.builder()
-                                                                                                   .relationships(ApplicationRelationships.builder()
-                                                                                                                                          .space(ToOneRelationship.builder()
-                                                                                                                                                                  .data(Relationship.builder()
-                                                                                                                                                                                    .id(getTargetSpaceGuid().toString())
-                                                                                                                                                                                    .build())
-                                                                                                                                                                  .build())
-                                                                                                                                          .build())
+                                                                                                   .relationships(buildApplicationsRelationship())
                                                                                                    .name(name);
-        if (dockerInfo != null) {
-            DockerCredentials dockerCredentials = dockerInfo.getCredentials();
-            if (dockerCredentials != null) {
-                // createApplicationRequestBuilder.lifecycle(Lifecycle.builder()
-                // .type(LifecycleType.DOCKER)
-                // .data(DockerData.builder()
-                // .build())
-                // .build());
-                // TODO: Think what to do with the docker credentials
-                // .username(dockerCredentials.getUsername())
-                // .password(dockerCredentials.getPassword())
+        if (staging.getDockerInfo() == null && shouldCreateBuildpackLifecycle(staging)) {
+            BuildpackData.Builder buildpackDatabBuilder = BuildpackData.builder()
+                                                                       .stack(staging.getStack());
+            if (shouldUpdateWithV3Buildpacks(staging)) {
+                buildpackDatabBuilder.addAllBuildpacks(staging.getBuildpacks());
             }
-        }
-        if (staging != null) {
             createApplicationRequestBuilder.lifecycle(Lifecycle.builder()
                                                                .type(LifecycleType.BUILDPACK)
-                                                               .data(BuildpackData.builder()
-                                                                     .stack(staging.getStack())
-                                                                                  .build())
+                                                               .data(buildpackDatabBuilder.build())
+                                                               .build());
+        } else {
+            createApplicationRequestBuilder.lifecycle(Lifecycle.builder()
+                                                               .type(LifecycleType.DOCKER)
+                                                               .data(org.cloudfoundry.client.v3.DockerData.builder()
+                                                                                                          .build())
                                                                .build());
         }
 
@@ -420,6 +412,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                      .block();
 
         UUID newAppGuid = UUID.fromString(response.getId());
+
         // Application process of type web
         GetApplicationProcessResponse applicationProcessResponse = v3Client.applicationsV3()
                                                                            .getProcess(GetApplicationProcessRequest.builder()
@@ -472,10 +465,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         // .build())
         // .block();
 
-        if (shouldUpdateWithV3Buildpacks(staging)) {
-            updateBuildpacks(newAppGuid, staging.getBuildpacks());
-        }
-
         if (!CollectionUtils.isEmpty(serviceNames)) {
             updateApplicationServices(name, Collections.emptyMap());
         }
@@ -483,6 +472,30 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         if (!CollectionUtils.isEmpty(uris)) {
             addUris(uris, newAppGuid);
         }
+    }
+
+    private boolean shouldCreateBuildpackLifecycle(Staging staging) {
+        return staging.getStack() != null || staging.getBuildpack() != null || !CollectionUtils.isEmpty(staging.getBuildpacks());
+    }
+
+    private void addDockerImageUserName(DockerCredentials dockerCredentials, DockerData.Builder dockerDataBuilder) {
+        String usernameDockerCredentials = dockerCredentials.getUsername();
+        if (usernameDockerCredentials != null) {
+            dockerDataBuilder.username(usernameDockerCredentials);
+        }
+    }
+
+    private void addDockerImagePassword(DockerCredentials dockerCredentials, DockerData.Builder dockerDataBuilder) {
+        String passwordDockerCredentials = dockerCredentials.getPassword();
+        if (passwordDockerCredentials != null) {
+            dockerDataBuilder.password(passwordDockerCredentials);
+        }
+    }
+
+    private ApplicationRelationships buildApplicationsRelationship() {
+        return ApplicationRelationships.builder()
+                                       .space(buildToOneRelationship(getTargetSpaceGuid()))
+                                       .build();
     }
 
     private HealthCheckType getHealthCheckType(Staging staging) {
@@ -1544,6 +1557,27 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     @Override
     public List<CloudBuild> getBuildsForPackage(UUID packageGuid) {
         return fetchList(() -> getBuildResourcesByPackageGuid(packageGuid), ImmutableRawCloudBuild::of);
+    }
+
+    @Override
+    public UploadToken createDockerPackage(UUID applicationGuid, DockerInfo dockerInfo) {
+        DockerData.Builder dockerDataBuilder = DockerData.builder()
+                                                         .image(dockerInfo.getImage());
+        if (dockerInfo.getCredentials() != null) {
+            addDockerImageUserName(dockerInfo.getCredentials(), dockerDataBuilder);
+            addDockerImagePassword(dockerInfo.getCredentials(), dockerDataBuilder);
+
+        }
+        CreatePackageRequest.Builder createPackageRequestBuilder = CreatePackageRequest.builder()
+                                                                                       .type(PackageType.DOCKER)
+                                                                                       .data(dockerDataBuilder.build())
+                                                                                       .relationships(buildPackageRelationships(applicationGuid));
+        CreatePackageResponse createPackageResponse = v3Client.packages()
+                                                              .create(createPackageRequestBuilder.build())
+                                                              .block();
+        return ImmutableUploadToken.builder()
+                                   .packageGuid(UUID.fromString(createPackageResponse.getId()))
+                                   .build();
     }
 
     @Override
