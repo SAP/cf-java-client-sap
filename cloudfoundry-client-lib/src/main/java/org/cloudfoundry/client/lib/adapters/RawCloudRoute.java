@@ -8,13 +8,13 @@ import org.cloudfoundry.client.lib.domain.Derivable;
 import org.cloudfoundry.client.lib.domain.ImmutableCloudRoute;
 import org.cloudfoundry.client.v2.Resource;
 import org.cloudfoundry.client.v2.routemappings.RouteMappingEntity;
-import org.cloudfoundry.client.v2.routes.RouteEntity;
+import org.cloudfoundry.client.v3.routes.Route;
 import org.immutables.value.Value;
 
 @Value.Immutable
 public abstract class RawCloudRoute extends RawCloudEntity<CloudRoute> {
 
-    public abstract Resource<RouteEntity> getResource();
+    public abstract Route getResource();
 
     public abstract List<Resource<RouteMappingEntity>> getRouteMappingResources();
 
@@ -22,12 +22,11 @@ public abstract class RawCloudRoute extends RawCloudEntity<CloudRoute> {
 
     @Override
     public CloudRoute derive() {
-        Resource<RouteEntity> resource = getResource();
-        RouteEntity entity = resource.getEntity();
+        Route route = getResource();
         return ImmutableCloudRoute.builder()
-                                  .metadata(parseResourceMetadata(resource))
+                                  .metadata(parseResourceMetadata(route))
                                   .appsUsingRoute(getRouteMappingResources().size())
-                                  .host(entity.getHost())
+                                  .host(route.getHost())
                                   .domain(getDomain().derive())
                                   .build();
     }

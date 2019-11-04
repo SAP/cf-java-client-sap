@@ -11,8 +11,8 @@ import org.cloudfoundry.client.lib.domain.ImmutableCloudRoute;
 import org.cloudfoundry.client.v2.Resource;
 import org.cloudfoundry.client.v2.routemappings.RouteMappingEntity;
 import org.cloudfoundry.client.v2.routemappings.RouteMappingResource;
-import org.cloudfoundry.client.v2.routes.RouteEntity;
-import org.cloudfoundry.client.v2.routes.RouteResource;
+import org.cloudfoundry.client.v3.routes.Route;
+import org.cloudfoundry.client.v3.routes.RouteResource;
 import org.junit.jupiter.api.Test;
 
 public class RawCloudRouteTest {
@@ -45,18 +45,16 @@ public class RawCloudRouteTest {
                                      .build();
     }
 
-    private static Resource<RouteEntity> buildTestResource() {
+    private static Route buildTestResource() {
         return RouteResource.builder()
-                            .metadata(RawCloudEntityTest.METADATA)
-                            .entity(buildTestEntity())
+                            .id(RawCloudEntityTest.GUID_STRING)
+                            .createdAt(RawCloudEntityTest.CREATED_AT_STRING)
+                            .updatedAt(RawCloudEntityTest.UPDATED_AT_STRING)
+                            .url(RawCloudEntityTest.URL_STRING)
+                            .host(HOST)
                             .build();
     }
 
-    private static RouteEntity buildTestEntity() {
-        return RouteEntity.builder()
-                          .host(HOST)
-                          .build();
-    }
 
     private static CloudDomain buildTestDomain() {
         return ImmutableCloudDomain.builder()

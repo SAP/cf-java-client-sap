@@ -132,10 +132,6 @@ import org.cloudfoundry.client.v2.privatedomains.ListPrivateDomainsRequest;
 import org.cloudfoundry.client.v2.privatedomains.PrivateDomainEntity;
 import org.cloudfoundry.client.v2.routemappings.ListRouteMappingsRequest;
 import org.cloudfoundry.client.v2.routemappings.RouteMappingEntity;
-import org.cloudfoundry.client.v2.routes.CreateRouteRequest;
-import org.cloudfoundry.client.v2.routes.CreateRouteResponse;
-import org.cloudfoundry.client.v2.routes.DeleteRouteRequest;
-import org.cloudfoundry.client.v2.routes.RouteEntity;
 import org.cloudfoundry.client.v2.servicebindings.CreateServiceBindingRequest;
 import org.cloudfoundry.client.v2.servicebindings.DeleteServiceBindingRequest;
 import org.cloudfoundry.client.v2.servicebindings.GetServiceBindingParametersRequest;
@@ -168,7 +164,6 @@ import org.cloudfoundry.client.v2.shareddomains.SharedDomainEntity;
 import org.cloudfoundry.client.v2.spaces.ListSpaceAuditorsRequest;
 import org.cloudfoundry.client.v2.spaces.ListSpaceDevelopersRequest;
 import org.cloudfoundry.client.v2.spaces.ListSpaceManagersRequest;
-import org.cloudfoundry.client.v2.spaces.ListSpaceRoutesRequest;
 import org.cloudfoundry.client.v2.spaces.ListSpaceServiceInstancesRequest;
 import org.cloudfoundry.client.v2.stacks.GetStackRequest;
 import org.cloudfoundry.client.v2.stacks.ListStacksRequest;
@@ -215,6 +210,12 @@ import org.cloudfoundry.client.v3.processes.HealthCheck;
 import org.cloudfoundry.client.v3.processes.HealthCheckType;
 import org.cloudfoundry.client.v3.processes.ScaleProcessRequest;
 import org.cloudfoundry.client.v3.processes.UpdateProcessRequest;
+import org.cloudfoundry.client.v3.routes.CreateRouteRequest;
+import org.cloudfoundry.client.v3.routes.CreateRouteResponse;
+import org.cloudfoundry.client.v3.routes.DeleteRouteRequest;
+import org.cloudfoundry.client.v3.routes.ListRoutesRequest;
+import org.cloudfoundry.client.v3.routes.Route;
+import org.cloudfoundry.client.v3.routes.RouteRelationships;
 import org.cloudfoundry.client.v3.spaces.GetSpaceRequest;
 import org.cloudfoundry.client.v3.spaces.GetSpaceResponse;
 import org.cloudfoundry.client.v3.spaces.ListSpacesRequest;
@@ -2076,12 +2077,14 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     private UUID doAddRoute(UUID domainGuid, String host, String path) {
         assertSpaceProvided("add route");
-        CreateRouteResponse response = v3Client.routes()
+        CreateRouteResponse response = v3Client.routesV3()
                                                .create(CreateRouteRequest.builder()
-                                                                         .domainId(domainGuid.toString())
+                                                                         .relationships(RouteRelationships.builder()
+                                                                                                          .domain(buildToOneRelationship(domainGuid))
+                                                                                                          .space(buildToOneRelationship(getTargetSpaceGuid()))
+                                                                                                          .build())
                                                                          .host(host)
                                                                          .path(path)
-                                                                         .spaceId(getTargetSpaceGuid().toString())
                                                                          .build())
                                                .block();
         return getGuid(response);
@@ -2106,7 +2109,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     private void doDeleteRoute(UUID guid) {
-        v3Client.routes()
+        v3Client.routesV3()
                 .delete(DeleteRouteRequest.builder()
                                           .routeId(guid.toString())
                                           .build())
@@ -2323,23 +2326,23 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return fetchListWithAuxiliaryContent(() -> getRouteTuple(domain, getTargetSpaceGuid()), this::zipWithAuxiliaryRouteContent);
     }
 
-    private Flux<Tuple2<? extends Resource<RouteEntity>, CloudDomain>> getRouteTuple(CloudDomain domain, UUID spaceGuid) {
+    private Flux<Tuple2<? extends Route, CloudDomain>> getRouteTuple(CloudDomain domain, UUID spaceGuid) {
         UUID domainGuid = getGuid(domain);
         return getRouteResourcesByDomainGuidAndSpaceGuid(domainGuid, spaceGuid).map(routeResource -> Tuples.of(routeResource, domain));
     }
 
-    private Flux<? extends Resource<RouteEntity>> getRouteResourcesByDomainGuidAndSpaceGuid(UUID domainGuid, UUID spaceGuid) {
-        IntFunction<ListSpaceRoutesRequest> pageRequestSupplier = page -> ListSpaceRoutesRequest.builder()
-                                                                                                .domainId(domainGuid.toString())
-                                                                                                .spaceId(spaceGuid.toString())
-                                                                                                .page(page)
-                                                                                                .build();
-        return PaginationUtils.requestClientV2Resources(page -> v3Client.spaces()
-                                                                        .listRoutes(pageRequestSupplier.apply(page)));
+    private Flux<? extends Route> getRouteResourcesByDomainGuidAndSpaceGuid(UUID domainGuid, UUID spaceGuid) {
+        IntFunction<ListRoutesRequest> pageRequestSupplier = page -> ListRoutesRequest.builder()
+                                                                                      .spaceId(spaceGuid.toString())
+                                                                                      .domainId(domainGuid.toString())
+                                                                                      .page(page)
+                                                                                      .build();
+        return PaginationUtils.requestClientV3Resources(page -> v3Client.routesV3()
+                                                                        .list(pageRequestSupplier.apply(page)));
     }
 
-    private Flux<? extends Resource<RouteEntity>> getRouteResourcesByDomainGuidHostAndPath(UUID domainGuid, String host, String path) {
-        ListSpaceRoutesRequest.Builder requestBuilder = ListSpaceRoutesRequest.builder();
+    private Flux<? extends Route> getRouteResourcesByDomainGuidHostAndPath(UUID domainGuid, String host, String path) {
+        ListRoutesRequest.Builder requestBuilder = ListRoutesRequest.builder();
         if (host != null) {
             requestBuilder.host(host);
         }
@@ -2349,12 +2352,12 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         requestBuilder.spaceId(getTargetSpaceGuid().toString())
                       .domainId(domainGuid.toString());
 
-        return PaginationUtils.requestClientV2Resources(page -> v3Client.spaces()
-                                                                        .listRoutes(requestBuilder.page(page)
+        return PaginationUtils.requestClientV3Resources(page -> v3Client.routesV3()
+                                                                        .list(requestBuilder.page(page)
                                                                                                   .build()));
     }
 
-    private Mono<Derivable<CloudRoute>> zipWithAuxiliaryRouteContent(Tuple2<? extends Resource<RouteEntity>, CloudDomain> routeTuple) {
+    private Mono<Derivable<CloudRoute>> zipWithAuxiliaryRouteContent(Tuple2<? extends Route, CloudDomain> routeTuple) {
         UUID routeGuid = getGuid(routeTuple.getT1());
         return getRouteMappingResourcesByRouteGuid(routeGuid).collectList()
                                                              .map(routeMappingResources -> ImmutableRawCloudRoute.builder()
@@ -2626,7 +2629,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     private UUID getRouteGuid(UUID domainGuid, String host, String path) {
-        List<? extends Resource<RouteEntity>> routeEntitiesResource = getRouteResourcesByDomainGuidHostAndPath(domainGuid, host,
+        List<? extends Route> routeEntitiesResource = getRouteResourcesByDomainGuidHostAndPath(domainGuid, host,
                                                                                                                path).collect(Collectors.toList())
                                                                                                                     .block();
         if (CollectionUtils.isEmpty(routeEntitiesResource)) {
