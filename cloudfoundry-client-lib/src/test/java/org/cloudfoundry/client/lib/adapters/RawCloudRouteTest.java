@@ -11,13 +11,18 @@ import org.cloudfoundry.client.lib.domain.ImmutableCloudRoute;
 import org.cloudfoundry.client.v2.Resource;
 import org.cloudfoundry.client.v2.routemappings.RouteMappingEntity;
 import org.cloudfoundry.client.v2.routemappings.RouteMappingResource;
+import org.cloudfoundry.client.v3.Link;
+import org.cloudfoundry.client.v3.Relationship;
+import org.cloudfoundry.client.v3.ToOneRelationship;
 import org.cloudfoundry.client.v3.routes.Route;
+import org.cloudfoundry.client.v3.routes.RouteRelationships;
 import org.cloudfoundry.client.v3.routes.RouteResource;
 import org.junit.jupiter.api.Test;
 
 public class RawCloudRouteTest {
 
     private static final String HOST = "foo";
+    private static final String PATH = "/baz";
     private static final String DOMAIN_NAME = "example.com";
     private static final CloudDomain DOMAIN = buildTestDomain();
     private static final Integer APPS_USING_ROUTE = 2;
@@ -48,13 +53,28 @@ public class RawCloudRouteTest {
     private static Route buildTestResource() {
         return RouteResource.builder()
                             .id(RawCloudEntityTest.GUID_STRING)
-                            .createdAt(RawCloudEntityTest.CREATED_AT_STRING)
-                            .updatedAt(RawCloudEntityTest.UPDATED_AT_STRING)
+                            .createdAt(RawCloudEntityTest.METADATA.getCreatedAt())
+                            .updatedAt(RawCloudEntityTest.METADATA.getUpdatedAt())
                             .url(RawCloudEntityTest.URL_STRING)
                             .host(HOST)
+                            .relationships(RouteRelationships.builder()
+                                                             .domain(buildToOneRelationShip())
+                                                             .space(buildToOneRelationShip())
+                                                             .build())
+                            .path(PATH)
+                            .link("self", Link.builder()
+                                              .href(RawCloudEntityTest.URL_STRING)
+                                              .build())
                             .build();
     }
 
+    private static ToOneRelationship buildToOneRelationShip() {
+        return ToOneRelationship.builder()
+                                  .data(Relationship.builder()
+                                                    .id("test")
+                                                    .build())
+                                  .build();
+    }
 
     private static CloudDomain buildTestDomain() {
         return ImmutableCloudDomain.builder()

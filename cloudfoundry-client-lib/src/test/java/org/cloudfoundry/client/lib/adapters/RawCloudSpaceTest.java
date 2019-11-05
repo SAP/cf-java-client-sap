@@ -30,7 +30,7 @@ public class RawCloudSpaceTest {
         return SpaceResource.builder()
                             .id(RawCloudEntityTest.METADATA.getId())
                             .createdAt(RawCloudEntityTest.METADATA.getCreatedAt())
-                            .updatedAt(RawCloudEntityTest.METADATA.getCreatedAt())
+                            .updatedAt(RawCloudEntityTest.METADATA.getUpdatedAt())
                             .name(NAME)
                             .link("self", Link.builder()
                                               .href(RawCloudEntityTest.URL_STRING)
