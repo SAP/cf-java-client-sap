@@ -10,16 +10,14 @@ import java.util.stream.Stream;
 import org.cloudfoundry.client.lib.CloudOperationException;
 import org.cloudfoundry.client.lib.TestUtil;
 import org.cloudfoundry.client.lib.domain.CloudDomain;
+import org.cloudfoundry.client.lib.rest.clients.util.UriInfoUtil;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.function.Executable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 public class CloudControllerRestClientImplTest {
-
-    private CloudControllerRestClientImpl controllerClient;
 
     // @formatter:off
     public static Stream<Arguments> testExtractUriInfo() {
@@ -42,11 +40,6 @@ public class CloudControllerRestClientImplTest {
     }
     // @formatter:on
 
-    @BeforeEach
-    public void setUpWithEmptyConstructor() {
-        controllerClient = new CloudControllerRestClientImpl();
-    }
-
     @ParameterizedTest
     @MethodSource
     public void testExtractUriInfo(String fileName, Class<? extends RuntimeException> expectedException) throws Throwable {
@@ -55,7 +48,7 @@ public class CloudControllerRestClientImplTest {
         Map<String, String> uriInfo = new HashMap<>();
         Map<String, UUID> domainsAsMap = input.getDomainsAsMap();
 
-        executeWithErrorHandling(() -> controllerClient.extractUriInfo(domainsAsMap, input.getUri(), uriInfo), expectedException,
+        executeWithErrorHandling(() -> UriInfoUtil.extractUriInfo(domainsAsMap, input.getUri(), uriInfo), expectedException,
                                  input.getErrorMessage());
 
         validateUriInfo(uriInfo, domainsAsMap, input.getExpectedDomain(), input.getExpectedHost(), input.getExpectedPath());
