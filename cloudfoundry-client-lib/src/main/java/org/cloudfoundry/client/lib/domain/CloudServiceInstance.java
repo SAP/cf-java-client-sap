@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.cloudfoundry.client.lib.domain.annotation.Nullable;
+import org.cloudfoundry.client.v3.Metadata;
 import org.immutables.value.Value;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -26,6 +27,9 @@ public interface CloudServiceInstance extends CloudEntity, Derivable<CloudServic
 
     @Nullable
     String getType();
+
+    @Nullable
+    Metadata getV3Metadata();
 
     @Override
     default CloudServiceInstance derive() {

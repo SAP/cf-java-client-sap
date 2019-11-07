@@ -102,8 +102,11 @@ import org.cloudfoundry.client.lib.domain.Derivable;
 import org.cloudfoundry.client.lib.domain.DockerCredentials;
 import org.cloudfoundry.client.lib.domain.DockerInfo;
 import org.cloudfoundry.client.lib.domain.ErrorDetails;
+import org.cloudfoundry.client.lib.domain.ImmutableCloudApplication;
 import org.cloudfoundry.client.lib.domain.ImmutableCloudDomain;
 import org.cloudfoundry.client.lib.domain.ImmutableCloudMetadata;
+import org.cloudfoundry.client.lib.domain.ImmutableCloudService;
+import org.cloudfoundry.client.lib.domain.ImmutableCloudServiceInstance;
 import org.cloudfoundry.client.lib.domain.ImmutableErrorDetails;
 import org.cloudfoundry.client.lib.domain.ImmutableUpload;
 import org.cloudfoundry.client.lib.domain.ImmutableUploadToken;
@@ -198,6 +201,7 @@ import org.cloudfoundry.client.v2.users.UserEntity;
 import org.cloudfoundry.client.v3.BuildpackData;
 import org.cloudfoundry.client.v3.Lifecycle;
 import org.cloudfoundry.client.v3.LifecycleType;
+import org.cloudfoundry.client.v3.Metadata;
 import org.cloudfoundry.client.v3.Relationship;
 import org.cloudfoundry.client.v3.ToOneRelationship;
 import org.cloudfoundry.client.v3.applications.ListApplicationBuildsRequest;
@@ -211,6 +215,8 @@ import org.cloudfoundry.client.v3.packages.GetPackageRequest;
 import org.cloudfoundry.client.v3.packages.PackageRelationships;
 import org.cloudfoundry.client.v3.packages.PackageType;
 import org.cloudfoundry.client.v3.packages.UploadPackageRequest;
+import org.cloudfoundry.client.v3.serviceInstances.ListServiceInstancesRequest;
+import org.cloudfoundry.client.v3.serviceInstances.UpdateServiceInstanceRequest;
 import org.cloudfoundry.client.v3.tasks.CancelTaskRequest;
 import org.cloudfoundry.client.v3.tasks.CreateTaskRequest;
 import org.cloudfoundry.client.v3.tasks.GetTaskRequest;
@@ -654,17 +660,25 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public CloudApplication getApplication(String applicationName) {
-        return getApplication(applicationName, true);
+        final CloudApplication application = getApplication(applicationName, true);
+        return application == null ? null : getApplicationWithMetadata(application);
     }
 
     @Override
     public CloudApplication getApplication(String applicationName, boolean required) {
-        return findApplicationByName(applicationName, required);
+        final CloudApplication application = findApplicationByName(applicationName, required);
+        return application == null ? null : getApplicationWithMetadata(application);
     }
 
     @Override
     public CloudApplication getApplication(UUID applicationGuid) {
-        return findApplication(applicationGuid);
+        final CloudApplication application = findApplication(applicationGuid);
+        return application == null ? null : getApplicationWithMetadata(application);
+    }
+
+    private CloudApplication getApplicationWithMetadata(CloudApplication application) {
+        final Map<String, Metadata> applicationsMetadata = getApplicationsMetadata(Collections.singletonList(application.getName()));
+        return getApplicationsWithMetadata(Collections.singletonList(application), applicationsMetadata).get(0);
     }
 
     @Override
@@ -705,7 +719,44 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public List<CloudApplication> getApplications() {
-        return fetchListWithAuxiliaryContent(this::getApplicationResources, this::zipWithAuxiliaryApplicationContent);
+        final List<CloudApplication> cloudApplications = fetchListWithAuxiliaryContent(this::getApplicationResources,
+                                                                                       this::zipWithAuxiliaryApplicationContent);
+        if (cloudApplications == null || cloudApplications.size() == 0) {
+            return cloudApplications;
+        }
+        final Map<String, Metadata> applicationsMetadata = getApplicationsMetadata(cloudApplications.stream()
+                                                                                                    .map(app -> app.getName())
+                                                                                                    .collect(Collectors.toList()));
+        return getApplicationsWithMetadata(cloudApplications, applicationsMetadata);
+    }
+
+    @Override
+    public List<CloudApplication> getApplicationsByMetadata(String labelSelector) {
+        IntFunction<org.cloudfoundry.client.v3.applications.ListApplicationsRequest> pageRequestSupplier = page -> org.cloudfoundry.client.v3.applications.ListApplicationsRequest.builder()
+                                                                                                                                                                                  .spaceId(getTargetSpaceGuid().toString())
+                                                                                                                                                                                  .labelSelector(labelSelector)
+                                                                                                                                                                                  .page(page)
+                                                                                                                                                                                  .build();
+        final Map<String, Metadata> applicationsMetadata = PaginationUtils.requestClientV3Resources(page -> v3Client.applicationsV3()
+                                                                                                                    .list(pageRequestSupplier.apply(page)))
+                                                                          .collectMap(resource -> resource.getName(),
+                                                                                      resource -> resource.getMetadata())
+                                                                          .block();
+        final List<CloudApplication> cloudApplications = fetchListWithAuxiliaryContent(() -> getApplicationResourcesByNames(applicationsMetadata.keySet()),
+                                                                                       this::zipWithAuxiliaryApplicationContent);
+        return getApplicationsWithMetadata(cloudApplications, applicationsMetadata);
+    }
+
+    public Map<String, Metadata> getApplicationsMetadata(List<String> guids) {
+        IntFunction<org.cloudfoundry.client.v3.applications.ListApplicationsRequest> pageRequestSupplier = page -> org.cloudfoundry.client.v3.applications.ListApplicationsRequest.builder()
+                                                                                                                                                                                  .spaceId(getTargetSpaceGuid().toString())
+                                                                                                                                                                                  .addAllApplicationIds(guids)
+                                                                                                                                                                                  .page(page)
+                                                                                                                                                                                  .build();
+        return PaginationUtils.requestClientV3Resources(page -> v3Client.applicationsV3()
+                                                                        .list(pageRequestSupplier.apply(page)))
+                              .collectMap(response -> response.getId(), response -> response.getMetadata())
+                              .block();
     }
 
     @Override
@@ -881,7 +932,8 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public CloudService getService(String serviceName) {
-        return getService(serviceName, true);
+        final CloudService service = getService(serviceName, true);
+        return service == null ? null : getServiceWithMetadata(service);
     }
 
     @Override
@@ -890,7 +942,15 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         if (service == null && required) {
             throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Service " + serviceName + " not found.");
         }
-        return service;
+        return service == null ? null : getServiceWithMetadata(service);
+    }
+
+    private CloudService getServiceWithMetadata(CloudService cloudService) {
+        final List<CloudService> cloudServices = Collections.singletonList(cloudService);
+        final Map<String, Metadata> serviceInstancesMetadata = getServiceInstancesMetadata(cloudServices.stream()
+                                                                                                        .map(service -> service.getName())
+                                                                                                        .collect(Collectors.toList()));
+        return getServicesWithMetadata(cloudServices, serviceInstancesMetadata).get(0);
     }
 
     @Override
@@ -914,7 +974,8 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public CloudServiceInstance getServiceInstance(String serviceName) {
-        return getServiceInstance(serviceName, true);
+        final CloudServiceInstance serviceInstance = getServiceInstance(serviceName, true);
+        return serviceInstance == null ? null : getServiceInstanceWithMetadata(serviceInstance);
     }
 
     @Override
@@ -923,7 +984,22 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         if (serviceInstance == null && required) {
             throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Service instance " + serviceName + " not found.");
         }
-        return serviceInstance;
+        return serviceInstance == null ? null : getServiceInstanceWithMetadata(serviceInstance);
+    }
+
+    private List<CloudApplication> getApplicationsWithMetadata(List<CloudApplication> cloudApplications,
+                                                               Map<String, Metadata> applicationsMetadata) {
+        List<CloudApplication> applicationsWithMetadata = new ArrayList<>();
+        for (int i = 0; i < cloudApplications.size(); i++) {
+            final CloudApplication cloudApplication = cloudApplications.get(i);
+            final String applicationName = cloudApplication.getName();
+            final ImmutableCloudApplication cloudApplicationWithMetadata = ImmutableCloudApplication.builder()
+                                                                                                    .from(cloudApplication)
+                                                                                                    .v3Metadata(applicationsMetadata.get(applicationName))
+                                                                                                    .build();
+            applicationsWithMetadata.add(cloudApplicationWithMetadata);
+        }
+        return applicationsWithMetadata;
     }
 
     @Override
@@ -949,7 +1025,65 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public List<CloudService> getServices() {
-        return fetchListWithAuxiliaryContent(this::getServiceInstanceResources, this::zipWithAuxiliaryServiceContent);
+        final List<CloudService> cloudServices = fetchListWithAuxiliaryContent(this::getServiceInstanceResources,
+                                                                               this::zipWithAuxiliaryServiceContent);
+        final Map<String, Metadata> serviceInstancesMetadata = getServiceInstancesMetadata(cloudServices.stream()
+                                                                                                        .map(service -> service.getName())
+                                                                                                        .collect(Collectors.toList()));
+        return getServicesWithMetadata(cloudServices, serviceInstancesMetadata);
+    }
+
+    private CloudServiceInstance getServiceInstanceWithMetadata(CloudServiceInstance serviceInstance) {
+        final String serviceName = serviceInstance.getName();
+        final Map<String, Metadata> serviceInstancesMetadata = getServiceInstancesMetadata(Collections.singletonList(serviceName));
+        return ImmutableCloudServiceInstance.copyOf(serviceInstance)
+                                            .withV3Metadata(serviceInstancesMetadata.get(serviceName));
+    }
+
+    private List<CloudService> getServicesWithMetadata(List<CloudService> cloudServices, Map<String, Metadata> serviceInstancesMetadata) {
+        List<CloudService> cloudServicesWithMetadata = new ArrayList<>();
+        for (int i = 0; i < cloudServices.size(); i++) {
+            final CloudService cloudService = cloudServices.get(i);
+            final String serviceName = cloudService.getName();
+            final ImmutableCloudService cloudServiceWithMetadata = ImmutableCloudService.builder()
+                                                                                        .from(cloudService)
+                                                                                        .v3Metadata(serviceInstancesMetadata.get(serviceName))
+                                                                                        .build();
+            cloudServicesWithMetadata.add(cloudServiceWithMetadata);
+        }
+        return cloudServicesWithMetadata;
+    }
+
+    private Map<String, Metadata> getServiceInstancesMetadata(List<String> names) {
+        String spaceGuid = getTargetSpaceGuid().toString();
+        IntFunction<ListServiceInstancesRequest> pageRequestSupplier = page -> ListServiceInstancesRequest.builder()
+                                                                                                          .spaceId(spaceGuid)
+                                                                                                          .addAllServiceInstanceNames(names)
+                                                                                                          .page(page)
+                                                                                                          .build();
+        return PaginationUtils.requestClientV3Resources(page -> v3Client.serviceInstancesV3()
+                                                                        .list(pageRequestSupplier.apply(page)))
+                              .collectMap(response -> response.getName(), response -> response.getMetadata())
+                              .block();
+    }
+
+    @Override
+    public List<CloudService> getServicesByMetadata(String labelSelector) {
+        String spaceGuid = getTargetSpaceGuid().toString();
+        IntFunction<ListServiceInstancesRequest> listServiceInstancesPageRequestSupplier = page -> ListServiceInstancesRequest.builder()
+                                                                                                                              .labelSelector(labelSelector)
+                                                                                                                              .spaceId(spaceGuid)
+                                                                                                                              .page(page)
+                                                                                                                              .build();
+
+        final Map<String, Metadata> serviceInstancesMetadata = PaginationUtils.requestClientV3Resources(page -> v3Client.serviceInstancesV3()
+                                                                                                                        .list(listServiceInstancesPageRequestSupplier.apply(page)))
+                                                                              .collectMap(response -> response.getName(),
+                                                                                          response -> response.getMetadata())
+                                                                              .block();
+        final List<CloudService> cloudServices = fetchListWithAuxiliaryContent(() -> getServiceInstanceResourcesByNames(serviceInstancesMetadata.keySet()),
+                                                                               this::zipWithAuxiliaryServiceContent);
+        return getServicesWithMetadata(cloudServices, serviceInstancesMetadata);
     }
 
     @Override
@@ -1257,6 +1391,16 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
+    public void updateApplicationMetadata(UUID guid, org.cloudfoundry.client.v3.Metadata metadata) {
+        v3Client.applicationsV3()
+                .update(org.cloudfoundry.client.v3.applications.UpdateApplicationRequest.builder()
+                                                                                        .applicationId(guid.toString())
+                                                                                        .metadata(metadata)
+                                                                                        .build())
+                .block();
+    }
+
+    @Override
     public List<String> updateApplicationServices(String applicationName,
                                                   Map<String, Map<String, Object>> serviceNamesWithBindingParameters) {
         // No implementation here is needed because the logic is moved in ApplicationServicesUpdater in order to be used in other
@@ -1353,6 +1497,16 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                   .authenticationPassword(serviceBroker.getPassword())
                                                   .brokerUrl(serviceBroker.getUrl())
                                                   .build())
+                .block();
+    }
+
+    @Override
+    public void updateServiceMetadata(UUID guid, org.cloudfoundry.client.v3.Metadata metadata) {
+        v3Client.serviceInstancesV3()
+                .update(UpdateServiceInstanceRequest.builder()
+                                                    .serviceInstanceId(guid.toString())
+                                                    .metadata(metadata)
+                                                    .build())
                 .block();
     }
 
@@ -1506,6 +1660,16 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                               .singleOrEmpty();
     }
 
+    private Flux<? extends Resource<ApplicationEntity>> getApplicationResourcesByNames(Collection<String> names) {
+        IntFunction<ListSpaceApplicationsRequest> pageRequestSupplier = page -> ListSpaceApplicationsRequest.builder()
+                                                                                                            .spaceId(getTargetSpaceGuid().toString())
+                                                                                                            .addAllNames(names)
+                                                                                                            .page(page)
+                                                                                                            .build();
+        return PaginationUtils.requestClientV2Resources(page -> v3Client.spaces()
+                                                                        .listApplications(pageRequestSupplier.apply(page)));
+    }
+
     private Mono<Derivable<CloudApplication>> zipWithAuxiliaryApplicationContent(Resource<ApplicationEntity> applicationResource) {
         UUID applicationGuid = getGuid(applicationResource);
         return getApplicationSummary(applicationGuid).zipWhen(this::getApplicationStackResource)
@@ -1555,6 +1719,16 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                                                                     .page(page)
                                                                                                                     .build();
         return getServiceInstanceResources(pageRequestSupplier).singleOrEmpty();
+    }
+
+    private Flux<? extends Resource<UnionServiceInstanceEntity>> getServiceInstanceResourcesByNames(Collection<String> names) {
+        IntFunction<ListSpaceServiceInstancesRequest> pageRequestSupplier = page -> ListSpaceServiceInstancesRequest.builder()
+                                                                                                                    .returnUserProvidedServiceInstances(true)
+                                                                                                                    .spaceId(getTargetSpaceGuid().toString())
+                                                                                                                    .addAllNames(names)
+                                                                                                                    .page(page)
+                                                                                                                    .build();
+        return getServiceInstanceResources(pageRequestSupplier);
     }
 
     private Flux<? extends Resource<UnionServiceInstanceEntity>>

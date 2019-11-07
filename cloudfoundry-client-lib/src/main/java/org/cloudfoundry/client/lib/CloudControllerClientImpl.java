@@ -56,6 +56,7 @@ import org.cloudfoundry.client.lib.rest.CloudControllerRestClient;
 import org.cloudfoundry.client.lib.rest.CloudControllerRestClientFactory;
 import org.cloudfoundry.client.lib.rest.ImmutableCloudControllerRestClientFactory;
 import org.springframework.http.HttpStatus;
+import org.cloudfoundry.client.v3.Metadata;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.util.Assert;
 import org.springframework.web.client.ResponseErrorHandler;
@@ -425,6 +426,11 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
+    public List<CloudApplication> getApplicationsByMetadata(String labelSelector) {
+        return handleExceptions(() -> delegate.getApplicationsByMetadata(labelSelector));
+    }
+
+    @Override
     public URL getCloudControllerUrl() {
         return delegate.getControllerUrl();
     }
@@ -635,6 +641,11 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     @Override
     public List<CloudService> getServices() {
         return handleExceptions(() -> delegate.getServices());
+    }
+
+    @Override
+    public List<CloudService> getServicesByMetadata(String labelSelector) {
+        return handleExceptions(() -> delegate.getServicesByMetadata(labelSelector));
     }
 
     @Override
@@ -883,6 +894,11 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
+    public void updateApplicationMetadata(UUID guid, Metadata metadata) {
+        handleExceptions(() -> delegate.updateApplicationMetadata(guid, metadata));
+    }
+
+    @Override
     public void updateApplicationMemory(String applicationName, int memory) {
         handleExceptions(() -> delegate.updateApplicationMemory(applicationName, memory));
     }
@@ -920,6 +936,11 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     @Override
     public void updateQuota(CloudQuota quota, String name) {
         handleExceptions(() -> delegate.updateQuota(quota, name));
+    }
+
+    @Override
+    public void updateServiceMetadata(UUID guid, Metadata metadata) {
+        handleExceptions(() -> delegate.updateServiceMetadata(guid, metadata));
     }
 
     @Override

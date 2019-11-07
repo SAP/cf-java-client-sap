@@ -325,6 +325,22 @@
             <version>${byteman.version}</version>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>org.cloudfoundry</groupId>
+            <artifactId>cloudfoundry-client-reactor</artifactId>
+            <version>${cloudfoundry.v3.client.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.cloudfoundry</groupId>
+            <artifactId>cloudfoundry-operations</artifactId>
+            <version>${cloudfoundry.v3.client.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.cloudfoundry</groupId>
+            <artifactId>cloudfoundry-client</artifactId>
+            <version>${cloudfoundry.v3.client.version}</version>
+        </dependency>
     </dependencies>
 
     <build>

@@ -49,6 +49,7 @@ import org.cloudfoundry.client.lib.domain.InstancesInfo;
 import org.cloudfoundry.client.lib.domain.Staging;
 import org.cloudfoundry.client.lib.domain.Upload;
 import org.cloudfoundry.client.lib.domain.UploadToken;
+import org.cloudfoundry.client.v3.Metadata;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.web.client.ResponseErrorHandler;
 
@@ -774,7 +775,7 @@ public interface CloudControllerClient {
 
     /**
      * Get all service parameters.
-     * 
+     *
      * @param guid The service instance guid
      * @return service parameters in key-value pairs
      */
@@ -1360,5 +1361,13 @@ public interface CloudControllerClient {
     List<CloudBuild> getBuildsForApplication(UUID applicationGuid);
 
     List<CloudBuild> getBuildsForPackage(UUID packageGuid);
+
+    List<CloudApplication> getApplicationsByMetadata(String labelSelector);
+
+    void updateApplicationMetadata(UUID guid, Metadata metadata);
+
+    List<CloudService> getServicesByMetadata(String labelSelector);
+
+    void updateServiceMetadata(UUID guid, Metadata metadata);
 
 }
