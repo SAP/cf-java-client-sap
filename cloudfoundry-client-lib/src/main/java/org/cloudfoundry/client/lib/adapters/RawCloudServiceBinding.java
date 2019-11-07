@@ -12,6 +12,7 @@ import org.immutables.value.Value;
 @Value.Immutable
 public abstract class RawCloudServiceBinding extends RawCloudEntity<CloudServiceBinding> {
 
+    @Value.Parameter
     public abstract Resource<ServiceBindingEntity> getResource();
 
     @Nullable

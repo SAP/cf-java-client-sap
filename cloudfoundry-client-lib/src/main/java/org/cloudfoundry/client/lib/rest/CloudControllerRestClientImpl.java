@@ -1663,11 +1663,13 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                         .listServiceBindings(pageRequestSupplier.apply(page)));
     }
 
-    private Mono<Derivable<CloudServiceBinding>> zipWithAuxiliaryServiceBindingContent(Resource<ServiceBindingEntity> resource) {
-        return getServiceBindingParameters(getGuid(resource)).map(parameters -> ImmutableRawCloudServiceBinding.builder()
-                                                                                                               .resource(resource)
-                                                                                                               .parameters(parameters)
-                                                                                                               .build());
+    private Mono<? extends Derivable<CloudServiceBinding>> zipWithAuxiliaryServiceBindingContent(Resource<ServiceBindingEntity> resource) {
+        UUID serviceBindingGuid = getGuid(resource);
+        return getServiceBindingParameters(serviceBindingGuid).map(parameters -> ImmutableRawCloudServiceBinding.builder()
+                                                                                                                .resource(resource)
+                                                                                                                .parameters(parameters)
+                                                                                                                .build())
+                                                              .defaultIfEmpty(ImmutableRawCloudServiceBinding.of(resource));
     }
 
     private Mono<Map<String, Object>> getServiceBindingParameters(UUID serviceBindingGuid) {
