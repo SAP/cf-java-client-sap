@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,7 +35,6 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.IntFunction;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -102,6 +102,8 @@ import org.cloudfoundry.client.lib.domain.Derivable;
 import org.cloudfoundry.client.lib.domain.DockerCredentials;
 import org.cloudfoundry.client.lib.domain.DockerInfo;
 import org.cloudfoundry.client.lib.domain.ErrorDetails;
+import org.cloudfoundry.client.lib.domain.ImmutableCloudDomain;
+import org.cloudfoundry.client.lib.domain.ImmutableCloudMetadata;
 import org.cloudfoundry.client.lib.domain.ImmutableErrorDetails;
 import org.cloudfoundry.client.lib.domain.ImmutableUpload;
 import org.cloudfoundry.client.lib.domain.ImmutableUploadToken;
@@ -111,6 +113,8 @@ import org.cloudfoundry.client.lib.domain.Status;
 import org.cloudfoundry.client.lib.domain.Upload;
 import org.cloudfoundry.client.lib.domain.UploadToken;
 import org.cloudfoundry.client.lib.oauth2.OAuthClient;
+import org.cloudfoundry.client.lib.util.CloudUtil;
+import org.cloudfoundry.client.lib.util.JsonUtil;
 import org.cloudfoundry.client.v2.Resource;
 import org.cloudfoundry.client.v2.applications.ApplicationEntity;
 import org.cloudfoundry.client.v2.applications.ApplicationInstancesRequest;
@@ -716,12 +720,36 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public CloudDomain getDefaultDomain() {
-        List<CloudDomain> sharedDomains = getSharedDomains();
-        if (sharedDomains.isEmpty()) {
-            return null;
-        } else {
-            return sharedDomains.get(0);
-        }
+        Map<String, Object> urlVars = new HashMap<>();
+        urlVars.put("guid", target.getOrganization()
+                                  .getMetadata()
+                                  .getGuid());
+        Map<String, Object> resources = getResponseMap("/v3/organizations/{guid}/domains/default", urlVars);
+
+        String domainName = CloudUtil.parse(resources.get("name"));
+        Date createdAt = CloudUtil.parse(Date.class, resources.get("created_at"));
+        Date updatedAt = CloudUtil.parse(Date.class, resources.get("updated_at"));
+        String domainGuidString = CloudUtil.parse(resources.get("guid"));
+        UUID domainGuid = domainGuidString != null ? UUID.fromString(domainGuidString) : null;
+
+        return ImmutableCloudDomain.builder()
+                                   .name(domainName)
+                                   .metadata(ImmutableCloudMetadata.builder()
+                                                                   .createdAt(createdAt)
+                                                                   .updatedAt(updatedAt)
+                                                                   .guid(domainGuid)
+                                                                   .build())
+                                   .build();
+    }
+
+    private Map<String, Object> getResponseMap(String urlPath, Map<String, Object> urlVars) {
+        String response = getResponse(urlPath, urlVars);
+        return JsonUtil.convertJsonToMap(response);
+    }
+
+    private String getResponse(String urlPath, Map<String, Object> urlVars) {
+        return urlVars == null ? getRestTemplate().getForObject(getUrl(urlPath), String.class)
+            : getRestTemplate().getForObject(getUrl(urlPath), String.class, urlVars);
     }
 
     @Override
