@@ -53,6 +53,7 @@ import org.cloudfoundry.client.lib.domain.Staging;
 import org.cloudfoundry.client.lib.domain.Upload;
 import org.cloudfoundry.client.lib.domain.UploadToken;
 import org.cloudfoundry.client.lib.oauth2.OAuthClient;
+import org.cloudfoundry.client.v3.Metadata;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestTemplate;
@@ -374,4 +375,13 @@ public interface CloudControllerRestClient {
     Map<String, Object> getServiceParameters(UUID guid);
 
     List<CloudBuild> getBuildsForPackage(UUID packageGuid);
+
+    List<CloudApplication> getApplicationsByMetadataLabelSelector(String labelSelector);
+
+    List<CloudService> getServicesByMetadataLabelSelector(String labelSelector);
+
+    void updateApplicationMetadata(UUID guid, Metadata metadata);
+
+    void updateServiceMetadata(UUID guid, Metadata metadata);
+
 }
