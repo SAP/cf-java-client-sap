@@ -720,11 +720,9 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public CloudDomain getDefaultDomain() {
-        Map<String, Object> urlVars = new HashMap<>();
-        urlVars.put("guid", target.getOrganization()
-                                  .getMetadata()
-                                  .getGuid());
-        Map<String, Object> resources = getResponseMap("/v3/organizations/{guid}/domains/default", urlVars);
+        Map<String, Object> urlVariables = new HashMap<>();
+        urlVariables.put("organizationGuid", getTargetOrganizationGuid());
+        Map<String, Object> resources = getResponseMap("/v3/organizations/{organizationGuid}/domains/default", urlVariables);
 
         String domainName = CloudUtil.parse(resources.get("name"));
         Date createdAt = CloudUtil.parse(Date.class, resources.get("created_at"));
@@ -748,8 +746,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     private String getResponse(String urlPath, Map<String, Object> urlVars) {
-        return urlVars == null ? getRestTemplate().getForObject(getUrl(urlPath), String.class)
-            : getRestTemplate().getForObject(getUrl(urlPath), String.class, urlVars);
+        return getRestTemplate().getForObject(getUrl(urlPath), String.class, urlVars);
     }
 
     @Override
