@@ -17,6 +17,7 @@
 package org.cloudfoundry.client.lib.domain;
 
 import org.cloudfoundry.client.lib.domain.annotation.Nullable;
+import org.cloudfoundry.client.v3.Metadata;
 
 /**
  * Do not extend Derivable<T> in this interface. It is tempting, because all of its children have the same implementation, but implementing
@@ -26,9 +27,12 @@ import org.cloudfoundry.client.lib.domain.annotation.Nullable;
 public interface CloudEntity {
 
     @Nullable
+    String getName();
+
+    @Nullable
     CloudMetadata getMetadata();
 
     @Nullable
-    String getName();
+    Metadata getV3Metadata();
 
 }
