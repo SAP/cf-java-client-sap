@@ -28,8 +28,8 @@ import java.util.Optional;
 import org.cloudfoundry.client.CloudFoundryClient;
 import org.cloudfoundry.client.lib.CloudCredentials;
 import org.cloudfoundry.client.lib.HttpProxyConfiguration;
-import org.cloudfoundry.client.lib.adapters.CloudControllerV3ClientFactory;
-import org.cloudfoundry.client.lib.adapters.ImmutableCloudControllerV3ClientFactory;
+import org.cloudfoundry.client.lib.adapters.CloudFoundryClientFactory;
+import org.cloudfoundry.client.lib.adapters.ImmutableCloudFoundryClientFactory;
 import org.cloudfoundry.client.lib.domain.CloudSpace;
 import org.cloudfoundry.client.lib.domain.annotation.Nullable;
 import org.cloudfoundry.client.lib.oauth2.OAuthClient;
@@ -71,8 +71,8 @@ public abstract class CloudControllerRestClientFactory {
     public abstract Optional<Duration> getClientConnectTimeout();
 
     @Value.Derived
-    public CloudControllerV3ClientFactory getV3ClientFactory() {
-        ImmutableCloudControllerV3ClientFactory.Builder builder = ImmutableCloudControllerV3ClientFactory.builder();
+    public CloudFoundryClientFactory getCloudFoundryClientFactory() {
+        ImmutableCloudFoundryClientFactory.Builder builder = ImmutableCloudFoundryClientFactory.builder();
         getClientConnectTimeout().ifPresent(builder::clientConnectTimeout);
         getClientConnectionPoolSize().ifPresent(builder::clientConnectionPoolSize);
         getClientThreadPoolSize().ifPresent(builder::clientThreadPoolSize);
@@ -112,11 +112,10 @@ public abstract class CloudControllerRestClientFactory {
     public CloudControllerRestClient createClient(URL controllerUrl, CloudCredentials credentials, CloudSpace target,
                                                   OAuthClient oAuthClient) {
         RestTemplate restTemplate = createAuthorizationSettingRestTemplate(credentials, oAuthClient);
-        CloudFoundryClient v3Client = getV3ClientFactory().createClient(controllerUrl, oAuthClient);
-        DopplerClient dopplerClient = getV3ClientFactory().createDopplerClient(controllerUrl, oAuthClient);
+        CloudFoundryClient delegate = getCloudFoundryClientFactory().createClient(controllerUrl, oAuthClient);
+        DopplerClient dopplerClient = getCloudFoundryClientFactory().createDopplerClient(controllerUrl, oAuthClient);
 
-        return new CloudControllerRestClientImpl(controllerUrl, credentials, restTemplate, oAuthClient, v3Client,
-                dopplerClient, target);
+        return new CloudControllerRestClientImpl(controllerUrl, credentials, restTemplate, oAuthClient, delegate, dopplerClient, target);
     }
 
     private OAuthClient createOAuthClient(URL controllerUrl, String origin) {
@@ -125,7 +124,7 @@ public abstract class CloudControllerRestClientFactory {
         if (StringUtils.isEmpty(origin)) {
             return restUtil.createOAuthClient(authorizationEndpoint, getHttpProxyConfiguration(), shouldTrustSelfSignedCertificates());
         }
-        ConnectionContext connectionContext = getV3ClientFactory().getOrCreateConnectionContext(controllerUrl.getHost());
+        ConnectionContext connectionContext = getCloudFoundryClientFactory().getOrCreateConnectionContext(controllerUrl.getHost());
         return restUtil.createOAuthClient(authorizationEndpoint, getHttpProxyConfiguration(), shouldTrustSelfSignedCertificates(),
                                           connectionContext, origin);
     }

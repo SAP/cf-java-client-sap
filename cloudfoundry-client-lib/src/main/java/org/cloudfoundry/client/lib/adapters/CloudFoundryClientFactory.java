@@ -16,7 +16,7 @@ import org.immutables.value.Value;
 import org.cloudfoundry.reactor.doppler.ReactorDopplerClient;
 
 @Value.Immutable
-public abstract class CloudControllerV3ClientFactory {
+public abstract class CloudFoundryClientFactory {
 
     private final Map<String, ConnectionContext> connectionContextCache = new ConcurrentHashMap<>();
 

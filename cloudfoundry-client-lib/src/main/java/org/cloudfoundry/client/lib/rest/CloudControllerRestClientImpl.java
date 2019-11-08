@@ -258,7 +258,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     private RestTemplate restTemplate;
     private CloudSpace target;
 
-    private CloudFoundryClient v3Client;
+    private CloudFoundryClient delegate;
     private DopplerClient dopplerClient;
 
     /**
@@ -269,12 +269,12 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     public CloudControllerRestClientImpl(URL controllerUrl, CloudCredentials credentials, RestTemplate restTemplate,
-                                         OAuthClient oAuthClient, CloudFoundryClient v3Client) {
-        this(controllerUrl, credentials, restTemplate, oAuthClient, v3Client, null, null);
+                                         OAuthClient oAuthClient, CloudFoundryClient delegate) {
+        this(controllerUrl, credentials, restTemplate, oAuthClient, delegate, null, null);
     }
 
     public CloudControllerRestClientImpl(URL controllerUrl, CloudCredentials credentials, RestTemplate restTemplate,
-                                         OAuthClient oAuthClient, CloudFoundryClient v3Client, DopplerClient dopplerClient,
+                                         OAuthClient oAuthClient, CloudFoundryClient delegate, DopplerClient dopplerClient,
                                          CloudSpace target) {
         Assert.notNull(controllerUrl, "CloudControllerUrl cannot be null");
         Assert.notNull(restTemplate, "RestTemplate cannot be null");
@@ -286,7 +286,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         this.oAuthClient = oAuthClient;
         this.target = target;
 
-        this.v3Client = v3Client;
+        this.delegate = delegate;
         this.dopplerClient = dopplerClient;
     }
 
@@ -356,7 +356,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         UUID applicationGuid = getRequiredApplicationGuid(applicationName);
         UUID serviceGuid = getService(serviceName).getMetadata()
                                                   .getGuid();
-        v3Client.serviceBindingsV2()
+        delegate.serviceBindingsV2()
                 .create(CreateServiceBindingRequest.builder()
                                                    .applicationId(applicationGuid.toString())
                                                    .serviceInstanceId(serviceGuid.toString())
@@ -411,7 +411,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
             }
         }
 
-        CreateApplicationResponse response = v3Client.applicationsV2()
+        CreateApplicationResponse response = delegate.applicationsV2()
                                                      .create(requestBuilder.build())
                                                      .block();
         UUID newAppGuid = UUID.fromString(response.getMetadata()
@@ -436,7 +436,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     private void updateBuildpacks(UUID appGuid, List<String> buildpacks) {
-        v3Client.applicationsV3()
+        delegate.applicationsV3()
                 .update(org.cloudfoundry.client.v3.applications.UpdateApplicationRequest.builder()
                                                                                         .applicationId(appGuid.toString())
                                                                                         .lifecycle(Lifecycle.builder()
@@ -472,7 +472,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         CloudServicePlan servicePlan = findPlanForService(service);
         UUID servicePlanGuid = servicePlan.getMetadata()
                                           .getGuid();
-        v3Client.serviceInstances()
+        delegate.serviceInstances()
                 .create(CreateServiceInstanceRequest.builder()
                                                     .spaceId(getTargetSpaceGuid().toString())
                                                     .name(service.getName())
@@ -485,7 +485,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     public void createServiceBroker(CloudServiceBroker serviceBroker) {
         Assert.notNull(serviceBroker, "Service broker must not be null.");
 
-        v3Client.serviceBrokers()
+        delegate.serviceBrokers()
                 .create(CreateServiceBrokerRequest.builder()
                                                   .name(serviceBroker.getName())
                                                   .brokerUrl(serviceBroker.getUrl())
@@ -520,7 +520,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         assertSpaceProvided("create service");
         Assert.notNull(service, "Service must not be null.");
 
-        v3Client.userProvidedServiceInstances()
+        delegate.userProvidedServiceInstances()
                 .create(CreateUserProvidedServiceInstanceRequest.builder()
                                                                 .spaceId(getTargetSpaceGuid().toString())
                                                                 .name(service.getName())
@@ -553,7 +553,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         for (UUID serviceBindingGuid : serviceBindingGuids) {
             doUnbindService(serviceBindingGuid);
         }
-        v3Client.applicationsV2()
+        delegate.applicationsV2()
                 .delete(DeleteApplicationRequest.builder()
                                                 .applicationId(applicationGuid.toString())
                                                 .build())
@@ -626,7 +626,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         CloudServiceBroker broker = getServiceBroker(name);
         UUID guid = broker.getMetadata()
                           .getGuid();
-        v3Client.serviceBrokers()
+        delegate.serviceBrokers()
                 .delete(DeleteServiceBrokerRequest.builder()
                                                   .serviceBrokerId(guid.toString())
                                                   .build())
@@ -934,7 +934,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public Map<String, Object> getServiceParameters(UUID guid) {
-        return v3Client.serviceInstances()
+        return delegate.serviceInstances()
                        .getParameters(GetServiceInstanceParametersRequest.builder()
                                                                          .serviceInstanceId(guid.toString())
                                                                          .build())
@@ -1115,7 +1115,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     @Override
     public void rename(String applicationName, String newName) {
         UUID applicationGuid = getRequiredApplicationGuid(applicationName);
-        v3Client.applicationsV2()
+        delegate.applicationsV2()
                 .update(UpdateApplicationRequest.builder()
                                                 .applicationId(applicationGuid.toString())
                                                 .name(newName)
@@ -1147,7 +1147,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         }
         UUID applicationGuid = application.getMetadata()
                                           .getGuid();
-        v3Client.applicationsV2()
+        delegate.applicationsV2()
                 .update(UpdateApplicationRequest.builder()
                                                 .applicationId(applicationGuid.toString())
                                                 .state(CloudApplication.State.STARTED.toString())
@@ -1164,7 +1164,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         }
         UUID applicationGuid = application.getMetadata()
                                           .getGuid();
-        v3Client.applicationsV2()
+        delegate.applicationsV2()
                 .update(UpdateApplicationRequest.builder()
                                                 .applicationId(applicationGuid.toString())
                                                 .state(CloudApplication.State.STOPPED.toString())
@@ -1215,7 +1215,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     @Override
     public void updateApplicationDiskQuota(String applicationName, int diskQuota) {
         UUID applicationGuid = getRequiredApplicationGuid(applicationName);
-        v3Client.applicationsV2()
+        delegate.applicationsV2()
                 .update(UpdateApplicationRequest.builder()
                                                 .applicationId(applicationGuid.toString())
                                                 .diskQuota(diskQuota)
@@ -1226,7 +1226,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     @Override
     public void updateApplicationEnv(String applicationName, Map<String, String> env) {
         UUID applicationGuid = getRequiredApplicationGuid(applicationName);
-        v3Client.applicationsV2()
+        delegate.applicationsV2()
                 .update(UpdateApplicationRequest.builder()
                                                 .applicationId(applicationGuid.toString())
                                                 .environmentJsons(env)
@@ -1237,7 +1237,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     @Override
     public void updateApplicationInstances(String applicationName, int instances) {
         UUID applicationGuid = getRequiredApplicationGuid(applicationName);
-        v3Client.applicationsV2()
+        delegate.applicationsV2()
                 .update(UpdateApplicationRequest.builder()
                                                 .applicationId(applicationGuid.toString())
                                                 .instances(instances)
@@ -1248,7 +1248,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     @Override
     public void updateApplicationMemory(String applicationName, int memory) {
         UUID applicationGuid = getRequiredApplicationGuid(applicationName);
-        v3Client.applicationsV2()
+        delegate.applicationsV2()
                 .update(UpdateApplicationRequest.builder()
                                                 .applicationId(applicationGuid.toString())
                                                 .memory(memory)
@@ -1284,7 +1284,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                 requestBuilder.stackId(stackGuid.toString());
             }
         }
-        v3Client.applicationsV2()
+        delegate.applicationsV2()
                 .update(requestBuilder.build())
                 .block();
 
@@ -1345,7 +1345,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         UUID brokerGuid = existingBroker.getMetadata()
                                         .getGuid();
 
-        v3Client.serviceBrokers()
+        delegate.serviceBrokers()
                 .update(UpdateServiceBrokerRequest.builder()
                                                   .serviceBrokerId(brokerGuid.toString())
                                                   .name(serviceBroker.getName())
@@ -1452,7 +1452,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public void bindDropletToApp(UUID dropletGuid, UUID applicationGuid) {
-        v3Client.applicationsV3()
+        delegate.applicationsV3()
                 .setCurrentDroplet(SetApplicationCurrentDropletRequest.builder()
                                                                       .applicationId(applicationGuid.toString())
                                                                       .data(Relationship.builder()
@@ -1483,7 +1483,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                                                             .spaceId(getTargetSpaceGuid().toString())
                                                                                                             .page(page)
                                                                                                             .build();
-        return PaginationUtils.requestClientV2Resources(page -> v3Client.spaces()
+        return PaginationUtils.requestClientV2Resources(page -> delegate.spaces()
                                                                         .listApplications(pageRequestSupplier.apply(page)));
     }
 
@@ -1491,7 +1491,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         GetApplicationRequest request = GetApplicationRequest.builder()
                                                              .applicationId(guid.toString())
                                                              .build();
-        return v3Client.applicationsV2()
+        return delegate.applicationsV2()
                        .get(request);
     }
 
@@ -1501,7 +1501,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                                                   .name(name)
                                                                                                   .page(page)
                                                                                                   .build();
-        return PaginationUtils.requestClientV2Resources(page -> v3Client.applicationsV2()
+        return PaginationUtils.requestClientV2Resources(page -> delegate.applicationsV2()
                                                                         .list(pageRequestSupplier.apply(page)))
                               .singleOrEmpty();
     }
@@ -1521,7 +1521,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         SummaryApplicationRequest request = SummaryApplicationRequest.builder()
                                                                      .applicationId(guid.toString())
                                                                      .build();
-        return v3Client.applicationsV2()
+        return delegate.applicationsV2()
                        .summary(request);
     }
 
@@ -1559,7 +1559,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     private Flux<? extends Resource<UnionServiceInstanceEntity>>
             getServiceInstanceResources(IntFunction<ListSpaceServiceInstancesRequest> pageRequestSupplier) {
-        return PaginationUtils.requestClientV2Resources(page -> v3Client.spaces()
+        return PaginationUtils.requestClientV2Resources(page -> delegate.spaces()
                                                                         .listServiceInstances(pageRequestSupplier.apply(page)));
     }
 
@@ -1623,7 +1623,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                                                                                                               .userProvidedServiceInstanceId(serviceInstanceGuid.toString())
                                                                                                                                                               .page(page)
                                                                                                                                                               .build();
-        return PaginationUtils.requestClientV2Resources(page -> v3Client.userProvidedServiceInstances()
+        return PaginationUtils.requestClientV2Resources(page -> delegate.userProvidedServiceInstances()
                                                                         .listServiceBindings(pageRequestSupplier.apply(page)));
     }
 
@@ -1632,7 +1632,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                                                         .serviceInstanceId(serviceInstanceGuid.toString())
                                                                                                         .page(page)
                                                                                                         .build();
-        return PaginationUtils.requestClientV2Resources(page -> v3Client.serviceBindingsV2()
+        return PaginationUtils.requestClientV2Resources(page -> delegate.serviceBindingsV2()
                                                                         .list(pageRequestSupplier.apply(page)));
     }
 
@@ -1656,7 +1656,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     private Flux<? extends Resource<ServiceBindingEntity>>
             getApplicationServiceBindingResources(IntFunction<ListApplicationServiceBindingsRequest> pageRequestSupplier) {
-        return PaginationUtils.requestClientV2Resources(page -> v3Client.applicationsV2()
+        return PaginationUtils.requestClientV2Resources(page -> delegate.applicationsV2()
                                                                         .listServiceBindings(pageRequestSupplier.apply(page)));
     }
 
@@ -1670,7 +1670,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     private Mono<Map<String, Object>> getServiceBindingParameters(UUID serviceBindingGuid) {
-        return v3Client.serviceBindingsV2()
+        return delegate.serviceBindingsV2()
                        .getParameters(GetServiceBindingParametersRequest.builder()
                                                                         .serviceBindingId(serviceBindingGuid.toString())
                                                                         .build())
@@ -1699,7 +1699,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                    .servicePlanId(servicePlanGuid.toString())
                                                                    .publiclyVisible(visibility)
                                                                    .build();
-        v3Client.servicePlans()
+        delegate.servicePlans()
                 .update(request)
                 .block();
     }
@@ -1709,7 +1709,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                                                     .spaceId(spaceGuid.toString())
                                                                                                     .page(page)
                                                                                                     .build();
-        return PaginationUtils.requestClientV2Resources(page -> v3Client.spaces()
+        return PaginationUtils.requestClientV2Resources(page -> delegate.spaces()
                                                                         .listAuditors(pageRequestSupplier.apply(page)));
     }
 
@@ -1718,7 +1718,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                                                         .spaceId(spaceGuid.toString())
                                                                                                         .page(page)
                                                                                                         .build();
-        return PaginationUtils.requestClientV2Resources(page -> v3Client.spaces()
+        return PaginationUtils.requestClientV2Resources(page -> delegate.spaces()
                                                                         .listDevelopers(pageRequestSupplier.apply(page)));
     }
 
@@ -1727,7 +1727,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                                                     .spaceId(spaceGuid.toString())
                                                                                                     .page(page)
                                                                                                     .build();
-        return PaginationUtils.requestClientV2Resources(page -> v3Client.spaces()
+        return PaginationUtils.requestClientV2Resources(page -> delegate.spaces()
                                                                         .listManagers(pageRequestSupplier.apply(page)));
     }
 
@@ -1735,7 +1735,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         GetTaskRequest request = GetTaskRequest.builder()
                                                .taskId(guid.toString())
                                                .build();
-        return v3Client.tasks()
+        return delegate.tasks()
                        .get(request);
     }
 
@@ -1744,7 +1744,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                                     .applicationId(applicationGuid.toString())
                                                                                     .page(page)
                                                                                     .build();
-        return PaginationUtils.requestClientV3Resources(page -> v3Client.tasks()
+        return PaginationUtils.requestClientV3Resources(page -> delegate.tasks()
                                                                         .list(pageRequestSupplier.apply(page)));
     }
 
@@ -1762,7 +1762,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                      .diskInMb(task.getLimits()
                                                                    .getDisk())
                                                      .build();
-        return v3Client.tasks()
+        return delegate.tasks()
                        .create(request);
     }
 
@@ -1770,7 +1770,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         CancelTaskRequest request = CancelTaskRequest.builder()
                                                      .taskId(taskGuid.toString())
                                                      .build();
-        return v3Client.tasks()
+        return delegate.tasks()
                        .cancel(request);
     }
 
@@ -1778,7 +1778,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                                 Map<String, Object> parameters) {
         UUID serviceGuid = getGuid(service);
 
-        return v3Client.serviceKeys()
+        return delegate.serviceKeys()
                        .create(CreateServiceKeyRequest.builder()
                                                       .serviceInstanceId(serviceGuid.toString())
                                                       .name(name)
@@ -1801,7 +1801,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         UUID applicationGuid = getRequiredApplicationGuid(applicationName);
         UUID packageGuid = getGuid(createPackageForApplication(applicationGuid));
 
-        v3Client.packages()
+        delegate.packages()
                 .upload(UploadPackageRequest.builder()
                                             .bits(file.toPath())
                                             .packageId(packageGuid.toString())
@@ -1822,7 +1822,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                            .type(PackageType.BITS)
                                                            .relationships(buildPackageRelationships(applicationGuid))
                                                            .build();
-        return v3Client.packages()
+        return delegate.packages()
                        .create(request);
     }
 
@@ -1848,7 +1848,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         CreateBuildRequest request = CreateBuildRequest.builder()
                                                        .getPackage(buildRelationship(packageGuid))
                                                        .build();
-        return v3Client.builds()
+        return delegate.builds()
                        .create(request);
     }
 
@@ -1856,7 +1856,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         GetBuildRequest request = GetBuildRequest.builder()
                                                  .buildId(buildGuid.toString())
                                                  .build();
-        return v3Client.builds()
+        return delegate.builds()
                        .get(request);
     }
 
@@ -1865,7 +1865,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                                                             .applicationId(applicationGuid.toString())
                                                                                                             .page(page)
                                                                                                             .build();
-        return PaginationUtils.requestClientV3Resources(page -> v3Client.applicationsV3()
+        return PaginationUtils.requestClientV3Resources(page -> delegate.applicationsV3()
                                                                         .listBuilds(pageRequestSupplier.apply(page)));
     }
 
@@ -1874,7 +1874,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                                       .packageId(packageGuid.toString())
                                                                                       .page(page)
                                                                                       .build();
-        return PaginationUtils.requestClientV3Resources(page -> v3Client.builds()
+        return PaginationUtils.requestClientV3Resources(page -> delegate.builds()
                                                                         .list(pageRequestSupplier.apply(page)));
     }
 
@@ -1942,7 +1942,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     private void bindRoute(UUID domainGuid, String host, String path, UUID applicationGuid) {
         UUID routeGuid = getOrAddRoute(domainGuid, host, path);
-        v3Client.applicationsV2()
+        delegate.applicationsV2()
                 .associateRoute(AssociateApplicationRouteRequest.builder()
                                                                 .applicationId(applicationGuid.toString())
                                                                 .routeId(routeGuid.toString())
@@ -1960,7 +1960,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     private UUID doAddRoute(UUID domainGuid, String host, String path) {
         assertSpaceProvided("add route");
-        CreateRouteResponse response = v3Client.routes()
+        CreateRouteResponse response = delegate.routes()
                                                .create(CreateRouteRequest.builder()
                                                                          .domainId(domainGuid.toString())
                                                                          .host(host)
@@ -1972,7 +1972,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     private void doCreateDomain(String name) {
-        v3Client.domains()
+        delegate.domains()
                 .create(CreateDomainRequest.builder()
                                            .wildcard(true)
                                            .owningOrganizationId(getTargetOrganizationGuid().toString())
@@ -1982,7 +1982,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     private void doDeleteDomain(UUID guid) {
-        v3Client.privateDomains()
+        delegate.privateDomains()
                 .delete(DeletePrivateDomainRequest.builder()
                                                   .privateDomainId(guid.toString())
                                                   .build())
@@ -1990,7 +1990,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     private void doDeleteRoute(UUID guid) {
-        v3Client.routes()
+        delegate.routes()
                 .delete(DeleteRouteRequest.builder()
                                           .routeId(guid.toString())
                                           .build())
@@ -2004,7 +2004,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         }
         UUID serviceGuid = service.getMetadata()
                                   .getGuid();
-        v3Client.serviceInstances()
+        delegate.serviceInstances()
                 .delete(DeleteServiceInstanceRequest.builder()
                                                     .acceptsIncomplete(true)
                                                     .serviceInstanceId(serviceGuid.toString())
@@ -2018,7 +2018,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     private void doUnbindService(UUID serviceBindingGuid) {
-        v3Client.serviceBindingsV2()
+        delegate.serviceBindingsV2()
                 .delete(DeleteServiceBindingRequest.builder()
                                                    .serviceBindingId(serviceBindingGuid.toString())
                                                    .build())
@@ -2026,7 +2026,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     private void doDeleteServiceKey(UUID guid) {
-        v3Client.serviceKeys()
+        delegate.serviceKeys()
                 .delete(DeleteServiceKeyRequest.builder()
                                                .serviceKeyId(guid.toString())
                                                .build())
@@ -2054,7 +2054,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                                         .name(name)
                                                                                         .page(page)
                                                                                         .build();
-        return PaginationUtils.requestClientV2Resources(page -> v3Client.domains()
+        return PaginationUtils.requestClientV2Resources(page -> delegate.domains()
                                                                         .list(pageRequestSupplier.apply(page)))
                               .singleOrEmpty();
     }
@@ -2063,7 +2063,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         IntFunction<ListSharedDomainsRequest> pageRequestSupplier = page -> ListSharedDomainsRequest.builder()
                                                                                                     .page(page)
                                                                                                     .build();
-        return PaginationUtils.requestClientV2Resources(page -> v3Client.sharedDomains()
+        return PaginationUtils.requestClientV2Resources(page -> delegate.sharedDomains()
                                                                         .list(pageRequestSupplier.apply(page)));
     }
 
@@ -2071,7 +2071,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         IntFunction<ListPrivateDomainsRequest> pageRequestSupplier = page -> ListPrivateDomainsRequest.builder()
                                                                                                       .page(page)
                                                                                                       .build();
-        return PaginationUtils.requestClientV2Resources(page -> v3Client.privateDomains()
+        return PaginationUtils.requestClientV2Resources(page -> delegate.privateDomains()
                                                                         .list(pageRequestSupplier.apply(page)));
     }
 
@@ -2080,7 +2080,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                                                                               .organizationId(organizationGuid.toString())
                                                                                                                               .page(page)
                                                                                                                               .build();
-        return PaginationUtils.requestClientV2Resources(page -> v3Client.organizations()
+        return PaginationUtils.requestClientV2Resources(page -> delegate.organizations()
                                                                         .listPrivateDomains(pageRequestSupplier.apply(page)));
     }
 
@@ -2115,7 +2115,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         GetSpaceRequest request = GetSpaceRequest.builder()
                                                  .spaceId(guid.toString())
                                                  .build();
-        return v3Client.spaces()
+        return delegate.spaces()
                        .get(request);
     }
 
@@ -2133,13 +2133,13 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                                                               .name(name)
                                                                                                               .page(page)
                                                                                                               .build();
-        return PaginationUtils.requestClientV2Resources(page -> v3Client.organizations()
+        return PaginationUtils.requestClientV2Resources(page -> delegate.organizations()
                                                                         .listSpaces(pageRequestSupplier.apply(page)))
                               .singleOrEmpty();
     }
 
     private Flux<? extends Resource<SpaceEntity>> getSpaceResources(IntFunction<ListSpacesRequest> requestForPage) {
-        return PaginationUtils.requestClientV2Resources(page -> v3Client.spaces()
+        return PaginationUtils.requestClientV2Resources(page -> delegate.spaces()
                                                                         .list(requestForPage.apply(page)));
     }
 
@@ -2171,7 +2171,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         GetOrganizationRequest request = GetOrganizationRequest.builder()
                                                                .organizationId(guid.toString())
                                                                .build();
-        return v3Client.organizations()
+        return delegate.organizations()
                        .get(request);
     }
 
@@ -2185,7 +2185,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     private Flux<? extends Resource<OrganizationEntity>>
             getOrganizationResources(IntFunction<ListOrganizationsRequest> pageRequestSupplier) {
-        return PaginationUtils.requestClientV2Resources(page -> v3Client.organizations()
+        return PaginationUtils.requestClientV2Resources(page -> delegate.organizations()
                                                                         .list(pageRequestSupplier.apply(page)));
     }
 
@@ -2204,7 +2204,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                                                 .spaceId(spaceGuid.toString())
                                                                                                 .page(page)
                                                                                                 .build();
-        return PaginationUtils.requestClientV2Resources(page -> v3Client.spaces()
+        return PaginationUtils.requestClientV2Resources(page -> delegate.spaces()
                                                                         .listRoutes(pageRequestSupplier.apply(page)));
     }
 
@@ -2219,7 +2219,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         requestBuilder.spaceId(getTargetSpaceGuid().toString())
                       .domainId(domainGuid.toString());
 
-        return PaginationUtils.requestClientV2Resources(page -> v3Client.spaces()
+        return PaginationUtils.requestClientV2Resources(page -> delegate.spaces()
                                                                         .listRoutes(requestBuilder.page(page)
                                                                                                   .build()));
     }
@@ -2239,7 +2239,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                                                     .routeId(routeGuid.toString())
                                                                                                     .page(page)
                                                                                                     .build();
-        return PaginationUtils.requestClientV2Resources(page -> v3Client.routeMappings()
+        return PaginationUtils.requestClientV2Resources(page -> delegate.routeMappings()
                                                                         .list(pageRequestSupplier.apply(page)));
     }
 
@@ -2264,7 +2264,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         GetServiceRequest request = GetServiceRequest.builder()
                                                      .serviceId(serviceGuid.toString())
                                                      .build();
-        return v3Client.services()
+        return delegate.services()
                        .get(request);
     }
 
@@ -2285,7 +2285,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     private Flux<? extends Resource<ServiceEntity>> getServiceResources(IntFunction<ListServicesRequest> pageRequestSupplier) {
-        return PaginationUtils.requestClientV2Resources(page -> v3Client.services()
+        return PaginationUtils.requestClientV2Resources(page -> delegate.services()
                                                                         .list(pageRequestSupplier.apply(page)));
     }
 
@@ -2306,7 +2306,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         GetServicePlanRequest request = GetServicePlanRequest.builder()
                                                              .servicePlanId(servicePlanGuid.toString())
                                                              .build();
-        return v3Client.servicePlans()
+        return delegate.servicePlans()
                        .get(request);
     }
 
@@ -2315,7 +2315,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                                                   .serviceId(serviceGuid.toString())
                                                                                                   .page(page)
                                                                                                   .build();
-        return PaginationUtils.requestClientV2Resources(page -> v3Client.servicePlans()
+        return PaginationUtils.requestClientV2Resources(page -> delegate.servicePlans()
                                                                         .list(pageRequestSupplier.apply(page)));
     }
 
@@ -2337,7 +2337,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                                                 .serviceInstanceId(serviceInstanceGuid.toString())
                                                                                                 .page(page)
                                                                                                 .build();
-        return PaginationUtils.requestClientV2Resources(page -> v3Client.serviceKeys()
+        return PaginationUtils.requestClientV2Resources(page -> delegate.serviceKeys()
                                                                         .list(pageRequestSupplier.apply(page)));
     }
 
@@ -2366,7 +2366,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         GetStackRequest request = GetStackRequest.builder()
                                                  .stackId(guid.toString())
                                                  .build();
-        return v3Client.stacks()
+        return delegate.stacks()
                        .get(request);
     }
 
@@ -2379,7 +2379,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     private Flux<? extends Resource<StackEntity>> getStackResources(IntFunction<ListStacksRequest> requestForPage) {
-        return PaginationUtils.requestClientV2Resources(page -> v3Client.stacks()
+        return PaginationUtils.requestClientV2Resources(page -> delegate.stacks()
                                                                         .list(requestForPage.apply(page)));
     }
 
@@ -2391,7 +2391,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         IntFunction<ListEventsRequest> pageRequestSupplier = page -> ListEventsRequest.builder()
                                                                                       .page(page)
                                                                                       .build();
-        return PaginationUtils.requestClientV2Resources(page -> v3Client.events()
+        return PaginationUtils.requestClientV2Resources(page -> delegate.events()
                                                                         .list(pageRequestSupplier.apply(page)));
     }
 
@@ -2400,7 +2400,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                                       .actee(actee)
                                                                                       .page(page)
                                                                                       .build();
-        return PaginationUtils.requestClientV2Resources(page -> v3Client.events()
+        return PaginationUtils.requestClientV2Resources(page -> delegate.events()
                                                                         .list(pageRequestSupplier.apply(page)));
     }
 
@@ -2412,12 +2412,12 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         ApplicationInstancesRequest request = ApplicationInstancesRequest.builder()
                                                                          .applicationId(applicationGuid.toString())
                                                                          .build();
-        return v3Client.applicationsV2()
+        return delegate.applicationsV2()
                        .instances(request);
     }
 
     private Mono<GetInfoResponse> getInfoResource() {
-        return v3Client.info()
+        return delegate.info()
                        .get(GetInfoRequest.builder()
                                           .build());
     }
@@ -2443,7 +2443,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     private Flux<? extends Resource<ServiceBrokerEntity>>
             getServiceBrokerResources(IntFunction<ListServiceBrokersRequest> pageRequestSupplier) {
-        return PaginationUtils.requestClientV2Resources(page -> v3Client.serviceBrokers()
+        return PaginationUtils.requestClientV2Resources(page -> delegate.serviceBrokers()
                                                                         .list(pageRequestSupplier.apply(page)));
     }
 
@@ -2554,7 +2554,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         GetPackageRequest request = GetPackageRequest.builder()
                                                      .packageId(guid.toString())
                                                      .build();
-        return v3Client.packages()
+        return delegate.packages()
                        .get(request);
     }
 
@@ -2575,7 +2575,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         if (routeGuid == null) {
             return;
         }
-        v3Client.applicationsV2()
+        delegate.applicationsV2()
                 .removeRoute(RemoveApplicationRouteRequest.builder()
                                                           .applicationId(applicationGuid.toString())
                                                           .routeId(routeGuid.toString())
