@@ -39,8 +39,6 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.cloudfoundry.AbstractCloudFoundryException;
 import org.cloudfoundry.client.CloudFoundryClient;
 import org.cloudfoundry.client.lib.ApplicationLogListener;
@@ -257,7 +255,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     private static final String USER_PROVIDED_SERVICE_INSTANCE_TYPE = "user_provided_service_instance";
     private static final long JOB_POLLING_PERIOD = TimeUnit.SECONDS.toMillis(5);
 
-    private final Log logger = LogFactory.getLog(getClass().getName());
     private CloudCredentials credentials;
     private URL controllerUrl;
     private OAuthClient oAuthClient;
@@ -660,25 +657,19 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public CloudApplication getApplication(String applicationName) {
-        final CloudApplication application = getApplication(applicationName, true);
-        return application == null ? null : getApplicationWithMetadata(application);
+        return getApplication(applicationName, true);
     }
 
     @Override
     public CloudApplication getApplication(String applicationName, boolean required) {
-        final CloudApplication application = findApplicationByName(applicationName, required);
-        return application == null ? null : getApplicationWithMetadata(application);
+        CloudApplication application = findApplicationByName(applicationName, required);
+        return addMetadataIfNotNull(application);
     }
 
     @Override
     public CloudApplication getApplication(UUID applicationGuid) {
         final CloudApplication application = findApplication(applicationGuid);
-        return application == null ? null : getApplicationWithMetadata(application);
-    }
-
-    private CloudApplication getApplicationWithMetadata(CloudApplication application) {
-        final Map<String, Metadata> applicationsMetadata = getApplicationsMetadata(Collections.singletonList(application.getName()));
-        return getApplicationsWithMetadata(Collections.singletonList(application), applicationsMetadata).get(0);
+        return addMetadataIfNotNull(application);
     }
 
     @Override
@@ -719,15 +710,9 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public List<CloudApplication> getApplications() {
-        final List<CloudApplication> cloudApplications = fetchListWithAuxiliaryContent(this::getApplicationResources,
-                                                                                       this::zipWithAuxiliaryApplicationContent);
-        if (cloudApplications == null || cloudApplications.size() == 0) {
-            return cloudApplications;
-        }
-        final Map<String, Metadata> applicationsMetadata = getApplicationsMetadata(cloudApplications.stream()
-                                                                                                    .map(app -> app.getName())
-                                                                                                    .collect(Collectors.toList()));
-        return getApplicationsWithMetadata(cloudApplications, applicationsMetadata);
+        List<CloudApplication> applications = fetchListWithAuxiliaryContent(this::getApplicationResources,
+                                                                            this::zipWithAuxiliaryApplicationContent);
+        return addMetadataIfNotEmpty(applications);
     }
 
     @Override
@@ -744,7 +729,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                           .block();
         final List<CloudApplication> cloudApplications = fetchListWithAuxiliaryContent(() -> getApplicationResourcesByNames(applicationsMetadata.keySet()),
                                                                                        this::zipWithAuxiliaryApplicationContent);
-        return getApplicationsWithMetadata(cloudApplications, applicationsMetadata);
+        return addMetadata(cloudApplications, applicationsMetadata);
     }
 
     public Map<String, Metadata> getApplicationsMetadata(List<String> guids) {
@@ -985,21 +970,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
             throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Service instance " + serviceName + " not found.");
         }
         return serviceInstance == null ? null : getServiceInstanceWithMetadata(serviceInstance);
-    }
-
-    private List<CloudApplication> getApplicationsWithMetadata(List<CloudApplication> cloudApplications,
-                                                               Map<String, Metadata> applicationsMetadata) {
-        List<CloudApplication> applicationsWithMetadata = new ArrayList<>();
-        for (int i = 0; i < cloudApplications.size(); i++) {
-            final CloudApplication cloudApplication = cloudApplications.get(i);
-            final String applicationName = cloudApplication.getName();
-            final ImmutableCloudApplication cloudApplicationWithMetadata = ImmutableCloudApplication.builder()
-                                                                                                    .from(cloudApplication)
-                                                                                                    .v3Metadata(applicationsMetadata.get(applicationName))
-                                                                                                    .build();
-            applicationsWithMetadata.add(cloudApplicationWithMetadata);
-        }
-        return applicationsWithMetadata;
     }
 
     @Override
@@ -1614,6 +1584,38 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                                         .build())
                                                                       .build())
                 .block();
+    }
+
+    private CloudApplication addMetadataIfNotNull(CloudApplication application) {
+        return application == null ? null : addMetadata(application);
+    }
+
+    private CloudApplication addMetadata(CloudApplication application) {
+        Map<String, Metadata> applicationsMetadata = getApplicationsMetadata(Collections.singletonList(application.getName()));
+        return addMetadata(Collections.singletonList(application), applicationsMetadata).get(0);
+    }
+
+    private List<CloudApplication> addMetadataIfNotEmpty(List<CloudApplication> applications) {
+        return applications.isEmpty() ? applications : addMetadata(applications);
+    }
+
+    private List<CloudApplication> addMetadata(List<CloudApplication> applications) {
+        Map<String, Metadata> applicationsMetadata = getApplicationsMetadata(applications.stream()
+                                                                                         .map(CloudApplication::getName)
+                                                                                         .collect(Collectors.toList()));
+        return addMetadata(applications, applicationsMetadata);
+    }
+
+    private List<CloudApplication> addMetadata(List<CloudApplication> applications, Map<String, Metadata> applicationsMetadata) {
+        return applications.stream()
+                           .map(application -> addMetadata(application, applicationsMetadata))
+                           .collect(Collectors.toList());
+    }
+
+    private CloudApplication addMetadata(CloudApplication application, Map<String, Metadata> applicationsMetadata) {
+        Metadata metadata = applicationsMetadata.get(application.getName());
+        return ImmutableCloudApplication.copyOf(application)
+                                        .withV3Metadata(metadata);
     }
 
     private CloudApplication findApplicationByName(String name, boolean required) {
