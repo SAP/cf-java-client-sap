@@ -1238,6 +1238,17 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
+    public void updateApplicationName(String applicationName, String newName) {
+        UUID applicationGuid = getRequiredApplicationGuid(applicationName);
+        delegate.applicationsV2()
+                .update(UpdateApplicationRequest.builder()
+                                                .applicationId(applicationGuid.toString())
+                                                .name(newName)
+                                                .build())
+                .block();
+    }
+
+    @Override
     public void updateApplicationEnv(String applicationName, Map<String, String> env) {
         UUID applicationGuid = getRequiredApplicationGuid(applicationName);
         delegate.applicationsV2()
