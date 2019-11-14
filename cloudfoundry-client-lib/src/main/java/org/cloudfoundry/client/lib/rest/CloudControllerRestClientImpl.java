@@ -39,8 +39,6 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.cloudfoundry.AbstractCloudFoundryException;
 import org.cloudfoundry.client.CloudFoundryClient;
 import org.cloudfoundry.client.lib.ApplicationLogListener;
@@ -219,6 +217,8 @@ import org.cloudfoundry.client.v3.tasks.Task;
 import org.cloudfoundry.doppler.DopplerClient;
 import org.cloudfoundry.doppler.RecentLogsRequest;
 import org.cloudfoundry.util.PaginationUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.util.Assert;
@@ -245,13 +245,14 @@ import reactor.util.function.Tuples;
  */
 public class CloudControllerRestClientImpl implements CloudControllerRestClient {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(CloudControllerRestClientImpl.class);
+
     private static final String MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED = "Feature is not yet implemented.";
     private static final String DEFAULT_HOST_DOMAIN_SEPARATOR = "\\.";
     private static final String DEFAULT_PATH_SEPARATOR = "/";
     private static final String USER_PROVIDED_SERVICE_INSTANCE_TYPE = "user_provided_service_instance";
     private static final long JOB_POLLING_PERIOD = TimeUnit.SECONDS.toMillis(5);
 
-    private final Log logger = LogFactory.getLog(getClass().getName());
     private CloudCredentials credentials;
     private URL controllerUrl;
     private OAuthClient oAuthClient;
@@ -849,7 +850,20 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                      .build();
         return fetchFlux(() -> dopplerClient.recentLogs(request),
                          ImmutableRawApplicationLog::of).collectSortedList(Comparator.comparing(ApplicationLog::getTimestamp))
+                                                        // TODO: Remove this when https://github.com/cloudfoundry/cf-java-client/pull/1019
+                                                        // is merged, released and adopted in this project.
+                                                        .doOnDiscard(InputStream.class, CloudControllerRestClientImpl::close)
                                                         .block();
+    }
+
+    // TODO: Remove this when https://github.com/cloudfoundry/cf-java-client/pull/1019
+    // is merged, released and adopted in this project.
+    private static void close(InputStream in) {
+        try {
+            in.close();
+        } catch (IOException e) {
+            LOGGER.warn("Could not close input stream containing recent logs. This will result in a direct memory leak!", e);
+        }
     }
 
     @Override
