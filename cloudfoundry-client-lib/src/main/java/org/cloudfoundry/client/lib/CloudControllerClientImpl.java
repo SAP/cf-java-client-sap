@@ -873,11 +873,6 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public void updateApplicationName(String applicationName, String newName) {
-        handleExceptions(() -> delegate.updateApplicationName(applicationName, newName));
-    }
-
-    @Override
     public void updateApplicationEnv(String applicationName, Map<String, String> env) {
         handleExceptions(() -> delegate.updateApplicationEnv(applicationName, env));
     }
