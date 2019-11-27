@@ -1139,14 +1139,6 @@ public interface CloudControllerClient {
     void updateApplicationEnv(String applicationName, Map<String, String> env);
 
     /**
-     * Update application name
-     *
-     * @param applicationName name of application
-     * @param newName new name for the application
-     */
-    void updateApplicationName(String applicationName, String newName);
-
-    /**
      * Update application instances.
      *
      * @param applicationName name of application

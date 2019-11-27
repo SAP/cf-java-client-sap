@@ -327,8 +327,6 @@ public interface CloudControllerRestClient {
 
     // Security Group Operations
 
-    void updateApplicationName(String applicationName, String newName);
-
     void updateApplicationEnv(String applicationName, Map<String, String> env);
 
     void updateApplicationInstances(String applicationName, int instances);
