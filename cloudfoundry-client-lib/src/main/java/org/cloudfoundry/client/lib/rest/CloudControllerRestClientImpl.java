@@ -2279,7 +2279,10 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                      .serviceId(serviceGuid.toString())
                                                      .build();
         return delegate.services()
-                       .get(request);
+                       .get(request)
+                       // The user may not be able to see this service, even though he created an instance from it, at some point in
+                       // the past.
+                       .onErrorResume(this::isForbidden, t -> Mono.empty());
     }
 
     private Flux<? extends Resource<ServiceEntity>> getServiceResourcesByBrokerGuid(UUID brokerGuid) {
@@ -2321,7 +2324,10 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                              .servicePlanId(servicePlanGuid.toString())
                                                              .build();
         return delegate.servicePlans()
-                       .get(request);
+                       .get(request)
+                       // The user may not be able to see this service plan, even though he created an instance from it, at some point in
+                       // the past.
+                       .onErrorResume(this::isForbidden, t -> Mono.empty());
     }
 
     private Flux<? extends Resource<ServicePlanEntity>> getServicePlanResourcesByServiceGuid(UUID serviceGuid) {
@@ -2626,6 +2632,20 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                        .map(CloudEntity::getMetadata)
                        .map(CloudMetadata::getGuid)
                        .orElse(null);
+    }
+
+    private boolean isForbidden(Throwable t) {
+        if (t instanceof AbstractCloudFoundryException) {
+            AbstractCloudFoundryException e = (AbstractCloudFoundryException) t;
+            if (isForbidden(e)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isForbidden(AbstractCloudFoundryException e) {
+        return e.getStatusCode() == HttpStatus.FORBIDDEN.value();
     }
 
     private <T, R, D extends Derivable<T>> Flux<T> fetchFluxWithAuxiliaryContent(Supplier<Flux<R>> resourceSupplier,
