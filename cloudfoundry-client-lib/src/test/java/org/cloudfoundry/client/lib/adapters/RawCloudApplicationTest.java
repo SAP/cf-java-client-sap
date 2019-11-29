@@ -1,9 +1,11 @@
 package org.cloudfoundry.client.lib.adapters;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.cloudfoundry.client.lib.domain.CloudSpace;
@@ -16,6 +18,7 @@ import org.cloudfoundry.client.lib.domain.ImmutableDockerCredentials;
 import org.cloudfoundry.client.lib.domain.ImmutableDockerInfo;
 import org.cloudfoundry.client.lib.domain.ImmutableStaging;
 import org.cloudfoundry.client.lib.domain.PackageState;
+import org.cloudfoundry.client.lib.domain.Staging;
 import org.cloudfoundry.client.v2.Resource;
 import org.cloudfoundry.client.v2.applications.ApplicationEntity;
 import org.cloudfoundry.client.v2.applications.ApplicationResource;
@@ -23,7 +26,9 @@ import org.cloudfoundry.client.v2.applications.SummaryApplicationResponse;
 import org.cloudfoundry.client.v2.domains.Domain;
 import org.cloudfoundry.client.v2.routes.Route;
 import org.cloudfoundry.client.v2.serviceinstances.ServiceInstance;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class RawCloudApplicationTest {
 
@@ -33,9 +38,9 @@ public class RawCloudApplicationTest {
     private static final int RUNNING_INSTANCES = 2;
     private static final String STATE = "STARTED";
     private static final String PACKAGE_STATE = "PENDING";
-    private static final List<Route> ROUTES = buildTestRoutes();
-    private static final List<ServiceInstance> SERVICE_INSTANCES = buildTestServiceInstances();
-    private static final Map<String, Object> ENVIRONMENT = buildTestEnvironment();
+    private static final List<Route> ROUTES = buildRoutes();
+    private static final List<ServiceInstance> SERVICE_INSTANCES = buildServiceInstances();
+    private static final Map<String, Object> ENVIRONMENT = buildEnvironment();
     private static final String BUILDPACK = "ruby_buildpack";
     private static final String COMMAND = "rails server";
     private static final String DETECTED_BUILDPACK = "ruby_buildpack";
@@ -47,7 +52,7 @@ public class RawCloudApplicationTest {
     private static final String DOCKER_IMAGE = "cloudfoundry/my-image";
     private static final String DOCKER_USERNAME = "admin";
     private static final String DOCKER_PASSWORD = "troll";
-    private static final org.cloudfoundry.client.v2.applications.DockerCredentials DOCKER_CREDENTIALS = buildTestDockerCredentials();
+    private static final org.cloudfoundry.client.v2.applications.DockerCredentials DOCKER_CREDENTIALS = buildDockerCredentials();
     private static final String STACK_NAME = "cflinuxfs3";
     private static final String SPACE_NAME = "test";
     private static final CloudStack STACK = ImmutableCloudStack.builder()
@@ -63,39 +68,54 @@ public class RawCloudApplicationTest {
                                                                     "baz.example.com", "example.com", "example.com");
     private static final List<String> EXPECTED_SERVICES = Arrays.asList("foo", "bar");
     private static final Map<String, String> EXPECTED_ENVIRONMENT = buildExpectedEnvironment();
+    private static final DockerInfo DOCKER_INFO_WITHOUT_CREDENTIALS = ImmutableDockerInfo.builder()
+                                                                                         .image(DOCKER_IMAGE)
+                                                                                         .build();
+    private static final DockerInfo DOCKER_INFO = ImmutableDockerInfo.builder()
+                                                                     .image(DOCKER_IMAGE)
+                                                                     .credentials(ImmutableDockerCredentials.builder()
+                                                                                                            .username(DOCKER_USERNAME)
+                                                                                                            .password(DOCKER_PASSWORD)
+                                                                                                            .build())
+                                                                     .build();
 
-    @Test
-    public void testDeriveWithoutDockerInfo() {
-        RawCloudEntityTest.testDerive(buildExpectedApplication(), buildRawApplication());
+    @MethodSource
+    @ParameterizedTest
+    public void testDerive(CloudApplication expectedApplication, RawCloudApplication rawApplication) {
+        RawCloudEntityTest.testDerive(expectedApplication, rawApplication);
     }
 
-    @Test
-    public void testDeriveWithoutDockerCredentials() {
-        RawCloudApplication rawApplication = buildRawApplication(DOCKER_IMAGE, null);
-        DockerInfo expectedDockerInfo = ImmutableDockerInfo.builder()
-                                                           .image(DOCKER_IMAGE)
-                                                           .build();
-        RawCloudEntityTest.testDerive(buildExpectedApplication(expectedDockerInfo), rawApplication);
+    public static Stream<Arguments> testDerive() {
+        return Stream.of(Arguments.of(buildApplicationWithoutEnvironment(), buildRawApplicationWithoutEnvironment()),
+                         Arguments.of(buildApplicationWithoutDockerInfo(), buildRawApplicationWithoutDockerInfo()),
+                         Arguments.of(buildApplicationWithoutDockerCredentials(), buildRawApplicationWithoutDockerCredentials()),
+                         Arguments.of(buildApplication(), buildRawApplication()));
     }
 
-    @Test
-    public void testDerive() {
-        RawCloudApplication rawApplication = buildRawApplication(DOCKER_IMAGE, DOCKER_CREDENTIALS);
-        DockerInfo expectedDockerInfo = ImmutableDockerInfo.builder()
-                                                           .image(DOCKER_IMAGE)
-                                                           .credentials(ImmutableDockerCredentials.builder()
-                                                                                                  .username(DOCKER_USERNAME)
-                                                                                                  .password(DOCKER_PASSWORD)
-                                                                                                  .build())
-                                                           .build();
-        RawCloudEntityTest.testDerive(buildExpectedApplication(expectedDockerInfo), rawApplication);
+    private static CloudApplication buildApplicationWithoutEnvironment() {
+        return ImmutableCloudApplication.copyOf(buildApplication())
+                                        .withEnv(Collections.emptyMap());
     }
 
-    private static CloudApplication buildExpectedApplication() {
-        return buildExpectedApplication(null);
+    private static CloudApplication buildApplicationWithoutDockerInfo() {
+        Staging staging = buildStaging();
+        Staging stagingWithoutDockerInfo = ImmutableStaging.copyOf(staging)
+                                                           .withDockerInfo(null);
+        return buildApplication(stagingWithoutDockerInfo);
     }
 
-    private static CloudApplication buildExpectedApplication(DockerInfo dockerInfo) {
+    private static CloudApplication buildApplicationWithoutDockerCredentials() {
+        Staging staging = buildStaging();
+        Staging stagingWithoutDockerCredentials = ImmutableStaging.copyOf(staging)
+                                                                  .withDockerInfo(DOCKER_INFO_WITHOUT_CREDENTIALS);
+        return buildApplication(stagingWithoutDockerCredentials);
+    }
+
+    private static CloudApplication buildApplication() {
+        return buildApplication(buildStaging());
+    }
+
+    private static CloudApplication buildApplication(Staging staging) {
         return ImmutableCloudApplication.builder()
                                         .metadata(RawCloudEntityTest.EXPECTED_METADATA)
                                         .name(RawCloudEntityTest.NAME)
@@ -107,19 +127,19 @@ public class RawCloudApplicationTest {
                                         .state(EXPECTED_STATE)
                                         .packageState(EXPECTED_PACKAGE_STATE)
                                         .stagingError(STAGING_ERROR)
-                                        .staging(buildExpectedStaging(dockerInfo))
+                                        .staging(staging)
                                         .services(EXPECTED_SERVICES)
                                         .env(EXPECTED_ENVIRONMENT)
                                         .space(SPACE)
                                         .build();
     }
 
-    private static ImmutableStaging buildExpectedStaging(DockerInfo dockerInfo) {
+    private static Staging buildStaging() {
         return ImmutableStaging.builder()
                                .buildpacks(Arrays.asList(BUILDPACK))
                                .command(COMMAND)
                                .detectedBuildpack(DETECTED_BUILDPACK)
-                               .dockerInfo(dockerInfo)
+                               .dockerInfo(DOCKER_INFO)
                                .healthCheckHttpEndpoint(HEALTH_CHECK_HTTP_ENDPOINT)
                                .healthCheckTimeout(HEALTH_CHECK_TIMEOUT)
                                .healthCheckType(HEALTH_CHECK_TYPE)
@@ -128,28 +148,66 @@ public class RawCloudApplicationTest {
                                .build();
     }
 
-    private static RawCloudApplication buildRawApplication() {
-        return buildRawApplication(null, null);
+    private static Map<String, String> buildExpectedEnvironment() {
+        Map<String, String> environment = new HashMap<>();
+        environment.put("a", "foo");
+        environment.put("b", "12345");
+        environment.put("c", "false");
+        environment.put("d", "3.141");
+        environment.put("e", "[\"bar\",\"baz\"]");
+        environment.put("f", "{\"foo\":\"bar\",\"baz\":\"qux\"}");
+        environment.put("g", null);
+        return environment;
     }
 
-    private static RawCloudApplication buildRawApplication(String dockerImage,
-                                                           org.cloudfoundry.client.v2.applications.DockerCredentials dockerCredentials) {
+    private static RawCloudApplication buildRawApplicationWithoutEnvironment() {
+        SummaryApplicationResponse summary = buildApplicationSummary();
+        SummaryApplicationResponse summaryWithoutEnvironment = SummaryApplicationResponse.builder()
+                                                                                         .from(summary)
+                                                                                         .environmentJsons(null)
+                                                                                         .build();
+        return buildRawApplication(summaryWithoutEnvironment);
+    }
+
+    private static RawCloudApplication buildRawApplicationWithoutDockerInfo() {
+        SummaryApplicationResponse summary = buildApplicationSummary();
+        SummaryApplicationResponse summaryWithoutDockerInfo = SummaryApplicationResponse.builder()
+                                                                                        .from(summary)
+                                                                                        .dockerImage(null)
+                                                                                        .dockerCredentials(null)
+                                                                                        .build();
+        return buildRawApplication(summaryWithoutDockerInfo);
+    }
+
+    private static RawCloudApplication buildRawApplicationWithoutDockerCredentials() {
+        SummaryApplicationResponse summary = buildApplicationSummary();
+        SummaryApplicationResponse summaryWithoutDockerCredentials = SummaryApplicationResponse.builder()
+                                                                                               .from(summary)
+                                                                                               .dockerCredentials(null)
+                                                                                               .build();
+        return buildRawApplication(summaryWithoutDockerCredentials);
+    }
+
+    private static RawCloudApplication buildRawApplication() {
+        return buildRawApplication(buildApplicationSummary());
+    }
+
+    private static RawCloudApplication buildRawApplication(SummaryApplicationResponse summary) {
         return ImmutableRawCloudApplication.builder()
-                                           .resource(buildTestResource())
-                                           .summary(buildTestSummary(dockerImage, dockerCredentials))
+                                           .resource(buildApplicationResource())
+                                           .summary(summary)
                                            .stack(STACK)
                                            .space(SPACE)
                                            .build();
     }
 
-    private static Resource<ApplicationEntity> buildTestResource() {
+    private static Resource<ApplicationEntity> buildApplicationResource() {
         return ApplicationResource.builder()
                                   .metadata(RawCloudEntityTest.METADATA)
                                   .build();
     }
 
-    private static SummaryApplicationResponse
-            buildTestSummary(String dockerImage, org.cloudfoundry.client.v2.applications.DockerCredentials dockerCredentials) {
+    private static SummaryApplicationResponse buildApplicationSummary() {
         return SummaryApplicationResponse.builder()
                                          .name(RawCloudEntityTest.NAME)
                                          .memory(MEMORY)
@@ -164,8 +222,8 @@ public class RawCloudApplicationTest {
                                          .healthCheckTimeout(HEALTH_CHECK_TIMEOUT)
                                          .healthCheckType(HEALTH_CHECK_TYPE)
                                          .enableSsh(SSH_ENABLED)
-                                         .dockerImage(dockerImage)
-                                         .dockerCredentials(dockerCredentials)
+                                         .dockerImage(DOCKER_IMAGE)
+                                         .dockerCredentials(DOCKER_CREDENTIALS)
                                          .environmentJsons(ENVIRONMENT)
                                          .command(COMMAND)
                                          .buildpack(BUILDPACK)
@@ -174,7 +232,7 @@ public class RawCloudApplicationTest {
                                          .build();
     }
 
-    private static List<Route> buildTestRoutes() {
+    private static List<Route> buildRoutes() {
         Domain domain = Domain.builder()
                               .name("example.com")
                               .build();
@@ -202,7 +260,7 @@ public class RawCloudApplicationTest {
         return Arrays.asList(foo, bar, baz, qux, quux);
     }
 
-    private static List<ServiceInstance> buildTestServiceInstances() {
+    private static List<ServiceInstance> buildServiceInstances() {
         ServiceInstance foo = ServiceInstance.builder()
                                              .name("foo")
                                              .build();
@@ -212,26 +270,14 @@ public class RawCloudApplicationTest {
         return Arrays.asList(foo, bar);
     }
 
-    private static org.cloudfoundry.client.v2.applications.DockerCredentials buildTestDockerCredentials() {
+    private static org.cloudfoundry.client.v2.applications.DockerCredentials buildDockerCredentials() {
         return org.cloudfoundry.client.v2.applications.DockerCredentials.builder()
                                                                         .username(DOCKER_USERNAME)
                                                                         .password(DOCKER_PASSWORD)
                                                                         .build();
     }
 
-    private static Map<String, String> buildExpectedEnvironment() {
-        Map<String, String> environment = new HashMap<>();
-        environment.put("a", "foo");
-        environment.put("b", "12345");
-        environment.put("c", "false");
-        environment.put("d", "3.141");
-        environment.put("e", "[\"bar\",\"baz\"]");
-        environment.put("f", "{\"foo\":\"bar\",\"baz\":\"qux\"}");
-        environment.put("g", null);
-        return environment;
-    }
-
-    private static Map<String, Object> buildTestEnvironment() {
+    private static Map<String, Object> buildEnvironment() {
         Map<String, Object> environment = new HashMap<>();
         environment.put("a", "foo");
         environment.put("b", 12345);
