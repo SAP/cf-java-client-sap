@@ -164,6 +164,9 @@ public abstract class RawCloudApplication extends RawCloudEntity<CloudApplicatio
 
     private static Map<String, String> parseEnv(Map<String, Object> env) {
         Map<String, String> result = new LinkedHashMap<>();
+        if (env == null) {
+            return result;
+        }
         for (Map.Entry<String, Object> envEntry : env.entrySet()) {
             result.put(envEntry.getKey(), convertValueToString(envEntry.getValue()));
         }
