@@ -45,7 +45,6 @@ import org.cloudfoundry.client.lib.domain.CloudSpace;
 import org.cloudfoundry.client.lib.domain.CloudStack;
 import org.cloudfoundry.client.lib.domain.CloudTask;
 import org.cloudfoundry.client.lib.domain.CloudUser;
-import org.cloudfoundry.client.lib.domain.CrashesInfo;
 import org.cloudfoundry.client.lib.domain.DockerInfo;
 import org.cloudfoundry.client.lib.domain.InstancesInfo;
 import org.cloudfoundry.client.lib.domain.Staging;
@@ -447,11 +446,6 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public CrashesInfo getCrashes(String applicationName) {
-        return handleExceptions(() -> delegate.getCrashes(applicationName));
-    }
-
-    @Override
     public CloudDomain getDefaultDomain() {
         return handleExceptions(() -> delegate.getDefaultDomain());
     }
@@ -773,11 +767,6 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public void openFile(String applicationName, int instanceIndex, String filePath, ClientHttpResponseCallback callback) {
-        handleExceptions(() -> delegate.openFile(applicationName, instanceIndex, filePath, callback));
-    }
-
-    @Override
     public void register(String email, String password) {
         handleExceptions(() -> delegate.register(email, password));
     }
@@ -820,11 +809,6 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     @Override
     public void stopApplication(String applicationName) {
         handleExceptions(() -> delegate.stopApplication(applicationName));
-    }
-
-    @Override
-    public StreamingLogToken streamLogs(String applicationName, ApplicationLogListener listener) {
-        return handleExceptions(() -> delegate.streamLogs(applicationName, listener));
     }
 
     @Override

@@ -16,7 +16,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -26,15 +25,12 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.commons.io.IOUtils;
-import org.cloudfoundry.client.lib.domain.ApplicationLog;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.cloudfoundry.client.lib.domain.CloudDomain;
 import org.cloudfoundry.client.lib.domain.CloudEvent;
@@ -52,8 +48,6 @@ import org.cloudfoundry.client.lib.domain.CloudServicePlan;
 import org.cloudfoundry.client.lib.domain.CloudSpace;
 import org.cloudfoundry.client.lib.domain.CloudStack;
 import org.cloudfoundry.client.lib.domain.CloudUser;
-import org.cloudfoundry.client.lib.domain.CrashInfo;
-import org.cloudfoundry.client.lib.domain.CrashesInfo;
 import org.cloudfoundry.client.lib.domain.ImmutableCloudMetadata;
 import org.cloudfoundry.client.lib.domain.ImmutableCloudSecurityGroup;
 import org.cloudfoundry.client.lib.domain.ImmutableCloudService;
@@ -83,7 +77,6 @@ import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -101,7 +94,6 @@ import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
-import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.ResponseExtractor;
 import org.springframework.web.client.RestTemplate;
@@ -1036,46 +1028,6 @@ public class CloudControllerClientTest {
     }
 
     @Test
-    @Ignore("Ignore until the Java buildpack detects app crashes upon OOM correctly")
-    public void getCrashLogs() throws Exception {
-        String applicationName = namespacedAppName("simple_crashlogs");
-        createAndUploadSimpleSpringApp(applicationName);
-        connectedClient.updateApplicationEnv(applicationName, Collections.singletonMap("crash", "true"));
-        connectedClient.startApplication(applicationName);
-
-        boolean pass = getInstanceInfosWithTimeout(applicationName, 1, false);
-        assertTrue("Couldn't get the right application state in 50 tries", pass);
-
-        Map<String, String> logs = connectedClient.getCrashLogs(applicationName);
-        assertNotNull(logs);
-        assertTrue(logs.size() > 0);
-        for (String log : logs.keySet()) {
-            assertNotNull(logs.get(log));
-        }
-    }
-
-    @Test
-    @Ignore("Ignore until the Java buildpack detects app crashes upon OOM correctly")
-    public void getCrashes() throws IOException, InterruptedException {
-        String applicationName = namespacedAppName("crashes1");
-        createAndUploadSimpleSpringApp(applicationName);
-        connectedClient.updateApplicationEnv(applicationName, Collections.singletonMap("crash", "true"));
-        connectedClient.startApplication(applicationName);
-
-        boolean pass = getInstanceInfosWithTimeout(applicationName, 1, false);
-        assertTrue("Couldn't get the right application state in 50 tries", pass);
-
-        CrashesInfo crashes = connectedClient.getCrashes(applicationName);
-        assertNotNull(crashes);
-        assertTrue(!crashes.getCrashes()
-                           .isEmpty());
-        for (CrashInfo info : crashes.getCrashes()) {
-            assertNotNull(info.getInstance());
-            assertNotNull(info.getSince());
-        }
-    }
-
-    @Test
     public void getCreateDeleteService() throws MalformedURLException {
         String serviceName = "mysql-test";
         createMySqlService(serviceName);
@@ -1350,15 +1302,6 @@ public class CloudControllerClientTest {
         assertNotNull(info.getSupport());
 
         assertEquals(CCNG_USER_EMAIL, info.getUser());
-    }
-
-    @Test
-    public void openFile() throws Exception {
-        String applicationName = namespacedAppName("simple_openFile");
-        createAndUploadAndStartSimpleSpringApp(applicationName);
-        boolean running = getInstanceInfosWithTimeout(applicationName, 1, true);
-        assertTrue("App failed to start", running);
-        doOpenFile(connectedClient, applicationName);
     }
 
     @Test
@@ -1644,48 +1587,6 @@ public class CloudControllerClientTest {
         connectedClient.stopApplication(applicationName);
         application = connectedClient.getApplication(applicationName);
         assertEquals(CloudApplication.State.STOPPED, application.getState());
-    }
-
-    @Test
-    public void streamLogs() throws Exception {
-        // disable proxy validation for this test, since Loggregator websockets
-        // connectivity does not currently support proxies
-        new SocketDestHelper().setAllowedOnCurrentThread();
-
-        String applicationName = namespacedAppName("simple_logs");
-        CloudApplication application = createAndUploadAndStartSimpleSpringApp(applicationName);
-        boolean pass = getInstanceInfosWithTimeout(applicationName, 1, true);
-        assertTrue("Couldn't get the right application state", pass);
-
-        List<ApplicationLog> logs = doGetRecentLogs(applicationName);
-
-        for (int index = 0; index < logs.size() - 1; index++) {
-            int comparison = logs.get(index)
-                                 .getTimestamp()
-                                 .compareTo(logs.get(index + 1)
-                                                .getTimestamp());
-            assertTrue("Logs are not properly sorted", comparison <= 0);
-        }
-
-        AccumulatingApplicationLogListener testListener = new AccumulatingApplicationLogListener();
-        connectedClient.streamLogs(applicationName, testListener);
-        String appUri = "http://" + application.getUris()
-                                               .get(0);
-        RestTemplate appTemplate = new RestTemplate();
-        int attempt = 0;
-        do {
-            // no need to sleep, visiting the app uri should be sufficient
-            try {
-                appTemplate.getForObject(appUri, String.class);
-            } catch (HttpClientErrorException ex) {
-                // ignore
-            }
-            if (testListener.logs.size() > 0) {
-                break;
-            }
-            Thread.sleep(1000);
-        } while (attempt++ < 30);
-        assertTrue("Failed to stream normal log", testListener.logs.size() > 0);
     }
 
     @After
@@ -2408,59 +2309,6 @@ public class CloudControllerClientTest {
         }
     }
 
-    private List<ApplicationLog> doGetRecentLogs(String applicationName) throws InterruptedException {
-        int attempt = 0;
-        do {
-            List<ApplicationLog> logs = connectedClient.getRecentLogs(applicationName);
-
-            if (logs.size() > 0) {
-                return logs;
-            }
-            Thread.sleep(1000);
-        } while (attempt++ < 20);
-        fail("Failed to see recent logs");
-        return null;
-    }
-
-    private void doOpenFile(CloudControllerClient client, String applicationName) throws Exception {
-        String applicationDirectory = "app";
-        String fileName = applicationDirectory + "/WEB-INF/web.xml";
-        String emptyPropertiesFileName = applicationDirectory + "/WEB-INF/classes/empty.properties";
-
-        // File is often not available immediately after starting an app... so
-        // allow up to 60 seconds wait
-        for (int i = 0; i < 60; i++) {
-            try {
-                client.getFile(applicationName, 0, fileName);
-                break;
-            } catch (HttpServerErrorException ex) {
-                Thread.sleep(1000);
-            }
-        }
-        // Test open file
-
-        client.openFile(applicationName, 0, fileName, new ClientHttpResponseCallback() {
-
-            public void onClientHttpResponse(ClientHttpResponse clientHttpResponse) throws IOException {
-                InputStream in = clientHttpResponse.getBody();
-                assertNotNull(in);
-                byte[] fileContents = IOUtils.toByteArray(in);
-                assertTrue(fileContents.length > 5);
-            }
-        });
-
-        client.openFile(applicationName, 0, emptyPropertiesFileName, new ClientHttpResponseCallback() {
-
-            public void onClientHttpResponse(ClientHttpResponse clientHttpResponse) throws IOException {
-                InputStream in = clientHttpResponse.getBody();
-                assertNotNull(in);
-                byte[] fileContents = IOUtils.toByteArray(in);
-                assertTrue(fileContents.length == 0);
-            }
-        });
-
-    }
-
     private boolean ensureApplicationRunning(String applicationName) {
         InstancesInfo instances;
         boolean pass = false;
@@ -2603,10 +2451,6 @@ public class CloudControllerClientTest {
         return false;
     }
 
-    private HashSet<String> listToHashSet(List<String> list) {
-        return new HashSet<String>(list);
-    }
-
     private String namespacedAppName(String basename) {
         return TEST_NAMESPACE + "-" + basename;
     }
@@ -2669,20 +2513,4 @@ public class CloudControllerClientTest {
         }
     }
 
-    private class AccumulatingApplicationLogListener implements ApplicationLogListener {
-
-        private List<ApplicationLog> logs = new ArrayList<ApplicationLog>();
-
-        public void onComplete() {
-        }
-
-        public void onError(Throwable exception) {
-            fail(exception.getMessage());
-        }
-
-        public void onMessage(ApplicationLog log) {
-            logs.add(log);
-        }
-
-    }
 }

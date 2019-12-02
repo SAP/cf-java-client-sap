@@ -43,7 +43,6 @@ import org.cloudfoundry.client.lib.domain.CloudSpace;
 import org.cloudfoundry.client.lib.domain.CloudStack;
 import org.cloudfoundry.client.lib.domain.CloudTask;
 import org.cloudfoundry.client.lib.domain.CloudUser;
-import org.cloudfoundry.client.lib.domain.CrashesInfo;
 import org.cloudfoundry.client.lib.domain.DockerInfo;
 import org.cloudfoundry.client.lib.domain.InstancesInfo;
 import org.cloudfoundry.client.lib.domain.Staging;
@@ -500,14 +499,6 @@ public interface CloudControllerClient {
      */
     @Deprecated
     Map<String, String> getCrashLogs(String applicationName);
-
-    /**
-     * Get crashes info for application.
-     *
-     * @param applicationName name of application
-     * @return crashes info
-     */
-    CrashesInfo getCrashes(String applicationName);
 
     /**
      * Gets the default domain for the current org, which is the first shared domain.
@@ -976,16 +967,6 @@ public interface CloudControllerClient {
     void logout();
 
     /**
-     * Provide the content of a file from the deployed application via callbacks.
-     *
-     * @param applicationName name of the application
-     * @param instanceIndex instance index
-     * @param filePath path to the file
-     * @param clientHttpResponseCallback callback object to receive file contents
-     */
-    void openFile(String applicationName, int instanceIndex, String filePath, ClientHttpResponseCallback clientHttpResponseCallback);
-
-    /**
      * Register new user account with the provided credentials.
      *
      * @param email the email account
@@ -1054,17 +1035,6 @@ public interface CloudControllerClient {
      * @param applicationName name of application
      */
     void stopApplication(String applicationName);
-
-    /**
-     * Stream application logs produced <em>after</em> this method is called.
-     *
-     * This method has 'tail'-like behavior. Every time there is a new log entry, it notifies the listener.
-     *
-     * @param applicationName the name of the application
-     * @param listener listener object to be notified
-     * @return token than can be used to cancel listening for logs
-     */
-    StreamingLogToken streamLogs(String applicationName, ApplicationLogListener listener);
 
     /**
      * Un-register a RestLogCallback

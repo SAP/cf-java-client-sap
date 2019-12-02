@@ -24,12 +24,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import org.cloudfoundry.client.lib.ApplicationLogListener;
-import org.cloudfoundry.client.lib.ClientHttpResponseCallback;
 import org.cloudfoundry.client.lib.CloudCredentials;
 import org.cloudfoundry.client.lib.RestLogCallback;
 import org.cloudfoundry.client.lib.StartingInfo;
-import org.cloudfoundry.client.lib.StreamingLogToken;
 import org.cloudfoundry.client.lib.UploadStatusCallback;
 import org.cloudfoundry.client.lib.domain.ApplicationLog;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
@@ -50,7 +47,6 @@ import org.cloudfoundry.client.lib.domain.CloudSpace;
 import org.cloudfoundry.client.lib.domain.CloudStack;
 import org.cloudfoundry.client.lib.domain.CloudTask;
 import org.cloudfoundry.client.lib.domain.CloudUser;
-import org.cloudfoundry.client.lib.domain.CrashesInfo;
 import org.cloudfoundry.client.lib.domain.DockerInfo;
 import org.cloudfoundry.client.lib.domain.InstancesInfo;
 import org.cloudfoundry.client.lib.domain.Staging;
@@ -164,8 +160,6 @@ public interface CloudControllerRestClient {
     URL getControllerUrl();
 
     Map<String, String> getCrashLogs(String applicationName);
-
-    CrashesInfo getCrashes(String applicationName);
 
     CloudDomain getDefaultDomain();
 
@@ -287,8 +281,6 @@ public interface CloudControllerRestClient {
 
     void logout();
 
-    void openFile(String applicationName, int instanceIndex, String filePath, ClientHttpResponseCallback callback);
-
     void register(String email, String password);
 
     void registerRestLogListener(RestLogCallback callBack);
@@ -308,8 +300,6 @@ public interface CloudControllerRestClient {
     StartingInfo startApplication(String applicationName);
 
     void stopApplication(String applicationName);
-
-    StreamingLogToken streamLogs(String applicationName, ApplicationLogListener listener);
 
     void unRegisterRestLogListener(RestLogCallback callBack);
 

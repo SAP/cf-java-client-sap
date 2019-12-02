@@ -41,13 +41,10 @@ import java.util.stream.Collectors;
 import org.apache.commons.io.IOUtils;
 import org.cloudfoundry.AbstractCloudFoundryException;
 import org.cloudfoundry.client.CloudFoundryClient;
-import org.cloudfoundry.client.lib.ApplicationLogListener;
-import org.cloudfoundry.client.lib.ClientHttpResponseCallback;
 import org.cloudfoundry.client.lib.CloudCredentials;
 import org.cloudfoundry.client.lib.CloudOperationException;
 import org.cloudfoundry.client.lib.RestLogCallback;
 import org.cloudfoundry.client.lib.StartingInfo;
-import org.cloudfoundry.client.lib.StreamingLogToken;
 import org.cloudfoundry.client.lib.UploadStatusCallback;
 import org.cloudfoundry.client.lib.adapters.ImmutableRawApplicationLog;
 import org.cloudfoundry.client.lib.adapters.ImmutableRawCloudApplication;
@@ -95,7 +92,6 @@ import org.cloudfoundry.client.lib.domain.CloudSpace;
 import org.cloudfoundry.client.lib.domain.CloudStack;
 import org.cloudfoundry.client.lib.domain.CloudTask;
 import org.cloudfoundry.client.lib.domain.CloudUser;
-import org.cloudfoundry.client.lib.domain.CrashesInfo;
 import org.cloudfoundry.client.lib.domain.Derivable;
 import org.cloudfoundry.client.lib.domain.DockerCredentials;
 import org.cloudfoundry.client.lib.domain.DockerInfo;
@@ -715,11 +711,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public CrashesInfo getCrashes(String applicationName) {
-        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
-    }
-
-    @Override
     public CloudDomain getDefaultDomain() {
         Map<String, Object> urlVariables = new HashMap<>();
         urlVariables.put("organizationGuid", getTargetOrganizationGuid());
@@ -1105,11 +1096,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public void openFile(String applicationName, int instanceIndex, String filePath, ClientHttpResponseCallback callback) {
-        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
-    }
-
-    @Override
     public void register(String email, String password) {
         throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
     }
@@ -1184,11 +1170,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                 .state(CloudApplication.State.STOPPED.toString())
                                                 .build())
                 .block();
-    }
-
-    @Override
-    public StreamingLogToken streamLogs(String applicationName, ApplicationLogListener listener) {
-        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
     }
 
     @Override

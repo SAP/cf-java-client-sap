@@ -23,7 +23,6 @@ import org.cloudfoundry.client.lib.oauth2.OAuthClient;
 import org.cloudfoundry.client.lib.oauth2.OAuthClientWithLoginHint;
 import org.cloudfoundry.client.lib.rest.CloudControllerResponseErrorHandler;
 import org.cloudfoundry.client.lib.rest.LoggingRestTemplate;
-import org.cloudfoundry.client.lib.rest.LoggregatorHttpMessageConverter;
 import org.cloudfoundry.reactor.ConnectionContext;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
@@ -111,7 +110,6 @@ public class RestUtil {
         messageConverters.add(new StringHttpMessageConverter());
         messageConverters.add(new ResourceHttpMessageConverter());
         messageConverters.add(new MappingJackson2HttpMessageConverter());
-        messageConverters.add(new LoggregatorHttpMessageConverter());
         return messageConverters;
     }
 }
