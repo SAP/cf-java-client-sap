@@ -36,12 +36,13 @@ import org.cloudfoundry.client.lib.oauth2.OAuthClient;
 import org.cloudfoundry.client.lib.util.RestUtil;
 import org.cloudfoundry.doppler.DopplerClient;
 import org.cloudfoundry.reactor.ConnectionContext;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.type.TypeReference;
 import org.immutables.value.Value;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * Factory used to create cloud controller client implementations.

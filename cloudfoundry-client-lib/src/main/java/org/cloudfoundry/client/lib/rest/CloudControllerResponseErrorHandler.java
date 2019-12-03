@@ -7,11 +7,12 @@ import java.util.stream.Collectors;
 
 import org.cloudfoundry.client.lib.CloudOperationException;
 import org.cloudfoundry.client.lib.util.CloudUtil;
-import org.codehaus.jackson.map.ObjectMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.web.client.DefaultResponseErrorHandler;
 import org.springframework.web.client.RestClientException;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class CloudControllerResponseErrorHandler extends DefaultResponseErrorHandler {
 
