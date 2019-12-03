@@ -2255,7 +2255,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return getServiceResources(pageRequestSupplier);
     }
 
-    private Mono<? extends Resource<ServiceEntity>> getServiceResource(UUID serviceGuid) {
+    protected Mono<? extends Resource<ServiceEntity>> getServiceResource(UUID serviceGuid) {
         GetServiceRequest request = GetServiceRequest.builder()
                                                      .serviceId(serviceGuid.toString())
                                                      .build();
@@ -2300,7 +2300,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return fetchFlux(() -> getServicePlanResourcesByServiceGuid(serviceGuid), ImmutableRawCloudServicePlan::of);
     }
 
-    private Mono<? extends Resource<ServicePlanEntity>> getServicePlanResource(UUID servicePlanGuid) {
+    protected Mono<? extends Resource<ServicePlanEntity>> getServicePlanResource(UUID servicePlanGuid) {
         GetServicePlanRequest request = GetServicePlanRequest.builder()
                                                              .servicePlanId(servicePlanGuid.toString())
                                                              .build();
