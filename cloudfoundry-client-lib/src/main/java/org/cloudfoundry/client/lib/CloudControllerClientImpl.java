@@ -33,6 +33,7 @@ import org.cloudfoundry.client.lib.domain.CloudDomain;
 import org.cloudfoundry.client.lib.domain.CloudEvent;
 import org.cloudfoundry.client.lib.domain.CloudInfo;
 import org.cloudfoundry.client.lib.domain.CloudOrganization;
+import org.cloudfoundry.client.lib.domain.CloudPackage;
 import org.cloudfoundry.client.lib.domain.CloudQuota;
 import org.cloudfoundry.client.lib.domain.CloudRoute;
 import org.cloudfoundry.client.lib.domain.CloudSecurityGroup;
@@ -54,6 +55,7 @@ import org.cloudfoundry.client.lib.rest.ApplicationServicesUpdater;
 import org.cloudfoundry.client.lib.rest.CloudControllerRestClient;
 import org.cloudfoundry.client.lib.rest.CloudControllerRestClientFactory;
 import org.cloudfoundry.client.lib.rest.ImmutableCloudControllerRestClientFactory;
+import org.cloudfoundry.client.lib.util.OrderBy;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.util.Assert;
@@ -964,6 +966,16 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     @Override
     public Upload getUploadStatus(UUID packageGuid) {
         return handleExceptions(() -> delegate.getUploadStatus(packageGuid));
+    }
+
+    @Override
+    public List<CloudPackage> getPackagesForApplication(UUID applicationGuid) {
+        return handleExceptions(() -> delegate.getPackagesForApplication(applicationGuid));
+    }
+
+    @Override
+    public List<CloudPackage> getPackagesForApplication(UUID applicationGuid, OrderBy orderBy) {
+        return handleExceptions(() -> delegate.getPackagesForApplication(applicationGuid, orderBy));
     }
 
     @Override
