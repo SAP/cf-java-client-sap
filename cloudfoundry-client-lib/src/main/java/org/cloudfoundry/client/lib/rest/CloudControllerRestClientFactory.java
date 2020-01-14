@@ -44,12 +44,6 @@ import org.springframework.web.client.RestTemplate;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-/**
- * Factory used to create cloud controller client implementations.
- *
- * @author Thgomas Risberg
- * @author Ramnivas Laddad
- */
 @Value.Immutable
 public abstract class CloudControllerRestClientFactory {
 
@@ -57,9 +51,13 @@ public abstract class CloudControllerRestClientFactory {
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final RestUtil restUtil = new RestUtil();
 
-    public abstract Optional<Integer> getClientConnectionPoolSize();
+    public abstract Optional<Duration> getSslHandshakeTimeout();
 
-    public abstract Optional<Integer> getClientThreadPoolSize();
+    public abstract Optional<Duration> getConnectTimeout();
+
+    public abstract Optional<Integer> getConnectionPoolSize();
+
+    public abstract Optional<Integer> getThreadPoolSize();
 
     @Nullable
     public abstract HttpProxyConfiguration getHttpProxyConfiguration();
@@ -69,14 +67,13 @@ public abstract class CloudControllerRestClientFactory {
         return false;
     }
 
-    public abstract Optional<Duration> getClientConnectTimeout();
-
     @Value.Derived
     public CloudFoundryClientFactory getCloudFoundryClientFactory() {
         ImmutableCloudFoundryClientFactory.Builder builder = ImmutableCloudFoundryClientFactory.builder();
-        getClientConnectTimeout().ifPresent(builder::clientConnectTimeout);
-        getClientConnectionPoolSize().ifPresent(builder::clientConnectionPoolSize);
-        getClientThreadPoolSize().ifPresent(builder::clientThreadPoolSize);
+        getSslHandshakeTimeout().ifPresent(builder::sslHandshakeTimeout);
+        getConnectTimeout().ifPresent(builder::connectTimeout);
+        getConnectionPoolSize().ifPresent(builder::connectionPoolSize);
+        getThreadPoolSize().ifPresent(builder::threadPoolSize);
         return builder.build();
     }
 

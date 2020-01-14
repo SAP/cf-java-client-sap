@@ -20,11 +20,13 @@ public abstract class CloudFoundryClientFactory {
 
     private final Map<String, ConnectionContext> connectionContextCache = new ConcurrentHashMap<>();
 
-    public abstract Optional<Duration> getClientConnectTimeout();
+    public abstract Optional<Duration> getSslHandshakeTimeout();
 
-    public abstract Optional<Integer> getClientConnectionPoolSize();
+    public abstract Optional<Duration> getConnectTimeout();
 
-    public abstract Optional<Integer> getClientThreadPoolSize();
+    public abstract Optional<Integer> getConnectionPoolSize();
+
+    public abstract Optional<Integer> getThreadPoolSize();
 
     public CloudFoundryClient createClient(URL controllerUrl, OAuthClient oAuthClient) {
         return ReactorCloudFoundryClient.builder()
@@ -47,9 +49,10 @@ public abstract class CloudFoundryClientFactory {
     private ConnectionContext createConnectionContext(String controllerApiHost) {
         DefaultConnectionContext.Builder builder = DefaultConnectionContext.builder()
                                                                            .apiHost(controllerApiHost);
-        getClientConnectTimeout().ifPresent(builder::connectTimeout);
-        getClientConnectionPoolSize().ifPresent(builder::connectionPoolSize);
-        getClientThreadPoolSize().ifPresent(builder::threadPoolSize);
+        getSslHandshakeTimeout().ifPresent(builder::sslHandshakeTimeout);
+        getConnectTimeout().ifPresent(builder::connectTimeout);
+        getConnectionPoolSize().ifPresent(builder::connectionPoolSize);
+        getThreadPoolSize().ifPresent(builder::threadPoolSize);
         return builder.build();
     }
 
