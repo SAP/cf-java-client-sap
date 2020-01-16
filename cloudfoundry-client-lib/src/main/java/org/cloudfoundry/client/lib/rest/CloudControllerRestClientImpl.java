@@ -1412,13 +1412,14 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public List<CloudPackage> getPackagesForApplication(UUID applicationGuid) {
-        return getPackagesForApplication(applicationGuid, OrderBy.NO_ORDER);
+    public List<CloudPackage> getBitsPackagesForApplication(UUID applicationGuid) {
+        return getBitsPackagesForApplication(applicationGuid, OrderBy.NO_ORDER);
     }
 
     @Override
-    public List<CloudPackage> getPackagesForApplication(UUID applicationGuid, OrderBy orderBy) {
-        return fetchList(() -> getPackageResourcesByApplicationGuid(applicationGuid, orderBy), ImmutableRawCloudPackage::of);
+    public List<CloudPackage> getBitsPackagesForApplication(UUID applicationGuid, OrderBy orderBy) {
+        return fetchList(() -> getPackageResourcesByApplicationGuid(applicationGuid, PackageType.BITS, orderBy),
+                         ImmutableRawCloudPackage::of);
     }
 
     @Override
@@ -2556,9 +2557,10 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     private Flux<? extends org.cloudfoundry.client.v3.packages.Package>
-            getPackageResourcesByApplicationGuid(UUID applicationGuid, OrderBy orderBy) {
+            getPackageResourcesByApplicationGuid(UUID applicationGuid, PackageType packageType, OrderBy orderBy) {
         IntFunction<ListApplicationPackagesRequest> pageRequestSupplier = page -> ListApplicationPackagesRequest.builder()
                                                                                                                 .applicationId(applicationGuid.toString())
+                                                                                                                .type(packageType)
                                                                                                                 .orderBy(orderBy.getOrderQuery())
                                                                                                                 .build();
         return PaginationUtils.requestClientV3Resources(page -> delegate.applicationsV3()

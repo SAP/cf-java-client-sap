@@ -1294,9 +1294,9 @@ public interface CloudControllerClient {
 
     Upload getUploadStatus(UUID packageGuid);
 
-    List<CloudPackage> getPackagesForApplication(UUID applicationGuid);
+    List<CloudPackage> getBitsPackagesForApplication(UUID applicationGuid);
 
-    List<CloudPackage> getPackagesForApplication(UUID applicationGuid, OrderBy orderBy);
+    List<CloudPackage> getBitsPackagesForApplication(UUID applicationGuid, OrderBy orderBy);
 
     CloudTask getTask(UUID taskGuid);
 

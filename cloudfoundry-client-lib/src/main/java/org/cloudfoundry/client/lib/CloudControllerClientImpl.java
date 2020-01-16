@@ -969,13 +969,13 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public List<CloudPackage> getPackagesForApplication(UUID applicationGuid) {
-        return handleExceptions(() -> delegate.getPackagesForApplication(applicationGuid));
+    public List<CloudPackage> getBitsPackagesForApplication(UUID applicationGuid) {
+        return handleExceptions(() -> delegate.getBitsPackagesForApplication(applicationGuid));
     }
 
     @Override
-    public List<CloudPackage> getPackagesForApplication(UUID applicationGuid, OrderBy orderBy) {
-        return handleExceptions(() -> delegate.getPackagesForApplication(applicationGuid, orderBy));
+    public List<CloudPackage> getBitsPackagesForApplication(UUID applicationGuid, OrderBy orderBy) {
+        return handleExceptions(() -> delegate.getBitsPackagesForApplication(applicationGuid, orderBy));
     }
 
     @Override
