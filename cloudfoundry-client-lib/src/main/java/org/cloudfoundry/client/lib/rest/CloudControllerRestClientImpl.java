@@ -109,7 +109,6 @@ import org.cloudfoundry.client.lib.domain.UploadToken;
 import org.cloudfoundry.client.lib.oauth2.OAuthClient;
 import org.cloudfoundry.client.lib.util.CloudUtil;
 import org.cloudfoundry.client.lib.util.JsonUtil;
-import org.cloudfoundry.client.lib.util.OrderBy;
 import org.cloudfoundry.client.v2.Resource;
 import org.cloudfoundry.client.v2.applications.ApplicationEntity;
 import org.cloudfoundry.client.v2.applications.ApplicationInstancesRequest;
@@ -196,7 +195,6 @@ import org.cloudfoundry.client.v3.LifecycleType;
 import org.cloudfoundry.client.v3.Relationship;
 import org.cloudfoundry.client.v3.ToOneRelationship;
 import org.cloudfoundry.client.v3.applications.ListApplicationBuildsRequest;
-import org.cloudfoundry.client.v3.applications.ListApplicationPackagesRequest;
 import org.cloudfoundry.client.v3.applications.SetApplicationCurrentDropletRequest;
 import org.cloudfoundry.client.v3.builds.Build;
 import org.cloudfoundry.client.v3.builds.CreateBuildRequest;
@@ -2542,17 +2540,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                      .build();
         return delegate.packages()
                        .get(request);
-    }
-
-    private Flux<? extends org.cloudfoundry.client.v3.packages.Package>
-            getPackageResourcesByApplicationGuid(UUID applicationGuid, PackageType packageType, OrderBy orderBy) {
-        IntFunction<ListApplicationPackagesRequest> pageRequestSupplier = page -> ListApplicationPackagesRequest.builder()
-                                                                                                                .applicationId(applicationGuid.toString())
-                                                                                                                .type(packageType)
-                                                                                                                .orderBy(orderBy.getOrderQuery())
-                                                                                                                .build();
-        return PaginationUtils.requestClientV3Resources(page -> delegate.applicationsV3()
-                                                                        .listPackages(pageRequestSupplier.apply(page)));
     }
 
     private void removeUris(List<String> uris, UUID applicationGuid) {
