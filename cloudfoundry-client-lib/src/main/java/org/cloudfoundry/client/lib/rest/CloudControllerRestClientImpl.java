@@ -110,7 +110,6 @@ import org.cloudfoundry.client.lib.oauth2.OAuthClient;
 import org.cloudfoundry.client.lib.util.CloudUtil;
 import org.cloudfoundry.client.lib.util.JsonUtil;
 import org.cloudfoundry.client.lib.util.OrderBy;
-import org.cloudfoundry.client.lib.util.OrderBy.Values;
 import org.cloudfoundry.client.v2.Resource;
 import org.cloudfoundry.client.v2.applications.ApplicationEntity;
 import org.cloudfoundry.client.v2.applications.ApplicationInstancesRequest;
@@ -1409,17 +1408,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                               .status(cloudPackage.getStatus())
                               .errorDetails(errorDetails)
                               .build();
-    }
-
-    @Override
-    public List<CloudPackage> getBitsPackagesForApplication(UUID applicationGuid) {
-        return getBitsPackagesForApplication(applicationGuid, OrderBy.NO_ORDER);
-    }
-
-    @Override
-    public List<CloudPackage> getBitsPackagesForApplication(UUID applicationGuid, OrderBy orderBy) {
-        return fetchList(() -> getPackageResourcesByApplicationGuid(applicationGuid, PackageType.BITS, orderBy),
-                         ImmutableRawCloudPackage::of);
     }
 
     @Override
