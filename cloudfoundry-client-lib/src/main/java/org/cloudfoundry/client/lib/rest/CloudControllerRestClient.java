@@ -35,7 +35,6 @@ import org.cloudfoundry.client.lib.domain.CloudDomain;
 import org.cloudfoundry.client.lib.domain.CloudEvent;
 import org.cloudfoundry.client.lib.domain.CloudInfo;
 import org.cloudfoundry.client.lib.domain.CloudOrganization;
-import org.cloudfoundry.client.lib.domain.CloudPackage;
 import org.cloudfoundry.client.lib.domain.CloudQuota;
 import org.cloudfoundry.client.lib.domain.CloudRoute;
 import org.cloudfoundry.client.lib.domain.CloudSecurityGroup;
@@ -54,7 +53,6 @@ import org.cloudfoundry.client.lib.domain.Staging;
 import org.cloudfoundry.client.lib.domain.Upload;
 import org.cloudfoundry.client.lib.domain.UploadToken;
 import org.cloudfoundry.client.lib.oauth2.OAuthClient;
-import org.cloudfoundry.client.lib.util.OrderBy;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestTemplate;
@@ -352,10 +350,6 @@ public interface CloudControllerRestClient {
     UploadToken asyncUploadApplication(String applicationName, File file, UploadStatusCallback callback) throws IOException;
 
     Upload getUploadStatus(UUID packageGuid);
-
-    List<CloudPackage> getBitsPackagesForApplication(UUID applicationGuid);
-
-    List<CloudPackage> getBitsPackagesForApplication(UUID applicationGuid, OrderBy orderBy);
 
     CloudTask getTask(UUID taskGuid);
 
