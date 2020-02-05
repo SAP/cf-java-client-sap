@@ -1652,6 +1652,9 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     private Flux<? extends Resource<ApplicationEntity>> getApplicationResourcesByNames(Collection<String> names) {
+        if (names.isEmpty()) {
+            return Flux.empty();
+        }
         IntFunction<ListSpaceApplicationsRequest> pageRequestSupplier = page -> ListSpaceApplicationsRequest.builder()
                                                                                                             .spaceId(getTargetSpaceGuid().toString())
                                                                                                             .addAllNames(names)
@@ -1713,6 +1716,9 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     private Flux<? extends Resource<UnionServiceInstanceEntity>> getServiceInstanceResourcesByNames(Collection<String> names) {
+        if (names.isEmpty()) {
+            return Flux.empty();
+        }
         IntFunction<ListSpaceServiceInstancesRequest> pageRequestSupplier = page -> ListSpaceServiceInstancesRequest.builder()
                                                                                                                     .returnUserProvidedServiceInstances(true)
                                                                                                                     .spaceId(getTargetSpaceGuid().toString())
