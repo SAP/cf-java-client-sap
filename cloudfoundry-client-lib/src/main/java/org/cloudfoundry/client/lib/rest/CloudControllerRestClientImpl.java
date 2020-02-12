@@ -901,8 +901,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public CloudService getService(String serviceName) {
-        CloudService service = getService(serviceName, true);
-        return service == null ? null : getServiceWithMetadata(service);
+        return getService(serviceName, true);
     }
 
     private CloudService getServiceWithMetadata(CloudService cloudService) {
@@ -954,8 +953,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public CloudServiceInstance getServiceInstance(String serviceName) {
-        final CloudServiceInstance serviceInstance = getServiceInstance(serviceName, true);
-        return serviceInstance == null ? null : getServiceInstanceWithMetadata(serviceInstance);
+        return getServiceInstance(serviceName, true);
     }
 
     private CloudServiceInstance getServiceInstanceWithMetadata(CloudServiceInstance serviceInstance) {
