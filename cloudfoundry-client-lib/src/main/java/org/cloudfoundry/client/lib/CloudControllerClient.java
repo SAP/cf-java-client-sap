@@ -1126,18 +1126,6 @@ public interface CloudControllerClient {
     void updateApplicationMemory(String applicationName, int memory);
 
     /**
-     * Update application services.
-     *
-     * @param applicationName name of appplication
-     * @param services list of services that should be bound to app
-     * @param serviceNamesWithBindingParameters map of service id to service binding parameters
-     * @param applicationServicesUpdateCallback callback used for error handling
-     * @return
-     */
-    List<String> updateApplicationServices(String applicationName, Map<String, Map<String, Object>> serviceNamesWithBindingParameters,
-                                           ApplicationServicesUpdateCallback applicationServicesUpdateCallback);
-
-    /**
      * Update application staging information.
      *
      * @param applicationName name of appplication

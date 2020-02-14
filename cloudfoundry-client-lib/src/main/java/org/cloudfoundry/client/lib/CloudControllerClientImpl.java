@@ -50,7 +50,6 @@ import org.cloudfoundry.client.lib.domain.InstancesInfo;
 import org.cloudfoundry.client.lib.domain.Staging;
 import org.cloudfoundry.client.lib.domain.Upload;
 import org.cloudfoundry.client.lib.domain.UploadToken;
-import org.cloudfoundry.client.lib.rest.ApplicationServicesUpdater;
 import org.cloudfoundry.client.lib.rest.CloudControllerRestClient;
 import org.cloudfoundry.client.lib.rest.CloudControllerRestClientFactory;
 import org.cloudfoundry.client.lib.rest.ImmutableCloudControllerRestClientFactory;
@@ -885,16 +884,6 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     @Override
     public void updateApplicationMemory(String applicationName, int memory) {
         handleExceptions(() -> delegate.updateApplicationMemory(applicationName, memory));
-    }
-
-    @Override
-    public List<String> updateApplicationServices(String applicationName,
-                                                  Map<String, Map<String, Object>> serviceNamesWithBindingParameters,
-                                                  ApplicationServicesUpdateCallback applicationServicesUpdateCallback) {
-        ApplicationServicesUpdater applicationServicesUpdater = new ApplicationServicesUpdater(this);
-        return handleExceptions(() -> applicationServicesUpdater.updateApplicationServices(applicationName,
-                                                                                           serviceNamesWithBindingParameters,
-                                                                                           applicationServicesUpdateCallback));
     }
 
     @Override
