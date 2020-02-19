@@ -32,6 +32,8 @@ public class RawCloudEntityTest {
     static final Date CREATED_AT = fromZonedDateTime(ZonedDateTime.of(2017, 6, 22, 13, 38, 41, 0, ZoneId.of("Z")));
     static final Date UPDATED_AT = fromZonedDateTime(ZonedDateTime.of(2019, 3, 21, 12, 29, 24, 0, ZoneId.of("Z")));
 
+    static final org.cloudfoundry.client.v3.Metadata V3_METADATA = org.cloudfoundry.client.v3.Metadata.builder()
+                                                                                                      .build();
     static final Metadata METADATA = Metadata.builder()
                                              .id(GUID_STRING)
                                              .createdAt(CREATED_AT_STRING)
@@ -58,12 +60,7 @@ public class RawCloudEntityTest {
     @Test
     public void testParseV2ResourceMetadata() {
         org.cloudfoundry.client.v2.applications.ApplicationResource resource = org.cloudfoundry.client.v2.applications.ApplicationResource.builder()
-                                                                                                                                          .metadata(Metadata.builder()
-                                                                                                                                                            .id(GUID_STRING)
-                                                                                                                                                            .createdAt(CREATED_AT_STRING)
-                                                                                                                                                            .updatedAt(UPDATED_AT_STRING)
-                                                                                                                                                            .url(URL_STRING)
-                                                                                                                                                            .build())
+                                                                                                                                          .metadata(METADATA)
                                                                                                                                           .build();
 
         CloudMetadata metadata = RawCloudEntity.parseResourceMetadata(resource);
@@ -77,6 +74,7 @@ public class RawCloudEntityTest {
                                                                                                                                       .createdAt(CREATED_AT_STRING)
                                                                                                                                       .updatedAt(UPDATED_AT_STRING)
                                                                                                                                       .name(NAME)
+                                                                                                                                      .metadata(V3_METADATA)
                                                                                                                                       .build();
 
         CloudMetadata metadata = RawCloudEntity.parseResourceMetadata(resource);
