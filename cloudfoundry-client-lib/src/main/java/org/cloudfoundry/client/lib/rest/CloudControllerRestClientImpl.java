@@ -88,6 +88,7 @@ import org.cloudfoundry.client.lib.domain.CloudServiceInstance;
 import org.cloudfoundry.client.lib.domain.CloudServiceKey;
 import org.cloudfoundry.client.lib.domain.CloudServiceOffering;
 import org.cloudfoundry.client.lib.domain.CloudServicePlan;
+import org.cloudfoundry.client.lib.domain.ServiceInstanceType;
 import org.cloudfoundry.client.lib.domain.CloudSpace;
 import org.cloudfoundry.client.lib.domain.CloudStack;
 import org.cloudfoundry.client.lib.domain.CloudTask;
@@ -173,7 +174,6 @@ import org.cloudfoundry.client.v2.serviceplans.ListServicePlansRequest;
 import org.cloudfoundry.client.v2.serviceplans.ServicePlanEntity;
 import org.cloudfoundry.client.v2.serviceplans.UpdateServicePlanRequest;
 import org.cloudfoundry.client.v2.services.GetServiceRequest;
-import org.cloudfoundry.client.v2.services.ListServicesRequest;
 import org.cloudfoundry.client.v2.services.ServiceEntity;
 import org.cloudfoundry.client.v2.shareddomains.ListSharedDomainsRequest;
 import org.cloudfoundry.client.v2.shareddomains.SharedDomainEntity;
@@ -251,7 +251,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     private static final String MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED = "Feature is not yet implemented.";
     private static final String DEFAULT_HOST_DOMAIN_SEPARATOR = "\\.";
     private static final String DEFAULT_PATH_SEPARATOR = "/";
-    private static final String USER_PROVIDED_SERVICE_INSTANCE_TYPE = "user_provided_service_instance";
     private static final long JOB_POLLING_PERIOD = TimeUnit.SECONDS.toMillis(5);
 
     private CloudCredentials credentials;
@@ -1769,7 +1768,8 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     private boolean isUserProvided(UnionServiceInstanceEntity serviceInstance) {
-        return USER_PROVIDED_SERVICE_INSTANCE_TYPE.equals(serviceInstance.getType());
+        return ServiceInstanceType.valueOfWithDefault(serviceInstance.getType())
+                               .equals(ServiceInstanceType.USER_PROVIDED);
     }
 
     private List<UUID> getServiceBindingGuids(CloudService service) {
