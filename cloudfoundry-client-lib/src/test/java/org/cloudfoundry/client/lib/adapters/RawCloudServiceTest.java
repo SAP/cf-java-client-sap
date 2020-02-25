@@ -1,6 +1,7 @@
 package org.cloudfoundry.client.lib.adapters;
 
 import org.cloudfoundry.client.lib.domain.CloudService;
+import org.cloudfoundry.client.lib.domain.ServiceInstanceType;
 import org.cloudfoundry.client.lib.domain.ImmutableCloudService;
 import org.cloudfoundry.client.v2.Resource;
 import org.cloudfoundry.client.v2.serviceinstances.UnionServiceInstanceEntity;
@@ -40,6 +41,7 @@ public class RawCloudServiceTest {
                                     .name(NAME)
                                     .plan(PLAN_NAME)
                                     .label(OFFERING_NAME)
+                                    .type(ServiceInstanceType.MANAGED)
                                     .credentials(CREDENTIALS)
                                     .tags(TAGS)
                                     .build();
@@ -49,6 +51,7 @@ public class RawCloudServiceTest {
         return ImmutableCloudService.builder()
                                     .metadata(RawCloudEntityTest.EXPECTED_METADATA)
                                     .name(NAME)
+                                    .type(ServiceInstanceType.USER_PROVIDED)
                                     .credentials(CREDENTIALS)
                                     .tags(TAGS)
                                     .build();
@@ -64,7 +67,7 @@ public class RawCloudServiceTest {
 
     private static RawCloudService buildRawUserProvidedService() {
         return ImmutableRawCloudService.builder()
-                                       .resource(buildTestResource())
+                                       .resource(buildUserProvidedTestResource())
                                        .build();
     }
 
@@ -75,9 +78,26 @@ public class RawCloudServiceTest {
                                            .build();
     }
 
+    private static Resource<UnionServiceInstanceEntity> buildUserProvidedTestResource() {
+        return UnionServiceInstanceResource.builder()
+                                           .metadata(RawCloudEntityTest.METADATA)
+                                           .entity(buildUserProvidedTestEntity())
+                                           .build();
+    }
+
     private static UnionServiceInstanceEntity buildTestEntity() {
         return UnionServiceInstanceEntity.builder()
                                          .name(NAME)
+                                         .type("managed_service_instance")
+                                         .credentials(CREDENTIALS)
+                                         .addAllTags(TAGS)
+                                         .build();
+    }
+
+    private static UnionServiceInstanceEntity buildUserProvidedTestEntity() {
+        return UnionServiceInstanceEntity.builder()
+                                         .name(NAME)
+                                         .type("user_provided_service_instance")
                                          .credentials(CREDENTIALS)
                                          .addAllTags(TAGS)
                                          .build();
