@@ -30,8 +30,11 @@ public interface CloudService extends CloudEntity, Derivable<CloudService> {
 
     List<String> getTags();
 
+    @Nullable
+    ServiceInstanceType getType();
+
     default boolean isUserProvided() {
-        return getPlan() == null && getProvider() == null && getVersion() == null;
+        return getType() != null && getType().equals(ServiceInstanceType.USER_PROVIDED);
     }
 
     @Override

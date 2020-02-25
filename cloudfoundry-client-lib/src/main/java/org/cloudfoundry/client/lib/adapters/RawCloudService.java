@@ -3,6 +3,7 @@ package org.cloudfoundry.client.lib.adapters;
 import java.util.Optional;
 
 import org.cloudfoundry.client.lib.domain.CloudService;
+import org.cloudfoundry.client.lib.domain.ServiceInstanceType;
 import org.cloudfoundry.client.lib.domain.ImmutableCloudService;
 import org.cloudfoundry.client.lib.domain.annotation.Nullable;
 import org.cloudfoundry.client.v2.Resource;
@@ -32,6 +33,7 @@ public abstract class RawCloudService extends RawCloudEntity<CloudService> {
                                     .name(entity.getName())
                                     .plan(parsePlan(getServicePlanResource()))
                                     .label(parseLabel(getServiceResource()))
+                                    .type(ServiceInstanceType.valueOfWithDefault(entity.getType()))
                                     .tags(entity.getTags())
                                     .credentials(entity.getCredentials())
                                     .build();

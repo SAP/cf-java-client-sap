@@ -20,7 +20,6 @@ import org.junit.jupiter.api.Test;
 public class RawCloudServiceInstanceTest {
 
     private static final String NAME = "foo";
-    private static final String TYPE = "user_provided_service_instance";
     private static final String DASHBOARD_URL = "/dashboard";
     private static final Map<String, Object> CREDENTIALS = buildTestCredentials();
     private static final CloudService SERVICE = buildTestService();
@@ -37,7 +36,7 @@ public class RawCloudServiceInstanceTest {
                                             .dashboardUrl(DASHBOARD_URL)
                                             .bindings(BINDINGS)
                                             .name(NAME)
-                                            .type(TYPE)
+                                            .type("user_provided_service_instance")
                                             .service(SERVICE)
                                             .credentials(CREDENTIALS)
                                             .build();
@@ -61,7 +60,7 @@ public class RawCloudServiceInstanceTest {
     private static UnionServiceInstanceEntity buildTestEntity() {
         return UnionServiceInstanceEntity.builder()
                                          .name(NAME)
-                                         .type(TYPE)
+                                         .type("user_provided_service_instance")
                                          .dashboardUrl(DASHBOARD_URL)
                                          .credentials(CREDENTIALS)
                                          .build();
