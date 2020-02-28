@@ -27,7 +27,7 @@ public class RawCloudEventTest {
 
     private static final UUID ACTEE_GUID = UUID.fromString(ACTEE_GUID_STRING);
     private static final UUID ACTOR_GUID = UUID.fromString(ACTOR_GUID_STRING);
-    private static final Date TIMESTAMP = RawCloudEntityTest.fromZonedDateTime(ZonedDateTime.of(2019, 7, 3, 20, 00, 46, 0, ZoneId.of("Z")));
+    private static final Date TIMESTAMP = RawCloudEntityTest.fromZonedDateTime(ZonedDateTime.of(2019, 7, 3, 20, 0, 46, 0, ZoneId.of("Z")));
 
     @Test
     public void testDerive() {

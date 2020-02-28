@@ -221,8 +221,8 @@ public interface CloudControllerClient {
      * @param serviceNames list of service names to bind to app
      * @param dockerInfo docker params(image, username, password)
      */
-    public void createApplication(String applicationName, Staging staging, Integer disk, Integer memory, List<String> uris,
-                                  List<String> serviceNames, DockerInfo dockerInfo);
+    void createApplication(String applicationName, Staging staging, Integer disk, Integer memory, List<String> uris,
+                           List<String> serviceNames, DockerInfo dockerInfo);
 
     /**
      * Create quota

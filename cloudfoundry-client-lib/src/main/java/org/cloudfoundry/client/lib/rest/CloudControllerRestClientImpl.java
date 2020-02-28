@@ -1578,7 +1578,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                                                                                                                                   .build();
         return PaginationUtils.requestClientV3Resources(page -> delegate.applicationsV3()
                                                                         .list(pageRequestSupplier.apply(page)))
-                              .collectMap(response -> response.getId(), response -> response.getMetadata())
+                              .collectMap(ApplicationResource::getId, ApplicationResource::getMetadata)
                               .block();
     }
 
@@ -2792,9 +2792,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     private boolean isForbidden(Throwable t) {
         if (t instanceof AbstractCloudFoundryException) {
             AbstractCloudFoundryException e = (AbstractCloudFoundryException) t;
-            if (isForbidden(e)) {
-                return true;
-            }
+            return isForbidden(e);
         }
         return false;
     }

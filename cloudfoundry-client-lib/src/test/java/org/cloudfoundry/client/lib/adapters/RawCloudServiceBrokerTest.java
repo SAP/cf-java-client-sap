@@ -19,7 +19,7 @@ public class RawCloudServiceBrokerTest {
         RawCloudEntityTest.testDerive(buildExpectedServiceBroker(), buildRawServiceBroker());
     }
 
-    private static final CloudServiceBroker buildExpectedServiceBroker() {
+    private static CloudServiceBroker buildExpectedServiceBroker() {
         return ImmutableCloudServiceBroker.builder()
                                           .metadata(RawCloudEntityTest.EXPECTED_METADATA)
                                           .username(USERNAME)
@@ -29,7 +29,7 @@ public class RawCloudServiceBrokerTest {
                                           .build();
     }
 
-    private static final RawCloudServiceBroker buildRawServiceBroker() {
+    private static RawCloudServiceBroker buildRawServiceBroker() {
         return ImmutableRawCloudServiceBroker.builder()
                                              .resource(buildTestResource())
                                              .build();

@@ -86,7 +86,7 @@ public abstract class CloudControllerRestClientFactory {
     }
 
     public CloudControllerRestClient createClient(URL controllerUrl, CloudCredentials credentials, OAuthClient oAuthClient) {
-        return createClient(controllerUrl, credentials, (CloudSpace) null, oAuthClient);
+        return createClient(controllerUrl, credentials, null, oAuthClient);
     }
 
     public CloudControllerRestClient createClient(URL controllerUrl, CloudCredentials credentials, String organizationName,

@@ -43,7 +43,7 @@ public abstract class RawInstancesInfo extends RawCloudEntity<InstancesInfo> {
     }
 
     private static int parseIndex(Entry<String, ApplicationInstanceInfo> instance) {
-        return Integer.valueOf(instance.getKey());
+        return Integer.parseInt(instance.getKey());
     }
 
     private static InstanceState parseState(Entry<String, ApplicationInstanceInfo> instance) {

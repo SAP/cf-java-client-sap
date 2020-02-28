@@ -80,9 +80,8 @@ public class RestUtil {
         }
 
         HttpClient httpClient = httpClientBuilder.build();
-        HttpComponentsClientHttpRequestFactory requestFactory = new HttpComponentsClientHttpRequestFactory(httpClient);
 
-        return requestFactory;
+        return new HttpComponentsClientHttpRequestFactory(httpClient);
     }
 
     public RestTemplate createRestTemplate(HttpProxyConfiguration httpProxyConfiguration, boolean trustSelfSignedCerts) {
@@ -105,7 +104,7 @@ public class RestUtil {
     }
 
     private List<HttpMessageConverter<?>> getHttpMessageConverters() {
-        List<HttpMessageConverter<?>> messageConverters = new ArrayList<HttpMessageConverter<?>>();
+        List<HttpMessageConverter<?>> messageConverters = new ArrayList<>();
         messageConverters.add(new ByteArrayHttpMessageConverter());
         messageConverters.add(new StringHttpMessageConverter());
         messageConverters.add(new ResourceHttpMessageConverter());

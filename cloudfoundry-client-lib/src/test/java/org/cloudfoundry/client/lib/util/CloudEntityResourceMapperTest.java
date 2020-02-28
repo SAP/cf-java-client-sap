@@ -7,6 +7,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.util.Map;
 import java.util.UUID;
@@ -163,11 +164,11 @@ public class CloudEntityResourceMapperTest {
         assertEquals("sha256", cloudPackage.getData()
                                            .getChecksum()
                                            .getAlgorithm());
-        assertEquals(null, cloudPackage.getData()
-                                       .getChecksum()
-                                       .getValue());
-        assertEquals(null, cloudPackage.getData()
-                                       .getError());
+        assertNull(cloudPackage.getData()
+                .getChecksum()
+                .getValue());
+        assertNull(cloudPackage.getData()
+                .getError());
         assertEquals(Status.PROCESSING_UPLOAD, cloudPackage.getStatus());
     }
 
@@ -182,10 +183,10 @@ public class CloudEntityResourceMapperTest {
         assertEquals("bill", cloudBuild.getCreatedBy()
                                        .getName());
         assertEquals(CloudBuild.State.STAGING, cloudBuild.getState());
-        assertEquals(null, cloudBuild.getError());
+        assertNull(cloudBuild.getError());
         assertEquals(UUID.fromString("8e4da443-f255-499c-8b47-b3729b5b7432"), cloudBuild.getPackageInfo()
                                                                                         .getGuid());
-        assertEquals(null, cloudBuild.getDropletInfo());
+        assertNull(cloudBuild.getDropletInfo());
     }
 
     private static Map<String, Object> getResourceAsMap(String resourceName) {
@@ -196,7 +197,7 @@ public class CloudEntityResourceMapperTest {
     private static String getResourceAsString(String resourceName) {
         InputStream resource = CloudEntityResourceMapperTest.class.getResourceAsStream(resourceName);
         try {
-            return IOUtils.toString(resource, "UTF-8");
+            return IOUtils.toString(resource, StandardCharsets.UTF_8);
         } catch (IOException e) {
             throw new IllegalStateException(e);
         }

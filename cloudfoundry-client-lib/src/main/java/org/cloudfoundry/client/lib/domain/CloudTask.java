@@ -32,7 +32,7 @@ public interface CloudTask extends CloudEntity, Derivable<CloudTask> {
     }
 
     enum State {
-        PENDING, RUNNING, SUCCEEDED, CANCELING, FAILED;
+        PENDING, RUNNING, SUCCEEDED, CANCELING, FAILED
     }
 
     @Value.Immutable

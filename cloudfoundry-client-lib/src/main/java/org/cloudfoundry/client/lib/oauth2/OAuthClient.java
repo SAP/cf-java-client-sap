@@ -123,7 +123,7 @@ public class OAuthClient {
         return new OAuthTokenProvider(this);
     }
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
+    @SuppressWarnings({ "rawtypes"})
     public void changePassword(String oldPassword, String newPassword) {
         HttpHeaders headers = new HttpHeaders();
         headers.add(AUTHORIZATION_HEADER_KEY, token.getTokenType() + " " + token.getValue());

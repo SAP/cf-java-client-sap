@@ -21,7 +21,7 @@ public class RawCloudServicePlanTest {
         RawCloudEntityTest.testDerive(buildExpectedPlan(), buildRawServicePlan());
     }
 
-    private static final CloudServicePlan buildExpectedPlan() {
+    private static CloudServicePlan buildExpectedPlan() {
         return ImmutableCloudServicePlan.builder()
                                         .metadata(RawCloudEntityTest.EXPECTED_METADATA)
                                         .name(NAME)
@@ -33,7 +33,7 @@ public class RawCloudServicePlanTest {
                                         .build();
     }
 
-    private static final RawCloudServicePlan buildRawServicePlan() {
+    private static RawCloudServicePlan buildRawServicePlan() {
         return ImmutableRawCloudServicePlan.of(buildTestResource());
     }
 
