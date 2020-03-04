@@ -17,7 +17,7 @@ In order to use this client in your application, you need to include the followi
 ```xml
 <dependencies>
     <dependency>
-        <groupId>org.cloudfoundry</groupId>
+        <groupId>com.sap.cloud.lm.sl</groupId>
         <artifactId>cloudfoundry-client-lib</artifactId>
         <version>...</version>
     </dependency>
