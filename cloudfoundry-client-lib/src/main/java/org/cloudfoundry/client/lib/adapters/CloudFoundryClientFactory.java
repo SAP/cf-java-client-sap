@@ -54,6 +54,7 @@ public abstract class CloudFoundryClientFactory {
         getConnectTimeout().ifPresent(builder::connectTimeout);
         getConnectionPoolSize().ifPresent(builder::connectionPoolSize);
         getThreadPoolSize().ifPresent(builder::threadPoolSize);
+        builder.additionalHttpClientConfiguration(client -> client.metrics(true));
         return builder.build();
     }
 

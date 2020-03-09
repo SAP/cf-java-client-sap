@@ -19,18 +19,6 @@
         <jackson.version>2.10.1</jackson.version>
     </properties>
 
-    <dependencyManagement>
-        <dependencies>
-            <!-- Override version of transitive dependency coming from: org.cloudfoundry:cloudfoundry-client-reactor -->
-            <!-- https://mvnrepository.com/artifact/io.projectreactor.netty/reactor-netty -->
-            <dependency>
-                <groupId>io.projectreactor.netty</groupId>
-                <artifactId>reactor-netty</artifactId>
-                <version>0.9.2.RELEASE</version>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
-
     <dependencies>
         <dependency>
             <groupId>org.springframework.security.oauth</groupId>
