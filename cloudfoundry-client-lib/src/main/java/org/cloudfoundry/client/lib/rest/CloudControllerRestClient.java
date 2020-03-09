@@ -132,9 +132,13 @@ public interface CloudControllerRestClient {
 
     void deleteService(String service);
 
+    void deleteService(CloudService service);
+
     void deleteServiceBroker(String name);
 
     void deleteServiceKey(String service, String serviceKey);
+
+    void deleteServiceKey(CloudServiceKey serviceKey);
 
     void deleteSpace(String spaceName);
 
@@ -221,6 +225,8 @@ public interface CloudControllerRestClient {
     CloudServiceInstance getServiceInstance(String serviceName, boolean required);
 
     List<CloudServiceKey> getServiceKeys(String serviceName);
+
+    List<CloudServiceKey> getServiceKeys(CloudService service);
 
     List<CloudServiceOffering> getServiceOfferings();
 
@@ -309,6 +315,8 @@ public interface CloudControllerRestClient {
     void unbindSecurityGroup(String organizationName, String spaceName, String securityGroupName);
 
     void unbindService(String applicationName, String serviceName);
+
+    void unbindService(CloudApplication application, CloudService service);
 
     void unbindStagingSecurityGroup(String securityGroupName);
 

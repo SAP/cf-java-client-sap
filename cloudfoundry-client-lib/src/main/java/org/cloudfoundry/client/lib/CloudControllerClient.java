@@ -382,6 +382,12 @@ public interface CloudControllerClient {
     void deleteService(String service);
 
     /**
+     * 
+     * @param service {@link CloudService}
+     */
+    void deleteService(CloudService service);
+
+    /**
      * Delete a service broker.
      *
      * @param name the service broker name
@@ -395,6 +401,13 @@ public interface CloudControllerClient {
      * @param serviceKey name of service key
      */
     void deleteServiceKey(String service, String serviceKey);
+
+    /**
+     * Delete a service key.
+     * 
+     * @param serviceKey {@link CloudServiceKey} object
+     */
+    void deleteServiceKey(CloudServiceKey serviceKey);
 
     /**
      * Delete a space with the specified name
@@ -790,6 +803,14 @@ public interface CloudControllerClient {
     List<CloudServiceKey> getServiceKeys(String serviceName);
 
     /**
+     * Get service keys for a service.
+     *
+     * @param service instance containing service keys
+     * @return the service keys info
+     */
+    List<CloudServiceKey> getServiceKeys(CloudService service);
+
+    /**
      * Get all service offerings.
      *
      * @return list of service offerings
@@ -1079,6 +1100,14 @@ public interface CloudControllerClient {
      * @param serviceName the service name
      */
     void unbindService(String applicationName, String serviceName);
+
+    /**
+     * Un-associate (unprovision) a service from an application.
+     *
+     * @param application the application instance
+     * @param service the service instance
+     */
+    void unbindService(CloudApplication application, CloudService service);
 
     /**
      * Unbind a security group from the set of security groups for staging applications.
