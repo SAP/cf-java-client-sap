@@ -364,6 +364,11 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
+    public void deleteService(CloudService service) {
+        handleExceptions(() -> delegate.deleteService(service));
+    }
+
+    @Override
     public void deleteServiceBroker(String name) {
         handleExceptions(() -> delegate.deleteServiceBroker(name));
     }
@@ -371,6 +376,11 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     @Override
     public void deleteServiceKey(String service, String serviceKey) {
         handleExceptions(() -> delegate.deleteServiceKey(service, serviceKey));
+    }
+
+    @Override
+    public void deleteServiceKey(CloudServiceKey serviceKey) {
+        handleExceptions(() -> delegate.deleteServiceKey(serviceKey));
     }
 
     @Override
@@ -627,6 +637,11 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
+    public List<CloudServiceKey> getServiceKeys(CloudService service) {
+        return handleExceptions(() -> delegate.getServiceKeys(service));
+    }
+
+    @Override
     public List<CloudServiceOffering> getServiceOfferings() {
         return handleExceptions(() -> delegate.getServiceOfferings());
     }
@@ -849,6 +864,11 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     @Override
     public void unbindService(String applicationName, String serviceName) {
         handleExceptions(() -> delegate.unbindService(applicationName, serviceName));
+    }
+
+    @Override
+    public void unbindService(CloudApplication application, CloudService service) {
+        handleExceptions(() -> delegate.unbindService(application, service));
     }
 
     @Override

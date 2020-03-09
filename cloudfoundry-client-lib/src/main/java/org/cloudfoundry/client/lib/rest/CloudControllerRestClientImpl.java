@@ -623,6 +623,11 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
+    public void deleteService(CloudService service) {
+        doDeleteService(service);
+    }
+
+    @Override
     public void deleteServiceBroker(String name) {
         CloudServiceBroker broker = getServiceBroker(name);
         UUID guid = broker.getMetadata()
@@ -646,6 +651,13 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
             }
         }
         throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Service key " + serviceKeyName + " not found.");
+    }
+
+    @Override
+    public void deleteServiceKey(CloudServiceKey serviceKey) {
+        UUID serviceKeyGuid = serviceKey.getMetadata()
+                                        .getGuid();
+        doDeleteServiceKey(serviceKeyGuid);
     }
 
     @Override
@@ -979,6 +991,14 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
+    public List<CloudServiceKey> getServiceKeys(CloudService service) {
+        return fetchList(() -> getServiceKeyTuple(service), tuple -> ImmutableRawCloudServiceKey.builder()
+                                                                                                .resource(tuple.getT1())
+                                                                                                .service(tuple.getT2())
+                                                                                                .build());
+    }
+
+    @Override
     public Map<String, Object> getServiceParameters(UUID guid) {
         return delegate.serviceInstances()
                        .getParameters(GetServiceInstanceParametersRequest.builder()
@@ -1278,6 +1298,14 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         UUID applicationGuid = getRequiredApplicationGuid(applicationName);
         UUID serviceGuid = getService(serviceName).getMetadata()
                                                   .getGuid();
+        doUnbindService(applicationGuid, serviceGuid);
+    }
+
+    @Override
+    public void unbindService(CloudApplication application, CloudService service) {
+        UUID applicationGuid = getGuid(application);
+        UUID serviceGuid = getGuid(service);
+
         doUnbindService(applicationGuid, serviceGuid);
     }
 
@@ -2167,10 +2195,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     private void doDeleteService(CloudService service) {
-        List<UUID> serviceBindingGuids = getServiceBindingGuids(service);
-        for (UUID serviceBindingGuid : serviceBindingGuids) {
-            doUnbindService(serviceBindingGuid);
-        }
         UUID serviceGuid = service.getMetadata()
                                   .getGuid();
         delegate.serviceInstances()
@@ -2492,13 +2516,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                                                   .build();
         return PaginationUtils.requestClientV2Resources(page -> delegate.servicePlans()
                                                                         .list(pageRequestSupplier.apply(page)));
-    }
-
-    private List<CloudServiceKey> getServiceKeys(CloudService service) {
-        return fetchList(() -> getServiceKeyTuple(service), tuple -> ImmutableRawCloudServiceKey.builder()
-                                                                                                .resource(tuple.getT1())
-                                                                                                .service(tuple.getT2())
-                                                                                                .build());
     }
 
     private Flux<Tuple2<? extends Resource<ServiceKeyEntity>, CloudService>> getServiceKeyTuple(CloudService service) {
