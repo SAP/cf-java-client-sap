@@ -161,12 +161,7 @@ public class RawCloudApplicationTest {
     }
 
     private static RawCloudApplication buildRawApplicationWithoutEnvironment() {
-        SummaryApplicationResponse summary = buildApplicationSummary();
-        SummaryApplicationResponse summaryWithoutEnvironment = SummaryApplicationResponse.builder()
-                                                                                         .from(summary)
-                                                                                         .environmentJsons(null)
-                                                                                         .build();
-        return buildRawApplication(summaryWithoutEnvironment);
+        return buildRawApplication(buildApplicationResourceWithoutEnvironment(), buildApplicationSummary());
     }
 
     private static RawCloudApplication buildRawApplicationWithoutDockerInfo() {
@@ -176,7 +171,7 @@ public class RawCloudApplicationTest {
                                                                                         .dockerImage(null)
                                                                                         .dockerCredentials(null)
                                                                                         .build();
-        return buildRawApplication(summaryWithoutDockerInfo);
+        return buildRawApplication(buildApplicationResource(), summaryWithoutDockerInfo);
     }
 
     private static RawCloudApplication buildRawApplicationWithoutDockerCredentials() {
@@ -185,16 +180,17 @@ public class RawCloudApplicationTest {
                                                                                                .from(summary)
                                                                                                .dockerCredentials(null)
                                                                                                .build();
-        return buildRawApplication(summaryWithoutDockerCredentials);
+        return buildRawApplication(buildApplicationResource(), summaryWithoutDockerCredentials);
     }
 
     private static RawCloudApplication buildRawApplication() {
-        return buildRawApplication(buildApplicationSummary());
+        return buildRawApplication(buildApplicationResource(), buildApplicationSummary());
     }
 
-    private static RawCloudApplication buildRawApplication(SummaryApplicationResponse summary) {
+    private static RawCloudApplication buildRawApplication(Resource<ApplicationEntity> applicationResource,
+                                                           SummaryApplicationResponse summary) {
         return ImmutableRawCloudApplication.builder()
-                                           .resource(buildApplicationResource())
+                                           .resource(applicationResource)
                                            .summary(summary)
                                            .stack(STACK)
                                            .space(SPACE)
@@ -202,8 +198,19 @@ public class RawCloudApplicationTest {
     }
 
     private static Resource<ApplicationEntity> buildApplicationResource() {
+        return buildApplicationResource(ENVIRONMENT);
+    }
+
+    private static Resource<ApplicationEntity> buildApplicationResourceWithoutEnvironment() {
+        return buildApplicationResource(null);
+    }
+
+    private static Resource<ApplicationEntity> buildApplicationResource(Map<String, Object> environmentJsons) {
         return ApplicationResource.builder()
                                   .metadata(RawCloudEntityTest.METADATA)
+                                  .entity(ApplicationEntity.builder()
+                                                           .environmentJsons(environmentJsons)
+                                                           .build())
                                   .build();
     }
 
@@ -224,7 +231,6 @@ public class RawCloudApplicationTest {
                                          .enableSsh(SSH_ENABLED)
                                          .dockerImage(DOCKER_IMAGE)
                                          .dockerCredentials(DOCKER_CREDENTIALS)
-                                         .environmentJsons(ENVIRONMENT)
                                          .command(COMMAND)
                                          .buildpack(BUILDPACK)
                                          .detectedBuildpack(DETECTED_BUILDPACK)
