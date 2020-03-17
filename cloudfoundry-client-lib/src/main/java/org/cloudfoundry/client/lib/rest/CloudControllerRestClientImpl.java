@@ -184,6 +184,7 @@ import org.cloudfoundry.client.v2.spaces.ListSpaceDevelopersRequest;
 import org.cloudfoundry.client.v2.spaces.ListSpaceManagersRequest;
 import org.cloudfoundry.client.v2.spaces.ListSpaceRoutesRequest;
 import org.cloudfoundry.client.v2.spaces.ListSpaceServiceInstancesRequest;
+import org.cloudfoundry.client.v2.spaces.ListSpaceServicesRequest;
 import org.cloudfoundry.client.v2.spaces.ListSpacesRequest;
 import org.cloudfoundry.client.v2.spaces.SpaceEntity;
 import org.cloudfoundry.client.v2.stacks.GetStackRequest;
@@ -2423,9 +2424,10 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     private Flux<? extends Resource<ServiceEntity>> getServiceResources() {
-        IntFunction<ListServicesRequest> pageRequestSupplier = page -> ListServicesRequest.builder()
-                                                                                          .page(page)
-                                                                                          .build();
+        IntFunction<ListSpaceServicesRequest> pageRequestSupplier = page -> ListSpaceServicesRequest.builder()
+                                                                                                    .spaceId(getTargetSpaceGuid().toString())
+                                                                                                    .page(page)
+                                                                                                    .build();
         return getServiceResources(pageRequestSupplier);
     }
 
@@ -2441,24 +2443,26 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     private Flux<? extends Resource<ServiceEntity>> getServiceResourcesByBrokerGuid(UUID brokerGuid) {
-        IntFunction<ListServicesRequest> pageRequestSupplier = page -> ListServicesRequest.builder()
-                                                                                          .serviceBrokerId(brokerGuid.toString())
-                                                                                          .page(page)
-                                                                                          .build();
+        IntFunction<ListSpaceServicesRequest> pageRequestSupplier = page -> ListSpaceServicesRequest.builder()
+                                                                                                    .serviceBrokerId(brokerGuid.toString())
+                                                                                                    .spaceId(getTargetSpaceGuid().toString())
+                                                                                                    .page(page)
+                                                                                                    .build();
         return getServiceResources(pageRequestSupplier);
     }
 
     private Flux<? extends Resource<ServiceEntity>> getServiceResourcesByLabel(String label) {
-        IntFunction<ListServicesRequest> pageRequestSupplier = page -> ListServicesRequest.builder()
-                                                                                          .label(label)
-                                                                                          .page(page)
-                                                                                          .build();
+        IntFunction<ListSpaceServicesRequest> pageRequestSupplier = page -> ListSpaceServicesRequest.builder()
+                                                                                                    .label(label)
+                                                                                                    .spaceId(getTargetSpaceGuid().toString())
+                                                                                                    .page(page)
+                                                                                                    .build();
         return getServiceResources(pageRequestSupplier);
     }
 
-    private Flux<? extends Resource<ServiceEntity>> getServiceResources(IntFunction<ListServicesRequest> pageRequestSupplier) {
-        return PaginationUtils.requestClientV2Resources(page -> delegate.services()
-                                                                        .list(pageRequestSupplier.apply(page)));
+    private Flux<? extends Resource<ServiceEntity>> getServiceResources(IntFunction<ListSpaceServicesRequest> pageRequestSupplier) {
+        return PaginationUtils.requestClientV2Resources(page -> delegate.spaces()
+                                                                        .listServices(pageRequestSupplier.apply(page)));
     }
 
     private Mono<Derivable<CloudServiceOffering>> zipWithAuxiliaryServiceOfferingContent(Resource<ServiceEntity> resource) {
