@@ -32,6 +32,8 @@ public abstract class RawCloudService extends RawCloudEntity<CloudService> {
                                     .name(entity.getName())
                                     .plan(parsePlan(getServicePlanResource()))
                                     .label(parseLabel(getServiceResource()))
+                                    .tags(entity.getTags())
+                                    .credentials(entity.getCredentials())
                                     .build();
     }
 
