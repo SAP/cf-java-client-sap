@@ -479,6 +479,9 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                     .spaceId(getTargetSpaceGuid().toString())
                                                     .name(service.getName())
                                                     .servicePlanId(servicePlanGuid.toString())
+                                                    .addAllTags(service.getTags())
+                                                    .parameters(service.getCredentials())
+                                                    .acceptsIncomplete(true)
                                                     .build())
                 .block();
     }
