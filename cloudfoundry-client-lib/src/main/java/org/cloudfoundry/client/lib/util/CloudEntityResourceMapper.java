@@ -653,6 +653,7 @@ public class CloudEntityResourceMapper {
         List<Object> apps = getV2ResourceAttribute(resource, "apps", List.class);
         String host = getV2ResourceAttribute(resource, "host", String.class);
         String path = getV2ResourceAttribute(resource, "path", String.class);
+        boolean hasBoundService = getV2ResourceAttribute(resource, "service_instance_guid", String.class) != null;
         CloudDomain domain = mapDomainResource(getEmbeddedResource(resource, "domain"));
         return ImmutableCloudRoute.builder()
                                   .metadata(getV2Metadata(resource))
@@ -660,6 +661,7 @@ public class CloudEntityResourceMapper {
                                   .domain(domain)
                                   .path(path)
                                   .appsUsingRoute(apps.size())
+                                  .hasServiceUsingRoute(hasBoundService)
                                   .build();
     }
 
