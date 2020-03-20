@@ -1,6 +1,7 @@
 package org.cloudfoundry.client.lib.adapters;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -34,6 +35,7 @@ public class RawCloudRouteTest {
                                   .host(HOST)
                                   .domain(DOMAIN)
                                   .appsUsingRoute(APPS_USING_ROUTE)
+                                  .hasServiceUsingRoute(true)
                                   .build();
     }
 
@@ -55,6 +57,7 @@ public class RawCloudRouteTest {
     private static RouteEntity buildTestEntity() {
         return RouteEntity.builder()
                           .host(HOST)
+                          .serviceInstanceId(UUID.randomUUID().toString())
                           .build();
     }
 

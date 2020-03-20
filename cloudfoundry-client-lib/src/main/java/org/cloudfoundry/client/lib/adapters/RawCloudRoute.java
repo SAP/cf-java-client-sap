@@ -29,6 +29,7 @@ public abstract class RawCloudRoute extends RawCloudEntity<CloudRoute> {
                                   .appsUsingRoute(getRouteMappingResources().size())
                                   .host(entity.getHost())
                                   .domain(getDomain().derive())
+                                  .hasServiceUsingRoute(entity.getServiceInstanceId() != null)
                                   .build();
     }
 
