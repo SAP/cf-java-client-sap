@@ -16,6 +16,11 @@ public interface CloudRoute extends CloudEntity, Derivable<CloudRoute> {
         return 0;
     }
 
+    @Value.Default
+    default boolean hasServiceUsingRoute() {
+        return false;
+    }
+
     @Nullable
     CloudDomain getDomain();
 
@@ -31,7 +36,7 @@ public interface CloudRoute extends CloudEntity, Derivable<CloudRoute> {
     }
 
     default boolean isUsed() {
-        return getAppsUsingRoute() > 0;
+        return getAppsUsingRoute() > 0 || hasServiceUsingRoute();
     }
 
     @Override
