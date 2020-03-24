@@ -33,7 +33,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.IntFunction;
 import java.util.function.Supplier;
@@ -911,7 +910,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     private CloudService getServiceWithMetadata(CloudService cloudService) {
         List<CloudService> cloudServices = Collections.singletonList(cloudService);
-        Map<String, Metadata> serviceInstancesMetadata = getServiceInstancesMetadata(getServiceNames(cloudServices));
+        Map<String, Metadata> serviceInstancesMetadata = getServiceInstancesMetadataInBatches(getServiceNames(cloudServices));
         return getServicesWithMetadata(cloudServices, serviceInstancesMetadata).get(0);
     }
 
@@ -963,7 +962,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     private CloudServiceInstance getServiceInstanceWithMetadata(CloudServiceInstance serviceInstance) {
         String serviceName = serviceInstance.getName();
-        Map<String, Metadata> serviceInstancesMetadata = getServiceInstancesMetadata(Collections.singletonList(serviceName));
+        Map<String, Metadata> serviceInstancesMetadata = getServiceInstancesMetadataInBatches(Collections.singletonList(serviceName));
         return ImmutableCloudServiceInstance.copyOf(serviceInstance)
                                             .withV3Metadata(serviceInstancesMetadata.get(serviceName));
     }
@@ -1002,7 +1001,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     public List<CloudService> getServices() {
         List<CloudService> cloudServices = fetchListWithAuxiliaryContent(this::getServiceInstanceResources,
                                                                          this::zipWithAuxiliaryServiceContent);
-        Map<String, Metadata> serviceInstancesMetadata = getServiceInstancesMetadata(getServiceNames(cloudServices));
+        Map<String, Metadata> serviceInstancesMetadata = getServiceInstancesMetadataInBatches(getServiceNames(cloudServices));
         return getServicesWithMetadata(cloudServices, serviceInstancesMetadata);
     }
 
@@ -1012,28 +1011,28 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                             .collect(Collectors.toList());
     }
 
-    private Map<String, Metadata> getServiceInstancesMetadata(List<String> serviceInstanceNames) {
+    private Map<String, Metadata> getServiceInstancesMetadataInBatches(List<String> serviceInstanceNames) {
         Map<String, Metadata> serviceInstancesMetadata = new HashMap<>();
         for (List<String> batchOfServiceInstanceNames : toBatches(serviceInstanceNames, BATCH_SIZE_FOR_FILTER_IN_METADATA_REQUESTS)) {
-            serviceInstancesMetadata.putAll(getServiceInstancesMetadataWithoutBatching(batchOfServiceInstanceNames));
+            serviceInstancesMetadata.putAll(getServiceInstancesMetadata(batchOfServiceInstanceNames));
         }
         return serviceInstancesMetadata;
     }
 
     private <T> List<List<T>> toBatches(List<T> largeList, int batchSize) {
         List<List<T>> batches = new ArrayList<>();
-        AtomicInteger counter = new AtomicInteger();
-        for (T t : largeList) {
-            if (counter.getAndIncrement() % batchSize == 0) {
+        for (int i = 0; i < largeList.size(); i++) {
+            if (i % batchSize == 0) {
                 batches.add(new ArrayList<>());
             }
+            T t = largeList.get(i);
             batches.get(batches.size() - 1)
                    .add(t);
         }
         return batches;
     }
 
-    private Map<String, Metadata> getServiceInstancesMetadataWithoutBatching(List<String> serviceInstanceNames) {
+    private Map<String, Metadata> getServiceInstancesMetadata(List<String> serviceInstanceNames) {
         String spaceGuid = getTargetSpaceGuid().toString();
         IntFunction<ListServiceInstancesRequest> pageRequestSupplier = page -> ListServiceInstancesRequest.builder()
                                                                                                           .spaceId(spaceGuid)
@@ -1592,21 +1591,20 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     private CloudApplication addMetadata(CloudApplication application) {
-        UUID appGuid = application.getMetadata()
-                                  .getGuid();
-        Map<String, Metadata> applicationsMetadata = getApplicationsMetadata(Collections.singletonList(appGuid));
+        UUID appGuid = getGuid(application);
+        Map<String, Metadata> applicationsMetadata = getApplicationsMetadataInBatches(Collections.singletonList(appGuid));
         return addMetadata(Collections.singletonList(application), applicationsMetadata).get(0);
     }
 
-    private Map<String, Metadata> getApplicationsMetadata(List<UUID> appGuids) {
+    private Map<String, Metadata> getApplicationsMetadataInBatches(List<UUID> appGuids) {
         Map<String, Metadata> applicationsMetadata = new HashMap<>();
         for (List<UUID> batchOfAppGuids : toBatches(appGuids, BATCH_SIZE_FOR_FILTER_IN_METADATA_REQUESTS)) {
-            applicationsMetadata.putAll(getApplicationsMetadataWithoutBatching(batchOfAppGuids));
+            applicationsMetadata.putAll(getApplicationsMetadata(batchOfAppGuids));
         }
         return applicationsMetadata;
     }
 
-    private Map<String, Metadata> getApplicationsMetadataWithoutBatching(List<UUID> appGuids) {
+    private Map<String, Metadata> getApplicationsMetadata(List<UUID> appGuids) {
         IntFunction<org.cloudfoundry.client.v3.applications.ListApplicationsRequest> pageRequestSupplier = page -> org.cloudfoundry.client.v3.applications.ListApplicationsRequest.builder()
                                                                                                                                                                                   .spaceId(getTargetSpaceGuid().toString())
                                                                                                                                                                                   .addAllApplicationIds(toString(appGuids))
@@ -1629,10 +1627,10 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     private List<CloudApplication> addMetadata(List<CloudApplication> applications) {
-        Map<String, Metadata> applicationsMetadata = getApplicationsMetadata(applications.stream()
-                                                                                         .map(CloudApplication::getMetadata)
-                                                                                         .map(CloudMetadata::getGuid)
-                                                                                         .collect(Collectors.toList()));
+        Map<String, Metadata> applicationsMetadata = getApplicationsMetadataInBatches(applications.stream()
+                                                                                                  .map(CloudApplication::getMetadata)
+                                                                                                  .map(CloudMetadata::getGuid)
+                                                                                                  .collect(Collectors.toList()));
         return addMetadata(applications, applicationsMetadata);
     }
 
