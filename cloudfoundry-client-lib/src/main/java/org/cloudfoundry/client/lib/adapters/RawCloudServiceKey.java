@@ -1,6 +1,6 @@
 package org.cloudfoundry.client.lib.adapters;
 
-import org.cloudfoundry.client.lib.domain.CloudService;
+import org.cloudfoundry.client.lib.domain.CloudServiceInstance;
 import org.cloudfoundry.client.lib.domain.CloudServiceKey;
 import org.cloudfoundry.client.lib.domain.Derivable;
 import org.cloudfoundry.client.lib.domain.ImmutableCloudServiceKey;
@@ -13,7 +13,7 @@ public abstract class RawCloudServiceKey extends RawCloudEntity<CloudServiceKey>
 
     public abstract Resource<ServiceKeyEntity> getResource();
 
-    public abstract Derivable<CloudService> getService();
+    public abstract Derivable<CloudServiceInstance> getServiceInstance();
 
     @Override
     public CloudServiceKey derive() {
@@ -22,7 +22,7 @@ public abstract class RawCloudServiceKey extends RawCloudEntity<CloudServiceKey>
         return ImmutableCloudServiceKey.builder()
                                        .metadata(parseResourceMetadata(resource))
                                        .name(entity.getName())
-                                       .service(getService().derive())
+                                       .serviceInstance(getServiceInstance().derive())
                                        .credentials(entity.getCredentials())
                                        .build();
     }

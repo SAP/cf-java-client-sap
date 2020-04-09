@@ -56,7 +56,6 @@ import org.cloudfoundry.client.lib.adapters.ImmutableRawCloudOrganization;
 import org.cloudfoundry.client.lib.adapters.ImmutableRawCloudPackage;
 import org.cloudfoundry.client.lib.adapters.ImmutableRawCloudPrivateDomain;
 import org.cloudfoundry.client.lib.adapters.ImmutableRawCloudRoute;
-import org.cloudfoundry.client.lib.adapters.ImmutableRawCloudService;
 import org.cloudfoundry.client.lib.adapters.ImmutableRawCloudServiceBinding;
 import org.cloudfoundry.client.lib.adapters.ImmutableRawCloudServiceBroker;
 import org.cloudfoundry.client.lib.adapters.ImmutableRawCloudServiceInstance;
@@ -81,7 +80,6 @@ import org.cloudfoundry.client.lib.domain.CloudPackage;
 import org.cloudfoundry.client.lib.domain.CloudQuota;
 import org.cloudfoundry.client.lib.domain.CloudRoute;
 import org.cloudfoundry.client.lib.domain.CloudSecurityGroup;
-import org.cloudfoundry.client.lib.domain.CloudService;
 import org.cloudfoundry.client.lib.domain.CloudServiceBinding;
 import org.cloudfoundry.client.lib.domain.CloudServiceBroker;
 import org.cloudfoundry.client.lib.domain.CloudServiceInstance;
@@ -99,7 +97,6 @@ import org.cloudfoundry.client.lib.domain.ErrorDetails;
 import org.cloudfoundry.client.lib.domain.ImmutableCloudApplication;
 import org.cloudfoundry.client.lib.domain.ImmutableCloudDomain;
 import org.cloudfoundry.client.lib.domain.ImmutableCloudMetadata;
-import org.cloudfoundry.client.lib.domain.ImmutableCloudService;
 import org.cloudfoundry.client.lib.domain.ImmutableCloudServiceInstance;
 import org.cloudfoundry.client.lib.domain.ImmutableErrorDetails;
 import org.cloudfoundry.client.lib.domain.ImmutableUpload;
@@ -349,19 +346,19 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public void bindService(String applicationName, String serviceName) {
-        bindService(applicationName, serviceName, null);
+    public void bindServiceInstance(String applicationName, String serviceInstanceName) {
+        bindServiceInstance(applicationName, serviceInstanceName, null);
     }
 
     @Override
-    public void bindService(String applicationName, String serviceName, Map<String, Object> parameters) {
+    public void bindServiceInstance(String applicationName, String serviceInstanceName, Map<String, Object> parameters) {
         UUID applicationGuid = getRequiredApplicationGuid(applicationName);
-        UUID serviceGuid = getService(serviceName).getMetadata()
-                                                  .getGuid();
+        UUID serviceInstanceGuid = getServiceInstance(serviceInstanceName).getMetadata()
+                                                                          .getGuid();
         delegate.serviceBindingsV2()
                 .create(CreateServiceBindingRequest.builder()
                                                    .applicationId(applicationGuid.toString())
-                                                   .serviceInstanceId(serviceGuid.toString())
+                                                   .serviceInstanceId(serviceInstanceGuid.toString())
                                                    .parameters(parameters)
                                                    .build())
                 .block();
@@ -373,13 +370,13 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public void createApplication(String name, Staging staging, Integer memory, List<String> uris, List<String> serviceNames) {
-        createApplication(name, staging, null, memory, uris, serviceNames, null);
+    public void createApplication(String name, Staging staging, Integer memory, List<String> uris, List<String> serviceInstanceNames) {
+        createApplication(name, staging, null, memory, uris, serviceInstanceNames, null);
     }
 
     @Override
     public void createApplication(String name, Staging staging, Integer diskQuota, Integer memory, List<String> uris,
-                                  List<String> serviceNames, DockerInfo dockerInfo) {
+                                  List<String> serviceInstanceNames, DockerInfo dockerInfo) {
         CreateApplicationRequest.Builder requestBuilder = CreateApplicationRequest.builder()
                                                                                   .spaceId(getTargetSpaceGuid().toString())
                                                                                   .name(name)
@@ -423,7 +420,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
             updateBuildpacks(newAppGuid, staging.getBuildpacks());
         }
 
-        if (!CollectionUtils.isEmpty(serviceNames)) {
+        if (!CollectionUtils.isEmpty(serviceInstanceNames)) {
             updateApplicationServices(name, Collections.emptyMap());
         }
 
@@ -467,20 +464,20 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public void createService(CloudService service) {
-        assertSpaceProvided("create service");
-        Assert.notNull(service, "Service must not be null.");
+    public void createServiceInstance(CloudServiceInstance serviceInstance) {
+        assertSpaceProvided("create service instance");
+        Assert.notNull(serviceInstance, "Service instance must not be null.");
 
-        CloudServicePlan servicePlan = findPlanForService(service);
+        CloudServicePlan servicePlan = findPlanForService(serviceInstance);
         UUID servicePlanGuid = servicePlan.getMetadata()
                                           .getGuid();
         delegate.serviceInstances()
                 .create(CreateServiceInstanceRequest.builder()
                                                     .spaceId(getTargetSpaceGuid().toString())
-                                                    .name(service.getName())
+                                                    .name(serviceInstance.getName())
                                                     .servicePlanId(servicePlanGuid.toString())
-                                                    .addAllTags(service.getTags())
-                                                    .parameters(service.getCredentials())
+                                                    .addAllTags(serviceInstance.getTags())
+                                                    .parameters(serviceInstance.getCredentials())
                                                     .acceptsIncomplete(true)
                                                     .build())
                 .block();
@@ -502,12 +499,13 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public CloudServiceKey createServiceKey(String serviceName, String name, Map<String, Object> parameters) {
-        CloudService service = getService(serviceName);
-        return fetch(() -> createServiceKeyResource(service, name, parameters), resource -> ImmutableRawCloudServiceKey.builder()
-                                                                                                                       .service(service)
-                                                                                                                       .resource(resource)
-                                                                                                                       .build());
+    public CloudServiceKey createServiceKey(String serviceInstanceName, String serviceKeyName, Map<String, Object> parameters) {
+        CloudServiceInstance serviceInstance = getServiceInstance(serviceInstanceName);
+        return fetch(() -> createServiceKeyResource(serviceInstance, serviceKeyName, parameters),
+                     resource -> ImmutableRawCloudServiceKey.builder()
+                                                            .serviceInstance(serviceInstance)
+                                                            .resource(resource)
+                                                            .build());
     }
 
     @Override
@@ -516,19 +514,20 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public void createUserProvidedService(CloudService service, Map<String, Object> credentials) {
-        createUserProvidedService(service, credentials, "");
+    public void createUserProvidedServiceInstance(CloudServiceInstance serviceInstance, Map<String, Object> credentials) {
+        createUserProvidedServiceInstance(serviceInstance, credentials, "");
     }
 
     @Override
-    public void createUserProvidedService(CloudService service, Map<String, Object> credentials, String syslogDrainUrl) {
-        assertSpaceProvided("create service");
-        Assert.notNull(service, "Service must not be null.");
+    public void createUserProvidedServiceInstance(CloudServiceInstance serviceInstance, Map<String, Object> credentials,
+                                                  String syslogDrainUrl) {
+        assertSpaceProvided("create service instance");
+        Assert.notNull(serviceInstance, "Service instance must not be null.");
 
         delegate.userProvidedServiceInstances()
                 .create(CreateUserProvidedServiceInstanceRequest.builder()
                                                                 .spaceId(getTargetSpaceGuid().toString())
-                                                                .name(service.getName())
+                                                                .name(serviceInstance.getName())
                                                                 .credentials(credentials)
                                                                 .syslogDrainUrl(syslogDrainUrl)
                                                                 .build())
@@ -544,10 +543,10 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public void deleteAllServices() {
-        List<CloudService> services = getServices();
-        for (CloudService service : services) {
-            doDeleteService(service);
+    public void deleteAllServiceInstances() {
+        List<CloudServiceInstance> serviceInstances = getServiceInstances();
+        for (CloudServiceInstance serviceInstance : serviceInstances) {
+            doDeleteServiceInstance(serviceInstance);
         }
     }
 
@@ -556,7 +555,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         UUID applicationGuid = getRequiredApplicationGuid(applicationName);
         List<UUID> serviceBindingGuids = getServiceBindingGuids(applicationGuid);
         for (UUID serviceBindingGuid : serviceBindingGuids) {
-            doUnbindService(serviceBindingGuid);
+            doUnbindServiceInstance(serviceBindingGuid);
         }
         delegate.applicationsV2()
                 .delete(DeleteApplicationRequest.builder()
@@ -621,14 +620,14 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public void deleteService(String serviceName) {
-        CloudService service = getService(serviceName);
-        doDeleteService(service);
+    public void deleteServiceInstance(String serviceInstanceName) {
+        CloudServiceInstance serviceInstance = getServiceInstance(serviceInstanceName);
+        doDeleteServiceInstance(serviceInstance);
     }
 
     @Override
-    public void deleteService(CloudService service) {
-        doDeleteService(service);
+    public void deleteServiceInstance(CloudServiceInstance serviceInstance) {
+        doDeleteServiceInstance(serviceInstance);
     }
 
     @Override
@@ -644,8 +643,8 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public void deleteServiceKey(String serviceName, String serviceKeyName) {
-        List<CloudServiceKey> serviceKeys = getServiceKeys(serviceName);
+    public void deleteServiceKey(String serviceInstanceName, String serviceKeyName) {
+        List<CloudServiceKey> serviceKeys = getServiceKeys(serviceInstanceName);
         for (CloudServiceKey serviceKey : serviceKeys) {
             if (serviceKey.getName()
                           .equals(serviceKeyName)) {
@@ -916,36 +915,44 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public CloudService getService(String serviceName) {
-        return getService(serviceName, true);
+    public CloudServiceInstance getServiceInstance(String serviceInstanceName) {
+        return getServiceInstance(serviceInstanceName, true);
     }
 
-    private CloudService getServiceWithMetadata(CloudService cloudService) {
-        List<CloudService> cloudServices = Collections.singletonList(cloudService);
-        Map<String, Metadata> serviceInstancesMetadata = getServiceInstancesMetadataInBatches(getServiceNames(cloudServices));
-        return getServicesWithMetadata(cloudServices, serviceInstancesMetadata).get(0);
+    private CloudServiceInstance getServiceInstanceWithMetadata(CloudServiceInstance serviceInstance) {
+        List<CloudServiceInstance> serviceInstances = Collections.singletonList(serviceInstance);
+        Map<String, Metadata> serviceInstancesMetadata = getServiceInstancesMetadataInBatches(getServiceInstanceNames(serviceInstances));
+        return getServiceInstancesWithMetadata(serviceInstances, serviceInstancesMetadata).get(0);
     }
 
-    private List<CloudService> getServicesWithMetadata(List<CloudService> cloudServices, Map<String, Metadata> serviceInstancesMetadata) {
-        return cloudServices.stream()
-                            .map(cloudService -> getServiceWithMetadata(cloudService, serviceInstancesMetadata.get(cloudService.getName())))
-                            .collect(Collectors.toList());
+    private List<CloudServiceInstance> getServiceInstancesWithMetadata(List<CloudServiceInstance> serviceInstances,
+                                                                       Map<String, Metadata> serviceInstancesMetadata) {
+        return serviceInstances.stream()
+                               .map(serviceInstance -> getServiceInstanceWithMetadata(serviceInstance,
+                                                                                      serviceInstancesMetadata.get(serviceInstance.getName())))
+                               .collect(Collectors.toList());
     }
 
-    private CloudService getServiceWithMetadata(CloudService cloudService, Metadata metadata) {
-        return ImmutableCloudService.builder()
-                                    .from(cloudService)
-                                    .v3Metadata(metadata)
-                                    .build();
+    private CloudServiceInstance getServiceInstanceWithMetadata(CloudServiceInstance serviceInstance, Metadata metadata) {
+        return ImmutableCloudServiceInstance.builder()
+                                            .from(serviceInstance)
+                                            .v3Metadata(metadata)
+                                            .build();
     }
 
     @Override
-    public CloudService getService(String serviceName, boolean required) {
-        CloudService service = findServiceByName(serviceName);
-        if (service == null && required) {
-            throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Service " + serviceName + " not found.");
+    public CloudServiceInstance getServiceInstance(String serviceInstanceName, boolean required) {
+        CloudServiceInstance serviceInstance = findServiceInstanceByName(serviceInstanceName);
+        if (serviceInstance == null && required) {
+            throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Service instance " + serviceInstanceName + " not found.");
         }
-        return service == null ? null : getServiceWithMetadata(service);
+        return serviceInstance == null ? null : getServiceInstanceWithMetadata(serviceInstance);
+    }
+
+    @Override
+    public List<CloudServiceBinding> getServiceBindings(UUID serviceInstanceGuid) {
+        return fetchListWithAuxiliaryContent(() -> getServiceBindingResourcesByServiceInstanceGuid(serviceInstanceGuid),
+                                             this::zipWithAuxiliaryServiceBindingContent);
     }
 
     @Override
@@ -968,42 +975,21 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public CloudServiceInstance getServiceInstance(String serviceName) {
-        return getServiceInstance(serviceName, true);
-    }
-
-    private CloudServiceInstance getServiceInstanceWithMetadata(CloudServiceInstance serviceInstance) {
-        String serviceName = serviceInstance.getName();
-        Map<String, Metadata> serviceInstancesMetadata = getServiceInstancesMetadataInBatches(Collections.singletonList(serviceName));
-        return ImmutableCloudServiceInstance.copyOf(serviceInstance)
-                                            .withV3Metadata(serviceInstancesMetadata.get(serviceName));
+    public List<CloudServiceKey> getServiceKeys(String serviceInstanceName) {
+        CloudServiceInstance serviceInstance = getServiceInstance(serviceInstanceName);
+        return getServiceKeys(serviceInstance);
     }
 
     @Override
-    public CloudServiceInstance getServiceInstance(String serviceName, boolean required) {
-        CloudServiceInstance serviceInstance = findServiceInstanceByName(serviceName);
-        if (serviceInstance == null && required) {
-            throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Service instance " + serviceName + " not found.");
-        }
-        return serviceInstance == null ? null : getServiceInstanceWithMetadata(serviceInstance);
+    public List<CloudServiceKey> getServiceKeys(CloudServiceInstance serviceInstance) {
+        return fetchList(() -> getServiceKeyTuple(serviceInstance), tuple -> ImmutableRawCloudServiceKey.builder()
+                                                                                                        .resource(tuple.getT1())
+                                                                                                        .serviceInstance(tuple.getT2())
+                                                                                                        .build());
     }
 
     @Override
-    public List<CloudServiceKey> getServiceKeys(String serviceName) {
-        CloudService service = getService(serviceName);
-        return getServiceKeys(service);
-    }
-
-    @Override
-    public List<CloudServiceKey> getServiceKeys(CloudService service) {
-        return fetchList(() -> getServiceKeyTuple(service), tuple -> ImmutableRawCloudServiceKey.builder()
-                                                                                                .resource(tuple.getT1())
-                                                                                                .service(tuple.getT2())
-                                                                                                .build());
-    }
-
-    @Override
-    public Map<String, Object> getServiceParameters(UUID guid) {
+    public Map<String, Object> getServiceInstanceParameters(UUID guid) {
         return delegate.serviceInstances()
                        .getParameters(GetServiceInstanceParametersRequest.builder()
                                                                          .serviceInstanceId(guid.toString())
@@ -1018,17 +1004,17 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public List<CloudService> getServices() {
-        List<CloudService> cloudServices = fetchListWithAuxiliaryContent(this::getServiceInstanceResources,
-                                                                         this::zipWithAuxiliaryServiceContent);
-        Map<String, Metadata> serviceInstancesMetadata = getServiceInstancesMetadataInBatches(getServiceNames(cloudServices));
-        return getServicesWithMetadata(cloudServices, serviceInstancesMetadata);
+    public List<CloudServiceInstance> getServiceInstances() {
+        List<CloudServiceInstance> serviceInstances = fetchListWithAuxiliaryContent(this::getServiceInstanceResources,
+                                                                                    this::zipWithAuxiliaryServiceInstanceContent);
+        Map<String, Metadata> serviceInstancesMetadata = getServiceInstancesMetadataInBatches(getServiceInstanceNames(serviceInstances));
+        return getServiceInstancesWithMetadata(serviceInstances, serviceInstancesMetadata);
     }
 
-    private List<String> getServiceNames(List<CloudService> cloudServices) {
-        return cloudServices.stream()
-                            .map(CloudEntity::getName)
-                            .collect(Collectors.toList());
+    private List<String> getServiceInstanceNames(List<CloudServiceInstance> serviceInstances) {
+        return serviceInstances.stream()
+                               .map(CloudEntity::getName)
+                               .collect(Collectors.toList());
     }
 
     private Map<String, Metadata> getServiceInstancesMetadataInBatches(List<String> serviceInstanceNames) {
@@ -1066,14 +1052,14 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public List<CloudService> getServicesByMetadataLabelSelector(String labelSelector) {
-        Map<String, Metadata> serviceInstancesMetadata = getServicesMetadataByLabelSelector(labelSelector);
-        List<CloudService> cloudServices = fetchListWithAuxiliaryContent(() -> getServiceInstanceResourcesByNames(serviceInstancesMetadata.keySet()),
-                                                                         this::zipWithAuxiliaryServiceContent);
-        return getServicesWithMetadata(cloudServices, serviceInstancesMetadata);
+    public List<CloudServiceInstance> getServiceInstancesByMetadataLabelSelector(String labelSelector) {
+        Map<String, Metadata> serviceInstancesMetadata = getServiceInstancesMetadataByLabelSelector(labelSelector);
+        List<CloudServiceInstance> serviceInstances = fetchListWithAuxiliaryContent(() -> getServiceInstanceResourcesByNames(serviceInstancesMetadata.keySet()),
+                                                                                    this::zipWithAuxiliaryServiceInstanceContent);
+        return getServiceInstancesWithMetadata(serviceInstances, serviceInstancesMetadata);
     }
 
-    private Map<String, Metadata> getServicesMetadataByLabelSelector(String labelSelector) {
+    private Map<String, Metadata> getServiceInstancesMetadataByLabelSelector(String labelSelector) {
         IntFunction<ListServiceInstancesRequest> listServiceInstancesPageRequestSupplier = page -> ListServiceInstancesRequest.builder()
                                                                                                                               .labelSelector(labelSelector)
                                                                                                                               .spaceId(getTargetSpaceGuid().toString())
@@ -1319,19 +1305,19 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public void unbindService(String applicationName, String serviceName) {
+    public void unbindServiceInstance(String applicationName, String serviceInstanceName) {
         UUID applicationGuid = getRequiredApplicationGuid(applicationName);
-        UUID serviceGuid = getService(serviceName).getMetadata()
-                                                  .getGuid();
-        doUnbindService(applicationGuid, serviceGuid);
+        UUID serviceInstanceGuid = getServiceInstance(serviceInstanceName).getMetadata()
+                                                                          .getGuid();
+        doUnbindServiceInstance(applicationGuid, serviceInstanceGuid);
     }
 
     @Override
-    public void unbindService(CloudApplication application, CloudService service) {
+    public void unbindServiceInstance(CloudApplication application, CloudServiceInstance serviceInstance) {
         UUID applicationGuid = getGuid(application);
-        UUID serviceGuid = getGuid(service);
+        UUID serviceInstanceGuid = getGuid(serviceInstance);
 
-        doUnbindService(applicationGuid, serviceGuid);
+        doUnbindServiceInstance(applicationGuid, serviceInstanceGuid);
     }
 
     @Override
@@ -1400,7 +1386,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public List<String> updateApplicationServices(String applicationName,
-                                                  Map<String, Map<String, Object>> serviceNamesWithBindingParameters) {
+                                                  Map<String, Map<String, Object>> serviceInstanceNamesWithBindingParameters) {
         // No implementation here is needed because the logic is moved in ApplicationServicesUpdater in order to be used in other
         // implementations of the client. Currently, the ApplicationServicesUpdater is used only in CloudControllerClientImpl. Check
         // CloudControllerClientImpl.updateApplicationServices
@@ -1499,7 +1485,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public void updateServiceMetadata(UUID guid, org.cloudfoundry.client.v3.Metadata metadata) {
+    public void updateServiceInstanceMetadata(UUID guid, org.cloudfoundry.client.v3.Metadata metadata) {
         delegate.serviceInstancesV3()
                 .update(UpdateServiceInstanceRequest.builder()
                                                     .serviceInstanceId(guid.toString())
@@ -1760,10 +1746,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return fetchWithAuxiliaryContent(() -> getServiceInstanceResourceByName(name), this::zipWithAuxiliaryServiceInstanceContent);
     }
 
-    private CloudService findServiceByName(String name) {
-        return fetchWithAuxiliaryContent(() -> getServiceInstanceResourceByName(name), this::zipWithAuxiliaryServiceContent);
-    }
-
     private Flux<? extends Resource<UnionServiceInstanceEntity>> getServiceInstanceResources() {
         IntFunction<ListSpaceServiceInstancesRequest> pageRequestSupplier = page -> ListSpaceServiceInstancesRequest.builder()
                                                                                                                     .returnUserProvidedServiceInstances(true)
@@ -1804,34 +1786,18 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     private Mono<Derivable<CloudServiceInstance>>
             zipWithAuxiliaryServiceInstanceContent(Resource<UnionServiceInstanceEntity> serviceInstanceResource) {
-        Mono<List<CloudServiceBinding>> serviceBindings = getServiceInstanceBindingsFlux(getGuid(serviceInstanceResource)).collectList();
-        Mono<Derivable<CloudService>> service = zipWithAuxiliaryServiceContent(serviceInstanceResource);
-        return Mono.zip(service, serviceBindings)
-                   .map(tuple -> ImmutableRawCloudServiceInstance.builder()
-                                                                 .resource(serviceInstanceResource)
-                                                                 .serviceBindings(tuple.getT2())
-                                                                 .service(tuple.getT1())
-                                                                 .build());
-    }
-
-    private Flux<CloudServiceBinding> getServiceInstanceBindingsFlux(UUID serviceInstanceGuid) {
-        return fetchFluxWithAuxiliaryContent(() -> getServiceBindingResourcesByServiceInstanceGuid(serviceInstanceGuid),
-                                             this::zipWithAuxiliaryServiceBindingContent);
-    }
-
-    private Mono<Derivable<CloudService>> zipWithAuxiliaryServiceContent(Resource<UnionServiceInstanceEntity> serviceInstanceResource) {
         UnionServiceInstanceEntity serviceInstance = serviceInstanceResource.getEntity();
         if (isUserProvided(serviceInstance)) {
-            return Mono.just(ImmutableRawCloudService.of(serviceInstanceResource));
+            return Mono.just(ImmutableRawCloudServiceInstance.of(serviceInstanceResource));
         }
         UUID serviceGuid = UUID.fromString(serviceInstance.getServiceId());
         UUID servicePlanGuid = UUID.fromString(serviceInstance.getServicePlanId());
         return Mono.zip(Mono.just(serviceInstanceResource), getServiceResource(serviceGuid), getServicePlanResource(servicePlanGuid))
-                   .map(tuple -> ImmutableRawCloudService.builder()
-                                                         .resource(tuple.getT1())
-                                                         .serviceResource(tuple.getT2())
-                                                         .servicePlanResource(tuple.getT3())
-                                                         .build());
+                   .map(tuple -> ImmutableRawCloudServiceInstance.builder()
+                                                                 .resource(tuple.getT1())
+                                                                 .serviceResource(tuple.getT2())
+                                                                 .servicePlanResource(tuple.getT3())
+                                                                 .build());
     }
 
     private boolean isUserProvided(UnionServiceInstanceEntity serviceInstance) {
@@ -1839,8 +1805,8 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                   .equals(ServiceInstanceType.USER_PROVIDED);
     }
 
-    private List<UUID> getServiceBindingGuids(CloudService service) {
-        Flux<? extends Resource<ServiceBindingEntity>> bindings = getServiceBindingResources(service);
+    private List<UUID> getServiceBindingGuids(CloudServiceInstance serviceInstance) {
+        Flux<? extends Resource<ServiceBindingEntity>> bindings = getServiceBindingResources(serviceInstance);
         return getGuids(bindings);
     }
 
@@ -1849,12 +1815,12 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return getGuids(bindings);
     }
 
-    private Flux<? extends Resource<ServiceBindingEntity>> getServiceBindingResources(CloudService service) {
-        UUID serviceGuid = getGuid(service);
-        if (service.isUserProvided()) {
-            return getUserProvidedServiceBindingResourcesByServiceInstanceGuid(serviceGuid);
+    private Flux<? extends Resource<ServiceBindingEntity>> getServiceBindingResources(CloudServiceInstance serviceInstance) {
+        UUID serviceInstanceGuid = getGuid(serviceInstance);
+        if (serviceInstance.isUserProvided()) {
+            return getUserProvidedServiceBindingResourcesByServiceInstanceGuid(serviceInstanceGuid);
         }
-        return getServiceBindingResourcesByServiceInstanceGuid(serviceGuid);
+        return getServiceBindingResourcesByServiceInstanceGuid(serviceInstanceGuid);
     }
 
     private Flux<? extends Resource<ServiceBindingEntity>>
@@ -2014,14 +1980,14 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                        .cancel(request);
     }
 
-    private Mono<? extends Resource<ServiceKeyEntity>> createServiceKeyResource(CloudService service, String name,
+    private Mono<? extends Resource<ServiceKeyEntity>> createServiceKeyResource(CloudServiceInstance serviceInstance, String serviceKeyName,
                                                                                 Map<String, Object> parameters) {
-        UUID serviceGuid = getGuid(service);
+        UUID serviceInstanceGuid = getGuid(serviceInstance);
 
         return delegate.serviceKeys()
                        .create(CreateServiceKeyRequest.builder()
-                                                      .serviceInstanceId(serviceGuid.toString())
-                                                      .name(name)
+                                                      .serviceInstanceId(serviceInstanceGuid.toString())
+                                                      .name(serviceKeyName)
                                                       .parameters(parameters)
                                                       .build());
     }
@@ -2237,23 +2203,23 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                 .block();
     }
 
-    private void doDeleteService(CloudService service) {
-        UUID serviceGuid = service.getMetadata()
-                                  .getGuid();
+    private void doDeleteServiceInstance(CloudServiceInstance serviceInstance) {
+        UUID serviceInstanceGuid = serviceInstance.getMetadata()
+                                                  .getGuid();
         delegate.serviceInstances()
                 .delete(DeleteServiceInstanceRequest.builder()
                                                     .acceptsIncomplete(true)
-                                                    .serviceInstanceId(serviceGuid.toString())
+                                                    .serviceInstanceId(serviceInstanceGuid.toString())
                                                     .build())
                 .block();
     }
 
-    private void doUnbindService(UUID applicationGuid, UUID serviceGuid) {
-        UUID serviceBindingGuid = getServiceBindingGuid(applicationGuid, serviceGuid);
-        doUnbindService(serviceBindingGuid);
+    private void doUnbindServiceInstance(UUID applicationGuid, UUID serviceInstanceGuid) {
+        UUID serviceBindingGuid = getServiceBindingGuid(applicationGuid, serviceInstanceGuid);
+        doUnbindServiceInstance(serviceBindingGuid);
     }
 
-    private void doUnbindService(UUID serviceBindingGuid) {
+    private void doUnbindServiceInstance(UUID serviceBindingGuid) {
         delegate.serviceBindingsV2()
                 .delete(DeleteServiceBindingRequest.builder()
                                                    .serviceBindingId(serviceBindingGuid.toString())
@@ -2564,10 +2530,11 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                         .list(pageRequestSupplier.apply(page)));
     }
 
-    private Flux<Tuple2<? extends Resource<ServiceKeyEntity>, CloudService>> getServiceKeyTuple(CloudService service) {
-        UUID serviceInstanceGuid = getGuid(service);
+    private Flux<Tuple2<? extends Resource<ServiceKeyEntity>, CloudServiceInstance>>
+            getServiceKeyTuple(CloudServiceInstance serviceInstance) {
+        UUID serviceInstanceGuid = getGuid(serviceInstance);
         return getServiceKeyResourcesByServiceInstanceGuid(serviceInstanceGuid).map(serviceKeyResource -> Tuples.of(serviceKeyResource,
-                                                                                                                    service));
+                                                                                                                    serviceInstance));
     }
 
     private Flux<? extends Resource<ServiceKeyEntity>> getServiceKeyResourcesByServiceInstanceGuid(UUID serviceInstanceGuid) {
@@ -2690,7 +2657,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return usersRetriever.apply(getGuid(space));
     }
 
-    private CloudServicePlan findPlanForService(CloudService service) {
+    private CloudServicePlan findPlanForService(CloudServiceInstance service) {
         List<CloudServiceOffering> offerings = findServiceOfferingsByLabel(service.getLabel());
         for (CloudServiceOffering offering : offerings) {
             if (service.getVersion() == null || service.getVersion()
@@ -2743,9 +2710,9 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return getGuid(routeEntitiesResource.get(0));
     }
 
-    private UUID getServiceBindingGuid(UUID applicationGuid, UUID serviceGuid) {
-        return getServiceBindingResourceByApplicationGuidAndServiceInstanceGuid(applicationGuid, serviceGuid).map(this::getGuid)
-                                                                                                             .block();
+    private UUID getServiceBindingGuid(UUID applicationGuid, UUID serviceInstanceGuid) {
+        return getServiceBindingResourceByApplicationGuidAndServiceInstanceGuid(applicationGuid, serviceInstanceGuid).map(this::getGuid)
+                                                                                                                     .block();
     }
 
     private List<UUID> getGuids(Flux<? extends Resource<?>> resources) {

@@ -3,9 +3,9 @@ package org.cloudfoundry.client.lib.adapters;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.cloudfoundry.client.lib.domain.CloudService;
+import org.cloudfoundry.client.lib.domain.CloudServiceInstance;
 import org.cloudfoundry.client.lib.domain.CloudServiceKey;
-import org.cloudfoundry.client.lib.domain.ImmutableCloudService;
+import org.cloudfoundry.client.lib.domain.ImmutableCloudServiceInstance;
 import org.cloudfoundry.client.lib.domain.ImmutableCloudServiceKey;
 import org.cloudfoundry.client.v2.Resource;
 import org.cloudfoundry.client.v2.servicekeys.ServiceKeyEntity;
@@ -17,9 +17,9 @@ public class RawCloudServiceKeyTest {
     private static final String SERVICE_NAME = "foo";
     private static final String NAME = "bar";
     private static final Map<String, Object> CREDENTIALS = buildTestCredentials();
-    private static final CloudService SERVICE = ImmutableCloudService.builder()
-                                                                     .name(SERVICE_NAME)
-                                                                     .build();
+    private static final CloudServiceInstance SERVICE_INSTANCE = ImmutableCloudServiceInstance.builder()
+                                                                                              .name(SERVICE_NAME)
+                                                                                              .build();
 
     @Test
     public void testDerive() {
@@ -31,14 +31,14 @@ public class RawCloudServiceKeyTest {
                                        .metadata(RawCloudEntityTest.EXPECTED_METADATA)
                                        .name(NAME)
                                        .credentials(CREDENTIALS)
-                                       .service(SERVICE)
+                                       .serviceInstance(SERVICE_INSTANCE)
                                        .build();
     }
 
     private static RawCloudServiceKey buildRawServiceKey() {
         return ImmutableRawCloudServiceKey.builder()
                                           .resource(buildTestResource())
-                                          .service(SERVICE)
+                                          .serviceInstance(SERVICE_INSTANCE)
                                           .build();
     }
 

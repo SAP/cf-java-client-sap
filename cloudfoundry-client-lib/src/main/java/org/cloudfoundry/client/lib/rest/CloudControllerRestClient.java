@@ -38,7 +38,7 @@ import org.cloudfoundry.client.lib.domain.CloudOrganization;
 import org.cloudfoundry.client.lib.domain.CloudQuota;
 import org.cloudfoundry.client.lib.domain.CloudRoute;
 import org.cloudfoundry.client.lib.domain.CloudSecurityGroup;
-import org.cloudfoundry.client.lib.domain.CloudService;
+import org.cloudfoundry.client.lib.domain.CloudServiceBinding;
 import org.cloudfoundry.client.lib.domain.CloudServiceBroker;
 import org.cloudfoundry.client.lib.domain.CloudServiceInstance;
 import org.cloudfoundry.client.lib.domain.CloudServiceKey;
@@ -65,8 +65,6 @@ import org.springframework.web.client.RestTemplate;
  */
 public interface CloudControllerRestClient {
 
-    // User and Info methods
-
     void addDomain(String domainName);
 
     void addRoute(String host, String domainName, String path);
@@ -81,18 +79,16 @@ public interface CloudControllerRestClient {
 
     void bindSecurityGroup(String organizationName, String spaceName, String securityGroupName);
 
-    void bindService(String applicationName, String serviceName);
+    void bindServiceInstance(String applicationName, String serviceInstanceName);
 
-    void bindService(String applicationName, String serviceName, Map<String, Object> parameters);
+    void bindServiceInstance(String applicationName, String serviceInstanceName, Map<String, Object> parameters);
 
     void bindStagingSecurityGroup(String securityGroupName);
 
-    void createApplication(String applicationName, Staging staging, Integer memory, List<String> uris, List<String> serviceNames);
+    void createApplication(String applicationName, Staging staging, Integer memory, List<String> uris, List<String> serviceInstanceNames);
 
     void createApplication(String applicationName, Staging staging, Integer disk, Integer memory, List<String> uris,
-                           List<String> serviceNames, DockerInfo dockerInfo);
-
-    // Service methods
+                           List<String> serviceInstanceNames, DockerInfo dockerInfo);
 
     void createQuota(CloudQuota quota);
 
@@ -100,21 +96,21 @@ public interface CloudControllerRestClient {
 
     void createSecurityGroup(String name, InputStream jsonRulesFile);
 
-    void createService(CloudService service);
+    void createServiceInstance(CloudServiceInstance serviceInstance);
 
     void createServiceBroker(CloudServiceBroker serviceBroker);
 
-    CloudServiceKey createServiceKey(String service, String serviceKey, Map<String, Object> parameters);
+    CloudServiceKey createServiceKey(String serviceInstanceName, String serviceKeyName, Map<String, Object> parameters);
 
     void createSpace(String spaceName);
 
-    void createUserProvidedService(CloudService service, Map<String, Object> credentials);
+    void createUserProvidedServiceInstance(CloudServiceInstance serviceInstance, Map<String, Object> credentials);
 
-    void createUserProvidedService(CloudService service, Map<String, Object> credentials, String syslogDrainUrl);
+    void createUserProvidedServiceInstance(CloudServiceInstance serviceInstance, Map<String, Object> credentials, String syslogDrainUrl);
 
     void deleteAllApplications();
 
-    void deleteAllServices();
+    void deleteAllServiceInstances();
 
     void deleteApplication(String applicationName);
 
@@ -124,19 +120,17 @@ public interface CloudControllerRestClient {
 
     void deleteQuota(String quotaName);
 
-    // App methods
-
     void deleteRoute(String host, String domainName, String path);
 
     void deleteSecurityGroup(String securityGroupName);
 
-    void deleteService(String service);
+    void deleteServiceInstance(String serviceInstanceName);
 
-    void deleteService(CloudService service);
+    void deleteServiceInstance(CloudServiceInstance serviceInstance);
 
     void deleteServiceBroker(String name);
 
-    void deleteServiceKey(String service, String serviceKey);
+    void deleteServiceKey(String serviceInstanceName, String serviceKeyName);
 
     void deleteServiceKey(CloudServiceKey serviceKey);
 
@@ -210,9 +204,11 @@ public interface CloudControllerRestClient {
 
     List<CloudSecurityGroup> getSecurityGroups();
 
-    CloudService getService(String service);
+    CloudServiceInstance getServiceInstance(String serviceInstanceName);
 
-    CloudService getService(String service, boolean required);
+    CloudServiceInstance getServiceInstance(String serviceInstanceName, boolean required);
+
+    List<CloudServiceBinding> getServiceBindings(UUID serviceInstanceGuid);
 
     CloudServiceBroker getServiceBroker(String name);
 
@@ -220,21 +216,15 @@ public interface CloudControllerRestClient {
 
     List<CloudServiceBroker> getServiceBrokers();
 
-    CloudServiceInstance getServiceInstance(String serviceName);
+    List<CloudServiceKey> getServiceKeys(String serviceInstanceName);
 
-    CloudServiceInstance getServiceInstance(String serviceName, boolean required);
-
-    List<CloudServiceKey> getServiceKeys(String serviceName);
-
-    List<CloudServiceKey> getServiceKeys(CloudService service);
+    List<CloudServiceKey> getServiceKeys(CloudServiceInstance serviceInstance);
 
     List<CloudServiceOffering> getServiceOfferings();
 
-    List<CloudService> getServices();
+    List<CloudServiceInstance> getServiceInstances();
 
     List<CloudDomain> getSharedDomains();
-
-    // Space management
 
     CloudSpace getSpace(UUID spaceGuid);
 
@@ -292,8 +282,6 @@ public interface CloudControllerRestClient {
 
     void registerRestLogListener(RestLogCallback callBack);
 
-    // Misc. utility methods
-
     void removeDomain(String domainName);
 
     void rename(String applicationName, String newName);
@@ -314,9 +302,9 @@ public interface CloudControllerRestClient {
 
     void unbindSecurityGroup(String organizationName, String spaceName, String securityGroupName);
 
-    void unbindService(String applicationName, String serviceName);
+    void unbindServiceInstance(String applicationName, String serviceInstanceName);
 
-    void unbindService(CloudApplication application, CloudService service);
+    void unbindServiceInstance(CloudApplication application, CloudServiceInstance serviceInstance);
 
     void unbindStagingSecurityGroup(String securityGroupName);
 
@@ -324,15 +312,14 @@ public interface CloudControllerRestClient {
 
     void updateApplicationDiskQuota(String applicationName, int disk);
 
-    // Security Group Operations
-
     void updateApplicationEnv(String applicationName, Map<String, String> env);
 
     void updateApplicationInstances(String applicationName, int instances);
 
     void updateApplicationMemory(String applicationName, int memory);
 
-    List<String> updateApplicationServices(String applicationName, Map<String, Map<String, Object>> serviceIdsWithBindingParameters);
+    List<String> updateApplicationServices(String applicationName,
+                                           Map<String, Map<String, Object>> serviceInstanceIdsWithBindingParameters);
 
     void updateApplicationStaging(String applicationName, Staging staging);
 
@@ -380,16 +367,16 @@ public interface CloudControllerRestClient {
 
     OAuthClient getOAuthClient();
 
-    Map<String, Object> getServiceParameters(UUID guid);
+    Map<String, Object> getServiceInstanceParameters(UUID guid);
 
     List<CloudBuild> getBuildsForPackage(UUID packageGuid);
 
     List<CloudApplication> getApplicationsByMetadataLabelSelector(String labelSelector);
 
-    List<CloudService> getServicesByMetadataLabelSelector(String labelSelector);
+    List<CloudServiceInstance> getServiceInstancesByMetadataLabelSelector(String labelSelector);
 
     void updateApplicationMetadata(UUID guid, Metadata metadata);
 
-    void updateServiceMetadata(UUID guid, Metadata metadata);
+    void updateServiceInstanceMetadata(UUID guid, Metadata metadata);
 
 }

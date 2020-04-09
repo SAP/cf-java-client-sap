@@ -34,7 +34,7 @@ import org.cloudfoundry.client.lib.domain.CloudOrganization;
 import org.cloudfoundry.client.lib.domain.CloudQuota;
 import org.cloudfoundry.client.lib.domain.CloudRoute;
 import org.cloudfoundry.client.lib.domain.CloudSecurityGroup;
-import org.cloudfoundry.client.lib.domain.CloudService;
+import org.cloudfoundry.client.lib.domain.CloudServiceBinding;
 import org.cloudfoundry.client.lib.domain.CloudServiceBroker;
 import org.cloudfoundry.client.lib.domain.CloudServiceInstance;
 import org.cloudfoundry.client.lib.domain.CloudServiceKey;
@@ -177,20 +177,20 @@ public interface CloudControllerClient {
      * Associate (provision) a service with an application.
      *
      * @param applicationName the application name
-     * @param serviceName the service name
+     * @param serviceInstanceName the service instance name
      */
-    void bindService(String applicationName, String serviceName);
+    void bindServiceInstance(String applicationName, String serviceInstanceName);
 
     /**
      * Associate (provision) a service with an application.
      *
      * @param applicationName the application name
-     * @param serviceName the service name
+     * @param serviceInstanceName the service instance name
      * @param parameters the binding parameters
      * @param applicationServicesUpdateCallback callback used for error handling
      */
-    void bindService(String applicationName, String serviceName, Map<String, Object> parameters,
-                     ApplicationServicesUpdateCallback updateServicesCallback);
+    void bindServiceInstance(String applicationName, String serviceInstanceName, Map<String, Object> parameters,
+                             ApplicationServicesUpdateCallback updateServicesCallback);
 
     /**
      * Bind a security group to the list of security groups to be used for staging applications.
@@ -206,9 +206,9 @@ public interface CloudControllerClient {
      * @param staging staging info
      * @param memory memory to use in MB
      * @param uris list of URIs for the app
-     * @param serviceNames list of service names to bind to app
+     * @param serviceInstanceNames list of service instance names to bind to app
      */
-    void createApplication(String applicationName, Staging staging, Integer memory, List<String> uris, List<String> serviceNames);
+    void createApplication(String applicationName, Staging staging, Integer memory, List<String> uris, List<String> serviceInstanceNames);
 
     /**
      * Create application.
@@ -218,11 +218,11 @@ public interface CloudControllerClient {
      * @param disk disk quota to use in MB
      * @param memory memory to use in MB
      * @param uris list of URIs for the app
-     * @param serviceNames list of service names to bind to app
+     * @param serviceInstanceNames list of service instance names to bind to app
      * @param dockerInfo docker params(image, username, password)
      */
     void createApplication(String applicationName, Staging staging, Integer disk, Integer memory, List<String> uris,
-                           List<String> serviceNames, DockerInfo dockerInfo);
+                           List<String> serviceInstanceNames, DockerInfo dockerInfo);
 
     /**
      * Create quota
@@ -273,11 +273,11 @@ public interface CloudControllerClient {
     void createSecurityGroup(String name, InputStream jsonRulesFile);
 
     /**
-     * Create a service.
+     * Create a service instance.
      *
-     * @param service cloud service info
+     * @param serviceInstance cloud service instance info
      */
-    void createService(CloudService service);
+    void createServiceInstance(CloudServiceInstance serviceInstance);
 
     /**
      * Create a service broker.
@@ -289,12 +289,12 @@ public interface CloudControllerClient {
     /**
      * Create a service key.
      * 
-     * @param service name of service
+     * @param serviceInstanceName name of service instance
      * @param serviceKey name of service-key
      * @param parameters parameters of service-key
      * @return
      */
-    CloudServiceKey createServiceKey(String serviceName, String serviceKeyName, Map<String, Object> parameters);
+    CloudServiceKey createServiceKey(String serviceInstanceName, String serviceKeyName, Map<String, Object> parameters);
 
     /**
      * Create a space with the specified name
@@ -304,21 +304,21 @@ public interface CloudControllerClient {
     void createSpace(String spaceName);
 
     /**
-     * Create a user-provided service.
+     * Create a user-provided service instance.
      *
-     * @param service cloud service info
-     * @param credentials the user-provided service credentials
+     * @param serviceInstance cloud service instance info
+     * @param credentials the user-provided service instance credentials
      */
-    void createUserProvidedService(CloudService service, Map<String, Object> credentials);
+    void createUserProvidedServiceInstance(CloudServiceInstance serviceInstance, Map<String, Object> credentials);
 
     /**
-     * Create a user-provided service for logging.
+     * Create a user-provided service instance for logging.
      *
-     * @param service cloud service info
-     * @param credentials the user-provided service credentials
-     * @param syslogDrainUrl for a logging service
+     * @param serviceInstance cloud service instance info
+     * @param credentials the user-provided service instance credentials
+     * @param syslogDrainUrl for a logging service instance
      */
-    void createUserProvidedService(CloudService service, Map<String, Object> credentials, String syslogDrainUrl);
+    void createUserProvidedServiceInstance(CloudServiceInstance serviceInstance, Map<String, Object> credentials, String syslogDrainUrl);
 
     /**
      * Delete all applications.
@@ -326,9 +326,9 @@ public interface CloudControllerClient {
     void deleteAllApplications();
 
     /**
-     * Delete all services.
+     * Delete all service instances.
      */
-    void deleteAllServices();
+    void deleteAllServiceInstances();
 
     /**
      * Delete application.
@@ -375,17 +375,17 @@ public interface CloudControllerClient {
     void deleteSecurityGroup(String securityGroupName);
 
     /**
-     * Delete cloud service.
+     * Delete cloud service instance.
      *
-     * @param service name of service
+     * @param serviceInstance name of service instance
      */
-    void deleteService(String service);
+    void deleteServiceInstance(String serviceInstance);
 
     /**
      * 
-     * @param service {@link CloudService}
+     * @param serviceInstance {@link CloudServiceInstance}
      */
-    void deleteService(CloudService service);
+    void deleteServiceInstance(CloudServiceInstance serviceInstance);
 
     /**
      * Delete a service broker.
@@ -397,10 +397,10 @@ public interface CloudControllerClient {
     /**
      * Delete a service key.
      * 
-     * @param serviceName name of service
-     * @param serviceKey name of service key
+     * @param serviceInstanceName name of service instance
+     * @param serviceKeyName name of service key
      */
-    void deleteServiceKey(String service, String serviceKey);
+    void deleteServiceKey(String serviceInstanceName, String serviceKeyName);
 
     /**
      * Delete a service key.
@@ -729,23 +729,6 @@ public interface CloudControllerClient {
     List<CloudSecurityGroup> getSecurityGroups();
 
     /**
-     * Get cloud service.
-     *
-     * @param service name of service
-     * @return the cloud service info
-     */
-    CloudService getService(String service);
-
-    /**
-     * Get cloud service.
-     *
-     * @param service name of service
-     * @param required if true, and organization is not found, throw an exception
-     * @return the cloud service info
-     */
-    CloudService getService(String service, boolean required);
-
-    /**
      * Get a service broker.
      *
      * @param name the service broker name
@@ -772,43 +755,51 @@ public interface CloudControllerClient {
     /**
      * Get a service instance.
      *
-     * @param service name of the service instance
+     * @param serviceInstanceName name of the service instance
      * @return the service instance info
      */
-    CloudServiceInstance getServiceInstance(String service);
-
-    /**
-     * Get all service parameters.
-     *
-     * @param guid The service instance guid
-     * @return service parameters in key-value pairs
-     */
-    Map<String, Object> getServiceParameters(UUID guid);
+    CloudServiceInstance getServiceInstance(String serviceInstanceName);
 
     /**
      * Get a service instance.
      *
-     * @param service name of the service instance
+     * @param serviceInstanceName name of the service instance
      * @param required if true, and organization is not found, throw an exception
      * @return the service instance info
      */
-    CloudServiceInstance getServiceInstance(String service, boolean required);
+    CloudServiceInstance getServiceInstance(String serviceInstanceName, boolean required);
 
     /**
-     * Get service keys for a service.
+     * Get the bindings for a particular service instance.
+     *
+     * @param serviceInstanceGuid the GUID of the service instance
+     * @return the bindings
+     */
+    List<CloudServiceBinding> getServiceBindings(UUID serviceInstanceGuid);
+
+    /**
+     * Get all service instance parameters.
+     *
+     * @param guid The service instance guid
+     * @return service instance parameters in key-value pairs
+     */
+    Map<String, Object> getServiceInstanceParameters(UUID guid);
+
+    /**
+     * Get service keys for a service instance.
      *
      * @param service name containing service keys
      * @return the service keys info
      */
-    List<CloudServiceKey> getServiceKeys(String serviceName);
+    List<CloudServiceKey> getServiceKeys(String serviceInstanceName);
 
     /**
-     * Get service keys for a service.
+     * Get service keys for a service instance.
      *
-     * @param service instance containing service keys
+     * @param serviceInstance instance containing service keys
      * @return the service keys info
      */
-    List<CloudServiceKey> getServiceKeys(CloudService service);
+    List<CloudServiceKey> getServiceKeys(CloudServiceInstance serviceInstance);
 
     /**
      * Get all service offerings.
@@ -818,11 +809,11 @@ public interface CloudControllerClient {
     List<CloudServiceOffering> getServiceOfferings();
 
     /**
-     * Get list of cloud services.
+     * Get list of cloud service instances.
      *
      * @return list of cloud services
      */
-    List<CloudService> getServices();
+    List<CloudServiceInstance> getServiceInstances();
 
     /**
      * Get list of all shared domains.
@@ -1088,26 +1079,27 @@ public interface CloudControllerClient {
      * Un-associate (unprovision) a service from an application.
      *
      * @param applicationName the application name
-     * @param serviceName the service name
+     * @param serviceInstanceName the service instance name
      * @param applicationServicesUpdateCallback callback used for error handling
      */
-    void unbindService(String applicationName, String serviceName, ApplicationServicesUpdateCallback applicationServicesUpdateCallback);
+    void unbindServiceInstance(String applicationName, String serviceInstanceName,
+                               ApplicationServicesUpdateCallback applicationServicesUpdateCallback);
 
     /**
      * Un-associate (unprovision) a service from an application.
      *
      * @param applicationName the application name
-     * @param serviceName the service name
+     * @param serviceInstanceName the service instance name
      */
-    void unbindService(String applicationName, String serviceName);
+    void unbindServiceInstance(String applicationName, String servicesInstanceName);
 
     /**
      * Un-associate (unprovision) a service from an application.
      *
      * @param application the application instance
-     * @param service the service instance
+     * @param serviceInstance the service instance
      */
-    void unbindService(CloudApplication application, CloudService service);
+    void unbindServiceInstance(CloudApplication application, CloudServiceInstance serviceInstance);
 
     /**
      * Unbind a security group from the set of security groups for staging applications.
@@ -1353,8 +1345,8 @@ public interface CloudControllerClient {
 
     void updateApplicationMetadata(UUID guid, Metadata metadata);
 
-    List<CloudService> getServicesByMetadataLabelSelector(String labelSelector);
+    List<CloudServiceInstance> getServiceInstancesByMetadataLabelSelector(String labelSelector);
 
-    void updateServiceMetadata(UUID guid, Metadata metadata);
+    void updateServiceInstanceMetadata(UUID guid, Metadata metadata);
 
 }
