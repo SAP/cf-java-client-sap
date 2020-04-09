@@ -16,7 +16,7 @@ public interface CloudServiceKey extends CloudEntity, Derivable<CloudServiceKey>
     Map<String, Object> getCredentials();
 
     @Nullable
-    CloudService getService();
+    CloudServiceInstance getServiceInstance();
 
     @Override
     default CloudServiceKey derive() {

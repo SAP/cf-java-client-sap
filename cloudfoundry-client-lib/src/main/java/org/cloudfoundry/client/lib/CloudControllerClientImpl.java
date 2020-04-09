@@ -36,7 +36,7 @@ import org.cloudfoundry.client.lib.domain.CloudOrganization;
 import org.cloudfoundry.client.lib.domain.CloudQuota;
 import org.cloudfoundry.client.lib.domain.CloudRoute;
 import org.cloudfoundry.client.lib.domain.CloudSecurityGroup;
-import org.cloudfoundry.client.lib.domain.CloudService;
+import org.cloudfoundry.client.lib.domain.CloudServiceBinding;
 import org.cloudfoundry.client.lib.domain.CloudServiceBroker;
 import org.cloudfoundry.client.lib.domain.CloudServiceInstance;
 import org.cloudfoundry.client.lib.domain.CloudServiceKey;
@@ -243,17 +243,17 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public void bindService(String applicationName, String serviceName) {
-        handleExceptions(() -> delegate.bindService(applicationName, serviceName));
+    public void bindServiceInstance(String applicationName, String serviceInstanceName) {
+        handleExceptions(() -> delegate.bindServiceInstance(applicationName, serviceInstanceName));
     }
 
     @Override
-    public void bindService(String applicationName, String serviceName, Map<String, Object> parameters,
-                            ApplicationServicesUpdateCallback updateServicesCallback) {
+    public void bindServiceInstance(String applicationName, String serviceInstanceName, Map<String, Object> parameters,
+                                    ApplicationServicesUpdateCallback updateServicesCallback) {
         try {
-            handleExceptions(() -> delegate.bindService(applicationName, serviceName, parameters));
+            handleExceptions(() -> delegate.bindServiceInstance(applicationName, serviceInstanceName, parameters));
         } catch (CloudOperationException e) {
-            updateServicesCallback.onError(e, applicationName, serviceName);
+            updateServicesCallback.onError(e, applicationName, serviceInstanceName);
         }
     }
 
@@ -263,14 +263,15 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public void createApplication(String applicationName, Staging staging, Integer memory, List<String> uris, List<String> serviceNames) {
-        handleExceptions(() -> delegate.createApplication(applicationName, staging, memory, uris, serviceNames));
+    public void createApplication(String applicationName, Staging staging, Integer memory, List<String> uris,
+                                  List<String> serviceInstanceNames) {
+        handleExceptions(() -> delegate.createApplication(applicationName, staging, memory, uris, serviceInstanceNames));
     }
 
     @Override
     public void createApplication(String applicationName, Staging staging, Integer disk, Integer memory, List<String> uris,
-                                  List<String> serviceNames, DockerInfo dockerInfo) {
-        handleExceptions(() -> delegate.createApplication(applicationName, staging, disk, memory, uris, serviceNames, dockerInfo));
+                                  List<String> serviceInstanceNames, DockerInfo dockerInfo) {
+        handleExceptions(() -> delegate.createApplication(applicationName, staging, disk, memory, uris, serviceInstanceNames, dockerInfo));
     }
 
     @Override
@@ -289,8 +290,8 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public void createService(CloudService service) {
-        handleExceptions(() -> delegate.createService(service));
+    public void createServiceInstance(CloudServiceInstance serviceInstance) {
+        handleExceptions(() -> delegate.createServiceInstance(serviceInstance));
     }
 
     @Override
@@ -299,8 +300,8 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public CloudServiceKey createServiceKey(String serviceName, String serviceKeyName, Map<String, Object> parameters) {
-        return handleExceptions(() -> delegate.createServiceKey(serviceName, serviceKeyName, parameters));
+    public CloudServiceKey createServiceKey(String serviceInstanceName, String serviceKeyName, Map<String, Object> parameters) {
+        return handleExceptions(() -> delegate.createServiceKey(serviceInstanceName, serviceKeyName, parameters));
     }
 
     @Override
@@ -309,13 +310,14 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public void createUserProvidedService(CloudService service, Map<String, Object> credentials) {
-        handleExceptions(() -> delegate.createUserProvidedService(service, credentials));
+    public void createUserProvidedServiceInstance(CloudServiceInstance serviceInstance, Map<String, Object> credentials) {
+        handleExceptions(() -> delegate.createUserProvidedServiceInstance(serviceInstance, credentials));
     }
 
     @Override
-    public void createUserProvidedService(CloudService service, Map<String, Object> credentials, String syslogDrainUrl) {
-        handleExceptions(() -> delegate.createUserProvidedService(service, credentials, syslogDrainUrl));
+    public void createUserProvidedServiceInstance(CloudServiceInstance serviceInstance, Map<String, Object> credentials,
+                                                  String syslogDrainUrl) {
+        handleExceptions(() -> delegate.createUserProvidedServiceInstance(serviceInstance, credentials, syslogDrainUrl));
     }
 
     @Override
@@ -324,8 +326,8 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public void deleteAllServices() {
-        handleExceptions(() -> delegate.deleteAllServices());
+    public void deleteAllServiceInstances() {
+        handleExceptions(() -> delegate.deleteAllServiceInstances());
     }
 
     @Override
@@ -359,13 +361,13 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public void deleteService(String service) {
-        handleExceptions(() -> delegate.deleteService(service));
+    public void deleteServiceInstance(String serviceInstanceName) {
+        handleExceptions(() -> delegate.deleteServiceInstance(serviceInstanceName));
     }
 
     @Override
-    public void deleteService(CloudService service) {
-        handleExceptions(() -> delegate.deleteService(service));
+    public void deleteServiceInstance(CloudServiceInstance serviceInstance) {
+        handleExceptions(() -> delegate.deleteServiceInstance(serviceInstance));
     }
 
     @Override
@@ -374,8 +376,8 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public void deleteServiceKey(String service, String serviceKey) {
-        handleExceptions(() -> delegate.deleteServiceKey(service, serviceKey));
+    public void deleteServiceKey(String serviceInstanceName, String serviceKeyName) {
+        handleExceptions(() -> delegate.deleteServiceKey(serviceInstanceName, serviceKeyName));
     }
 
     @Override
@@ -499,8 +501,6 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         return handleExceptions(() -> delegate.getFile(applicationName, instanceIndex, filePath, startPosition, endPosition - 1));
     }
 
-    // list services, un/provision services, modify instance
-
     @Override
     public String getFileTail(String applicationName, int instanceIndex, String filePath, int length) {
         Assert.isTrue(length > 0, length + " is not a valid value for length, it should be 1 or greater.");
@@ -592,16 +592,6 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public CloudService getService(String service) {
-        return handleExceptions(() -> delegate.getService(service));
-    }
-
-    @Override
-    public CloudService getService(String service, boolean required) {
-        return handleExceptions(() -> delegate.getService(service, required));
-    }
-
-    @Override
     public CloudServiceBroker getServiceBroker(String name) {
         return handleExceptions(() -> delegate.getServiceBroker(name));
     }
@@ -617,28 +607,33 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public CloudServiceInstance getServiceInstance(String service) {
-        return handleExceptions(() -> delegate.getServiceInstance(service));
+    public CloudServiceInstance getServiceInstance(String serviceInstanceName) {
+        return handleExceptions(() -> delegate.getServiceInstance(serviceInstanceName));
     }
 
     @Override
-    public Map<String, Object> getServiceParameters(UUID guid) {
-        return handleExceptions(() -> delegate.getServiceParameters(guid));
+    public CloudServiceInstance getServiceInstance(String serviceInstanceName, boolean required) {
+        return handleExceptions(() -> delegate.getServiceInstance(serviceInstanceName, required));
     }
 
     @Override
-    public CloudServiceInstance getServiceInstance(String service, boolean required) {
-        return handleExceptions(() -> delegate.getServiceInstance(service, required));
+    public List<CloudServiceBinding> getServiceBindings(UUID serviceInstanceGuid) {
+        return handleExceptions(() -> delegate.getServiceBindings(serviceInstanceGuid));
     }
 
     @Override
-    public List<CloudServiceKey> getServiceKeys(String serviceName) {
-        return handleExceptions(() -> delegate.getServiceKeys(serviceName));
+    public Map<String, Object> getServiceInstanceParameters(UUID guid) {
+        return handleExceptions(() -> delegate.getServiceInstanceParameters(guid));
     }
 
     @Override
-    public List<CloudServiceKey> getServiceKeys(CloudService service) {
-        return handleExceptions(() -> delegate.getServiceKeys(service));
+    public List<CloudServiceKey> getServiceKeys(String serviceInstanceName) {
+        return handleExceptions(() -> delegate.getServiceKeys(serviceInstanceName));
+    }
+
+    @Override
+    public List<CloudServiceKey> getServiceKeys(CloudServiceInstance serviceInstance) {
+        return handleExceptions(() -> delegate.getServiceKeys(serviceInstance));
     }
 
     @Override
@@ -647,13 +642,13 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public List<CloudService> getServices() {
-        return handleExceptions(() -> delegate.getServices());
+    public List<CloudServiceInstance> getServiceInstances() {
+        return handleExceptions(() -> delegate.getServiceInstances());
     }
 
     @Override
-    public List<CloudService> getServicesByMetadataLabelSelector(String labelSelector) {
-        return handleExceptions(() -> delegate.getServicesByMetadataLabelSelector(labelSelector));
+    public List<CloudServiceInstance> getServiceInstancesByMetadataLabelSelector(String labelSelector) {
+        return handleExceptions(() -> delegate.getServiceInstancesByMetadataLabelSelector(labelSelector));
     }
 
     @Override
@@ -852,23 +847,23 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public void unbindService(String applicationName, String serviceName,
-                              ApplicationServicesUpdateCallback applicationServicesUpdateCallback) {
+    public void unbindServiceInstance(String applicationName, String serviceInstanceName,
+                                      ApplicationServicesUpdateCallback applicationServicesUpdateCallback) {
         try {
-            handleExceptions(() -> delegate.unbindService(applicationName, serviceName));
+            handleExceptions(() -> delegate.unbindServiceInstance(applicationName, serviceInstanceName));
         } catch (CloudOperationException e) {
-            applicationServicesUpdateCallback.onError(e, applicationName, serviceName);
+            applicationServicesUpdateCallback.onError(e, applicationName, serviceInstanceName);
         }
     }
 
     @Override
-    public void unbindService(String applicationName, String serviceName) {
-        handleExceptions(() -> delegate.unbindService(applicationName, serviceName));
+    public void unbindServiceInstance(String applicationName, String serviceInstanceName) {
+        handleExceptions(() -> delegate.unbindServiceInstance(applicationName, serviceInstanceName));
     }
 
     @Override
-    public void unbindService(CloudApplication application, CloudService service) {
-        handleExceptions(() -> delegate.unbindService(application, service));
+    public void unbindServiceInstance(CloudApplication application, CloudServiceInstance serviceInstance) {
+        handleExceptions(() -> delegate.unbindServiceInstance(application, serviceInstance));
     }
 
     @Override
@@ -932,8 +927,8 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public void updateServiceMetadata(UUID guid, Metadata metadata) {
-        handleExceptions(() -> delegate.updateServiceMetadata(guid, metadata));
+    public void updateServiceInstanceMetadata(UUID guid, Metadata metadata) {
+        handleExceptions(() -> delegate.updateServiceInstanceMetadata(guid, metadata));
     }
 
     @Override

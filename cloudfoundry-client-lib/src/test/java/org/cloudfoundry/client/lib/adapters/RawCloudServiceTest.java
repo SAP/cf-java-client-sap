@@ -1,8 +1,13 @@
 package org.cloudfoundry.client.lib.adapters;
 
-import org.cloudfoundry.client.lib.domain.CloudService;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.cloudfoundry.client.lib.domain.CloudServiceInstance;
+import org.cloudfoundry.client.lib.domain.ImmutableCloudServiceInstance;
 import org.cloudfoundry.client.lib.domain.ServiceInstanceType;
-import org.cloudfoundry.client.lib.domain.ImmutableCloudService;
 import org.cloudfoundry.client.v2.Resource;
 import org.cloudfoundry.client.v2.serviceinstances.UnionServiceInstanceEntity;
 import org.cloudfoundry.client.v2.serviceinstances.UnionServiceInstanceResource;
@@ -11,11 +16,6 @@ import org.cloudfoundry.client.v2.serviceplans.ServicePlanResource;
 import org.cloudfoundry.client.v2.services.ServiceEntity;
 import org.cloudfoundry.client.v2.services.ServiceResource;
 import org.junit.jupiter.api.Test;
-
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 public class RawCloudServiceTest {
 
@@ -35,40 +35,40 @@ public class RawCloudServiceTest {
         RawCloudEntityTest.testDerive(buildExpectedUserProvidedService(), buildRawUserProvidedService());
     }
 
-    private static CloudService buildExpectedService() {
-        return ImmutableCloudService.builder()
-                                    .metadata(RawCloudEntityTest.EXPECTED_METADATA)
-                                    .name(NAME)
-                                    .plan(PLAN_NAME)
-                                    .label(OFFERING_NAME)
-                                    .type(ServiceInstanceType.MANAGED)
-                                    .credentials(CREDENTIALS)
-                                    .tags(TAGS)
-                                    .build();
+    private static CloudServiceInstance buildExpectedService() {
+        return ImmutableCloudServiceInstance.builder()
+                                            .metadata(RawCloudEntityTest.EXPECTED_METADATA)
+                                            .name(NAME)
+                                            .plan(PLAN_NAME)
+                                            .label(OFFERING_NAME)
+                                            .type(ServiceInstanceType.MANAGED)
+                                            .credentials(CREDENTIALS)
+                                            .tags(TAGS)
+                                            .build();
     }
 
-    private static CloudService buildExpectedUserProvidedService() {
-        return ImmutableCloudService.builder()
-                                    .metadata(RawCloudEntityTest.EXPECTED_METADATA)
-                                    .name(NAME)
-                                    .type(ServiceInstanceType.USER_PROVIDED)
-                                    .credentials(CREDENTIALS)
-                                    .tags(TAGS)
-                                    .build();
+    private static CloudServiceInstance buildExpectedUserProvidedService() {
+        return ImmutableCloudServiceInstance.builder()
+                                            .metadata(RawCloudEntityTest.EXPECTED_METADATA)
+                                            .name(NAME)
+                                            .type(ServiceInstanceType.USER_PROVIDED)
+                                            .credentials(CREDENTIALS)
+                                            .tags(TAGS)
+                                            .build();
     }
 
-    private static RawCloudService buildRawService() {
-        return ImmutableRawCloudService.builder()
-                                       .resource(buildTestResource())
-                                       .servicePlanResource(buildTestServicePlanResource())
-                                       .serviceResource(buildTestServiceResource())
-                                       .build();
+    private static RawCloudServiceInstance buildRawService() {
+        return ImmutableRawCloudServiceInstance.builder()
+                                               .resource(buildTestResource())
+                                               .servicePlanResource(buildTestServicePlanResource())
+                                               .serviceResource(buildTestServiceResource())
+                                               .build();
     }
 
-    private static RawCloudService buildRawUserProvidedService() {
-        return ImmutableRawCloudService.builder()
-                                       .resource(buildUserProvidedTestResource())
-                                       .build();
+    private static RawCloudServiceInstance buildRawUserProvidedService() {
+        return ImmutableRawCloudServiceInstance.builder()
+                                               .resource(buildUserProvidedTestResource())
+                                               .build();
     }
 
     private static Resource<UnionServiceInstanceEntity> buildTestResource() {

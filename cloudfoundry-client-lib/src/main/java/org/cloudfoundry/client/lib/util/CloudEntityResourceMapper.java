@@ -43,10 +43,7 @@ import org.cloudfoundry.client.lib.domain.CloudPackage;
 import org.cloudfoundry.client.lib.domain.CloudQuota;
 import org.cloudfoundry.client.lib.domain.CloudRoute;
 import org.cloudfoundry.client.lib.domain.CloudSecurityGroup;
-import org.cloudfoundry.client.lib.domain.CloudService;
-import org.cloudfoundry.client.lib.domain.CloudServiceBinding;
 import org.cloudfoundry.client.lib.domain.CloudServiceBroker;
-import org.cloudfoundry.client.lib.domain.CloudServiceInstance;
 import org.cloudfoundry.client.lib.domain.CloudServiceKey;
 import org.cloudfoundry.client.lib.domain.CloudServiceOffering;
 import org.cloudfoundry.client.lib.domain.CloudServicePlan;
@@ -69,10 +66,7 @@ import org.cloudfoundry.client.lib.domain.ImmutableCloudPackage;
 import org.cloudfoundry.client.lib.domain.ImmutableCloudQuota;
 import org.cloudfoundry.client.lib.domain.ImmutableCloudRoute;
 import org.cloudfoundry.client.lib.domain.ImmutableCloudSecurityGroup;
-import org.cloudfoundry.client.lib.domain.ImmutableCloudService;
-import org.cloudfoundry.client.lib.domain.ImmutableCloudServiceBinding;
 import org.cloudfoundry.client.lib.domain.ImmutableCloudServiceBroker;
-import org.cloudfoundry.client.lib.domain.ImmutableCloudServiceInstance;
 import org.cloudfoundry.client.lib.domain.ImmutableCloudServiceKey;
 import org.cloudfoundry.client.lib.domain.ImmutableCloudServiceOffering;
 import org.cloudfoundry.client.lib.domain.ImmutableCloudServicePlan;
@@ -256,12 +250,6 @@ public class CloudEntityResourceMapper {
         }
         if (targetClass == CloudTask.class) {
             return (T) mapTaskResource(resource);
-        }
-        if (targetClass == CloudService.class) {
-            return (T) mapServiceResource(resource);
-        }
-        if (targetClass == CloudServiceInstance.class) {
-            return (T) mapServiceInstanceResource(resource);
         }
         if (targetClass == CloudServiceOffering.class) {
             return (T) mapServiceOfferingResource(resource);
@@ -665,21 +653,6 @@ public class CloudEntityResourceMapper {
                                   .build();
     }
 
-    @SuppressWarnings("unchecked")
-    private CloudServiceBinding mapServiceBinding(Map<String, Object> resource) {
-        Map<String, Object> bindingParameters = getV2ResourceAttribute(resource, "service_binding_parameters", Map.class);
-        bindingParameters = bindingParameters == null ? Collections.emptyMap() : bindingParameters;
-        return ImmutableCloudServiceBinding.builder()
-                                           .metadata(getV2Metadata(resource))
-                                           .name(getV2ResourceName(resource))
-                                           .applicationGuid(getV2ResourceAttribute(resource, "app_guid", UUID.class))
-                                           .syslogDrainUrl(getV2ResourceAttribute(resource, "syslog_drain_url", String.class))
-                                           .credentials(getV2ResourceAttribute(resource, "credentials", Map.class))
-                                           .bindingOptions(getV2ResourceAttribute(resource, "binding_options", Map.class))
-                                           .bindingParameters(bindingParameters)
-                                           .build();
-    }
-
     private CloudServiceBroker mapServiceBrokerResource(Map<String, Object> resource) {
         return ImmutableCloudServiceBroker.builder()
                                           .metadata(getV2Metadata(resource))
@@ -688,28 +661,6 @@ public class CloudEntityResourceMapper {
                                           .username(getV2ResourceAttribute(resource, "auth_username", String.class))
                                           .spaceGuid(getV2ResourceAttribute(resource, "space_guid", String.class))
                                           .build();
-    }
-
-    @SuppressWarnings("unchecked")
-    private CloudServiceInstance mapServiceInstanceResource(Map<String, Object> resource) {
-        ImmutableCloudServiceInstance.Builder builder = ImmutableCloudServiceInstance.builder()
-                                                                                     .metadata(getV2Metadata(resource))
-                                                                                     .name(getV2ResourceName(resource));
-
-        builder.type(getV2ResourceAttribute(resource, "type", String.class));
-        builder.dashboardUrl(getV2ResourceAttribute(resource, "dashboard_url", String.class));
-        builder.credentials(getV2ResourceAttribute(resource, "credentials", Map.class));
-
-        CloudService service = mapServiceResource(resource);
-        builder.service(service);
-
-        List<Map<String, Object>> bindingsResource = getEmbeddedResourceList(getEntity(resource), "service_bindings");
-        List<CloudServiceBinding> bindings = bindingsResource.stream()
-                                                             .map(this::mapServiceBinding)
-                                                             .collect(Collectors.toList());
-        builder.bindings(bindings);
-
-        return builder.build();
     }
 
     private CloudServiceOffering mapServiceOfferingResource(Map<String, Object> resource) {
@@ -771,24 +722,6 @@ public class CloudEntityResourceMapper {
                                         .uniqueId(getV2ResourceAttribute(servicePlanResource, "unique_id", String.class))
                                         .isPublic(publicPlan)
                                         .build();
-    }
-
-    private CloudService mapServiceResource(Map<String, Object> resource) {
-        ImmutableCloudService.Builder builder = ImmutableCloudService.builder()
-                                                                     .metadata(getV2Metadata(resource))
-                                                                     .name(getV2ResourceName(resource));
-        Map<String, Object> servicePlanResource = getEmbeddedResource(resource, "service_plan");
-        if (servicePlanResource != null) {
-            builder.plan(getV2ResourceAttribute(servicePlanResource, "name", String.class));
-
-            Map<String, Object> serviceResource = getEmbeddedResource(servicePlanResource, "service");
-            if (serviceResource != null) {
-                builder.label(getV2ResourceAttribute(serviceResource, "label", String.class));
-                builder.provider(getV2ResourceAttribute(serviceResource, "provider", String.class));
-                builder.version(getV2ResourceAttribute(serviceResource, "version", String.class));
-            }
-        }
-        return builder.build();
     }
 
     private CloudSpace mapSpaceResource(Map<String, Object> resource) {
