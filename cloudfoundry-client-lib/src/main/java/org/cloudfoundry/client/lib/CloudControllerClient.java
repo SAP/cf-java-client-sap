@@ -31,9 +31,7 @@ import org.cloudfoundry.client.lib.domain.CloudDomain;
 import org.cloudfoundry.client.lib.domain.CloudEvent;
 import org.cloudfoundry.client.lib.domain.CloudInfo;
 import org.cloudfoundry.client.lib.domain.CloudOrganization;
-import org.cloudfoundry.client.lib.domain.CloudQuota;
 import org.cloudfoundry.client.lib.domain.CloudRoute;
-import org.cloudfoundry.client.lib.domain.CloudSecurityGroup;
 import org.cloudfoundry.client.lib.domain.CloudServiceBinding;
 import org.cloudfoundry.client.lib.domain.CloudServiceBroker;
 import org.cloudfoundry.client.lib.domain.CloudServiceInstance;
@@ -42,7 +40,6 @@ import org.cloudfoundry.client.lib.domain.CloudServiceOffering;
 import org.cloudfoundry.client.lib.domain.CloudSpace;
 import org.cloudfoundry.client.lib.domain.CloudStack;
 import org.cloudfoundry.client.lib.domain.CloudTask;
-import org.cloudfoundry.client.lib.domain.CloudUser;
 import org.cloudfoundry.client.lib.domain.DockerInfo;
 import org.cloudfoundry.client.lib.domain.InstancesInfo;
 import org.cloudfoundry.client.lib.domain.Staging;
@@ -80,100 +77,6 @@ public interface CloudControllerClient {
     void addRoute(String host, String domainName, String path);
 
     /**
-     * Associate current user to the space auditors role
-     *
-     * @param spaceName name of the space
-     */
-    void associateAuditorWithSpace(String spaceName);
-
-    /**
-     * Associate current user to the space auditors role
-     *
-     * @param organizationName name of the organization containing the space
-     * @param spaceName name of the space
-     */
-    void associateAuditorWithSpace(String organizationName, String spaceName);
-
-    /**
-     * Associate a user to the space auditors role
-     *
-     * @param organizationName name of the organization containing the space
-     * @param spaceName name of the space
-     * @param userGuid guid of the user. If null, use current user. To retrieve user guid, use {@link #getOrganizationUsers(String)
-     *        getOrganizationUsers } and search for username
-     */
-    void associateAuditorWithSpace(String organizationName, String spaceName, String userGuid);
-
-    /**
-     * Associate current user to the space developer role
-     *
-     * @param spaceName name of the space
-     */
-    void associateDeveloperWithSpace(String spaceName);
-
-    /**
-     * Associate current user to the space developer role
-     *
-     * @param organizationName name of the organization containing the space
-     * @param spaceName name of the space
-     */
-    void associateDeveloperWithSpace(String organizationName, String spaceName);
-
-    /**
-     * Associate a user to the space developer role
-     *
-     * @param organizationName name of the organization containing the space
-     * @param spaceName name of the space
-     * @param userGuid guid of the user. If null, use current user. To retrieve user guid, use {@link #getOrganizationUsers(String)
-     *        getOrganizationUsers } and search for username
-     */
-    void associateDeveloperWithSpace(String organizationName, String spaceName, String userGuid);
-
-    /**
-     * Associate current user to the space managers role
-     *
-     * @param spaceName name of the space
-     */
-    void associateManagerWithSpace(String spaceName);
-
-    /**
-     * Associate current user to the space managers role
-     *
-     * @param organizationName name of the organization containing the space
-     * @param spaceName name of the space
-     */
-    void associateManagerWithSpace(String organizationName, String spaceName);
-
-    /**
-     * Associate a user to the space managers role
-     *
-     * @param organizationName name of the organization containing the space
-     * @param spaceName name of the space
-     * @param userGuid guid of the user. If null, use current user. To retrieve user guid, use {@link #getOrganizationUsers(String)
-     *        getOrganizationUsers } and search for username
-     */
-    void associateManagerWithSpace(String organizationName, String spaceName, String userGuid);
-
-    /**
-     * Bind a security group to the list of security groups to be used for running applications.
-     * <p/>
-     * This method requires the logged in user to have admin permissions in the cloud controller.
-     */
-    void bindRunningSecurityGroup(String securityGroupName);
-
-    /**
-     * Bind a security group to a space.
-     * <p/>
-     * This method requires the logged in user to have admin permissions in the cloud controller.
-     *
-     * @param organizationName The name of the organization that the space is in.
-     * @param spaceName The name of the space
-     * @param securityGroupName The name of the security group to bind to the space
-     * @throws CloudOperationException if the org, space, or security group do not exist
-     */
-    void bindSecurityGroup(String organizationName, String spaceName, String securityGroupName);
-
-    /**
      * Associate (provision) a service with an application.
      *
      * @param applicationName the application name
@@ -193,13 +96,6 @@ public interface CloudControllerClient {
                              ApplicationServicesUpdateCallback updateServicesCallback);
 
     /**
-     * Bind a security group to the list of security groups to be used for staging applications.
-     * <p/>
-     * This method requires the logged in user to have admin permissions in the cloud controller.
-     */
-    void bindStagingSecurityGroup(String securityGroupName);
-
-    /**
      * Create application.
      *
      * @param applicationName application name
@@ -208,7 +104,7 @@ public interface CloudControllerClient {
      * @param uris list of URIs for the app
      * @param serviceInstanceNames list of service instance names to bind to app
      */
-    void createApplication(String applicationName, Staging staging, Integer memory, List<String> uris, List<String> serviceInstanceNames);
+    void createApplication(String applicationName, Staging staging, Integer memory, List<String> uris);
 
     /**
      * Create application.
@@ -221,56 +117,7 @@ public interface CloudControllerClient {
      * @param serviceInstanceNames list of service instance names to bind to app
      * @param dockerInfo docker params(image, username, password)
      */
-    void createApplication(String applicationName, Staging staging, Integer disk, Integer memory, List<String> uris,
-                           List<String> serviceInstanceNames, DockerInfo dockerInfo);
-
-    /**
-     * Create quota
-     *
-     * @param quota
-     */
-    void createQuota(CloudQuota quota);
-
-    /**
-     * Create a new CloudSecurityGroup.
-     * <p/>
-     * This method requires the logged in user to have admin permissions in the cloud controller.
-     *
-     * @param securityGroup
-     */
-    void createSecurityGroup(CloudSecurityGroup securityGroup);
-
-    /**
-     * Create a new CloudSecurityGroup using a JSON rules file. This is equivalent to <code>cf create-security-group
-     * SECURITY-GROUP PATH-TO-RULES-FILE</code> when using the cf command line. See the Application Security Group documentation for more
-     * details.
-     * <p/>
-     * Example JSON-formatted rules file:
-     * 
-     * <pre>
-     * {@code
-     * [
-     *  {
-     * 		"protocol":"tcp",
-     * 		"destination":"10.0.11.0/24",
-     * 		"ports":"1-65535"
-     *  },
-     *  {
-     *  	"protocol":"udp",
-     *  	"destination":"10.0.11.0/24",
-     *  	"ports":"1-65535"
-     *  }
-     * ]
-     *  }
-     * </pre>
-     * <p/>
-     * This method requires the logged in user to have admin permissions in the cloud controller.
-     *
-     * @param name the name for the security group
-     * @param jsonRulesFile An input stream that has a single array with JSON objects inside describing the rules
-     * @see http://docs.cloudfoundry.org/adminguide/app-sec-groups.html
-     */
-    void createSecurityGroup(String name, InputStream jsonRulesFile);
+    void createApplication(String applicationName, Staging staging, Integer disk, Integer memory, List<String> uris, DockerInfo dockerInfo);
 
     /**
      * Create a service instance.
@@ -295,13 +142,6 @@ public interface CloudControllerClient {
      * @return
      */
     CloudServiceKey createServiceKey(String serviceInstanceName, String serviceKeyName, Map<String, Object> parameters);
-
-    /**
-     * Create a space with the specified name
-     *
-     * @param spaceName
-     */
-    void createSpace(String spaceName);
 
     /**
      * Create a user-provided service instance.
@@ -350,29 +190,12 @@ public interface CloudControllerClient {
     List<CloudRoute> deleteOrphanedRoutes();
 
     /**
-     * Delete quota by name
-     *
-     * @param quotaName
-     */
-    void deleteQuota(String quotaName);
-
-    /**
      * Delete a registered route from the space of the current session.
      *
      * @param host the host of the route to delete
      * @param domainName the domain of the route to delete
      */
     void deleteRoute(String host, String domainName, String path);
-
-    /**
-     * Deletes the security group with the given name.
-     * <p/>
-     * This method requires the logged in user to have admin permissions in the cloud controller.
-     *
-     * @param securityGroupName
-     * @throws CloudOperationException if a security group does not exist with the given name
-     */
-    void deleteSecurityGroup(String securityGroupName);
 
     /**
      * Delete cloud service instance.
@@ -408,13 +231,6 @@ public interface CloudControllerClient {
      * @param serviceKey {@link CloudServiceKey} object
      */
     void deleteServiceKey(CloudServiceKey serviceKey);
-
-    /**
-     * Delete a space with the specified name
-     *
-     * @param spaceName name of the space
-     */
-    void deleteSpace(String spaceName);
 
     /**
      * Get cloud application with the specified name.
@@ -503,18 +319,6 @@ public interface CloudControllerClient {
     CloudInfo getCloudInfo();
 
     /**
-     * Get logs from most recent crash of the deployed application. The logs will be returned in a Map keyed by the path of the log file
-     * (logs/stderr.log, logs/stdout.log).
-     *
-     * @param applicationName name of the application
-     * @return a Map containing the logs. The logs will be returned with the path to the log file used as the key and the full content of
-     *         the log file will be returned as a String value for the corresponding key.
-     * @deprecated Use {@link #streamLogs(String, ApplicationLogListener)} or {@link #getRecentLogs(String)}
-     */
-    @Deprecated
-    Map<String, String> getCrashLogs(String applicationName);
-
-    /**
      * Gets the default domain for the current org, which is the first shared domain.
      *
      * @return the default domain
@@ -543,63 +347,6 @@ public interface CloudControllerClient {
     List<CloudEvent> getEvents();
 
     /**
-     * Get file from the deployed application.
-     *
-     * @param applicationName name of the application
-     * @param instanceIndex instance index
-     * @param filePath path to the file
-     * @return the contents of the file
-     */
-    String getFile(String applicationName, int instanceIndex, String filePath);
-
-    /**
-     * Get a the content, starting at a specific position, of a file from the deployed application.
-     *
-     * @param applicationName name of the application
-     * @param instanceIndex instance index
-     * @param filePath path to the file
-     * @param startPosition the starting position of the file contents (inclusive)
-     * @return the contents of the file
-     */
-    String getFile(String applicationName, int instanceIndex, String filePath, int startPosition);
-
-    /**
-     * Get a range of content of a file from the deployed application. The range begins at the specified startPosition and extends to the
-     * character at endPosition - 1.
-     *
-     * @param applicationName name of the application
-     * @param instanceIndex instance index
-     * @param filePath path to the file
-     * @param startPosition the starting position of the file contents (inclusive)
-     * @param endPosition the ending position of the file contents (exclusive)
-     * @return the contents of the file
-     */
-    String getFile(String applicationName, int instanceIndex, String filePath, int startPosition, int endPosition);
-
-    /**
-     * Get a the last bytes, with length as specified, of content of a file from the deployed application.
-     *
-     * @param applicationName name of the application
-     * @param instanceIndex instance index
-     * @param filePath path to the file
-     * @param length the length of the file contents to retrieve
-     * @return the contents of the file
-     */
-    String getFileTail(String applicationName, int instanceIndex, String filePath, int length);
-
-    /**
-     * Get logs from the deployed application. The logs will be returned in a Map keyed by the path of the log file (logs/stderr.log,
-     * logs/stdout.log).
-     *
-     * @param applicationName name of the application
-     * @return a Map containing the logs. The logs will be returned with the path to the log file used as the key and the full content of
-     *         the log file will be returned as a String value for the corresponding key.
-     * @deprecated Use {@link #streamLogs(String, ApplicationLogListener)} or {@link #getRecentLogs(String)}
-     */
-    @Deprecated
-    Map<String, String> getLogs(String applicationName);
-
-    /**
      * Get the organization with the specified name.
      *
      * @param organizationName name of organization
@@ -617,15 +364,6 @@ public interface CloudControllerClient {
     CloudOrganization getOrganization(String organizationName, boolean required);
 
     /**
-     * Get all users in the specified organization
-     *
-     * @param organizationName organization name
-     * @return a Map CloudUser with username as key
-     * @throws CloudOperationException if the organization do not exist
-     */
-    Map<String, CloudUser> getOrganizationUsers(String organizationName);
-
-    /**
      * Get list of CloudOrganizations for the current cloud.
      *
      * @return List of CloudOrganizations objects containing the organization info
@@ -638,30 +376,6 @@ public interface CloudControllerClient {
      * @return list of private domains
      */
     List<CloudDomain> getPrivateDomains();
-
-    /**
-     * Get quota by name
-     *
-     * @param quotaName
-     * @return CloudQuota instance
-     */
-    CloudQuota getQuota(String quotaName);
-
-    /**
-     * Get quota by name
-     *
-     * @param quotaName
-     * @param required if true, and organization is not found, throw an exception
-     * @return CloudQuota instance
-     */
-    CloudQuota getQuota(String quotaName, boolean required);
-
-    /**
-     * Get quota definitions
-     *
-     * @return List<CloudQuota>
-     */
-    List<CloudQuota> getQuotas();
 
     /**
      * Stream recent log entries.
@@ -690,43 +404,6 @@ public interface CloudControllerClient {
      * @return list of routes
      */
     List<CloudRoute> getRoutes(String domainName);
-
-    /**
-     * List security groups in the set of security groups for running applications.
-     * <p/>
-     * This method requires the logged in user to have admin permissions in the cloud controller.
-     */
-    List<CloudSecurityGroup> getRunningSecurityGroups();
-
-    /**
-     * Get a specific security group by name.
-     * <p/>
-     * This method requires the logged in user to have admin permissions in the cloud controller.
-     *
-     * @param securityGroupName The name of the security group
-     * @return the CloudSecurityGroup
-     */
-    CloudSecurityGroup getSecurityGroup(String securityGroupName);
-
-    /**
-     * Get a specific security group by name.
-     * <p/>
-     * This method requires the logged in user to have admin permissions in the cloud controller.
-     *
-     * @param securityGroupName The name of the security group
-     * @param required if true, and organization is not found, throw an exception
-     * @return the CloudSecurityGroup or <code>null</code> if no security groups exist with the given name
-     */
-    CloudSecurityGroup getSecurityGroup(String securityGroupName, boolean required);
-
-    /**
-     * Get a List of all application security groups.
-     * <p/>
-     * This method requires the logged in user to have admin permissions in the cloud controller.
-     *
-     * @return a list of all the {@link CloudSecurityGroup}s in the system
-     */
-    List<CloudSecurityGroup> getSecurityGroups();
 
     /**
      * Get a service broker.
@@ -930,13 +607,6 @@ public interface CloudControllerClient {
     List<CloudSpace> getSpaces(String organizationName);
 
     /**
-     * Gets all the spaces that are bound to the given security group.
-     * <p/>
-     * This method requires the logged in user to have admin permissions in the cloud controller.
-     */
-    List<CloudSpace> getSpacesBoundToSecurityGroup(String securityGroupName);
-
-    /**
      * Get a stack by name.
      *
      * @param name the name of the stack to get
@@ -961,13 +631,6 @@ public interface CloudControllerClient {
     List<CloudStack> getStacks();
 
     /**
-     * Lists security groups in the staging set for applications.
-     * <p/>
-     * This method requires the logged in user to have admin permissions in the cloud controller.
-     */
-    List<CloudSecurityGroup> getStagingSecurityGroups();
-
-    /**
      * Login using the credentials already set for the client.
      *
      * @return authentication token
@@ -980,28 +643,11 @@ public interface CloudControllerClient {
     void logout();
 
     /**
-     * Register new user account with the provided credentials.
-     *
-     * @param email the email account
-     * @param password the password
-     */
-    void register(String email, String password);
-
-    /**
      * Register a new RestLogCallback
      *
      * @param callBack the callback to be registered
      */
     void registerRestLogListener(RestLogCallback callBack);
-
-    /**
-     * Delete a private domain in the current organization.
-     *
-     * @param domainName the domain to remove
-     * @deprecated alias for {@link #deleteDomain}
-     */
-    @Deprecated
-    void removeDomain(String domainName);
 
     /**
      * Rename an application.
@@ -1017,14 +663,6 @@ public interface CloudControllerClient {
      * @param applicationName name of application
      */
     StartingInfo restartApplication(String applicationName);
-
-    /**
-     * Set quota to organization
-     *
-     * @param organizationName
-     * @param quotaName
-     */
-    void setQuotaToOrganization(String organizationName, String quotaName);
 
     /**
      * Override the default REST response error handler with a custom error handler.
@@ -1057,25 +695,6 @@ public interface CloudControllerClient {
     void unRegisterRestLogListener(RestLogCallback callBack);
 
     /**
-     * Unbind a security group from the set of security groups for running applications.
-     * <p/>
-     * This method requires the logged in user to have admin permissions in the cloud controller.
-     */
-    void unbindRunningSecurityGroup(String securityGroupName);
-
-    /**
-     * Unbind a security group from a space.
-     * <p/>
-     * This method requires the logged in user to have admin permissions in the cloud controller.
-     *
-     * @param organizationName The name of the organization that the space is in.
-     * @param spaceName The name of the space
-     * @param securityGroupName The name of the security group to bind to the space
-     * @throws CloudOperationException if the org, space, or security group do not exist
-     */
-    void unbindSecurityGroup(String organizationName, String spaceName, String securityGroupName);
-
-    /**
      * Un-associate (unprovision) a service from an application.
      *
      * @param applicationName the application name
@@ -1100,18 +719,6 @@ public interface CloudControllerClient {
      * @param serviceInstance the service instance
      */
     void unbindServiceInstance(CloudApplication application, CloudServiceInstance serviceInstance);
-
-    /**
-     * Unbind a security group from the set of security groups for staging applications.
-     * <p/>
-     * This method requires the logged in user to have admin permissions in the cloud controller.
-     */
-    void unbindStagingSecurityGroup(String securityGroupName);
-
-    /**
-     * Unregister and log out the currently logged in user
-     */
-    void unregister();
 
     /**
      * Update application disk quota.
@@ -1161,71 +768,6 @@ public interface CloudControllerClient {
      * @param uris list of URIs the app should use
      */
     void updateApplicationUris(String applicationName, List<String> uris);
-
-    /**
-     * Update the password for the logged in user.
-     *
-     * @param newPassword the new password
-     */
-    void updatePassword(String newPassword);
-
-    /**
-     * Update the password for the logged in user using the username/old_password provided in the credentials.
-     *
-     * @param credentials current credentials
-     * @param newPassword the new password
-     */
-    void updatePassword(CloudCredentials credentials, String newPassword);
-
-    /**
-     * Update Quota definition
-     *
-     * @param quota
-     * @param name
-     */
-    void updateQuota(CloudQuota quota, String name);
-
-    /**
-     * Update an existing security group.
-     * <p/>
-     * This method requires the logged in user to have admin permissions in the cloud controller.
-     *
-     * @param securityGroup
-     * @throws CloudOperationException if a security group does not exist with the name of the given CloudSecurityGroup
-     */
-    void updateSecurityGroup(CloudSecurityGroup securityGroup);
-
-    /**
-     * Updates a existing CloudSecurityGroup using a JSON rules file. This is equivalent to <code>cf
-     * update-security-group SECURITY-GROUP PATH-TO-RULES-FILE</code> when using the cf command line. See the Application Security Group
-     * documentation for more details.
-     * <p/>
-     * Example JSON-formatted rules file:
-     * 
-     * <pre>
-     * {@code
-     * [
-     *  {
-     * 		"protocol":"tcp",
-     * 		"destination":"10.0.11.0/24",
-     * 		"ports":"1-65535"
-     *  },
-     *  {
-     *  	"protocol":"udp",
-     *  	"destination":"10.0.11.0/24",
-     *  	"ports":"1-65535"
-     *  }
-     * ]
-     *  }
-     * </pre>
-     * <p/>
-     * This method requires the logged in user to have admin permissions in the cloud controller.
-     *
-     * @param jsonRulesFile An input stream that has a single array with JSON objects inside describing the rules
-     * @throws CloudOperationException if a security group does not exist with the given name
-     * @see http://docs.cloudfoundry.org/adminguide/app-sec-groups.html
-     */
-    void updateSecurityGroup(String name, InputStream jsonRulesFile);
 
     /**
      * Update a service broker (unchanged forces catalog refresh).

@@ -13,14 +13,13 @@ import java.util.stream.Collectors;
 import org.cloudfoundry.client.lib.domain.CloudMetadata;
 import org.cloudfoundry.client.lib.domain.Derivable;
 import org.cloudfoundry.client.lib.domain.ImmutableCloudMetadata;
-import org.cloudfoundry.client.lib.util.CloudEntityResourceMapper;
 import org.cloudfoundry.client.v2.Metadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public abstract class RawCloudEntity<T> implements Derivable<T> {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(CloudEntityResourceMapper.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(RawCloudEntity.class);
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssZ");
 
     protected RawCloudEntity() {
