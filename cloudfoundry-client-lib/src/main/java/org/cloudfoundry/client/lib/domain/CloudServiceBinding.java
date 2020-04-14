@@ -23,9 +23,6 @@ public interface CloudServiceBinding extends CloudEntity, Derivable<CloudService
     Map<String, Object> getCredentials();
 
     @Nullable
-    Map<String, Object> getBindingParameters();
-
-    @Nullable
     String getSyslogDrainUrl();
 
     @Override

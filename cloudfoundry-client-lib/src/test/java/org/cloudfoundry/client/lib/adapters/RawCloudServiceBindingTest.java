@@ -39,7 +39,6 @@ public class RawCloudServiceBindingTest {
                                            .applicationGuid(APPLICATION_GUID)
                                            .syslogDrainUrl(SYSLOG_DRAIN_URL)
                                            .bindingOptions(PARAMETERS)
-                                           .bindingParameters(parameters)
                                            .credentials(PARAMETERS)
                                            .build();
     }
@@ -51,7 +50,6 @@ public class RawCloudServiceBindingTest {
     private static RawCloudServiceBinding buildRawServiceBinding(Map<String, Object> parameters) {
         return ImmutableRawCloudServiceBinding.builder()
                                               .resource(buildTestResource())
-                                              .parameters(parameters)
                                               .build();
     }
 

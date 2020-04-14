@@ -823,8 +823,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public List<CloudServiceBinding> getServiceBindings(UUID serviceInstanceGuid) {
-        return fetchListWithAuxiliaryContent(() -> getServiceBindingResourcesByServiceInstanceGuid(serviceInstanceGuid),
-                                             this::zipWithAuxiliaryServiceBindingContent);
+        return fetchList(() -> getServiceBindingResourcesByServiceInstanceGuid(serviceInstanceGuid), ImmutableRawCloudServiceBinding::of);
     }
 
     @Override
@@ -867,6 +866,16 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                          .serviceInstanceId(guid.toString())
                                                                          .build())
                        .map(GetServiceInstanceParametersResponse::getParameters)
+                       .block();
+    }
+
+    @Override
+    public Map<String, Object> getServiceBindingParameters(UUID guid) {
+        return delegate.serviceBindingsV2()
+                       .getParameters(GetServiceBindingParametersRequest.builder()
+                                                                        .serviceBindingId(guid.toString())
+                                                                        .build())
+                       .map(GetServiceBindingParametersResponse::getParameters)
                        .block();
     }
 
@@ -1651,24 +1660,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
             getApplicationServiceBindingResources(IntFunction<ListApplicationServiceBindingsRequest> pageRequestSupplier) {
         return PaginationUtils.requestClientV2Resources(page -> delegate.applicationsV2()
                                                                         .listServiceBindings(pageRequestSupplier.apply(page)));
-    }
-
-    private Mono<? extends Derivable<CloudServiceBinding>> zipWithAuxiliaryServiceBindingContent(Resource<ServiceBindingEntity> resource) {
-        UUID serviceBindingGuid = getGuid(resource);
-        return getServiceBindingParameters(serviceBindingGuid).map(parameters -> ImmutableRawCloudServiceBinding.builder()
-                                                                                                                .resource(resource)
-                                                                                                                .parameters(parameters)
-                                                                                                                .build())
-                                                              .defaultIfEmpty(ImmutableRawCloudServiceBinding.of(resource));
-    }
-
-    private Mono<Map<String, Object>> getServiceBindingParameters(UUID serviceBindingGuid) {
-        return delegate.serviceBindingsV2()
-                       .getParameters(GetServiceBindingParametersRequest.builder()
-                                                                        .serviceBindingId(serviceBindingGuid.toString())
-                                                                        .build())
-                       .map(GetServiceBindingParametersResponse::getParameters)
-                       .onErrorResume(AbstractCloudFoundryException.class, e -> Mono.empty());
     }
 
     private List<CloudServicePlan> findServicePlansByBrokerGuid(UUID brokerGuid) {
