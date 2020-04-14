@@ -77,9 +77,7 @@ import org.cloudfoundry.client.lib.domain.CloudInfo;
 import org.cloudfoundry.client.lib.domain.CloudMetadata;
 import org.cloudfoundry.client.lib.domain.CloudOrganization;
 import org.cloudfoundry.client.lib.domain.CloudPackage;
-import org.cloudfoundry.client.lib.domain.CloudQuota;
 import org.cloudfoundry.client.lib.domain.CloudRoute;
-import org.cloudfoundry.client.lib.domain.CloudSecurityGroup;
 import org.cloudfoundry.client.lib.domain.CloudServiceBinding;
 import org.cloudfoundry.client.lib.domain.CloudServiceBroker;
 import org.cloudfoundry.client.lib.domain.CloudServiceInstance;
@@ -89,7 +87,6 @@ import org.cloudfoundry.client.lib.domain.CloudServicePlan;
 import org.cloudfoundry.client.lib.domain.CloudSpace;
 import org.cloudfoundry.client.lib.domain.CloudStack;
 import org.cloudfoundry.client.lib.domain.CloudTask;
-import org.cloudfoundry.client.lib.domain.CloudUser;
 import org.cloudfoundry.client.lib.domain.Derivable;
 import org.cloudfoundry.client.lib.domain.DockerCredentials;
 import org.cloudfoundry.client.lib.domain.DockerInfo;
@@ -245,7 +242,6 @@ import reactor.util.function.Tuples;
  */
 public class CloudControllerRestClientImpl implements CloudControllerRestClient {
 
-    private static final String MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED = "Feature is not yet implemented.";
     private static final String DEFAULT_HOST_DOMAIN_SEPARATOR = "\\.";
     private static final String DEFAULT_PATH_SEPARATOR = "/";
     private static final long JOB_POLLING_PERIOD = TimeUnit.SECONDS.toMillis(5);
@@ -321,31 +317,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public void associateAuditorWithSpace(String organizationName, String spaceName, String userGuid) {
-        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
-    }
-
-    @Override
-    public void associateDeveloperWithSpace(String organizationName, String spaceName, String userGuid) {
-        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
-    }
-
-    @Override
-    public void associateManagerWithSpace(String organizationName, String spaceName, String userGuid) {
-        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
-    }
-
-    @Override
-    public void bindRunningSecurityGroup(String securityGroupName) {
-        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
-    }
-
-    @Override
-    public void bindSecurityGroup(String organizationName, String spaceName, String securityGroupName) {
-        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
-    }
-
-    @Override
     public void bindServiceInstance(String applicationName, String serviceInstanceName) {
         bindServiceInstance(applicationName, serviceInstanceName, null);
     }
@@ -365,18 +336,13 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public void bindStagingSecurityGroup(String securityGroupName) {
-        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
-    }
-
-    @Override
-    public void createApplication(String name, Staging staging, Integer memory, List<String> uris, List<String> serviceInstanceNames) {
-        createApplication(name, staging, null, memory, uris, serviceInstanceNames, null);
+    public void createApplication(String name, Staging staging, Integer memory, List<String> uris) {
+        createApplication(name, staging, null, memory, uris, null);
     }
 
     @Override
     public void createApplication(String name, Staging staging, Integer diskQuota, Integer memory, List<String> uris,
-                                  List<String> serviceInstanceNames, DockerInfo dockerInfo) {
+                                  DockerInfo dockerInfo) {
         CreateApplicationRequest.Builder requestBuilder = CreateApplicationRequest.builder()
                                                                                   .spaceId(getTargetSpaceGuid().toString())
                                                                                   .name(name)
@@ -420,10 +386,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
             updateBuildpacks(newAppGuid, staging.getBuildpacks());
         }
 
-        if (!CollectionUtils.isEmpty(serviceInstanceNames)) {
-            updateApplicationServices(name, Collections.emptyMap());
-        }
-
         if (!CollectionUtils.isEmpty(uris)) {
             addUris(uris, newAppGuid);
         }
@@ -446,21 +408,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                                                             .build())
                                                                                         .build())
                 .block();
-    }
-
-    @Override
-    public void createQuota(CloudQuota quota) {
-        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
-    }
-
-    @Override
-    public void createSecurityGroup(CloudSecurityGroup securityGroup) {
-        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
-    }
-
-    @Override
-    public void createSecurityGroup(String name, InputStream jsonRulesFile) {
-        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
     }
 
     @Override
@@ -506,11 +453,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                             .serviceInstance(serviceInstance)
                                                             .resource(resource)
                                                             .build());
-    }
-
-    @Override
-    public void createSpace(String spaceName) {
-        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
     }
 
     @Override
@@ -598,11 +540,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public void deleteQuota(String quotaName) {
-        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
-    }
-
-    @Override
     public void deleteRoute(String host, String domainName, String path) {
         assertSpaceProvided("delete route for domain");
         UUID routeGuid = getRouteGuid(getRequiredDomainGuid(domainName), host, path);
@@ -612,11 +549,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                               "Host " + host + " not found for domain " + domainName + ".");
         }
         doDeleteRoute(routeGuid);
-    }
-
-    @Override
-    public void deleteSecurityGroup(String securityGroupName) {
-        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
     }
 
     @Override
@@ -661,11 +593,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         UUID serviceKeyGuid = serviceKey.getMetadata()
                                         .getGuid();
         doDeleteServiceKey(serviceKeyGuid);
-    }
-
-    @Override
-    public void deleteSpace(String spaceName) {
-        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
     }
 
     @Override
@@ -749,11 +676,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public Map<String, String> getCrashLogs(String applicationName) {
-        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
-    }
-
-    @Override
     public CloudDomain getDefaultDomain() {
         Map<String, Object> urlVariables = new HashMap<>();
         urlVariables.put("organizationGuid", getTargetOrganizationGuid());
@@ -811,18 +733,8 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public String getFile(String applicationName, int instanceIndex, String filePath, int startPosition, int endPosition) {
-        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
-    }
-
-    @Override
     public CloudInfo getInfo() {
         return fetch(this::getInfoResource, ImmutableRawCloudInfo::of);
-    }
-
-    @Override
-    public Map<String, String> getLogs(String applicationName) {
-        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
     }
 
     @Override
@@ -847,28 +759,8 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public Map<String, CloudUser> getOrganizationUsers(String organizationName) {
-        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
-    }
-
-    @Override
     public List<CloudOrganization> getOrganizations() {
         return fetchList(this::getOrganizationResources, ImmutableRawCloudOrganization::of);
-    }
-
-    @Override
-    public CloudQuota getQuota(String quotaName) {
-        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
-    }
-
-    @Override
-    public CloudQuota getQuota(String quotaName, boolean required) {
-        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
-    }
-
-    @Override
-    public List<CloudQuota> getQuotas() {
-        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
     }
 
     @Override
@@ -892,26 +784,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         assertSpaceProvided("get routes for domain");
         CloudDomain domain = findDomainByName(domainName, true);
         return findRoutes(domain);
-    }
-
-    @Override
-    public List<CloudSecurityGroup> getRunningSecurityGroups() {
-        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
-    }
-
-    @Override
-    public CloudSecurityGroup getSecurityGroup(String securityGroupName) {
-        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
-    }
-
-    @Override
-    public CloudSecurityGroup getSecurityGroup(String securityGroupName, boolean required) {
-        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
-    }
-
-    @Override
-    public List<CloudSecurityGroup> getSecurityGroups() {
-        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
     }
 
     @Override
@@ -1171,11 +1043,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public List<CloudSpace> getSpacesBoundToSecurityGroup(String securityGroupName) {
-        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
-    }
-
-    @Override
     public CloudStack getStack(String name) {
         return getStack(name, true);
     }
@@ -1195,11 +1062,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public List<CloudSecurityGroup> getStagingSecurityGroups() {
-        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
-    }
-
-    @Override
     public OAuth2AccessToken login() {
         oAuthClient.init(credentials);
         return oAuthClient.getToken();
@@ -1211,20 +1073,10 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public void register(String email, String password) {
-        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
-    }
-
-    @Override
     public void registerRestLogListener(RestLogCallback callBack) {
         if (getRestTemplate() instanceof LoggingRestTemplate) {
             ((LoggingRestTemplate) getRestTemplate()).registerRestLogListener(callBack);
         }
-    }
-
-    @Override
-    public void removeDomain(String domainName) {
-        deleteDomain(domainName);
     }
 
     @Override
@@ -1242,11 +1094,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     public StartingInfo restartApplication(String applicationName) {
         stopApplication(applicationName);
         return startApplication(applicationName);
-    }
-
-    @Override
-    public void setQuotaToOrganization(String organizationName, String quotaName) {
-        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
     }
 
     @Override
@@ -1295,16 +1142,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public void unbindRunningSecurityGroup(String securityGroupName) {
-        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
-    }
-
-    @Override
-    public void unbindSecurityGroup(String organizationName, String spaceName, String securityGroupName) {
-        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
-    }
-
-    @Override
     public void unbindServiceInstance(String applicationName, String serviceInstanceName) {
         UUID applicationGuid = getRequiredApplicationGuid(applicationName);
         UUID serviceInstanceGuid = getServiceInstance(serviceInstanceName).getMetadata()
@@ -1318,16 +1155,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         UUID serviceInstanceGuid = getGuid(serviceInstance);
 
         doUnbindServiceInstance(applicationGuid, serviceInstanceGuid);
-    }
-
-    @Override
-    public void unbindStagingSecurityGroup(String securityGroupName) {
-        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
-    }
-
-    @Override
-    public void unregister() {
-        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
     }
 
     @Override
@@ -1385,15 +1212,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public List<String> updateApplicationServices(String applicationName,
-                                                  Map<String, Map<String, Object>> serviceInstanceNamesWithBindingParameters) {
-        // No implementation here is needed because the logic is moved in ApplicationServicesUpdater in order to be used in other
-        // implementations of the client. Currently, the ApplicationServicesUpdater is used only in CloudControllerClientImpl. Check
-        // CloudControllerClientImpl.updateApplicationServices
-        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
-    }
-
-    @Override
     public void updateApplicationStaging(String applicationName, Staging staging) {
         UUID applicationGuid = getRequiredApplicationGuid(applicationName);
         UpdateApplicationRequest.Builder requestBuilder = UpdateApplicationRequest.builder();
@@ -1432,37 +1250,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                           .getGuid());
         addUris(newUris, application.getMetadata()
                                     .getGuid());
-    }
-
-    @Override
-    public void updatePassword(String newPassword) {
-        updatePassword(credentials, newPassword);
-    }
-
-    @Override
-    public void updatePassword(CloudCredentials currentCredentials, String newPassword) {
-        oAuthClient.changePassword(currentCredentials.getPassword(), newPassword);
-        CloudCredentials newCloudCredentials = new CloudCredentials(currentCredentials.getEmail(), newPassword);
-        if (credentials.getProxyUser() != null) {
-            credentials = newCloudCredentials.proxyForUser(credentials.getProxyUser());
-        } else {
-            credentials = newCloudCredentials;
-        }
-    }
-
-    @Override
-    public void updateQuota(CloudQuota quota, String name) {
-        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
-    }
-
-    @Override
-    public void updateSecurityGroup(CloudSecurityGroup securityGroup) {
-        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
-    }
-
-    @Override
-    public void updateSecurityGroup(String name, InputStream jsonRulesFile) {
-        throw new UnsupportedOperationException(MESSAGE_FEATURE_IS_NOT_YET_IMPLEMENTED);
     }
 
     @Override

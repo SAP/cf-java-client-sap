@@ -33,9 +33,7 @@ import org.cloudfoundry.client.lib.domain.CloudDomain;
 import org.cloudfoundry.client.lib.domain.CloudEvent;
 import org.cloudfoundry.client.lib.domain.CloudInfo;
 import org.cloudfoundry.client.lib.domain.CloudOrganization;
-import org.cloudfoundry.client.lib.domain.CloudQuota;
 import org.cloudfoundry.client.lib.domain.CloudRoute;
-import org.cloudfoundry.client.lib.domain.CloudSecurityGroup;
 import org.cloudfoundry.client.lib.domain.CloudServiceBinding;
 import org.cloudfoundry.client.lib.domain.CloudServiceBroker;
 import org.cloudfoundry.client.lib.domain.CloudServiceInstance;
@@ -44,7 +42,6 @@ import org.cloudfoundry.client.lib.domain.CloudServiceOffering;
 import org.cloudfoundry.client.lib.domain.CloudSpace;
 import org.cloudfoundry.client.lib.domain.CloudStack;
 import org.cloudfoundry.client.lib.domain.CloudTask;
-import org.cloudfoundry.client.lib.domain.CloudUser;
 import org.cloudfoundry.client.lib.domain.DockerInfo;
 import org.cloudfoundry.client.lib.domain.InstancesInfo;
 import org.cloudfoundry.client.lib.domain.Staging;
@@ -188,61 +185,6 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public void associateAuditorWithSpace(String spaceName) {
-        handleExceptions(() -> delegate.associateAuditorWithSpace(null, spaceName, null));
-    }
-
-    @Override
-    public void associateAuditorWithSpace(String organizationName, String spaceName) {
-        handleExceptions(() -> delegate.associateAuditorWithSpace(organizationName, spaceName, null));
-    }
-
-    @Override
-    public void associateAuditorWithSpace(String organizationName, String spaceName, String userGuid) {
-        handleExceptions(() -> delegate.associateAuditorWithSpace(organizationName, spaceName, userGuid));
-    }
-
-    @Override
-    public void associateDeveloperWithSpace(String spaceName) {
-        handleExceptions(() -> delegate.associateDeveloperWithSpace(null, spaceName, null));
-    }
-
-    @Override
-    public void associateDeveloperWithSpace(String organizationName, String spaceName) {
-        handleExceptions(() -> delegate.associateDeveloperWithSpace(organizationName, spaceName, null));
-    }
-
-    @Override
-    public void associateDeveloperWithSpace(String organizationName, String spaceName, String userGuid) {
-        handleExceptions(() -> delegate.associateDeveloperWithSpace(organizationName, spaceName, userGuid));
-    }
-
-    @Override
-    public void associateManagerWithSpace(String spaceName) {
-        handleExceptions(() -> delegate.associateManagerWithSpace(null, spaceName, null));
-    }
-
-    @Override
-    public void associateManagerWithSpace(String organizationName, String spaceName) {
-        handleExceptions(() -> delegate.associateManagerWithSpace(organizationName, spaceName, null));
-    }
-
-    @Override
-    public void associateManagerWithSpace(String organizationName, String spaceName, String userGuid) {
-        handleExceptions(() -> delegate.associateManagerWithSpace(organizationName, spaceName, userGuid));
-    }
-
-    @Override
-    public void bindRunningSecurityGroup(String securityGroupName) {
-        handleExceptions(() -> delegate.bindRunningSecurityGroup(securityGroupName));
-    }
-
-    @Override
-    public void bindSecurityGroup(String organizationName, String spaceName, String securityGroupName) {
-        handleExceptions(() -> delegate.bindSecurityGroup(organizationName, spaceName, securityGroupName));
-    }
-
-    @Override
     public void bindServiceInstance(String applicationName, String serviceInstanceName) {
         handleExceptions(() -> delegate.bindServiceInstance(applicationName, serviceInstanceName));
     }
@@ -258,35 +200,14 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public void bindStagingSecurityGroup(String securityGroupName) {
-        handleExceptions(() -> delegate.bindStagingSecurityGroup(securityGroupName));
-    }
-
-    @Override
-    public void createApplication(String applicationName, Staging staging, Integer memory, List<String> uris,
-                                  List<String> serviceInstanceNames) {
-        handleExceptions(() -> delegate.createApplication(applicationName, staging, memory, uris, serviceInstanceNames));
+    public void createApplication(String applicationName, Staging staging, Integer memory, List<String> uris) {
+        handleExceptions(() -> delegate.createApplication(applicationName, staging, memory, uris));
     }
 
     @Override
     public void createApplication(String applicationName, Staging staging, Integer disk, Integer memory, List<String> uris,
-                                  List<String> serviceInstanceNames, DockerInfo dockerInfo) {
-        handleExceptions(() -> delegate.createApplication(applicationName, staging, disk, memory, uris, serviceInstanceNames, dockerInfo));
-    }
-
-    @Override
-    public void createQuota(CloudQuota quota) {
-        handleExceptions(() -> delegate.createQuota(quota));
-    }
-
-    @Override
-    public void createSecurityGroup(CloudSecurityGroup securityGroup) {
-        handleExceptions(() -> delegate.createSecurityGroup(securityGroup));
-    }
-
-    @Override
-    public void createSecurityGroup(String name, InputStream jsonRulesFile) {
-        handleExceptions(() -> delegate.createSecurityGroup(name, jsonRulesFile));
+                                  DockerInfo dockerInfo) {
+        handleExceptions(() -> delegate.createApplication(applicationName, staging, disk, memory, uris, dockerInfo));
     }
 
     @Override
@@ -302,11 +223,6 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     @Override
     public CloudServiceKey createServiceKey(String serviceInstanceName, String serviceKeyName, Map<String, Object> parameters) {
         return handleExceptions(() -> delegate.createServiceKey(serviceInstanceName, serviceKeyName, parameters));
-    }
-
-    @Override
-    public void createSpace(String spaceName) {
-        handleExceptions(() -> delegate.createSpace(spaceName));
     }
 
     @Override
@@ -346,18 +262,8 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public void deleteQuota(String quotaName) {
-        handleExceptions(() -> delegate.deleteQuota(quotaName));
-    }
-
-    @Override
     public void deleteRoute(String host, String domainName, String path) {
         handleExceptions(() -> delegate.deleteRoute(host, domainName, path));
-    }
-
-    @Override
-    public void deleteSecurityGroup(String securityGroupName) {
-        handleExceptions(() -> delegate.deleteSecurityGroup(securityGroupName));
     }
 
     @Override
@@ -383,11 +289,6 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     @Override
     public void deleteServiceKey(CloudServiceKey serviceKey) {
         handleExceptions(() -> delegate.deleteServiceKey(serviceKey));
-    }
-
-    @Override
-    public void deleteSpace(String spaceName) {
-        handleExceptions(() -> delegate.deleteSpace(spaceName));
     }
 
     @Override
@@ -453,15 +354,6 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         return info;
     }
 
-    /**
-     * @deprecated use {@link #streamLogs(String, ApplicationLogListener)} or {@link #getRecentLogs(String)}
-     */
-    @Deprecated
-    @Override
-    public Map<String, String> getCrashLogs(String applicationName) {
-        return handleExceptions(() -> delegate.getCrashLogs(applicationName));
-    }
-
     @Override
     public CloudDomain getDefaultDomain() {
         return handleExceptions(() -> delegate.getDefaultDomain());
@@ -483,40 +375,6 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public String getFile(String applicationName, int instanceIndex, String filePath) {
-        return handleExceptions(() -> delegate.getFile(applicationName, instanceIndex, filePath, 0, -1));
-    }
-
-    @Override
-    public String getFile(String applicationName, int instanceIndex, String filePath, int startPosition) {
-        Assert.isTrue(startPosition >= 0, startPosition + " is not a valid value for start position, it should be 0 or greater.");
-        return handleExceptions(() -> delegate.getFile(applicationName, instanceIndex, filePath, startPosition, -1));
-    }
-
-    @Override
-    public String getFile(String applicationName, int instanceIndex, String filePath, int startPosition, int endPosition) {
-        Assert.isTrue(startPosition >= 0, startPosition + " is not a valid value for start position, it should be 0 or greater.");
-        Assert.isTrue(endPosition > startPosition, endPosition
-            + " is not a valid value for end position, it should be greater than startPosition " + "which is " + startPosition + ".");
-        return handleExceptions(() -> delegate.getFile(applicationName, instanceIndex, filePath, startPosition, endPosition - 1));
-    }
-
-    @Override
-    public String getFileTail(String applicationName, int instanceIndex, String filePath, int length) {
-        Assert.isTrue(length > 0, length + " is not a valid value for length, it should be 1 or greater.");
-        return handleExceptions(() -> delegate.getFile(applicationName, instanceIndex, filePath, -1, length));
-    }
-
-    /**
-     * @deprecated use {@link #streamLogs(String, ApplicationLogListener)} or {@link #getRecentLogs(String)}
-     */
-    @Deprecated
-    @Override
-    public Map<String, String> getLogs(String applicationName) {
-        return handleExceptions(() -> delegate.getLogs(applicationName));
-    }
-
-    @Override
     public CloudOrganization getOrganization(String organizationName) {
         return handleExceptions(() -> delegate.getOrganization(organizationName));
     }
@@ -527,11 +385,6 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public Map<String, CloudUser> getOrganizationUsers(String organizationName) {
-        return handleExceptions(() -> delegate.getOrganizationUsers(organizationName));
-    }
-
-    @Override
     public List<CloudOrganization> getOrganizations() {
         return handleExceptions(() -> delegate.getOrganizations());
     }
@@ -539,21 +392,6 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     @Override
     public List<CloudDomain> getPrivateDomains() {
         return handleExceptions(() -> delegate.getPrivateDomains());
-    }
-
-    @Override
-    public CloudQuota getQuota(String quotaName) {
-        return handleExceptions(() -> delegate.getQuota(quotaName));
-    }
-
-    @Override
-    public CloudQuota getQuota(String quotaName, boolean required) {
-        return handleExceptions(() -> delegate.getQuota(quotaName, required));
-    }
-
-    @Override
-    public List<CloudQuota> getQuotas() {
-        return handleExceptions(() -> delegate.getQuotas());
     }
 
     @Override
@@ -569,26 +407,6 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     @Override
     public List<CloudRoute> getRoutes(String domainName) {
         return handleExceptions(() -> delegate.getRoutes(domainName));
-    }
-
-    @Override
-    public List<CloudSecurityGroup> getRunningSecurityGroups() {
-        return handleExceptions(() -> delegate.getRunningSecurityGroups());
-    }
-
-    @Override
-    public CloudSecurityGroup getSecurityGroup(String securityGroupName) {
-        return handleExceptions(() -> delegate.getSecurityGroup(securityGroupName));
-    }
-
-    @Override
-    public CloudSecurityGroup getSecurityGroup(String securityGroupName, boolean required) {
-        return handleExceptions(() -> delegate.getSecurityGroup(securityGroupName, required));
-    }
-
-    @Override
-    public List<CloudSecurityGroup> getSecurityGroups() {
-        return handleExceptions(() -> delegate.getSecurityGroups());
     }
 
     @Override
@@ -752,11 +570,6 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public List<CloudSpace> getSpacesBoundToSecurityGroup(String securityGroupName) {
-        return handleExceptions(() -> delegate.getSpacesBoundToSecurityGroup(securityGroupName));
-    }
-
-    @Override
     public CloudStack getStack(String name) {
         return handleExceptions(() -> delegate.getStack(name));
     }
@@ -772,11 +585,6 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public List<CloudSecurityGroup> getStagingSecurityGroups() {
-        return handleExceptions(() -> delegate.getStagingSecurityGroups());
-    }
-
-    @Override
     public OAuth2AccessToken login() {
         return handleExceptions(() -> delegate.login());
     }
@@ -787,18 +595,8 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public void register(String email, String password) {
-        handleExceptions(() -> delegate.register(email, password));
-    }
-
-    @Override
     public void registerRestLogListener(RestLogCallback callBack) {
         delegate.registerRestLogListener(callBack);
-    }
-
-    @Override
-    public void removeDomain(String domainName) {
-        handleExceptions(() -> delegate.removeDomain(domainName));
     }
 
     @Override
@@ -809,11 +607,6 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     @Override
     public StartingInfo restartApplication(String applicationName) {
         return handleExceptions(() -> delegate.restartApplication(applicationName));
-    }
-
-    @Override
-    public void setQuotaToOrganization(String organizationName, String quotaName) {
-        handleExceptions(() -> delegate.setQuotaToOrganization(organizationName, quotaName));
     }
 
     @Override
@@ -837,16 +630,6 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public void unbindRunningSecurityGroup(String securityGroupName) {
-        handleExceptions(() -> delegate.unbindRunningSecurityGroup(securityGroupName));
-    }
-
-    @Override
-    public void unbindSecurityGroup(String organizationName, String spaceName, String securityGroupName) {
-        handleExceptions(() -> delegate.unbindSecurityGroup(organizationName, spaceName, securityGroupName));
-    }
-
-    @Override
     public void unbindServiceInstance(String applicationName, String serviceInstanceName,
                                       ApplicationServicesUpdateCallback applicationServicesUpdateCallback) {
         try {
@@ -864,16 +647,6 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     @Override
     public void unbindServiceInstance(CloudApplication application, CloudServiceInstance serviceInstance) {
         handleExceptions(() -> delegate.unbindServiceInstance(application, serviceInstance));
-    }
-
-    @Override
-    public void unbindStagingSecurityGroup(String securityGroupName) {
-        handleExceptions(() -> delegate.unbindStagingSecurityGroup(securityGroupName));
-    }
-
-    @Override
-    public void unregister() {
-        handleExceptions(() -> delegate.unregister());
     }
 
     @Override
@@ -912,33 +685,8 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public void updatePassword(String newPassword) {
-        handleExceptions(() -> delegate.updatePassword(newPassword));
-    }
-
-    @Override
-    public void updatePassword(CloudCredentials credentials, String newPassword) {
-        handleExceptions(() -> delegate.updatePassword(credentials, newPassword));
-    }
-
-    @Override
-    public void updateQuota(CloudQuota quota, String name) {
-        handleExceptions(() -> delegate.updateQuota(quota, name));
-    }
-
-    @Override
     public void updateServiceInstanceMetadata(UUID guid, Metadata metadata) {
         handleExceptions(() -> delegate.updateServiceInstanceMetadata(guid, metadata));
-    }
-
-    @Override
-    public void updateSecurityGroup(CloudSecurityGroup securityGroup) {
-        handleExceptions(() -> delegate.updateSecurityGroup(securityGroup));
-    }
-
-    @Override
-    public void updateSecurityGroup(String name, InputStream jsonRulesFile) {
-        handleExceptions(() -> delegate.updateSecurityGroup(name, jsonRulesFile));
     }
 
     @Override
