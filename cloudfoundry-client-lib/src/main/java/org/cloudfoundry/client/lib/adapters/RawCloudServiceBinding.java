@@ -1,10 +1,7 @@
 package org.cloudfoundry.client.lib.adapters;
 
-import java.util.Map;
-
 import org.cloudfoundry.client.lib.domain.CloudServiceBinding;
 import org.cloudfoundry.client.lib.domain.ImmutableCloudServiceBinding;
-import org.cloudfoundry.client.lib.domain.annotation.Nullable;
 import org.cloudfoundry.client.v2.Resource;
 import org.cloudfoundry.client.v2.servicebindings.ServiceBindingEntity;
 import org.immutables.value.Value;
@@ -15,9 +12,6 @@ public abstract class RawCloudServiceBinding extends RawCloudEntity<CloudService
     @Value.Parameter
     public abstract Resource<ServiceBindingEntity> getResource();
 
-    @Nullable
-    public abstract Map<String, Object> getParameters();
-
     @Override
     public CloudServiceBinding derive() {
         Resource<ServiceBindingEntity> resource = getResource();
@@ -27,7 +21,6 @@ public abstract class RawCloudServiceBinding extends RawCloudEntity<CloudService
                                            .applicationGuid(parseNullableGuid(entity.getApplicationId()))
                                            .syslogDrainUrl(entity.getSyslogDrainUrl())
                                            .bindingOptions(entity.getBindingOptions())
-                                           .bindingParameters(getParameters())
                                            .credentials(entity.getCredentials())
                                            .build();
     }
