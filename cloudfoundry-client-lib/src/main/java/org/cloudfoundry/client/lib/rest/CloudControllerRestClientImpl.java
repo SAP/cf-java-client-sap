@@ -245,7 +245,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     private static final String DEFAULT_HOST_DOMAIN_SEPARATOR = "\\.";
     private static final String DEFAULT_PATH_SEPARATOR = "/";
     private static final long JOB_POLLING_PERIOD = TimeUnit.SECONDS.toMillis(5);
-    private static final int BATCH_SIZE_FOR_PARAMS_IN_REQUESTS = 100;
+    private static final int MAX_CHAR_LENGTH_FOR_PARAMS_IN_REQUEST = 4000;
 
     private CloudCredentials credentials;
     private URL controllerUrl;
@@ -900,23 +900,38 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     private Map<String, Metadata> getServiceInstancesMetadataInBatches(List<String> serviceInstanceNames) {
         Map<String, Metadata> serviceInstancesMetadata = new HashMap<>();
-        for (List<String> batchOfServiceInstanceNames : toBatches(serviceInstanceNames, BATCH_SIZE_FOR_PARAMS_IN_REQUESTS)) {
+        for (List<String> batchOfServiceInstanceNames : toBatches(serviceInstanceNames, MAX_CHAR_LENGTH_FOR_PARAMS_IN_REQUEST)) {
             serviceInstancesMetadata.putAll(getServiceInstancesMetadata(batchOfServiceInstanceNames));
         }
         return serviceInstancesMetadata;
     }
 
-    private <T> List<List<T>> toBatches(List<T> largeList, int batchSize) {
+    private <T> List<List<T>> toBatches(List<T> largeList, int maxCharLength) {
+        if (largeList.isEmpty()) {
+            return Collections.emptyList();
+        }
         List<List<T>> batches = new ArrayList<>();
-        for (int i = 0; i < largeList.size(); i++) {
-            if (i % batchSize == 0) {
+        batches.add(new ArrayList<>());
+        for (T t : largeList) {
+            List<T> currentBatch = batches.get(batches.size() - 1);
+            if (getCharLength(currentBatch) + t.toString()
+                                               .length() >= maxCharLength) {
                 batches.add(new ArrayList<>());
             }
-            T t = largeList.get(i);
             batches.get(batches.size() - 1)
                    .add(t);
         }
-        return batches;
+        return batches.stream()
+                      .filter(batch -> !batch.isEmpty())
+                      .collect(Collectors.toList());
+    }
+
+    private <T> int getCharLength(List<T> list) {
+        List<String> stringList = list.stream()
+                                      .map(Object::toString)
+                                      .collect(Collectors.toList());
+        return String.join("", stringList)
+                     .length();
     }
 
     private Map<String, Metadata> getServiceInstancesMetadata(List<String> serviceInstanceNames) {
@@ -1408,7 +1423,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     private Map<String, Metadata> getApplicationsMetadataInBatches(List<UUID> appGuids) {
         Map<String, Metadata> applicationsMetadata = new HashMap<>();
-        for (List<UUID> batchOfAppGuids : toBatches(appGuids, BATCH_SIZE_FOR_PARAMS_IN_REQUESTS)) {
+        for (List<UUID> batchOfAppGuids : toBatches(appGuids, MAX_CHAR_LENGTH_FOR_PARAMS_IN_REQUEST)) {
             applicationsMetadata.putAll(getApplicationsMetadata(batchOfAppGuids));
         }
         return applicationsMetadata;
@@ -1502,8 +1517,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     private Flux<? extends Resource<ApplicationEntity>> getApplicationResourcesByNamesInBatches(Collection<String> names) {
-        return Flux.fromIterable(names)
-                   .buffer(BATCH_SIZE_FOR_PARAMS_IN_REQUESTS)
+        return Flux.fromIterable(toBatches(new ArrayList<>(names), MAX_CHAR_LENGTH_FOR_PARAMS_IN_REQUEST))
                    .flatMap(this::getApplicationResourcesByNames);
     }
 
@@ -1568,8 +1582,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     private Flux<? extends Resource<UnionServiceInstanceEntity>> getServiceInstanceResourcesByNamesInBatches(Collection<String> names) {
-        return Flux.fromIterable(names)
-                   .buffer(BATCH_SIZE_FOR_PARAMS_IN_REQUESTS)
+        return Flux.fromIterable(toBatches(new ArrayList<>(names), MAX_CHAR_LENGTH_FOR_PARAMS_IN_REQUEST))
                    .flatMap(this::getServiceInstanceResourcesByNames);
     }
 
