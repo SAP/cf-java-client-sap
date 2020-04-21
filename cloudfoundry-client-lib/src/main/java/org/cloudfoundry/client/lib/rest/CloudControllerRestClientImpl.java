@@ -245,7 +245,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     private static final String DEFAULT_HOST_DOMAIN_SEPARATOR = "\\.";
     private static final String DEFAULT_PATH_SEPARATOR = "/";
     private static final long JOB_POLLING_PERIOD = TimeUnit.SECONDS.toMillis(5);
-    private static final int BATCH_SIZE_FOR_FILTER_IN_METADATA_REQUESTS = 100;
+    private static final int BATCH_SIZE_FOR_PARAMS_IN_REQUESTS = 100;
 
     private CloudCredentials credentials;
     private URL controllerUrl;
@@ -658,7 +658,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     @Override
     public List<CloudApplication> getApplicationsByMetadataLabelSelector(String labelSelector) {
         Map<String, Metadata> applicationsMetadata = getApplicationsMetadataByLabelSelector(labelSelector);
-        List<CloudApplication> cloudApplications = fetchListWithAuxiliaryContent(() -> getApplicationResourcesByNames(applicationsMetadata.keySet()),
+        List<CloudApplication> cloudApplications = fetchListWithAuxiliaryContent(() -> getApplicationResourcesByNamesInBatches(applicationsMetadata.keySet()),
                                                                                  this::zipWithAuxiliaryApplicationContent);
         return addMetadata(cloudApplications, applicationsMetadata);
     }
@@ -900,7 +900,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     private Map<String, Metadata> getServiceInstancesMetadataInBatches(List<String> serviceInstanceNames) {
         Map<String, Metadata> serviceInstancesMetadata = new HashMap<>();
-        for (List<String> batchOfServiceInstanceNames : toBatches(serviceInstanceNames, BATCH_SIZE_FOR_FILTER_IN_METADATA_REQUESTS)) {
+        for (List<String> batchOfServiceInstanceNames : toBatches(serviceInstanceNames, BATCH_SIZE_FOR_PARAMS_IN_REQUESTS)) {
             serviceInstancesMetadata.putAll(getServiceInstancesMetadata(batchOfServiceInstanceNames));
         }
         return serviceInstancesMetadata;
@@ -935,7 +935,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     @Override
     public List<CloudServiceInstance> getServiceInstancesByMetadataLabelSelector(String labelSelector) {
         Map<String, Metadata> serviceInstancesMetadata = getServiceInstancesMetadataByLabelSelector(labelSelector);
-        List<CloudServiceInstance> serviceInstances = fetchListWithAuxiliaryContent(() -> getServiceInstanceResourcesByNames(serviceInstancesMetadata.keySet()),
+        List<CloudServiceInstance> serviceInstances = fetchListWithAuxiliaryContent(() -> getServiceInstanceResourcesByNamesInBatches(serviceInstancesMetadata.keySet()),
                                                                                     this::zipWithAuxiliaryServiceInstanceContent);
         return getServiceInstancesWithMetadata(serviceInstances, serviceInstancesMetadata);
     }
@@ -1408,7 +1408,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     private Map<String, Metadata> getApplicationsMetadataInBatches(List<UUID> appGuids) {
         Map<String, Metadata> applicationsMetadata = new HashMap<>();
-        for (List<UUID> batchOfAppGuids : toBatches(appGuids, BATCH_SIZE_FOR_FILTER_IN_METADATA_REQUESTS)) {
+        for (List<UUID> batchOfAppGuids : toBatches(appGuids, BATCH_SIZE_FOR_PARAMS_IN_REQUESTS)) {
             applicationsMetadata.putAll(getApplicationsMetadata(batchOfAppGuids));
         }
         return applicationsMetadata;
@@ -1501,6 +1501,12 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                               .singleOrEmpty();
     }
 
+    private Flux<? extends Resource<ApplicationEntity>> getApplicationResourcesByNamesInBatches(Collection<String> names) {
+        return Flux.fromIterable(names)
+                   .buffer(BATCH_SIZE_FOR_PARAMS_IN_REQUESTS)
+                   .flatMap(this::getApplicationResourcesByNames);
+    }
+
     private Flux<? extends Resource<ApplicationEntity>> getApplicationResourcesByNames(Collection<String> names) {
         if (names.isEmpty()) {
             return Flux.empty();
@@ -1559,6 +1565,12 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                                                                     .page(page)
                                                                                                                     .build();
         return getServiceInstanceResources(pageRequestSupplier).singleOrEmpty();
+    }
+
+    private Flux<? extends Resource<UnionServiceInstanceEntity>> getServiceInstanceResourcesByNamesInBatches(Collection<String> names) {
+        return Flux.fromIterable(names)
+                   .buffer(BATCH_SIZE_FOR_PARAMS_IN_REQUESTS)
+                   .flatMap(this::getServiceInstanceResourcesByNames);
     }
 
     private Flux<? extends Resource<UnionServiceInstanceEntity>> getServiceInstanceResourcesByNames(Collection<String> names) {
