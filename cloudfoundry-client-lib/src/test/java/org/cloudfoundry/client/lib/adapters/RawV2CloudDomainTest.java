@@ -7,7 +7,7 @@ import org.cloudfoundry.client.v2.domains.DomainEntity;
 import org.cloudfoundry.client.v2.domains.DomainResource;
 import org.junit.jupiter.api.Test;
 
-public class RawCloudDomainTest {
+public class RawV2CloudDomainTest {
 
     private static final String DOMAIN_NAME = "example.com";
 
@@ -23,8 +23,8 @@ public class RawCloudDomainTest {
                                    .build();
     }
 
-    private static RawCloudDomain buildRawDomain() {
-        return ImmutableRawCloudDomain.of(buildTestResource());
+    private static RawV2CloudDomain buildRawDomain() {
+        return ImmutableRawV2CloudDomain.of(buildTestResource());
     }
 
     private static Resource<DomainEntity> buildTestResource() {

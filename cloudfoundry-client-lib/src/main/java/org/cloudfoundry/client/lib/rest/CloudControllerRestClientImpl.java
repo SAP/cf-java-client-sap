@@ -26,7 +26,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -49,7 +48,6 @@ import org.cloudfoundry.client.lib.UploadStatusCallback;
 import org.cloudfoundry.client.lib.adapters.ImmutableRawApplicationLog;
 import org.cloudfoundry.client.lib.adapters.ImmutableRawCloudApplication;
 import org.cloudfoundry.client.lib.adapters.ImmutableRawCloudBuild;
-import org.cloudfoundry.client.lib.adapters.ImmutableRawCloudDomain;
 import org.cloudfoundry.client.lib.adapters.ImmutableRawCloudEvent;
 import org.cloudfoundry.client.lib.adapters.ImmutableRawCloudInfo;
 import org.cloudfoundry.client.lib.adapters.ImmutableRawCloudOrganization;
@@ -67,6 +65,8 @@ import org.cloudfoundry.client.lib.adapters.ImmutableRawCloudSpace;
 import org.cloudfoundry.client.lib.adapters.ImmutableRawCloudStack;
 import org.cloudfoundry.client.lib.adapters.ImmutableRawCloudTask;
 import org.cloudfoundry.client.lib.adapters.ImmutableRawInstancesInfo;
+import org.cloudfoundry.client.lib.adapters.ImmutableRawV2CloudDomain;
+import org.cloudfoundry.client.lib.adapters.ImmutableRawV3CloudDomain;
 import org.cloudfoundry.client.lib.domain.ApplicationLog;
 import org.cloudfoundry.client.lib.domain.CloudApplication;
 import org.cloudfoundry.client.lib.domain.CloudBuild;
@@ -92,8 +92,6 @@ import org.cloudfoundry.client.lib.domain.DockerCredentials;
 import org.cloudfoundry.client.lib.domain.DockerInfo;
 import org.cloudfoundry.client.lib.domain.ErrorDetails;
 import org.cloudfoundry.client.lib.domain.ImmutableCloudApplication;
-import org.cloudfoundry.client.lib.domain.ImmutableCloudDomain;
-import org.cloudfoundry.client.lib.domain.ImmutableCloudMetadata;
 import org.cloudfoundry.client.lib.domain.ImmutableCloudServiceInstance;
 import org.cloudfoundry.client.lib.domain.ImmutableErrorDetails;
 import org.cloudfoundry.client.lib.domain.ImmutableUpload;
@@ -105,8 +103,6 @@ import org.cloudfoundry.client.lib.domain.Status;
 import org.cloudfoundry.client.lib.domain.Upload;
 import org.cloudfoundry.client.lib.domain.UploadToken;
 import org.cloudfoundry.client.lib.oauth2.OAuthClient;
-import org.cloudfoundry.client.lib.util.CloudUtil;
-import org.cloudfoundry.client.lib.util.JsonUtil;
 import org.cloudfoundry.client.v2.Resource;
 import org.cloudfoundry.client.v2.applications.ApplicationEntity;
 import org.cloudfoundry.client.v2.applications.ApplicationInstancesRequest;
@@ -185,7 +181,6 @@ import org.cloudfoundry.client.v2.stacks.GetStackRequest;
 import org.cloudfoundry.client.v2.stacks.ListStacksRequest;
 import org.cloudfoundry.client.v2.stacks.StackEntity;
 import org.cloudfoundry.client.v2.userprovidedserviceinstances.CreateUserProvidedServiceInstanceRequest;
-import org.cloudfoundry.client.v2.userprovidedserviceinstances.ListUserProvidedServiceInstanceServiceBindingsRequest;
 import org.cloudfoundry.client.v2.users.UserEntity;
 import org.cloudfoundry.client.v3.BuildpackData;
 import org.cloudfoundry.client.v3.Lifecycle;
@@ -200,6 +195,8 @@ import org.cloudfoundry.client.v3.builds.Build;
 import org.cloudfoundry.client.v3.builds.CreateBuildRequest;
 import org.cloudfoundry.client.v3.builds.GetBuildRequest;
 import org.cloudfoundry.client.v3.builds.ListBuildsRequest;
+import org.cloudfoundry.client.v3.domains.Domain;
+import org.cloudfoundry.client.v3.organizations.GetOrganizationDefaultDomainRequest;
 import org.cloudfoundry.client.v3.packages.CreatePackageRequest;
 import org.cloudfoundry.client.v3.packages.GetPackageRequest;
 import org.cloudfoundry.client.v3.packages.PackageRelationships;
@@ -677,33 +674,14 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public CloudDomain getDefaultDomain() {
-        Map<String, Object> urlVariables = new HashMap<>();
-        urlVariables.put("organizationGuid", getTargetOrganizationGuid());
-        Map<String, Object> resources = getResponseMap("/v3/organizations/{organizationGuid}/domains/default", urlVariables);
-
-        String domainName = CloudUtil.parse(resources.get("name"));
-        Date createdAt = CloudUtil.parse(Date.class, resources.get("created_at"));
-        Date updatedAt = CloudUtil.parse(Date.class, resources.get("updated_at"));
-        String domainGuidString = CloudUtil.parse(resources.get("guid"));
-        UUID domainGuid = domainGuidString != null ? UUID.fromString(domainGuidString) : null;
-
-        return ImmutableCloudDomain.builder()
-                                   .name(domainName)
-                                   .metadata(ImmutableCloudMetadata.builder()
-                                                                   .createdAt(createdAt)
-                                                                   .updatedAt(updatedAt)
-                                                                   .guid(domainGuid)
-                                                                   .build())
-                                   .build();
+        return fetch(() -> getDefaultDomainResource(getTargetOrganizationGuid().toString()), ImmutableRawV3CloudDomain::of);
     }
 
-    private Map<String, Object> getResponseMap(String urlPath, Map<String, Object> urlVars) {
-        String response = getResponse(urlPath, urlVars);
-        return JsonUtil.convertJsonToMap(response);
-    }
-
-    private String getResponse(String urlPath, Map<String, Object> urlVars) {
-        return getRestTemplate().getForObject(getUrl(urlPath), String.class, urlVars);
+    private Mono<? extends Domain> getDefaultDomainResource(String guid) {
+        return delegate.organizationsV3()
+                       .getDefaultDomain(GetOrganizationDefaultDomainRequest.builder()
+                                                                            .organizationId(guid)
+                                                                            .build());
     }
 
     @Override
@@ -1626,32 +1604,9 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                   .equals(ServiceInstanceType.USER_PROVIDED);
     }
 
-    private List<UUID> getServiceBindingGuids(CloudServiceInstance serviceInstance) {
-        Flux<? extends Resource<ServiceBindingEntity>> bindings = getServiceBindingResources(serviceInstance);
-        return getGuids(bindings);
-    }
-
     private List<UUID> getServiceBindingGuids(UUID applicationGuid) {
         Flux<? extends Resource<ServiceBindingEntity>> bindings = getServiceBindingResourcesByApplicationGuid(applicationGuid);
         return getGuids(bindings);
-    }
-
-    private Flux<? extends Resource<ServiceBindingEntity>> getServiceBindingResources(CloudServiceInstance serviceInstance) {
-        UUID serviceInstanceGuid = getGuid(serviceInstance);
-        if (serviceInstance.isUserProvided()) {
-            return getUserProvidedServiceBindingResourcesByServiceInstanceGuid(serviceInstanceGuid);
-        }
-        return getServiceBindingResourcesByServiceInstanceGuid(serviceInstanceGuid);
-    }
-
-    private Flux<? extends Resource<ServiceBindingEntity>>
-            getUserProvidedServiceBindingResourcesByServiceInstanceGuid(UUID serviceInstanceGuid) {
-        IntFunction<ListUserProvidedServiceInstanceServiceBindingsRequest> pageRequestSupplier = page -> ListUserProvidedServiceInstanceServiceBindingsRequest.builder()
-                                                                                                                                                              .userProvidedServiceInstanceId(serviceInstanceGuid.toString())
-                                                                                                                                                              .page(page)
-                                                                                                                                                              .build();
-        return PaginationUtils.requestClientV2Resources(page -> delegate.userProvidedServiceInstances()
-                                                                        .listServiceBindings(pageRequestSupplier.apply(page)));
     }
 
     private Flux<? extends Resource<ServiceBindingEntity>> getServiceBindingResourcesByServiceInstanceGuid(UUID serviceInstanceGuid) {
@@ -2047,7 +2002,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     private CloudDomain findDomainByName(String name) {
-        return fetch(() -> getDomainResourceByName(name), ImmutableRawCloudDomain::of);
+        return fetch(() -> getDomainResourceByName(name), ImmutableRawV2CloudDomain::of);
     }
 
     private List<CloudDomain> findDomainsByOrganizationGuid(UUID organizationGuid) {

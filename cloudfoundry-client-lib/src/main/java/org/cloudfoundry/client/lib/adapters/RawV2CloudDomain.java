@@ -7,7 +7,7 @@ import org.cloudfoundry.client.v2.domains.DomainEntity;
 import org.immutables.value.Value;
 
 @Value.Immutable
-public abstract class RawCloudDomain extends RawCloudEntity<CloudDomain> {
+public abstract class RawV2CloudDomain extends RawCloudEntity<CloudDomain> {
 
     @Value.Parameter
     public abstract Resource<DomainEntity> getResource();
