@@ -298,9 +298,10 @@ public interface CloudControllerClient {
     InstancesInfo getApplicationInstances(CloudApplication app);
 
     /**
-     * Get all cloud applications.
+     * Get all applications in the currently targeted space. This method has EXTREMELY poor performance for spaces with a lot of
+     * applications.
      *
-     * @return list of cloud applications
+     * @return list of applications
      */
     List<CloudApplication> getApplications();
 
@@ -364,9 +365,9 @@ public interface CloudControllerClient {
     CloudOrganization getOrganization(String organizationName, boolean required);
 
     /**
-     * Get list of CloudOrganizations for the current cloud.
+     * Get all organizations for the current cloud. This method has poor performance when there are a lot of organizations.
      *
-     * @return List of CloudOrganizations objects containing the organization info
+     * @return list of organizations
      */
     List<CloudOrganization> getOrganizations();
 
@@ -494,9 +495,10 @@ public interface CloudControllerClient {
     List<CloudServiceOffering> getServiceOfferings();
 
     /**
-     * Get list of cloud service instances.
+     * Get all service instances in the currently targeted space. This method has EXTREMELY poor performance for spaces with a lot of
+     * service instances.
      *
-     * @return list of cloud services
+     * @return list of service instances
      */
     List<CloudServiceInstance> getServiceInstances();
 
@@ -601,9 +603,9 @@ public interface CloudControllerClient {
     List<UUID> getSpaceManagers(UUID spaceGuid);
 
     /**
-     * Get list of CloudSpaces for the current cloud.
+     * Get all spaces for the current cloud. This method has EXTREMELY poor performance when there are a lot of spaces.
      *
-     * @return List of CloudSpace objects containing the space info
+     * @return list of spaces
      */
     List<CloudSpace> getSpaces();
 
