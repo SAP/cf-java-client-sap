@@ -20,6 +20,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -739,11 +740,11 @@ public interface CloudControllerClient {
     /**
      * Update application env using a map where the key specifies the name of the environment variable and the value the value of the
      * environment variable..
-     *
-     * @param applicationName name of application
+     *  @param applicationName name of application
      * @param env map of environment settings
+     * @param sensitiveVariables
      */
-    void updateApplicationEnv(String applicationName, Map<String, String> env);
+    void updateApplicationEnv(String applicationName, Map<String, String> env, Collection<String> sensitiveVariables);
 
     /**
      * Update application instances.

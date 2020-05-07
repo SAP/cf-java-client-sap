@@ -20,6 +20,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -241,7 +242,7 @@ public interface CloudControllerRestClient {
 
     void updateApplicationDiskQuota(String applicationName, int disk);
 
-    void updateApplicationEnv(String applicationName, Map<String, String> env);
+    void updateApplicationEnv(String applicationName, Map<String, String> env, Collection<String> sensitiveVariables);
 
     void updateApplicationInstances(String applicationName, int instances);
 
