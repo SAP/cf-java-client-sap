@@ -13,56 +13,56 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @Value.Immutable
 @JsonSerialize(as = ImmutableCloudApplication.class)
 @JsonDeserialize(as = ImmutableCloudApplication.class)
-public interface CloudApplication extends CloudEntity, Derivable<CloudApplication> {
+public abstract class CloudApplication extends CloudEntity implements Derivable<CloudApplication> {
 
-    enum State {
+    public enum State {
         UPDATING, STARTED, STOPPED
     }
 
     @Value.Default
-    default int getMemory() {
+    public int getMemory() {
         return 0;
     }
 
     @Value.Default
-    default int getDiskQuota() {
+    public int getDiskQuota() {
         return 0;
     }
 
     @Value.Default
-    default int getInstances() {
+    public int getInstances() {
         return 1;
     }
 
     @Value.Default
-    default int getRunningInstances() {
+    public int getRunningInstances() {
         return 0;
     }
 
     @Nullable
-    State getState();
+    public abstract State getState();
 
     @Nullable
-    Staging getStaging();
+    public abstract Staging getStaging();
 
     @Nullable
-    PackageState getPackageState();
+    public abstract PackageState getPackageState();
 
     @Nullable
-    String getStagingError();
+    public abstract String getStagingError();
 
-    List<String> getUris();
+    public abstract List<String> getUris();
 
-    List<String> getServices();
+    public abstract List<String> getServices();
 
     @AllowNulls
-    Map<String, String> getEnv();
+    public abstract Map<String, String> getEnv();
 
     @Nullable
-    CloudSpace getSpace();
+    public abstract CloudSpace getSpace();
 
     @Override
-    default CloudApplication derive() {
+    public CloudApplication derive() {
         return this;
     }
 

@@ -9,38 +9,38 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @Value.Immutable
 @JsonSerialize(as = ImmutableCloudRoute.class)
 @JsonDeserialize(as = ImmutableCloudRoute.class)
-public interface CloudRoute extends CloudEntity, Derivable<CloudRoute> {
+public abstract class CloudRoute extends CloudEntity implements Derivable<CloudRoute> {
 
     @Value.Default
-    default int getAppsUsingRoute() {
+    public int getAppsUsingRoute() {
         return 0;
     }
 
     @Value.Default
-    default boolean hasServiceUsingRoute() {
+    public boolean hasServiceUsingRoute() {
         return false;
     }
 
     @Nullable
-    CloudDomain getDomain();
+    public abstract CloudDomain getDomain();
 
     @Nullable
-    String getHost();
-    
+    public abstract String getHost();
+
     @Nullable
-    String getPath();
+    public abstract String getPath();
 
     @Override
-    default String getName() {
+    public String getName() {
         return getHost() + "." + getDomain();
     }
 
-    default boolean isUsed() {
+    public boolean isUsed() {
         return getAppsUsingRoute() > 0 || hasServiceUsingRoute();
     }
 
     @Override
-    default CloudRoute derive() {
+    public CloudRoute derive() {
         return this;
     }
 

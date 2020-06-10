@@ -15,6 +15,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 public interface CloudMetadata {
 
     @Nullable
+    @Value.Parameter
     UUID getGuid();
 
     @Nullable

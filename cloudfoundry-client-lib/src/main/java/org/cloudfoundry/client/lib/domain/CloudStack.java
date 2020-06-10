@@ -9,13 +9,13 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @Value.Immutable
 @JsonSerialize(as = ImmutableCloudStack.class)
 @JsonDeserialize(as = ImmutableCloudStack.class)
-public interface CloudStack extends CloudEntity, Derivable<CloudStack> {
+public abstract class CloudStack extends CloudEntity implements Derivable<CloudStack> {
 
     @Nullable
-    String getDescription();
+    public abstract String getDescription();
 
     @Override
-    default CloudStack derive() {
+    public CloudStack derive() {
         return this;
     }
 

@@ -12,33 +12,33 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @Value.Immutable
 @JsonSerialize(as = ImmutableCloudTask.class)
 @JsonDeserialize(as = ImmutableCloudTask.class)
-public interface CloudTask extends CloudEntity, Derivable<CloudTask> {
+public abstract class CloudTask extends CloudEntity implements Derivable<CloudTask> {
 
     @Nullable
-    String getCommand();
+    public abstract String getCommand();
 
     @Nullable
-    Limits getLimits();
+    public abstract Limits getLimits();
 
     @Nullable
-    Result getResult();
+    public abstract Result getResult();
 
     @Nullable
-    State getState();
+    public abstract State getState();
 
     @Override
-    default CloudTask derive() {
+    public CloudTask derive() {
         return this;
     }
 
-    enum State {
+    public enum State {
         PENDING, RUNNING, SUCCEEDED, CANCELING, FAILED
     }
 
     @Value.Immutable
     @JsonSerialize(as = ImmutableResult.class)
     @JsonDeserialize(as = ImmutableResult.class)
-    interface Result {
+    public interface Result {
 
         @Nullable
         @Value.Parameter
@@ -49,7 +49,7 @@ public interface CloudTask extends CloudEntity, Derivable<CloudTask> {
     @Value.Immutable
     @JsonSerialize(as = ImmutableLimits.class)
     @JsonDeserialize(as = ImmutableLimits.class)
-    interface Limits {
+    public interface Limits {
 
         @Nullable
         Integer getDisk();

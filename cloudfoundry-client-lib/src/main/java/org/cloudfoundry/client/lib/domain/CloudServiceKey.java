@@ -11,15 +11,15 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @Value.Immutable
 @JsonSerialize(as = ImmutableCloudServiceKey.class)
 @JsonDeserialize(as = ImmutableCloudServiceKey.class)
-public interface CloudServiceKey extends CloudEntity, Derivable<CloudServiceKey> {
+public abstract class CloudServiceKey extends CloudEntity implements Derivable<CloudServiceKey> {
 
-    Map<String, Object> getCredentials();
+    public abstract Map<String, Object> getCredentials();
 
     @Nullable
-    CloudServiceInstance getServiceInstance();
+    public abstract CloudServiceInstance getServiceInstance();
 
     @Override
-    default CloudServiceKey derive() {
+    public CloudServiceKey derive() {
         return this;
     }
 
