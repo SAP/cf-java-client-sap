@@ -9,20 +9,20 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @Value.Immutable
 @JsonSerialize(as = ImmutableCloudJob.class)
 @JsonDeserialize(as = ImmutableCloudJob.class)
-public interface CloudJob extends CloudEntity, Derivable<CloudJob> {
+public abstract class CloudJob extends CloudEntity implements Derivable<CloudJob> {
 
     @Nullable
-    Status getStatus();
+    public abstract Status getStatus();
 
     @Nullable
-    ErrorDetails getErrorDetails();
+    public abstract ErrorDetails getErrorDetails();
 
     @Override
-    default CloudJob derive() {
+    public CloudJob derive() {
         return this;
     }
 
-    enum Status {
+    public enum Status {
 
         FAILED("failed"), FINISHED("finished"), QUEUED("queued"), RUNNING("running");
 

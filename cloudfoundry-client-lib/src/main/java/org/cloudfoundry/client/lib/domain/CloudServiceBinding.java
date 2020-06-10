@@ -12,21 +12,21 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @Value.Immutable
 @JsonSerialize(as = ImmutableCloudServiceBinding.class)
 @JsonDeserialize(as = ImmutableCloudServiceBinding.class)
-public interface CloudServiceBinding extends CloudEntity, Derivable<CloudServiceBinding> {
+public abstract class CloudServiceBinding extends CloudEntity implements Derivable<CloudServiceBinding> {
 
-    UUID getApplicationGuid();
-
-    @Nullable
-    Map<String, Object> getBindingOptions();
+    public abstract UUID getApplicationGuid();
 
     @Nullable
-    Map<String, Object> getCredentials();
+    public abstract Map<String, Object> getBindingOptions();
 
     @Nullable
-    String getSyslogDrainUrl();
+    public abstract Map<String, Object> getCredentials();
+
+    @Nullable
+    public abstract String getSyslogDrainUrl();
 
     @Override
-    default CloudServiceBinding derive() {
+    public CloudServiceBinding derive() {
         return this;
     }
 
