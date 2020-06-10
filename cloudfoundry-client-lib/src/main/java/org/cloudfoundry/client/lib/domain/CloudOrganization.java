@@ -8,10 +8,10 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @Value.Immutable
 @JsonSerialize(as = ImmutableCloudOrganization.class)
 @JsonDeserialize(as = ImmutableCloudOrganization.class)
-public interface CloudOrganization extends CloudEntity, Derivable<CloudOrganization> {
+public abstract class CloudOrganization extends CloudEntity implements Derivable<CloudOrganization> {
 
     @Override
-    default CloudOrganization derive() {
+    public CloudOrganization derive() {
         return this;
     }
 

@@ -12,33 +12,33 @@ import java.util.Map;
 @Value.Immutable
 @JsonSerialize(as = ImmutableCloudServiceInstance.class)
 @JsonDeserialize(as = ImmutableCloudServiceInstance.class)
-public interface CloudServiceInstance extends CloudEntity, Derivable<CloudServiceInstance> {
+public abstract class CloudServiceInstance extends CloudEntity implements Derivable<CloudServiceInstance> {
 
     @Nullable
-    String getLabel();
+    public abstract String getLabel();
 
     @Nullable
-    String getPlan();
+    public abstract String getPlan();
 
     @Nullable
-    String getProvider();
+    public abstract String getProvider();
 
     @Nullable
-    String getVersion();
+    public abstract String getVersion();
 
-    Map<String, Object> getCredentials();
+    public abstract Map<String, Object> getCredentials();
 
-    List<String> getTags();
+    public abstract List<String> getTags();
 
     @Nullable
-    ServiceInstanceType getType();
+    public abstract ServiceInstanceType getType();
 
-    default boolean isUserProvided() {
+    public boolean isUserProvided() {
         return getType() != null && getType().equals(ServiceInstanceType.USER_PROVIDED);
     }
 
     @Override
-    default CloudServiceInstance derive() {
+    public CloudServiceInstance derive() {
         return this;
     }
 

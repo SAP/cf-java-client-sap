@@ -9,22 +9,22 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @Value.Immutable
 @JsonSerialize(as = ImmutableCloudServiceBroker.class)
 @JsonDeserialize(as = ImmutableCloudServiceBroker.class)
-public interface CloudServiceBroker extends CloudEntity, Derivable<CloudServiceBroker> {
+public abstract class CloudServiceBroker extends CloudEntity implements Derivable<CloudServiceBroker> {
 
     @Nullable
-    String getUsername();
+    public abstract String getUsername();
 
     @Nullable
-    String getPassword();
+    public abstract String getPassword();
 
     @Nullable
-    String getUrl();
+    public abstract String getUrl();
 
     @Nullable
-    String getSpaceGuid();
+    public abstract String getSpaceGuid();
 
     @Override
-    default CloudServiceBroker derive() {
+    public CloudServiceBroker derive() {
         return this;
     }
 

@@ -14,29 +14,29 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @Value.Immutable
 @JsonSerialize(as = ImmutableCloudEvent.class)
 @JsonDeserialize(as = ImmutableCloudEvent.class)
-public interface CloudEvent extends CloudEntity, Derivable<CloudEvent> {
+public abstract class CloudEvent extends CloudEntity implements Derivable<CloudEvent> {
 
     @Nullable
-    String getType();
+    public abstract String getType();
 
     @Nullable
-    Participant getActor();
+    public abstract Participant getActor();
 
     @Nullable
-    Participant getActee();
+    public abstract Participant getActee();
 
     @Nullable
-    Date getTimestamp();
+    public abstract Date getTimestamp();
 
     @Override
-    default CloudEvent derive() {
+    public CloudEvent derive() {
         return this;
     }
 
     @Value.Immutable
     @JsonSerialize(as = ImmutableParticipant.class)
     @JsonDeserialize(as = ImmutableParticipant.class)
-    interface Participant {
+    public interface Participant {
 
         @Nullable
         UUID getGuid();

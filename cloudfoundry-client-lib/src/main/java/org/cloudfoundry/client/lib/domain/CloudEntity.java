@@ -16,6 +16,8 @@
 
 package org.cloudfoundry.client.lib.domain;
 
+import java.util.UUID;
+
 import org.cloudfoundry.client.lib.domain.annotation.Nullable;
 import org.cloudfoundry.client.v3.Metadata;
 
@@ -24,15 +26,19 @@ import org.cloudfoundry.client.v3.Metadata;
  * the derive() method here leads to this bug: https://github.com/immutables/immutables/issues/1045
  *
  */
-public interface CloudEntity {
+public abstract class CloudEntity {
 
     @Nullable
-    String getName();
+    public abstract String getName();
 
     @Nullable
-    CloudMetadata getMetadata();
+    public abstract CloudMetadata getMetadata();
 
     @Nullable
-    Metadata getV3Metadata();
+    public abstract Metadata getV3Metadata();
+
+    public UUID getGuid(CloudEntity entity) {
+        return getMetadata().getGuid();
+    }
 
 }

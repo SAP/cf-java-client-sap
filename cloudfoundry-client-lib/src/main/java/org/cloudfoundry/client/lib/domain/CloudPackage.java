@@ -12,30 +12,30 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @Value.Immutable
 @JsonSerialize(as = ImmutableCloudPackage.class)
 @JsonDeserialize(as = ImmutableCloudPackage.class)
-public interface CloudPackage extends CloudEntity, Derivable<CloudPackage> {
+public abstract class CloudPackage extends CloudEntity implements Derivable<CloudPackage> {
 
     @Nullable
-    Type getType();
+    public abstract Type getType();
 
     @Nullable
-    Data getData();
+    public abstract Data getData();
 
     @Nullable
-    Status getStatus();
+    public abstract Status getStatus();
 
     @Override
-    default CloudPackage derive() {
+    public CloudPackage derive() {
         return this;
     }
 
-    enum Type {
+    public enum Type {
         BITS, DOCKER,
     }
 
     @Value.Immutable
     @JsonSerialize(as = ImmutableData.class)
     @JsonDeserialize(as = ImmutableData.class)
-    interface Data {
+    public interface Data {
 
         @Nullable
         Checksum getChecksum();
@@ -48,7 +48,7 @@ public interface CloudPackage extends CloudEntity, Derivable<CloudPackage> {
     @Value.Immutable
     @JsonSerialize(as = ImmutableChecksum.class)
     @JsonDeserialize(as = ImmutableChecksum.class)
-    interface Checksum {
+    public interface Checksum {
 
         @Nullable
         String getAlgorithm();

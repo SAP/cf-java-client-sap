@@ -9,25 +9,25 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @Value.Immutable
 @JsonSerialize(as = ImmutableCloudServicePlan.class)
 @JsonDeserialize(as = ImmutableCloudServicePlan.class)
-public interface CloudServicePlan extends CloudEntity, Derivable<CloudServicePlan> {
+public abstract class CloudServicePlan extends CloudEntity implements Derivable<CloudServicePlan> {
 
     @Nullable
-    String getDescription();
+    public abstract String getDescription();
 
     @Nullable
-    String getExtra();
+    public abstract String getExtra();
 
     @Nullable
-    String getUniqueId();
+    public abstract String getUniqueId();
 
     @Nullable
-    Boolean isFree();
+    public abstract Boolean isFree();
 
     @Nullable
-    Boolean isPublic();
+    public abstract Boolean isPublic();
 
     @Override
-    default CloudServicePlan derive() {
+    public CloudServicePlan derive() {
         return this;
     }
 

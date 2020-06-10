@@ -15,29 +15,29 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @Value.Immutable
 @JsonSerialize(as = ImmutableCloudBuild.class)
 @JsonDeserialize(as = ImmutableCloudBuild.class)
-public interface CloudBuild extends CloudEntity, Derivable<CloudBuild> {
+public abstract class CloudBuild extends CloudEntity implements Derivable<CloudBuild> {
 
     @Nullable
-    State getState();
+    public abstract State getState();
 
     @Nullable
-    CreatedBy getCreatedBy();
+    public abstract CreatedBy getCreatedBy();
 
     @Nullable
-    DropletInfo getDropletInfo();
+    public abstract DropletInfo getDropletInfo();
 
     @Nullable
-    PackageInfo getPackageInfo();
+    public abstract PackageInfo getPackageInfo();
 
     @Nullable
-    String getError();
+    public abstract String getError();
 
     @Override
-    default CloudBuild derive() {
+    public CloudBuild derive() {
         return this;
     }
 
-    enum State {
+    public enum State {
 
         FAILED("FAILED"), STAGED("STAGED"), STAGING("STAGING");
 
@@ -66,7 +66,7 @@ public interface CloudBuild extends CloudEntity, Derivable<CloudBuild> {
     @Value.Immutable
     @JsonSerialize(as = ImmutablePackageInfo.class)
     @JsonDeserialize(as = ImmutablePackageInfo.class)
-    interface PackageInfo {
+    public interface PackageInfo {
 
         @Nullable
         @Value.Parameter
@@ -77,7 +77,7 @@ public interface CloudBuild extends CloudEntity, Derivable<CloudBuild> {
     @Value.Immutable
     @JsonSerialize(as = ImmutableDropletInfo.class)
     @JsonDeserialize(as = ImmutableDropletInfo.class)
-    interface DropletInfo {
+    public interface DropletInfo {
 
         @Nullable
         @Value.Parameter
@@ -88,7 +88,7 @@ public interface CloudBuild extends CloudEntity, Derivable<CloudBuild> {
     @Value.Immutable
     @JsonSerialize(as = ImmutableCreatedBy.class)
     @JsonDeserialize(as = ImmutableCreatedBy.class)
-    interface CreatedBy {
+    public interface CreatedBy {
 
         @Nullable
         UUID getGuid();
