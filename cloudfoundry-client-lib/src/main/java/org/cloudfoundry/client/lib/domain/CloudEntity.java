@@ -37,7 +37,7 @@ public abstract class CloudEntity {
     @Nullable
     public abstract Metadata getV3Metadata();
 
-    public UUID getGuid(CloudEntity entity) {
+    public UUID getGuid() {
         return getMetadata().getGuid();
     }
 
