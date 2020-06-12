@@ -2490,23 +2490,30 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         }
         while (true) {
             Upload upload = getUploadStatus(uploadToken.getPackageGuid());
-            boolean unsubscribe = callback.onProgress(upload.getStatus()
-                                                            .toString());
-            if (unsubscribe || upload.getStatus() == Status.READY) {
+            Status uploadStatus = upload.getStatus();
+            boolean unsubscribe = callback.onProgress(uploadStatus.toString());
+            if (unsubscribe || isUploadReady(uploadStatus)) {
                 return;
             }
-            if (upload.getStatus() == Status.EXPIRED) {
+            if (hasUploadFailed(uploadStatus)) {
                 callback.onError(upload.getErrorDetails()
                                        .getDescription());
                 return;
             }
-
             try {
                 Thread.sleep(JOB_POLLING_PERIOD);
             } catch (InterruptedException e) {
                 return;
             }
         }
+    }
+
+    private boolean isUploadReady(Status status) {
+        return status == Status.READY;
+    }
+
+    private boolean hasUploadFailed(Status status) {
+        return status == Status.EXPIRED || status == Status.FAILED;
     }
 
     private CloudPackage findPackage(UUID guid) {
