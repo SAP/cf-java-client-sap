@@ -1,13 +1,15 @@
 package org.cloudfoundry.client.lib.domain;
 
+
+import java.util.List;
+import java.util.Map;
+
+import org.cloudfoundry.AllowNulls;
 import org.cloudfoundry.client.lib.domain.annotation.Nullable;
 import org.immutables.value.Value;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-
-import java.util.List;
-import java.util.Map;
 
 @Value.Immutable
 @JsonSerialize(as = ImmutableCloudServiceInstance.class)
@@ -26,6 +28,7 @@ public abstract class CloudServiceInstance extends CloudEntity implements Deriva
     @Nullable
     public abstract String getVersion();
 
+    @AllowNulls
     public abstract Map<String, Object> getCredentials();
 
     public abstract List<String> getTags();
