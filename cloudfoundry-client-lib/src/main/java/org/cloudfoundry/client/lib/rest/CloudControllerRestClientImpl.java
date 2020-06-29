@@ -1227,6 +1227,18 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                     .getGuid();
                 requestBuilder.stackId(stackGuid.toString());
             }
+            if (staging.getDockerInfo() != null) {
+                requestBuilder.dockerImage(staging.getDockerInfo()
+                                                  .getImage());
+                DockerCredentials dockerCredentials = staging.getDockerInfo()
+                                                             .getCredentials();
+                if (dockerCredentials != null) {
+                    requestBuilder.dockerCredentials(org.cloudfoundry.client.v2.applications.DockerCredentials.builder()
+                                                                                                              .username(dockerCredentials.getUsername())
+                                                                                                              .password(dockerCredentials.getPassword())
+                                                                                                              .build());
+                }
+            }
         }
         delegate.applicationsV2()
                 .update(requestBuilder.build())
