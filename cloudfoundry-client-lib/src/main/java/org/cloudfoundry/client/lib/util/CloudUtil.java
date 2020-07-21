@@ -29,16 +29,11 @@ import java.util.Locale;
  */
 public class CloudUtil {
 
-    public static final int BUFFER_SIZE = 16 * 1024;
     private static final Double DEFAULT_DOUBLE = 0.0;
     private static final Integer DEFAULT_INTEGER = 0;
     private static final Long DEFAULT_LONG = 0L;
 
     private CloudUtil() {
-    }
-
-    public static String parse(Object object) {
-        return parse(String.class, object);
     }
 
     @SuppressWarnings("unchecked")
