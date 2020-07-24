@@ -42,6 +42,7 @@ import org.cloudfoundry.AbstractCloudFoundryException;
 import org.cloudfoundry.client.CloudFoundryClient;
 import org.cloudfoundry.client.lib.CloudCredentials;
 import org.cloudfoundry.client.lib.CloudOperationException;
+import org.cloudfoundry.client.lib.Constants;
 import org.cloudfoundry.client.lib.RestLogCallback;
 import org.cloudfoundry.client.lib.StartingInfo;
 import org.cloudfoundry.client.lib.UploadStatusCallback;
@@ -90,9 +91,11 @@ import org.cloudfoundry.client.lib.domain.CloudTask;
 import org.cloudfoundry.client.lib.domain.Derivable;
 import org.cloudfoundry.client.lib.domain.DockerCredentials;
 import org.cloudfoundry.client.lib.domain.DockerInfo;
+import org.cloudfoundry.client.lib.domain.DropletInfo;
 import org.cloudfoundry.client.lib.domain.ErrorDetails;
 import org.cloudfoundry.client.lib.domain.ImmutableCloudApplication;
 import org.cloudfoundry.client.lib.domain.ImmutableCloudServiceInstance;
+import org.cloudfoundry.client.lib.domain.ImmutableDropletInfo;
 import org.cloudfoundry.client.lib.domain.ImmutableErrorDetails;
 import org.cloudfoundry.client.lib.domain.ImmutableUpload;
 import org.cloudfoundry.client.lib.domain.ImmutableUploadToken;
@@ -189,7 +192,10 @@ import org.cloudfoundry.client.v3.Metadata;
 import org.cloudfoundry.client.v3.Relationship;
 import org.cloudfoundry.client.v3.ToOneRelationship;
 import org.cloudfoundry.client.v3.applications.ApplicationResource;
+import org.cloudfoundry.client.v3.applications.GetApplicationCurrentDropletRequest;
+import org.cloudfoundry.client.v3.applications.GetApplicationCurrentDropletResponse;
 import org.cloudfoundry.client.v3.applications.ListApplicationBuildsRequest;
+import org.cloudfoundry.client.v3.applications.ListApplicationPackagesRequest;
 import org.cloudfoundry.client.v3.applications.SetApplicationCurrentDropletRequest;
 import org.cloudfoundry.client.v3.builds.Build;
 import org.cloudfoundry.client.v3.builds.CreateBuildRequest;
@@ -200,6 +206,7 @@ import org.cloudfoundry.client.v3.organizations.GetOrganizationDefaultDomainRequ
 import org.cloudfoundry.client.v3.packages.CreatePackageRequest;
 import org.cloudfoundry.client.v3.packages.GetPackageRequest;
 import org.cloudfoundry.client.v3.packages.PackageRelationships;
+import org.cloudfoundry.client.v3.packages.PackageResource;
 import org.cloudfoundry.client.v3.packages.PackageType;
 import org.cloudfoundry.client.v3.packages.UploadPackageRequest;
 import org.cloudfoundry.client.v3.serviceInstances.ListServiceInstancesRequest;
@@ -213,6 +220,8 @@ import org.cloudfoundry.client.v3.tasks.Task;
 import org.cloudfoundry.doppler.DopplerClient;
 import org.cloudfoundry.doppler.RecentLogsRequest;
 import org.cloudfoundry.util.PaginationUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.util.Assert;
@@ -238,6 +247,8 @@ import reactor.util.function.Tuples;
  * @author Scott Frederick
  */
 public class CloudControllerRestClientImpl implements CloudControllerRestClient {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(CloudControllerRestClientImpl.class);
 
     private static final String DEFAULT_HOST_DOMAIN_SEPARATOR = "\\.";
     private static final String DEFAULT_PATH_SEPARATOR = "/";
@@ -1353,7 +1364,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public Upload getUploadStatus(UUID packageGuid) {
-        CloudPackage cloudPackage = findPackage(packageGuid);
+        CloudPackage cloudPackage = getPackage(packageGuid);
         ErrorDetails errorDetails = ImmutableErrorDetails.builder()
                                                          .description(cloudPackage.getData()
                                                                                   .getError())
@@ -1395,6 +1406,53 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                                         .build())
                                                                       .build())
                 .block();
+    }
+
+    @Override
+    public DropletInfo getCurrentDropletForApplication(UUID applicationGuid) {
+        GetApplicationCurrentDropletResponse getApplicationCurrentDropletResponse = delegate.applicationsV3()
+                                                                                            .getCurrentDroplet(GetApplicationCurrentDropletRequest.builder()
+                                                                                                                                                  .applicationId(applicationGuid.toString())
+                                                                                                                                                  .build())
+                                                                                            .block();
+        return tryParseDropletInfo(getApplicationCurrentDropletResponse);
+    }
+
+    private DropletInfo tryParseDropletInfo(GetApplicationCurrentDropletResponse getApplicationCurrentDropletResponse) {
+        try {
+            return parseDropletInfo(getApplicationCurrentDropletResponse);
+        } catch (Exception e) {
+            LOGGER.error(e.getMessage(), e);
+            throw new CloudOperationException(HttpStatus.NOT_FOUND);
+        }
+    }
+
+    private DropletInfo parseDropletInfo(GetApplicationCurrentDropletResponse getApplicationCurrentDropletResponse) {
+        String packageUrl = getApplicationCurrentDropletResponse.getLinks()
+                                                                .get(Constants.PACKAGE)
+                                                                .getHref();
+        if (packageUrl.endsWith("/")) {
+            packageUrl = packageUrl.substring(0, packageUrl.lastIndexOf("/"));
+        }
+        String packageGuid = packageUrl.substring(packageUrl.lastIndexOf("/") + 1);
+        return ImmutableDropletInfo.builder()
+                                   .guid(UUID.fromString(getApplicationCurrentDropletResponse.getId()))
+                                   .packageGuid(UUID.fromString(packageGuid))
+                                   .build();
+    }
+
+    @Override
+    public List<CloudPackage> getPackagesForApplication(UUID applicationGuid) {
+        return fetchList(() -> getPackages(applicationGuid.toString()), ImmutableRawCloudPackage::of);
+    }
+
+    private Flux<? extends PackageResource> getPackages(String applicationGuid) {
+        IntFunction<ListApplicationPackagesRequest> pageRequestSupplier = page -> ListApplicationPackagesRequest.builder()
+                                                                                                                .page(page)
+                                                                                                                .applicationId(applicationGuid)
+                                                                                                                .build();
+        return PaginationUtils.requestClientV3Resources(page -> delegate.applicationsV3()
+                                                                        .listPackages(pageRequestSupplier.apply(page)));
     }
 
     private CloudApplication addMetadataIfNotNull(CloudApplication application) {
@@ -2524,8 +2582,9 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return status == Status.EXPIRED || status == Status.FAILED;
     }
 
-    private CloudPackage findPackage(UUID guid) {
-        return fetch(() -> getPackageResource(guid), ImmutableRawCloudPackage::of);
+    @Override
+    public CloudPackage getPackage(UUID packageGuid) {
+        return fetch(() -> getPackageResource(packageGuid), ImmutableRawCloudPackage::of);
     }
 
     private Mono<? extends org.cloudfoundry.client.v3.packages.Package> getPackageResource(UUID guid) {

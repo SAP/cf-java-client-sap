@@ -3,7 +3,9 @@ package org.cloudfoundry.client.lib.adapters;
 import java.util.UUID;
 
 import org.cloudfoundry.client.lib.domain.CloudBuild;
+import org.cloudfoundry.client.lib.domain.DropletInfo;
 import org.cloudfoundry.client.lib.domain.ImmutableCloudBuild;
+import org.cloudfoundry.client.lib.domain.ImmutableDropletInfo;
 import org.cloudfoundry.client.v3.BuildpackData;
 import org.cloudfoundry.client.v3.Lifecycle;
 import org.cloudfoundry.client.v3.LifecycleType;
@@ -15,7 +17,7 @@ import org.cloudfoundry.client.v3.builds.CreatedBy;
 import org.cloudfoundry.client.v3.builds.Droplet;
 import org.junit.jupiter.api.Test;
 
-public class RawCloudBuildTest {
+class RawCloudBuildTest {
 
     private static final String PACKAGE_GUID_STRING = "d0bd1437-f112-48cd-b777-6b160cf2fff0";
     private static final String DROPLET_GUID_STRING = "47e172c9-bfb2-41df-bf3f-850108c241ef";
@@ -31,23 +33,13 @@ public class RawCloudBuildTest {
     private static final UUID CREATED_BY_GUID = UUID.fromString(CREATED_BY_GUID_STRING);
 
     private static final CloudBuild.State EXPECTED_STATE = CloudBuild.State.FAILED;
-    private static final CloudBuild.DropletInfo EXPECTED_DROPLET_INFO = buildExpectedDropletInfo();
-
-    @Test
-    public void testDeriveWithoutDroplet() {
-        RawCloudEntityTest.testDerive(buildExpectedBuild(), buildRawBuild());
-    }
-
-    @Test
-    public void testDerive() {
-        RawCloudEntityTest.testDerive(buildExpectedBuild(EXPECTED_DROPLET_INFO), buildRawBuild(DROPLET));
-    }
+    private static final DropletInfo EXPECTED_DROPLET_INFO = buildExpectedDropletInfo();
 
     private static CloudBuild buildExpectedBuild() {
         return buildExpectedBuild(null);
     }
 
-    private static CloudBuild buildExpectedBuild(CloudBuild.DropletInfo dropletInfo) {
+    private static CloudBuild buildExpectedBuild(DropletInfo dropletInfo) {
         return ImmutableCloudBuild.builder()
                                   .metadata(RawCloudEntityTest.EXPECTED_METADATA_PARSED_FROM_V3_RESOURCE)
                                   .createdBy(buildExpectedCreatedBy())
@@ -65,24 +57,16 @@ public class RawCloudBuildTest {
                                                      .build();
     }
 
-    private static CloudBuild.DropletInfo buildExpectedDropletInfo() {
-        return ImmutableCloudBuild.ImmutableDropletInfo.builder()
-                                                       .guid(DROPLET_GUID)
-                                                       .build();
+    private static DropletInfo buildExpectedDropletInfo() {
+        return ImmutableDropletInfo.builder()
+                                   .guid(DROPLET_GUID)
+                                   .build();
     }
 
     private static CloudBuild.PackageInfo buildExpectedPackageInfo() {
         return ImmutableCloudBuild.ImmutablePackageInfo.builder()
                                                        .guid(PACKAGE_GUID)
                                                        .build();
-    }
-
-    private RawCloudBuild buildRawBuild() {
-        return buildRawBuild(null);
-    }
-
-    private RawCloudBuild buildRawBuild(Droplet droplet) {
-        return ImmutableRawCloudBuild.of(buildTestResource(droplet));
     }
 
     private static Build buildTestResource(Droplet droplet) {
@@ -129,6 +113,24 @@ public class RawCloudBuildTest {
     private static BuildpackData buildTestLifecycleData() {
         return BuildpackData.builder()
                             .build();
+    }
+
+    @Test
+    void testDeriveWithoutDroplet() {
+        RawCloudEntityTest.testDerive(buildExpectedBuild(), buildRawBuild());
+    }
+
+    @Test
+    void testDerive() {
+        RawCloudEntityTest.testDerive(buildExpectedBuild(EXPECTED_DROPLET_INFO), buildRawBuild(DROPLET));
+    }
+
+    private RawCloudBuild buildRawBuild() {
+        return buildRawBuild(null);
+    }
+
+    private RawCloudBuild buildRawBuild(Droplet droplet) {
+        return ImmutableRawCloudBuild.of(buildTestResource(droplet));
     }
 
 }

@@ -3,7 +3,6 @@ package org.cloudfoundry.client.lib.domain;
 import java.util.UUID;
 
 import org.cloudfoundry.client.lib.domain.ImmutableCloudBuild.ImmutableCreatedBy;
-import org.cloudfoundry.client.lib.domain.ImmutableCloudBuild.ImmutableDropletInfo;
 import org.cloudfoundry.client.lib.domain.ImmutableCloudBuild.ImmutablePackageInfo;
 import org.cloudfoundry.client.lib.domain.annotation.Nullable;
 import org.immutables.value.Value;
@@ -67,17 +66,6 @@ public abstract class CloudBuild extends CloudEntity implements Derivable<CloudB
     @JsonSerialize(as = ImmutablePackageInfo.class)
     @JsonDeserialize(as = ImmutablePackageInfo.class)
     public interface PackageInfo {
-
-        @Nullable
-        @Value.Parameter
-        UUID getGuid();
-
-    }
-
-    @Value.Immutable
-    @JsonSerialize(as = ImmutableDropletInfo.class)
-    @JsonDeserialize(as = ImmutableDropletInfo.class)
-    public interface DropletInfo {
 
         @Nullable
         @Value.Parameter
