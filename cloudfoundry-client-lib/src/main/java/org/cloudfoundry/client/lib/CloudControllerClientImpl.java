@@ -48,7 +48,6 @@ import org.cloudfoundry.client.lib.domain.DropletInfo;
 import org.cloudfoundry.client.lib.domain.InstancesInfo;
 import org.cloudfoundry.client.lib.domain.Staging;
 import org.cloudfoundry.client.lib.domain.Upload;
-import org.cloudfoundry.client.lib.domain.UploadToken;
 import org.cloudfoundry.client.lib.rest.CloudControllerRestClient;
 import org.cloudfoundry.client.lib.rest.CloudControllerRestClientFactory;
 import org.cloudfoundry.client.lib.rest.ImmutableCloudControllerRestClientFactory;
@@ -732,12 +731,12 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public UploadToken asyncUploadApplication(String applicationName, File file) throws IOException {
+    public CloudPackage asyncUploadApplication(String applicationName, File file) throws IOException {
         return handleUploadExceptions(() -> delegate.asyncUploadApplication(applicationName, file, null));
     }
 
     @Override
-    public UploadToken asyncUploadApplication(String applicationName, File file, UploadStatusCallback callback) throws IOException {
+    public CloudPackage asyncUploadApplication(String applicationName, File file, UploadStatusCallback callback) throws IOException {
         return handleUploadExceptions(() -> delegate.asyncUploadApplication(applicationName, file, callback));
     }
 

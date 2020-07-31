@@ -49,7 +49,6 @@ import org.cloudfoundry.client.lib.domain.DropletInfo;
 import org.cloudfoundry.client.lib.domain.InstancesInfo;
 import org.cloudfoundry.client.lib.domain.Staging;
 import org.cloudfoundry.client.lib.domain.Upload;
-import org.cloudfoundry.client.lib.domain.UploadToken;
 import org.cloudfoundry.client.lib.oauth2.OAuthClient;
 import org.cloudfoundry.client.v3.Metadata;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
@@ -261,7 +260,7 @@ public interface CloudControllerRestClient {
 
     void uploadApplication(String applicationName, InputStream inputStream, UploadStatusCallback callback) throws IOException;
 
-    UploadToken asyncUploadApplication(String applicationName, File file, UploadStatusCallback callback) throws IOException;
+    CloudPackage asyncUploadApplication(String applicationName, File file, UploadStatusCallback callback) throws IOException;
 
     Upload getUploadStatus(UUID packageGuid);
 
