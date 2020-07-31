@@ -98,13 +98,11 @@ import org.cloudfoundry.client.lib.domain.ImmutableCloudServiceInstance;
 import org.cloudfoundry.client.lib.domain.ImmutableDropletInfo;
 import org.cloudfoundry.client.lib.domain.ImmutableErrorDetails;
 import org.cloudfoundry.client.lib.domain.ImmutableUpload;
-import org.cloudfoundry.client.lib.domain.ImmutableUploadToken;
 import org.cloudfoundry.client.lib.domain.InstancesInfo;
 import org.cloudfoundry.client.lib.domain.ServiceInstanceType;
 import org.cloudfoundry.client.lib.domain.Staging;
 import org.cloudfoundry.client.lib.domain.Status;
 import org.cloudfoundry.client.lib.domain.Upload;
-import org.cloudfoundry.client.lib.domain.UploadToken;
 import org.cloudfoundry.client.lib.oauth2.OAuthClient;
 import org.cloudfoundry.client.v2.Resource;
 import org.cloudfoundry.client.v2.applications.ApplicationEntity;
@@ -1335,8 +1333,8 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public void uploadApplication(String applicationName, File file, UploadStatusCallback callback) throws IOException {
-        UploadToken uploadToken = startUpload(applicationName, file);
-        processAsyncUpload(uploadToken, callback);
+        CloudPackage cloudPackage = startUpload(applicationName, file);
+        processAsyncUpload(cloudPackage, callback);
     }
 
     @Override
@@ -1356,10 +1354,10 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public UploadToken asyncUploadApplication(String applicationName, File file, UploadStatusCallback callback) throws IOException {
-        UploadToken uploadToken = startUpload(applicationName, file);
-        processAsyncUploadInBackground(uploadToken, callback);
-        return uploadToken;
+    public CloudPackage asyncUploadApplication(String applicationName, File file, UploadStatusCallback callback) throws IOException {
+        CloudPackage cloudPackage = startUpload(applicationName, file);
+        processAsyncUploadInBackground(cloudPackage, callback);
+        return cloudPackage;
     }
 
     @Override
@@ -1824,7 +1822,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return file;
     }
 
-    private UploadToken startUpload(String applicationName, File file) {
+    private CloudPackage startUpload(String applicationName, File file) {
         Assert.notNull(applicationName, "AppName must not be null");
         Assert.notNull(file, "File must not be null");
 
@@ -1838,9 +1836,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                             .build())
                 .block();
 
-        return ImmutableUploadToken.builder()
-                                   .packageGuid(packageGuid)
-                                   .build();
+        return getPackage(packageGuid);
     }
 
     private CloudPackage createPackageForApplication(UUID applicationGuid) {
@@ -2545,17 +2541,17 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                         .block();
     }
 
-    private void processAsyncUploadInBackground(UploadToken uploadToken, UploadStatusCallback callback) {
-        String threadName = String.format("App upload monitor: %s", uploadToken.getPackageGuid());
-        new Thread(() -> processAsyncUpload(uploadToken, callback), threadName).start();
+    private void processAsyncUploadInBackground(CloudPackage cloudPackage, UploadStatusCallback callback) {
+        String threadName = String.format("App upload monitor: %s", cloudPackage.getGuid());
+        new Thread(() -> processAsyncUpload(cloudPackage, callback), threadName).start();
     }
 
-    private void processAsyncUpload(UploadToken uploadToken, UploadStatusCallback callback) {
+    private void processAsyncUpload(CloudPackage cloudPackage, UploadStatusCallback callback) {
         if (callback == null) {
             callback = UploadStatusCallback.NONE;
         }
         while (true) {
-            Upload upload = getUploadStatus(uploadToken.getPackageGuid());
+            Upload upload = getUploadStatus(cloudPackage.getGuid());
             Status uploadStatus = upload.getStatus();
             boolean unsubscribe = callback.onProgress(uploadStatus.toString());
             if (unsubscribe || isUploadReady(uploadStatus)) {
