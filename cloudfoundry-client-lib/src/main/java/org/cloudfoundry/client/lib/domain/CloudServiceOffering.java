@@ -35,6 +35,9 @@ public abstract class CloudServiceOffering extends CloudEntity implements Deriva
 
     @Nullable
     public abstract String getProvider();
+    
+    @Nullable
+    public abstract String getBrokerName();
 
     @Nullable
     public abstract String getUniqueId();
