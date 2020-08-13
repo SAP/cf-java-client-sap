@@ -91,7 +91,7 @@ public interface CloudControllerClient {
      * @param applicationName the application name
      * @param serviceInstanceName the service instance name
      * @param parameters the binding parameters
-     * @param applicationServicesUpdateCallback callback used for error handling
+     * @param updateServicesCallback callback used for error handling
      */
     void bindServiceInstance(String applicationName, String serviceInstanceName, Map<String, Object> parameters,
                              ApplicationServicesUpdateCallback updateServicesCallback);
@@ -103,7 +103,6 @@ public interface CloudControllerClient {
      * @param staging staging info
      * @param memory memory to use in MB
      * @param uris list of URIs for the app
-     * @param serviceInstanceNames list of service instance names to bind to app
      */
     void createApplication(String applicationName, Staging staging, Integer memory, List<String> uris);
 
@@ -115,7 +114,6 @@ public interface CloudControllerClient {
      * @param disk disk quota to use in MB
      * @param memory memory to use in MB
      * @param uris list of URIs for the app
-     * @param serviceInstanceNames list of service instance names to bind to app
      * @param dockerInfo docker params(image, username, password)
      */
     void createApplication(String applicationName, Staging staging, Integer disk, Integer memory, List<String> uris, DockerInfo dockerInfo);
@@ -138,7 +136,7 @@ public interface CloudControllerClient {
      * Create a service key.
      * 
      * @param serviceInstanceName name of service instance
-     * @param serviceKey name of service-key
+     * @param serviceKeyName name of service-key
      * @param parameters parameters of service-key
      * @return
      */
@@ -475,7 +473,7 @@ public interface CloudControllerClient {
     /**
      * Get service keys for a service instance.
      *
-     * @param service name containing service keys
+     * @param serviceInstanceName name containing service keys
      * @return the service keys info
      */
     List<CloudServiceKey> getServiceKeys(String serviceInstanceName);
@@ -721,7 +719,7 @@ public interface CloudControllerClient {
      * @param applicationName the application name
      * @param serviceInstanceName the service instance name
      */
-    void unbindServiceInstance(String applicationName, String servicesInstanceName);
+    void unbindServiceInstance(String applicationName, String serviceInstanceName);
 
     /**
      * Un-associate (unprovision) a service from an application.
@@ -819,7 +817,7 @@ public interface CloudControllerClient {
      *
      * @param applicationName the application name
      * @param file the application archive
-     * @param callback a callback interface used to provide progress information or <tt>null</tt>
+     * @param callback a callback interface used to provide progress information or {@code null}
      * @throws java.io.IOException
      */
     void uploadApplication(String applicationName, File file, UploadStatusCallback callback) throws IOException;
@@ -827,7 +825,7 @@ public interface CloudControllerClient {
     /**
      * Upload an application to Cloud Foundry.
      *
-     * This form of <tt>uploadApplication</tt> will read the passed <tt>InputStream</tt> and copy the contents to a temporary file for
+     * This form of {@code uploadApplication} will read the passed {@code InputStream} and copy the contents to a temporary file for
      * upload.
      *
      * @param applicationName the application name
@@ -839,12 +837,12 @@ public interface CloudControllerClient {
     /**
      * Upload an application to Cloud Foundry.
      *
-     * This form of <tt>uploadApplication</tt> will read the passed <tt>InputStream</tt> and copy the contents to a temporary file for
+     * This form of {@code uploadApplication} will read the passed {@code InputStream} and copy the contents to a temporary file for
      * upload.
      *
      * @param applicationName the application name
      * @param inputStream the InputStream to read from
-     * @param callback a callback interface used to provide progress information or <tt>null</tt>
+     * @param callback a callback interface used to provide progress information or {@code null}
      * @throws java.io.IOException
      */
     void uploadApplication(String applicationName, InputStream inputStream, UploadStatusCallback callback) throws IOException;

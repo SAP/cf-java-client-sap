@@ -22,7 +22,7 @@ import org.apache.commons.logging.LogFactory;
 /**
  * RestLogCallback implementation that logs to application log
  *
- * @author: Thomas Risberg
+ * @author Thomas Risberg
  */
 public class RestLogger implements RestLogCallback {
 

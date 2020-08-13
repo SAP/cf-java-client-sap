@@ -24,7 +24,7 @@ import org.springframework.http.HttpStatus;
 /**
  * RestLogEntry containing the values logged for each REST call
  *
- * @author: Thomas Risberg
+ * @author Thomas Risberg
  */
 public class RestLogEntry {
 

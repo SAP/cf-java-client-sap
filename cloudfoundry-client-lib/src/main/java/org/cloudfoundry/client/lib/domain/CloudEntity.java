@@ -22,8 +22,8 @@ import org.cloudfoundry.client.lib.domain.annotation.Nullable;
 import org.cloudfoundry.client.v3.Metadata;
 
 /**
- * Do not extend Derivable<T> in this interface. It is tempting, because all of its children have the same implementation, but implementing
- * the derive() method here leads to this bug: https://github.com/immutables/immutables/issues/1045
+ * Do not extend {@code Derivable<T>} in this interface. It is tempting, because all of its children have the same implementation, but
+ * implementing the {@code derive()} method here leads to this bug: https://github.com/immutables/immutables/issues/1045
  *
  */
 public abstract class CloudEntity {

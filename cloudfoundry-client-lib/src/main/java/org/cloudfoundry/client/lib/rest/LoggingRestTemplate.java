@@ -34,7 +34,7 @@ import org.springframework.web.client.RestTemplate;
 /**
  * RestTemplate that provides for logging of any REST calls made
  *
- * @author: Thomas Risberg
+ * @author Thomas Risberg
  */
 public class LoggingRestTemplate extends RestTemplate {
 
