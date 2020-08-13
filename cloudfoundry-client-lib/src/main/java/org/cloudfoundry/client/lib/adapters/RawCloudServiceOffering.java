@@ -32,6 +32,7 @@ public abstract class RawCloudServiceOffering extends RawCloudEntity<CloudServic
                                             .infoUrl(entity.getInfoUrl())
                                             .version(entity.getVersion())
                                             .provider(entity.getProvider())
+                                            .brokerName(entity.getServiceBrokerName())
                                             .uniqueId(entity.getUniqueId())
                                             .url(entity.getUrl())
                                             .servicePlans(derive(getServicePlans()))
