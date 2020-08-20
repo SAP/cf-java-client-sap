@@ -1,6 +1,5 @@
 package org.cloudfoundry.client.lib.domain;
 
-
 import java.util.List;
 import java.util.Map;
 
@@ -24,9 +23,9 @@ public abstract class CloudServiceInstance extends CloudEntity implements Deriva
 
     @Nullable
     public abstract String getProvider();
-    
+
     @Nullable
-    public abstract String getBrokerName();
+    public abstract String getBroker();
 
     @Nullable
     public abstract String getVersion();
