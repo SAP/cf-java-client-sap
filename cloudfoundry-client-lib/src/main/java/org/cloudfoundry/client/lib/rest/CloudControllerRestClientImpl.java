@@ -2480,8 +2480,8 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     private CloudServicePlan findPlanForService(CloudServiceInstance service) {
         List<CloudServiceOffering> offerings = findServiceOfferingsByLabel(service.getLabel());
         for (CloudServiceOffering offering : offerings) {
-            if (service.getBrokerName() != null && !service.getBrokerName()
-                                                           .equals(offering.getBrokerName())) {
+            if (service.getBroker() != null && !service.getBroker()
+                                                       .equals(offering.getBrokerName())) {
                 continue;
             }
             if (service.getVersion() == null || service.getVersion()
