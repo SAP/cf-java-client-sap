@@ -16,10 +16,10 @@
 
 package org.cloudfoundry.client.lib.rest;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -50,6 +50,7 @@ import org.cloudfoundry.client.lib.domain.InstancesInfo;
 import org.cloudfoundry.client.lib.domain.Staging;
 import org.cloudfoundry.client.lib.domain.Upload;
 import org.cloudfoundry.client.lib.oauth2.OAuthClient;
+import org.cloudfoundry.client.v2.serviceinstances.LastOperation;
 import org.cloudfoundry.client.v3.Metadata;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.web.client.ResponseErrorHandler;
@@ -118,7 +119,7 @@ public interface CloudControllerRestClient {
 
     List<CloudEvent> getApplicationEvents(String applicationName);
 
-    List<CloudEvent> getApplicationEvents(UUID applicationGuid);
+    List<CloudEvent> getEventsByActee(UUID uuid);
 
     InstancesInfo getApplicationInstances(String applicationName);
 
@@ -256,11 +257,19 @@ public interface CloudControllerRestClient {
 
     void updateServicePlanVisibilityForBroker(String name, boolean visibility);
 
-    void uploadApplication(String applicationName, File file, UploadStatusCallback callback) throws IOException;
+    LastOperation getServiceLastOperation(String serviceName);
+
+    void updateServicePlan(CloudServiceInstance service);
+
+    void updateServiceParameters(CloudServiceInstance service);
+
+    void updateServiceTags(CloudServiceInstance service);
+
+    void uploadApplication(String applicationName, Path file, UploadStatusCallback callback);
 
     void uploadApplication(String applicationName, InputStream inputStream, UploadStatusCallback callback) throws IOException;
 
-    CloudPackage asyncUploadApplication(String applicationName, File file, UploadStatusCallback callback) throws IOException;
+    CloudPackage asyncUploadApplication(String applicationName, Path file, UploadStatusCallback callback);
 
     Upload getUploadStatus(UUID packageGuid);
 

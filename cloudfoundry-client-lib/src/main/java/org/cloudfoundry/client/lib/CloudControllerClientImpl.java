@@ -16,10 +16,11 @@
 
 package org.cloudfoundry.client.lib;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -51,6 +52,7 @@ import org.cloudfoundry.client.lib.domain.Upload;
 import org.cloudfoundry.client.lib.rest.CloudControllerRestClient;
 import org.cloudfoundry.client.lib.rest.CloudControllerRestClientFactory;
 import org.cloudfoundry.client.lib.rest.ImmutableCloudControllerRestClientFactory;
+import org.cloudfoundry.client.v2.serviceinstances.LastOperation;
 import org.cloudfoundry.client.v3.Metadata;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
@@ -320,6 +322,11 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     @Override
     public List<CloudEvent> getApplicationEvents(String applicationName) {
         return handleExceptions(() -> delegate.getApplicationEvents(applicationName));
+    }
+
+    @Override
+    public List<CloudEvent> getEventsByActee(UUID uuid) {
+        return handleExceptions(() -> delegate.getEventsByActee(uuid));
     }
 
     @Override
@@ -706,18 +713,38 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public void uploadApplication(String applicationName, String file) throws IOException {
-        handleUploadExceptions(() -> delegate.uploadApplication(applicationName, new File(file), null));
+    public LastOperation getServiceLastOperation(String serviceName) {
+        return handleExceptions(() -> delegate.getServiceLastOperation(serviceName));
     }
 
     @Override
-    public void uploadApplication(String applicationName, File file) throws IOException {
-        handleUploadExceptions(() -> delegate.uploadApplication(applicationName, file, null));
+    public void updateServicePlan(CloudServiceInstance service) {
+        handleExceptions(() -> delegate.updateServicePlan(service));
     }
 
     @Override
-    public void uploadApplication(String applicationName, File file, UploadStatusCallback callback) throws IOException {
-        handleUploadExceptions(() -> delegate.uploadApplication(applicationName, file, callback));
+    public void updateServiceParameters(CloudServiceInstance service) {
+        handleExceptions(() -> delegate.updateServiceParameters(service));
+    }
+
+    @Override
+    public void updateServiceTags(CloudServiceInstance service) {
+        handleExceptions(() -> delegate.updateServiceTags(service));
+    }
+
+    @Override
+    public void uploadApplication(String applicationName, String file) {
+        handleExceptions(() -> delegate.uploadApplication(applicationName, Paths.get(file), null));
+    }
+
+    @Override
+    public void uploadApplication(String applicationName, Path file) {
+        handleExceptions(() -> delegate.uploadApplication(applicationName, file, null));
+    }
+
+    @Override
+    public void uploadApplication(String applicationName, Path file, UploadStatusCallback callback) {
+        handleExceptions(() -> delegate.uploadApplication(applicationName, file, callback));
     }
 
     @Override
@@ -731,13 +758,13 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public CloudPackage asyncUploadApplication(String applicationName, File file) throws IOException {
-        return handleUploadExceptions(() -> delegate.asyncUploadApplication(applicationName, file, null));
+    public CloudPackage asyncUploadApplication(String applicationName, Path file) {
+        return handleExceptions(() -> delegate.asyncUploadApplication(applicationName, file, null));
     }
 
     @Override
-    public CloudPackage asyncUploadApplication(String applicationName, File file, UploadStatusCallback callback) throws IOException {
-        return handleUploadExceptions(() -> delegate.asyncUploadApplication(applicationName, file, callback));
+    public CloudPackage asyncUploadApplication(String applicationName, Path file, UploadStatusCallback callback) {
+        return handleExceptions(() -> delegate.asyncUploadApplication(applicationName, file, callback));
     }
 
     @Override
@@ -821,15 +848,8 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     private void handleUploadExceptions(UploadRunnable runnable) throws IOException {
-        handleUploadExceptions(() -> {
-            runnable.run();
-            return null;
-        });
-    }
-
-    private <T> T handleUploadExceptions(UploadSupplier<T> runnable) throws IOException {
         try {
-            return runnable.get();
+            runnable.run();
         } catch (AbstractCloudFoundryException e) {
             throw convertV3ClientException(e);
         }
@@ -847,16 +867,6 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     private interface UploadRunnable {
 
         void run() throws IOException;
-
-    }
-
-    /**
-     * Necessary, because upload methods can throw IOExceptions and the standard Supplier interface cannot.
-     */
-    @FunctionalInterface
-    private interface UploadSupplier<T> {
-
-        T get() throws IOException;
 
     }
 

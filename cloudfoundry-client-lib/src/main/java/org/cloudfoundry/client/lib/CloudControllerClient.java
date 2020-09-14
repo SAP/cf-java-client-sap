@@ -16,10 +16,10 @@
 
 package org.cloudfoundry.client.lib;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -46,6 +46,7 @@ import org.cloudfoundry.client.lib.domain.DropletInfo;
 import org.cloudfoundry.client.lib.domain.InstancesInfo;
 import org.cloudfoundry.client.lib.domain.Staging;
 import org.cloudfoundry.client.lib.domain.Upload;
+import org.cloudfoundry.client.v2.serviceinstances.LastOperation;
 import org.cloudfoundry.client.v3.Metadata;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.web.client.ResponseErrorHandler;
@@ -279,6 +280,8 @@ public interface CloudControllerClient {
      * @return application events
      */
     List<CloudEvent> getApplicationEvents(String applicationName);
+
+    List<CloudEvent> getEventsByActee(UUID uuid);
 
     /**
      * Get application instances info for application.
@@ -794,23 +797,29 @@ public interface CloudControllerClient {
      */
     void updateServicePlanVisibilityForBroker(String name, boolean visibility);
 
+    LastOperation getServiceLastOperation(String serviceName);
+
+    void updateServicePlan(CloudServiceInstance service);
+
+    void updateServiceParameters(CloudServiceInstance service);
+
+    void updateServiceTags(CloudServiceInstance service);
+
     /**
      * Upload an application to Cloud Foundry.
      *
      * @param applicationName application name
      * @param file path to the application archive or folder
-     * @throws java.io.IOException
      */
-    void uploadApplication(String applicationName, String file) throws IOException;
+    void uploadApplication(String applicationName, String file);
 
     /**
      * Upload an application to Cloud Foundry.
      *
      * @param applicationName the application name
      * @param file the application archive or folder
-     * @throws java.io.IOException
      */
-    void uploadApplication(String applicationName, File file) throws IOException;
+    void uploadApplication(String applicationName, Path file);
 
     /**
      * Upload an application to Cloud Foundry.
@@ -818,9 +827,8 @@ public interface CloudControllerClient {
      * @param applicationName the application name
      * @param file the application archive
      * @param callback a callback interface used to provide progress information or {@code null}
-     * @throws java.io.IOException
      */
-    void uploadApplication(String applicationName, File file, UploadStatusCallback callback) throws IOException;
+    void uploadApplication(String applicationName, Path file, UploadStatusCallback callback);
 
     /**
      * Upload an application to Cloud Foundry.
@@ -847,9 +855,9 @@ public interface CloudControllerClient {
      */
     void uploadApplication(String applicationName, InputStream inputStream, UploadStatusCallback callback) throws IOException;
 
-    CloudPackage asyncUploadApplication(String applicationName, File file) throws IOException;
+    CloudPackage asyncUploadApplication(String applicationName, Path file);
 
-    CloudPackage asyncUploadApplication(String applicationName, File file, UploadStatusCallback callback) throws IOException;
+    CloudPackage asyncUploadApplication(String applicationName, Path file, UploadStatusCallback callback);
 
     Upload getUploadStatus(UUID packageGuid);
 
