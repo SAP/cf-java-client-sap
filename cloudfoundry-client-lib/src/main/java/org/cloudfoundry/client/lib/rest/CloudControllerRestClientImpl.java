@@ -43,7 +43,6 @@ import org.cloudfoundry.client.CloudFoundryClient;
 import org.cloudfoundry.client.lib.CloudCredentials;
 import org.cloudfoundry.client.lib.CloudOperationException;
 import org.cloudfoundry.client.lib.Constants;
-import org.cloudfoundry.client.lib.RestLogCallback;
 import org.cloudfoundry.client.lib.StartingInfo;
 import org.cloudfoundry.client.lib.UploadStatusCallback;
 import org.cloudfoundry.client.lib.adapters.ImmutableRawApplicationLog;
@@ -225,8 +224,7 @@ import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.FileCopyUtils;
-import org.springframework.web.client.ResponseErrorHandler;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.reactive.function.client.WebClient;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -256,7 +254,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     private CloudCredentials credentials;
     private URL controllerUrl;
     private OAuthClient oAuthClient;
-    private RestTemplate restTemplate;
+    private WebClient webClient;
     private CloudSpace target;
 
     private CloudFoundryClient delegate;
@@ -269,21 +267,20 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     protected CloudControllerRestClientImpl() {
     }
 
-    public CloudControllerRestClientImpl(URL controllerUrl, CloudCredentials credentials, RestTemplate restTemplate,
-                                         OAuthClient oAuthClient, CloudFoundryClient delegate) {
-        this(controllerUrl, credentials, restTemplate, oAuthClient, delegate, null, null);
+    public CloudControllerRestClientImpl(URL controllerUrl, CloudCredentials credentials, WebClient webClient, OAuthClient oAuthClient,
+                                         CloudFoundryClient delegate) {
+        this(controllerUrl, credentials, webClient, oAuthClient, delegate, null, null);
     }
 
-    public CloudControllerRestClientImpl(URL controllerUrl, CloudCredentials credentials, RestTemplate restTemplate,
-                                         OAuthClient oAuthClient, CloudFoundryClient delegate, DopplerClient dopplerClient,
-                                         CloudSpace target) {
+    public CloudControllerRestClientImpl(URL controllerUrl, CloudCredentials credentials, WebClient webClient, OAuthClient oAuthClient,
+                                         CloudFoundryClient delegate, DopplerClient dopplerClient, CloudSpace target) {
         Assert.notNull(controllerUrl, "CloudControllerUrl cannot be null");
-        Assert.notNull(restTemplate, "RestTemplate cannot be null");
+        Assert.notNull(webClient, "WebClient cannot be null");
         Assert.notNull(oAuthClient, "OAuthClient cannot be null");
 
         this.controllerUrl = controllerUrl;
         this.credentials = credentials;
-        this.restTemplate = restTemplate;
+        this.webClient = webClient;
         this.oAuthClient = oAuthClient;
         this.target = target;
 
@@ -292,8 +289,8 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public RestTemplate getRestTemplate() {
-        return restTemplate;
+    public WebClient getWebClient() {
+        return webClient;
     }
 
     @Override
@@ -1080,13 +1077,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public void registerRestLogListener(RestLogCallback callBack) {
-        if (getRestTemplate() instanceof LoggingRestTemplate) {
-            ((LoggingRestTemplate) getRestTemplate()).registerRestLogListener(callBack);
-        }
-    }
-
-    @Override
     public void rename(String applicationName, String newName) {
         UUID applicationGuid = getRequiredApplicationGuid(applicationName);
         delegate.applicationsV2()
@@ -1101,11 +1091,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     public StartingInfo restartApplication(String applicationName) {
         stopApplication(applicationName);
         return startApplication(applicationName);
-    }
-
-    @Override
-    public void setResponseErrorHandler(ResponseErrorHandler errorHandler) {
-        restTemplate.setErrorHandler(errorHandler);
     }
 
     @Override
@@ -1139,13 +1124,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                 .state(CloudApplication.State.STOPPED.toString())
                                                 .build())
                 .block();
-    }
-
-    @Override
-    public void unRegisterRestLogListener(RestLogCallback callBack) {
-        if (getRestTemplate() instanceof LoggingRestTemplate) {
-            ((LoggingRestTemplate) getRestTemplate()).unRegisterRestLogListener(callBack);
-        }
     }
 
     @Override

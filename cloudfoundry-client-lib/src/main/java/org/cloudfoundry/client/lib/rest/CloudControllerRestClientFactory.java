@@ -21,25 +21,27 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.text.MessageFormat;
 import java.time.Duration;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 import org.cloudfoundry.client.CloudFoundryClient;
 import org.cloudfoundry.client.lib.CloudCredentials;
-import org.cloudfoundry.client.lib.HttpProxyConfiguration;
 import org.cloudfoundry.client.lib.adapters.CloudFoundryClientFactory;
 import org.cloudfoundry.client.lib.adapters.ImmutableCloudFoundryClientFactory;
 import org.cloudfoundry.client.lib.domain.CloudSpace;
-import org.cloudfoundry.client.lib.domain.annotation.Nullable;
 import org.cloudfoundry.client.lib.oauth2.OAuthClient;
 import org.cloudfoundry.client.lib.util.RestUtil;
 import org.cloudfoundry.doppler.DopplerClient;
 import org.cloudfoundry.reactor.ConnectionContext;
 import org.immutables.value.Value;
-import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.util.StringUtils;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
+import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClient.Builder;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -59,9 +61,6 @@ public abstract class CloudControllerRestClientFactory {
 
     public abstract Optional<Integer> getThreadPoolSize();
 
-    @Nullable
-    public abstract HttpProxyConfiguration getHttpProxyConfiguration();
-
     @Value.Default
     public boolean shouldTrustSelfSignedCertificates() {
         return false;
@@ -77,54 +76,62 @@ public abstract class CloudControllerRestClientFactory {
         return builder.build();
     }
 
-    public RestTemplate getGeneralPurposeRestTemplate() {
-        return restUtil.createRestTemplate(getHttpProxyConfiguration(), shouldTrustSelfSignedCertificates());
-    }
-
-    public CloudControllerRestClient createClient(URL controllerUrl, CloudCredentials credentials) {
-        return createClient(controllerUrl, credentials, (CloudSpace) null);
-    }
-
-    public CloudControllerRestClient createClient(URL controllerUrl, CloudCredentials credentials, OAuthClient oAuthClient) {
-        return createClient(controllerUrl, credentials, null, oAuthClient);
+    public WebClient getGeneralPurposeWebClient() {
+        return restUtil.createWebClient(shouldTrustSelfSignedCertificates());
     }
 
     public CloudControllerRestClient createClient(URL controllerUrl, CloudCredentials credentials, String organizationName,
-                                                  String spaceName) {
-        return createClient(controllerUrl, credentials, organizationName, spaceName,
-                            createOAuthClient(controllerUrl, credentials.getOrigin()));
-    }
-
-    public CloudControllerRestClient createClient(URL controllerUrl, CloudCredentials credentials, String organizationName,
-                                                  String spaceName, OAuthClient oAuthClient) {
+                                                  String spaceName, OAuthClient oAuthClient, List<ExchangeFilterFunction> exchangeFilters) {
         CloudControllerRestClient clientWithoutTarget = createClient(controllerUrl, credentials, oAuthClient);
         CloudSpace target = clientWithoutTarget.getSpace(organizationName, spaceName);
 
-        return createClient(controllerUrl, credentials, target, oAuthClient);
+        return createClient(controllerUrl, credentials, target, oAuthClient, exchangeFilters);
+    }
+
+    public CloudControllerRestClient createClient(URL controllerUrl, CloudCredentials credentials, OAuthClient oAuthClient) {
+        return createClient(controllerUrl, credentials, null, oAuthClient, Collections.emptyList());
     }
 
     public CloudControllerRestClient createClient(URL controllerUrl, CloudCredentials credentials, CloudSpace target) {
-        return createClient(controllerUrl, credentials, target, createOAuthClient(controllerUrl, credentials.getOrigin()));
+        return createClient(controllerUrl, credentials, target, createOAuthClient(controllerUrl, credentials.getOrigin()),
+                            Collections.emptyList());
     }
 
     public CloudControllerRestClient createClient(URL controllerUrl, CloudCredentials credentials, CloudSpace target,
-                                                  OAuthClient oAuthClient) {
-        RestTemplate restTemplate = createAuthorizationSettingRestTemplate(credentials, oAuthClient);
+                                                  OAuthClient oAuthClient, List<ExchangeFilterFunction> exchangeFilters) {
+        WebClient webClient = createWebClient(credentials, oAuthClient, exchangeFilters);
         CloudFoundryClient delegate = getCloudFoundryClientFactory().createClient(controllerUrl, oAuthClient);
         DopplerClient dopplerClient = getCloudFoundryClientFactory().createDopplerClient(controllerUrl, oAuthClient);
 
-        return new CloudControllerRestClientImpl(controllerUrl, credentials, restTemplate, oAuthClient, delegate, dopplerClient, target);
+        return new CloudControllerRestClientImpl(controllerUrl, credentials, webClient, oAuthClient, delegate, dopplerClient, target);
     }
 
     private OAuthClient createOAuthClient(URL controllerUrl, String origin) {
         Map<String, Object> infoMap = getInfoMap(controllerUrl);
         URL authorizationEndpoint = getAuthorizationEndpoint(infoMap);
         if (StringUtils.isEmpty(origin)) {
-            return restUtil.createOAuthClient(authorizationEndpoint, getHttpProxyConfiguration(), shouldTrustSelfSignedCertificates());
+            return restUtil.createOAuthClient(authorizationEndpoint, shouldTrustSelfSignedCertificates());
         }
         ConnectionContext connectionContext = getCloudFoundryClientFactory().getOrCreateConnectionContext(controllerUrl.getHost());
-        return restUtil.createOAuthClient(authorizationEndpoint, getHttpProxyConfiguration(), shouldTrustSelfSignedCertificates(),
-                                          connectionContext, origin);
+        return restUtil.createOAuthClient(authorizationEndpoint, shouldTrustSelfSignedCertificates(), connectionContext, origin);
+    }
+
+    private Map<String, Object> getInfoMap(URL controllerUrl) {
+        if (infoCache.containsKey(controllerUrl)) {
+            return infoCache.get(controllerUrl);
+        }
+
+        String infoResponse = getGeneralPurposeWebClient().get()
+                                                          .uri(controllerUrl + "/v2/info")
+                                                          .retrieve()
+                                                          .bodyToMono(String.class)
+                                                          .block();
+        try {
+            return objectMapper.readValue(infoResponse, new TypeReference<Map<String, Object>>() {
+            });
+        } catch (IOException e) {
+            throw new IllegalArgumentException("Error getting /v2/info from cloud controller.", e);
+        }
     }
 
     private URL getAuthorizationEndpoint(Map<String, Object> infoMap) {
@@ -138,32 +145,18 @@ public abstract class CloudControllerRestClientFactory {
         }
     }
 
-    private Map<String, Object> getInfoMap(URL controllerUrl) {
-        if (infoCache.containsKey(controllerUrl)) {
-            return infoCache.get(controllerUrl);
-        }
-
-        String infoResponse = getGeneralPurposeRestTemplate().getForObject(controllerUrl + "/v2/info", String.class);
-        try {
-            return objectMapper.readValue(infoResponse, new TypeReference<Map<String, Object>>() {
-            });
-        } catch (IOException e) {
-            throw new IllegalArgumentException("Error getting /v2/info from cloud controller.", e);
-        }
-    }
-
-    private RestTemplate createAuthorizationSettingRestTemplate(CloudCredentials credentials, OAuthClient oAuthClient) {
-        RestTemplate restTemplate = restUtil.createRestTemplate(getHttpProxyConfiguration(), shouldTrustSelfSignedCertificates());
+    private WebClient createWebClient(CloudCredentials credentials, OAuthClient oAuthClient, List<ExchangeFilterFunction> exchangeFilters) {
+        Builder webClientBuilder = restUtil.createWebClient(shouldTrustSelfSignedCertificates())
+                                           .mutate();
         oAuthClient.init(credentials);
-        setAuthorizingRequestFactory(restTemplate, credentials, oAuthClient);
-        return restTemplate;
+        addExchangeFilters(webClientBuilder, Arrays.asList(new CloudControllerRestClientRequestFilterFunction(oAuthClient)));
+        addExchangeFilters(webClientBuilder, exchangeFilters);
+        return webClientBuilder.build();
     }
 
-    private void setAuthorizingRequestFactory(RestTemplate restTemplate, CloudCredentials credentials, OAuthClient oAuthClient) {
-        ClientHttpRequestFactory requestFactory = restTemplate.getRequestFactory();
-        if (!(requestFactory instanceof CloudControllerRestClientHttpRequestFactory)) {
-            restTemplate.setRequestFactory(new CloudControllerRestClientHttpRequestFactory(requestFactory, credentials, oAuthClient));
+    private void addExchangeFilters(Builder webClientBuilder, List<ExchangeFilterFunction> exchangeFilters) {
+        for (ExchangeFilterFunction exchangeFilter : exchangeFilters) {
+            webClientBuilder.filter(exchangeFilter);
         }
     }
-
 }

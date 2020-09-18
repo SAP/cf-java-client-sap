@@ -17,19 +17,12 @@
 package org.cloudfoundry.client.lib.oauth2;
 
 import java.net.URL;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.cloudfoundry.client.lib.CloudCredentials;
 import org.cloudfoundry.client.lib.CloudOperationException;
 import org.cloudfoundry.client.lib.adapters.OAuthTokenProvider;
-import org.cloudfoundry.client.lib.util.JsonUtil;
 import org.cloudfoundry.reactor.TokenProvider;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.client.resource.OAuth2AccessDeniedException;
 import org.springframework.security.oauth2.client.resource.OAuth2ProtectedResourceDetails;
 import org.springframework.security.oauth2.client.token.AccessTokenRequest;
@@ -38,7 +31,7 @@ import org.springframework.security.oauth2.client.token.grant.password.ResourceO
 import org.springframework.security.oauth2.client.token.grant.password.ResourceOwnerPasswordResourceDetails;
 import org.springframework.security.oauth2.common.AuthenticationScheme;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.reactive.function.client.WebClient;
 
 /**
  * Client that can handle authentication against a UAA instance
@@ -48,16 +41,14 @@ import org.springframework.web.client.RestTemplate;
  */
 public class OAuthClient {
 
-    private static final String AUTHORIZATION_HEADER_KEY = "Authorization";
-
     private URL authorizationUrl;
-    private RestTemplate restTemplate;
+    private WebClient webClient;
     protected OAuth2AccessToken token;
     protected CloudCredentials credentials;
 
-    public OAuthClient(URL authorizationUrl, RestTemplate restTemplate) {
+    public OAuthClient(URL authorizationUrl, WebClient webClient) {
         this.authorizationUrl = authorizationUrl;
-        this.restTemplate = restTemplate;
+        this.webClient = webClient;
     }
 
     public void init(CloudCredentials credentials) {
@@ -100,7 +91,7 @@ public class OAuthClient {
                                                                      credentials.getClientId(), credentials.getClientSecret());
         AccessTokenRequest request = createAccessTokenRequest(credentials.getEmail(), credentials.getPassword());
 
-        ResourceOwnerPasswordAccessTokenProvider provider = createResourceOwnerPasswordAccessTokenProvider();
+        ResourceOwnerPasswordAccessTokenProvider provider = new ResourceOwnerPasswordAccessTokenProvider();
         try {
             return provider.obtainAccessToken(resource, request);
         } catch (OAuth2AccessDeniedException oauthEx) {
@@ -114,35 +105,13 @@ public class OAuthClient {
                                                                      credentials.getClientId(), credentials.getClientSecret());
         AccessTokenRequest request = createAccessTokenRequest(credentials.getEmail(), credentials.getPassword());
 
-        ResourceOwnerPasswordAccessTokenProvider provider = createResourceOwnerPasswordAccessTokenProvider();
+        ResourceOwnerPasswordAccessTokenProvider provider = new ResourceOwnerPasswordAccessTokenProvider();
 
         return provider.refreshAccessToken(resource, token.getRefreshToken(), request);
     }
 
     public TokenProvider getTokenProvider() {
         return new OAuthTokenProvider(this);
-    }
-
-    @SuppressWarnings({ "rawtypes"})
-    public void changePassword(String oldPassword, String newPassword) {
-        HttpHeaders headers = new HttpHeaders();
-        headers.add(AUTHORIZATION_HEADER_KEY, token.getTokenType() + " " + token.getValue());
-        HttpEntity info = new HttpEntity(headers);
-        ResponseEntity<String> response = restTemplate.exchange(authorizationUrl + "/userinfo", HttpMethod.GET, info, String.class);
-        Map<String, Object> responseMap = JsonUtil.convertJsonToMap(response.getBody());
-        String userId = (String) responseMap.get("user_id");
-        Map<String, Object> body = new HashMap<>();
-        body.put("schemas", new String[] { "urn:scim:schemas:core:1.0" });
-        body.put("password", newPassword);
-        body.put("oldPassword", oldPassword);
-        HttpEntity<Map> httpEntity = new HttpEntity<>(body, headers);
-        restTemplate.put(authorizationUrl + "/User/{id}/password", httpEntity, userId);
-    }
-
-    protected ResourceOwnerPasswordAccessTokenProvider createResourceOwnerPasswordAccessTokenProvider() {
-        ResourceOwnerPasswordAccessTokenProvider resourceOwnerPasswordAccessTokenProvider = new ResourceOwnerPasswordAccessTokenProvider();
-        resourceOwnerPasswordAccessTokenProvider.setRequestFactory(restTemplate.getRequestFactory()); // copy the http proxy along
-        return resourceOwnerPasswordAccessTokenProvider;
     }
 
     private AccessTokenRequest createAccessTokenRequest(String username, String password) {

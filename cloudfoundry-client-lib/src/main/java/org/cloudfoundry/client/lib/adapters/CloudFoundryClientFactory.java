@@ -11,10 +11,9 @@ import org.cloudfoundry.client.lib.oauth2.OAuthClient;
 import org.cloudfoundry.doppler.DopplerClient;
 import org.cloudfoundry.reactor.ConnectionContext;
 import org.cloudfoundry.reactor.DefaultConnectionContext;
-import org.cloudfoundry.reactor.ProxyConfiguration;
 import org.cloudfoundry.reactor.client.ReactorCloudFoundryClient;
-import org.immutables.value.Value;
 import org.cloudfoundry.reactor.doppler.ReactorDopplerClient;
+import org.immutables.value.Value;
 
 @Value.Immutable
 public abstract class CloudFoundryClientFactory {

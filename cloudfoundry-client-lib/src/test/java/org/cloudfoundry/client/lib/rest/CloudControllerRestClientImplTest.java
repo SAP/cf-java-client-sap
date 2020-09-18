@@ -12,7 +12,6 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.apache.http.HttpStatus;
 import org.cloudfoundry.client.CloudFoundryClient;
 import org.cloudfoundry.client.lib.CloudCredentials;
 import org.cloudfoundry.client.lib.CloudOperationException;
@@ -40,7 +39,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.reactive.function.client.WebClient;
 
 import reactor.core.publisher.Mono;
 
@@ -63,7 +63,7 @@ public class CloudControllerRestClientImplTest {
     @Mock
     private OAuthClient oAuthClient;
     @Mock
-    private RestTemplate restTemplate;
+    private WebClient webClient;
     @Mock
     private DopplerClient dopplerClient;
     @Mock
@@ -73,7 +73,7 @@ public class CloudControllerRestClientImplTest {
     @BeforeEach
     public void setUp() {
         MockitoAnnotations.initMocks(this);
-        controllerClient = new CloudControllerRestClientImpl(CONTROLLER_URL, CREDENTIALS, restTemplate, oAuthClient, delegate);
+        controllerClient = new CloudControllerRestClientImpl(CONTROLLER_URL, CREDENTIALS, webClient, oAuthClient, delegate);
     }
 
     @Test
@@ -109,7 +109,7 @@ public class CloudControllerRestClientImplTest {
         Mockito.when(delegate.services())
                .thenReturn(services);
         Mockito.when(services.get(request))
-               .thenReturn(Mono.error(clientV2Exception(HttpStatus.SC_FORBIDDEN)));
+               .thenReturn(Mono.error(clientV2Exception(HttpStatus.FORBIDDEN.value())));
 
         Resource<ServiceEntity> serviceResource = controllerClient.getServiceResource(UUID.fromString(GUID))
                                                                   .block();
@@ -151,7 +151,7 @@ public class CloudControllerRestClientImplTest {
         Mockito.when(delegate.servicePlans())
                .thenReturn(servicePlans);
         Mockito.when(servicePlans.get(request))
-               .thenReturn(Mono.error(clientV2Exception(HttpStatus.SC_FORBIDDEN)));
+               .thenReturn(Mono.error(clientV2Exception(HttpStatus.FORBIDDEN.value())));
 
         Resource<ServicePlanEntity> servicePlanResource = controllerClient.getServicePlanResource(UUID.fromString(GUID))
                                                                           .block();
