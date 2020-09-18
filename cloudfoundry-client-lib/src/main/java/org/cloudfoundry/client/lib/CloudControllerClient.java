@@ -652,13 +652,6 @@ public interface CloudControllerClient {
     void logout();
 
     /**
-     * Register a new RestLogCallback
-     *
-     * @param callBack the callback to be registered
-     */
-    void registerRestLogListener(RestLogCallback callBack);
-
-    /**
      * Rename an application.
      *
      * @param applicationName the current name
@@ -672,13 +665,6 @@ public interface CloudControllerClient {
      * @param applicationName name of application
      */
     StartingInfo restartApplication(String applicationName);
-
-    /**
-     * Override the default REST response error handler with a custom error handler.
-     *
-     * @param errorHandler
-     */
-    void setResponseErrorHandler(ResponseErrorHandler errorHandler);
 
     /**
      * Start application. May return starting info if the response obtained after the start request contains headers . If the response does
@@ -695,13 +681,6 @@ public interface CloudControllerClient {
      * @param applicationName name of application
      */
     void stopApplication(String applicationName);
-
-    /**
-     * Un-register a RestLogCallback
-     *
-     * @param callBack the callback to be un-registered
-     */
-    void unRegisterRestLogListener(RestLogCallback callBack);
 
     /**
      * Un-associate (unprovision) a service from an application.
@@ -825,8 +804,7 @@ public interface CloudControllerClient {
     /**
      * Upload an application to Cloud Foundry.
      *
-     * This form of {@code uploadApplication} will read the passed {@code InputStream} and copy the contents to a temporary file for
-     * upload.
+     * This form of {@code uploadApplication} will read the passed {@code InputStream} and copy the contents to a temporary file for upload.
      *
      * @param applicationName the application name
      * @param inputStream the InputStream to read from
@@ -837,8 +815,7 @@ public interface CloudControllerClient {
     /**
      * Upload an application to Cloud Foundry.
      *
-     * This form of {@code uploadApplication} will read the passed {@code InputStream} and copy the contents to a temporary file for
-     * upload.
+     * This form of {@code uploadApplication} will read the passed {@code InputStream} and copy the contents to a temporary file for upload.
      *
      * @param applicationName the application name
      * @param inputStream the InputStream to read from

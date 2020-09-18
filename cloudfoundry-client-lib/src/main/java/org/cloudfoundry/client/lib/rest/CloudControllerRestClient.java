@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import org.cloudfoundry.client.lib.RestLogCallback;
 import org.cloudfoundry.client.lib.StartingInfo;
 import org.cloudfoundry.client.lib.UploadStatusCallback;
 import org.cloudfoundry.client.lib.domain.ApplicationLog;
@@ -53,7 +52,7 @@ import org.cloudfoundry.client.lib.oauth2.OAuthClient;
 import org.cloudfoundry.client.v3.Metadata;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.web.client.ResponseErrorHandler;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.reactive.function.client.WebClient;
 
 /**
  * Interface defining operations available for the cloud controller REST client implementations
@@ -222,19 +221,13 @@ public interface CloudControllerRestClient {
 
     void logout();
 
-    void registerRestLogListener(RestLogCallback callBack);
-
     void rename(String applicationName, String newName);
 
     StartingInfo restartApplication(String applicationName);
 
-    void setResponseErrorHandler(ResponseErrorHandler errorHandler);
-
     StartingInfo startApplication(String applicationName);
 
     void stopApplication(String applicationName);
-
-    void unRegisterRestLogListener(RestLogCallback callBack);
 
     void unbindServiceInstance(String applicationName, String serviceInstanceName);
 
@@ -280,7 +273,7 @@ public interface CloudControllerRestClient {
 
     List<CloudBuild> getBuildsForApplication(UUID applicationGuid);
 
-    RestTemplate getRestTemplate();
+    WebClient getWebClient();
 
     OAuthClient getOAuthClient();
 

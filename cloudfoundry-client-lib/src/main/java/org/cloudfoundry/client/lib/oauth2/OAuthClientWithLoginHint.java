@@ -10,7 +10,7 @@ import org.cloudfoundry.reactor.TokenProvider;
 import org.cloudfoundry.reactor.tokenprovider.PasswordGrantTokenProvider;
 import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.reactive.function.client.WebClient;
 
 public class OAuthClientWithLoginHint extends OAuthClient {
 
@@ -20,8 +20,8 @@ public class OAuthClientWithLoginHint extends OAuthClient {
     private TokenProvider tokenProvider;
     private Map<String, String> loginHintMap;
 
-    public OAuthClientWithLoginHint(URL authorizationUrl, RestTemplate restTemplate, ConnectionContext connectionContext, String origin) {
-        super(authorizationUrl, restTemplate);
+    public OAuthClientWithLoginHint(URL authorizationUrl, WebClient webClient, ConnectionContext connectionContext, String origin) {
+        super(authorizationUrl, webClient);
         this.connectionContext = connectionContext;
         this.loginHintMap = new HashMap<>();
         loginHintMap.put(ORIGIN_KEY, origin);
@@ -54,11 +54,6 @@ public class OAuthClientWithLoginHint extends OAuthClient {
                                          .password(credentials.getPassword())
                                          .loginHint(loginHintAsJson)
                                          .build();
-    }
-
-    @Override
-    public void changePassword(String oldPassword, String newPassword) {
-        throw new UnsupportedOperationException();
     }
 
     private OAuth2AccessToken getOrRefreshToken() {

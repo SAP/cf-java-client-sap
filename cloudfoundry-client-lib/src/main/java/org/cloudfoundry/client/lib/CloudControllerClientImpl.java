@@ -55,7 +55,6 @@ import org.cloudfoundry.client.v3.Metadata;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.util.Assert;
-import org.springframework.web.client.ResponseErrorHandler;
 
 /**
  * A Java client to exercise the Cloud Foundry API.
@@ -73,99 +72,23 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     private CloudInfo info;
 
     /**
-     * Construct client for anonymous user. Useful only to get to the '/info' endpoint.
-     */
-
-    public CloudControllerClientImpl(URL controllerUrl) {
-        this(controllerUrl, null, null, (HttpProxyConfiguration) null, false);
-    }
-
-    public CloudControllerClientImpl(URL controllerUrl, boolean trustSelfSignedCerts) {
-        this(controllerUrl, null, null, (HttpProxyConfiguration) null, trustSelfSignedCerts);
-    }
-
-    public CloudControllerClientImpl(URL controllerUrl, HttpProxyConfiguration httpProxyConfiguration) {
-        this(controllerUrl, null, null, httpProxyConfiguration, false);
-    }
-
-    public CloudControllerClientImpl(URL controllerUrl, HttpProxyConfiguration httpProxyConfiguration, boolean trustSelfSignedCerts) {
-        this(controllerUrl, null, null, httpProxyConfiguration, trustSelfSignedCerts);
-    }
-
-    /**
      * Construct client without a default organization and space.
      */
 
     public CloudControllerClientImpl(URL controllerUrl, CloudCredentials credentials) {
-        this(controllerUrl, credentials, null, (HttpProxyConfiguration) null, false);
+        this(controllerUrl, credentials, null, false);
     }
 
     public CloudControllerClientImpl(URL controllerUrl, CloudCredentials credentials, boolean trustSelfSignedCerts) {
-        this(controllerUrl, credentials, null, (HttpProxyConfiguration) null, trustSelfSignedCerts);
-    }
-
-    public CloudControllerClientImpl(URL controllerUrl, CloudCredentials credentials, HttpProxyConfiguration httpProxyConfiguration) {
-        this(controllerUrl, credentials, null, httpProxyConfiguration, false);
-    }
-
-    public CloudControllerClientImpl(URL controllerUrl, CloudCredentials credentials, HttpProxyConfiguration httpProxyConfiguration,
-                                     boolean trustSelfSignedCerts) {
-        this(controllerUrl, credentials, null, httpProxyConfiguration, trustSelfSignedCerts);
-    }
-
-    /**
-     * Construct a client with a default CloudSpace.
-     */
-
-    public CloudControllerClientImpl(URL controllerUrl, CloudCredentials credentials, CloudSpace target) {
-        this(controllerUrl, credentials, target, null, false);
+        this(controllerUrl, credentials, null, trustSelfSignedCerts);
     }
 
     public CloudControllerClientImpl(URL controllerUrl, CloudCredentials credentials, CloudSpace target, boolean trustSelfSignedCerts) {
-        this(controllerUrl, credentials, target, null, trustSelfSignedCerts);
-    }
-
-    public CloudControllerClientImpl(URL controllerUrl, CloudCredentials credentials, CloudSpace target,
-                                     HttpProxyConfiguration httpProxyConfiguration) {
-        this(controllerUrl, credentials, target, httpProxyConfiguration, false);
-    }
-
-    public CloudControllerClientImpl(URL controllerUrl, CloudCredentials credentials, CloudSpace target,
-                                     HttpProxyConfiguration httpProxyConfiguration, boolean trustSelfSignedCerts) {
         Assert.notNull(controllerUrl, "URL for cloud controller cannot be null");
         CloudControllerRestClientFactory restClientFactory = ImmutableCloudControllerRestClientFactory.builder()
-                                                                                                      .httpProxyConfiguration(httpProxyConfiguration)
                                                                                                       .shouldTrustSelfSignedCertificates(trustSelfSignedCerts)
                                                                                                       .build();
         this.delegate = restClientFactory.createClient(controllerUrl, credentials, target);
-    }
-
-    /**
-     * Construct a client with a default space name and organization name.
-     */
-
-    public CloudControllerClientImpl(URL controllerUrl, CloudCredentials credentials, String organizationName, String spaceName) {
-        this(controllerUrl, credentials, organizationName, spaceName, null, false);
-    }
-
-    public CloudControllerClientImpl(URL controllerUrl, CloudCredentials credentials, String organizationName, String spaceName,
-                                     boolean trustSelfSignedCerts) {
-        this(controllerUrl, credentials, organizationName, spaceName, null, trustSelfSignedCerts);
-    }
-
-    public CloudControllerClientImpl(URL controllerUrl, CloudCredentials credentials, String organizationName, String spaceName,
-                                     HttpProxyConfiguration httpProxyConfiguration) {
-        this(controllerUrl, credentials, organizationName, spaceName, httpProxyConfiguration, false);
-    }
-
-    public CloudControllerClientImpl(URL controllerUrl, CloudCredentials credentials, String organizationName, String spaceName,
-                                     HttpProxyConfiguration httpProxyConfiguration, boolean trustSelfSignedCerts) {
-        Assert.notNull(controllerUrl, "URL for cloud controller cannot be null");
-        CloudControllerRestClientFactory restClientFactory = ImmutableCloudControllerRestClientFactory.builder()
-                                                                                                      .httpProxyConfiguration(httpProxyConfiguration)
-                                                                                                      .shouldTrustSelfSignedCertificates(trustSelfSignedCerts)
-                                                                                                      .build();
-        this.delegate = restClientFactory.createClient(controllerUrl, credentials, organizationName, spaceName);
     }
 
     /**
@@ -601,11 +524,6 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public void registerRestLogListener(RestLogCallback callBack) {
-        delegate.registerRestLogListener(callBack);
-    }
-
-    @Override
     public void rename(String applicationName, String newName) {
         handleExceptions(() -> delegate.rename(applicationName, newName));
     }
@@ -616,11 +534,6 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public void setResponseErrorHandler(ResponseErrorHandler errorHandler) {
-        delegate.setResponseErrorHandler(errorHandler);
-    }
-
-    @Override
     public StartingInfo startApplication(String applicationName) {
         return handleExceptions(() -> delegate.startApplication(applicationName));
     }
@@ -628,11 +541,6 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     @Override
     public void stopApplication(String applicationName) {
         handleExceptions(() -> delegate.stopApplication(applicationName));
-    }
-
-    @Override
-    public void unRegisterRestLogListener(RestLogCallback callBack) {
-        delegate.unRegisterRestLogListener(callBack);
     }
 
     @Override
