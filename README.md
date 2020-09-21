@@ -1,4 +1,4 @@
-# cf-java-client [![Build Status](https://travis-ci.org/SAP/cf-java-client-sap.svg?branch=master)](https://travis-ci.org/SAP/cf-java-client-sap)
+# cf-java-client [![Build Status](https://travis-ci.org/SAP/cf-java-client-sap.svg?branch=master)](https://travis-ci.org/SAP/cf-java-client-sap) [![REUSE status](https://api.reuse.software/badge/github.com/SAP/cf-java-client-sap)](https://api.reuse.software/info/github.com/SAP/cf-java-client-sap)
 
 This is a fork of the 1.1.4.RELEASE version of the official Cloud Foundry Java client (https://github.com/cloudfoundry/cf-java-client/tree/v1.1.4.RELEASE). It has been modified to include several bugfixes and improvements.
 
@@ -86,6 +86,3 @@ mvn clean install
 
 Additionally, the project uses [Immutables](https://immutables.github.io/) to generate value objects. As a result, it won't compile in IDEs like Eclipse or IntelliJ unless you also have an enabled annotation processor. See [this guide](https://immutables.github.io/apt.html) for instructions on how to configure your IDE.
 
-# License
-Copyright (c) 2017 SAP SE or an SAP affiliate company. All rights reserved.
-This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the [LICENSE](https://github.com/SAP/cf-java-client-sap/blob/master/LICENSE) file.
