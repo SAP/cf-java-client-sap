@@ -16,15 +16,16 @@
 
 package org.cloudfoundry.client.lib.rest;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -154,7 +155,6 @@ import org.cloudfoundry.client.v2.serviceinstances.CreateServiceInstanceRequest;
 import org.cloudfoundry.client.v2.serviceinstances.DeleteServiceInstanceRequest;
 import org.cloudfoundry.client.v2.serviceinstances.GetServiceInstanceParametersRequest;
 import org.cloudfoundry.client.v2.serviceinstances.GetServiceInstanceParametersResponse;
-import org.cloudfoundry.client.v2.serviceinstances.LastOperation;
 import org.cloudfoundry.client.v2.serviceinstances.UnionServiceInstanceEntity;
 import org.cloudfoundry.client.v2.servicekeys.CreateServiceKeyRequest;
 import org.cloudfoundry.client.v2.servicekeys.DeleteServiceKeyRequest;
@@ -182,7 +182,6 @@ import org.cloudfoundry.client.v2.stacks.GetStackRequest;
 import org.cloudfoundry.client.v2.stacks.ListStacksRequest;
 import org.cloudfoundry.client.v2.stacks.StackEntity;
 import org.cloudfoundry.client.v2.userprovidedserviceinstances.CreateUserProvidedServiceInstanceRequest;
-import org.cloudfoundry.client.v2.userprovidedserviceinstances.UpdateUserProvidedServiceInstanceRequest;
 import org.cloudfoundry.client.v2.users.UserEntity;
 import org.cloudfoundry.client.v3.BuildpackData;
 import org.cloudfoundry.client.v3.Lifecycle;
@@ -225,6 +224,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.FileCopyUtils;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestTemplate;
 
@@ -631,12 +631,12 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     @Override
     public List<CloudEvent> getApplicationEvents(String applicationName) {
         UUID applicationGuid = getRequiredApplicationGuid(applicationName);
-        return getEventsByActee(applicationGuid);
+        return getApplicationEvents(applicationGuid);
     }
 
     @Override
-    public List<CloudEvent> getEventsByActee(UUID uuid) {
-        return findEventsByActee(uuid.toString());
+    public List<CloudEvent> getApplicationEvents(UUID applicationGuid) {
+        return findEventsByActee(applicationGuid.toString());
     }
 
     @Override
@@ -761,8 +761,9 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         RecentLogsRequest request = RecentLogsRequest.builder()
                                                      .applicationId(applicationGuid.toString())
                                                      .build();
-        return fetchFlux(() -> dopplerClient.recentLogs(request), ImmutableRawApplicationLog::of).collectSortedList()
-                                                                                                 .block();
+        return fetchFlux(() -> dopplerClient.recentLogs(request),
+                         ImmutableRawApplicationLog::of).collectSortedList(Comparator.comparing(ApplicationLog::getTimestamp))
+                                                        .block();
     }
 
     @Override
@@ -868,64 +869,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     @Override
     public List<CloudServiceOffering> getServiceOfferings() {
         return fetchListWithAuxiliaryContent(this::getServiceResources, this::zipWithAuxiliaryServiceOfferingContent);
-    }
-
-    @Override
-    public LastOperation getServiceLastOperation(String serviceName) {
-        Resource<UnionServiceInstanceEntity> resource = getServiceInstanceResourceByName(serviceName).block();
-        if (resource == null) {
-            throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Service instance " + serviceName + " not found.");
-        }
-        return resource.getEntity()
-                       .getLastOperation();
-    }
-
-    @Override
-    public void updateServicePlan(CloudServiceInstance service) {
-        CloudServicePlan plan = findPlanForService(service);
-        delegate.serviceInstances()
-                .update(org.cloudfoundry.client.v2.serviceinstances.UpdateServiceInstanceRequest.builder()
-                        .servicePlanId(plan.getGuid()
-                                           .toString())
-                        .acceptsIncomplete(true)
-                        .build())
-                .block();
-    }
-
-    @Override
-    public void updateServiceParameters(CloudServiceInstance service) {
-        if (service.isUserProvided()) {
-            delegate.userProvidedServiceInstances()
-                    .update(UpdateUserProvidedServiceInstanceRequest.builder()
-                            .credentials(service.getCredentials())
-                            .build())
-                    .block();
-            return;
-        }
-        delegate.serviceInstances()
-                .update(org.cloudfoundry.client.v2.serviceinstances.UpdateServiceInstanceRequest.builder()
-                        .parameters(service.getCredentials())
-                        .acceptsIncomplete(true)
-                        .build())
-                .block();
-    }
-
-    @Override
-    public void updateServiceTags(CloudServiceInstance service) {
-        if (service.isUserProvided()) {
-            delegate.userProvidedServiceInstances()
-                    .update(UpdateUserProvidedServiceInstanceRequest.builder()
-                            .tags(service.getTags())
-                            .build())
-                    .block();
-            return;
-        }
-        delegate.serviceInstances()
-                .update(org.cloudfoundry.client.v2.serviceinstances.UpdateServiceInstanceRequest.builder()
-                        .tags(service.getTags())
-                        .acceptsIncomplete(true)
-                        .build())
-                .block();
     }
 
     @Override
@@ -1389,7 +1332,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public void uploadApplication(String applicationName, Path file, UploadStatusCallback callback) {
+    public void uploadApplication(String applicationName, File file, UploadStatusCallback callback) throws IOException {
         CloudPackage cloudPackage = startUpload(applicationName, file);
         processAsyncUpload(cloudPackage, callback);
     }
@@ -1398,20 +1341,20 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     public void uploadApplication(String applicationName, InputStream inputStream, UploadStatusCallback callback) throws IOException {
         Assert.notNull(inputStream, "InputStream must not be null");
 
-        Path file = null;
+        File file = null;
         try {
             file = createTemporaryUploadFile(inputStream);
             uploadApplication(applicationName, file, callback);
         } finally {
             IOUtils.closeQuietly(inputStream);
             if (file != null) {
-                Files.deleteIfExists(file);
+                file.delete();
             }
         }
     }
 
     @Override
-    public CloudPackage asyncUploadApplication(String applicationName, Path file, UploadStatusCallback callback) {
+    public CloudPackage asyncUploadApplication(String applicationName, File file, UploadStatusCallback callback) throws IOException {
         CloudPackage cloudPackage = startUpload(applicationName, file);
         processAsyncUploadInBackground(cloudPackage, callback);
         return cloudPackage;
@@ -1771,7 +1714,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     private List<CloudServicePlan> getPlans(List<CloudServiceOffering> offerings) {
         return offerings.stream()
                         .map(CloudServiceOffering::getServicePlans)
-                        .flatMap(List::stream)
+                        .flatMap(Collection::stream)
                         .collect(Collectors.toList());
     }
 
@@ -1871,13 +1814,15 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                       .build());
     }
 
-    private Path createTemporaryUploadFile(InputStream inputStream) throws IOException {
-        Path file = Files.createTempFile("cfjava", null);
-        Files.copy(inputStream, file);
+    private File createTemporaryUploadFile(InputStream inputStream) throws IOException {
+        File file = File.createTempFile("cfjava", null);
+        FileOutputStream outputStream = new FileOutputStream(file);
+        FileCopyUtils.copy(inputStream, outputStream);
+        outputStream.close();
         return file;
     }
 
-    private CloudPackage startUpload(String applicationName, Path file) {
+    private CloudPackage startUpload(String applicationName, File file) {
         Assert.notNull(applicationName, "AppName must not be null");
         Assert.notNull(file, "File must not be null");
 
@@ -1886,7 +1831,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
         delegate.packages()
                 .upload(UploadPackageRequest.builder()
-                                            .bits(file)
+                                            .bits(file.toPath())
                                             .packageId(packageGuid.toString())
                                             .build())
                 .block();
@@ -1992,11 +1937,17 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     private void extractDomainInfo(Map<String, UUID> existingDomains, Map<String, String> uriInfo, String domain, String hostName,
                                    String path) {
-        if (existingDomains.containsKey(domain)) {
-            uriInfo.put("domainName", domain);
-            uriInfo.put("host", hostName);
-            uriInfo.put("path", path);
+        for (String existingDomain : existingDomains.keySet()) {
+            if (domain.equals(existingDomain)) {
+                uriInfo.put("domainName", existingDomain);
+                uriInfo.put("host", hostName);
+                uriInfo.put("path", path);
+            }
         }
+    }
+
+    protected String getUrl(String path) {
+        return controllerUrl + (path.startsWith(DEFAULT_PATH_SEPARATOR) ? path : DEFAULT_PATH_SEPARATOR + path);
     }
 
     private void addUris(List<String> uris, UUID applicationGuid) {
@@ -2416,9 +2367,13 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     private List<CloudRoute> fetchOrphanRoutes(String domainName) {
-        return getRoutes(domainName).stream()
-                                    .filter(route -> !route.isUsed())
-                                    .collect(Collectors.toList());
+        List<CloudRoute> orphanRoutes = new ArrayList<>();
+        for (CloudRoute route : getRoutes(domainName)) {
+            if (!route.isUsed()) {
+                orphanRoutes.add(route);
+            }
+        }
+        return orphanRoutes;
     }
 
     private CloudStack findStackResource(String name) {
@@ -2563,7 +2518,8 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         availableDomains.addAll(getSharedDomains());
         Map<String, UUID> domains = new HashMap<>(availableDomains.size());
         for (CloudDomain availableDomain : availableDomains) {
-            domains.put(availableDomain.getName(), availableDomain.getGuid());
+            domains.put(availableDomain.getName(), availableDomain.getMetadata()
+                                                                  .getGuid());
         }
         return domains;
     }
