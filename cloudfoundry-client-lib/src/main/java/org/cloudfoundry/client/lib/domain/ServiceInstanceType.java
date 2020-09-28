@@ -22,8 +22,7 @@ public enum ServiceInstanceType {
     }
 
     public static ServiceInstanceType valueOfWithDefault(String type) {
-        return Arrays.asList(ServiceInstanceType.values())
-                     .stream()
+        return Arrays.stream(ServiceInstanceType.values())
                      .filter(serviceInstanceType -> serviceInstanceType.toString()
                                                                        .equalsIgnoreCase(type))
                      .findFirst()

@@ -16,10 +16,10 @@
 
 package org.cloudfoundry.client.lib.rest;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -249,11 +249,11 @@ public interface CloudControllerRestClient {
 
     void updateServicePlanVisibilityForBroker(String name, boolean visibility);
 
-    void uploadApplication(String applicationName, File file, UploadStatusCallback callback) throws IOException;
+    void uploadApplication(String applicationName, Path file, UploadStatusCallback callback);
 
     void uploadApplication(String applicationName, InputStream inputStream, UploadStatusCallback callback) throws IOException;
 
-    CloudPackage asyncUploadApplication(String applicationName, File file, UploadStatusCallback callback) throws IOException;
+    CloudPackage asyncUploadApplication(String applicationName, Path file, UploadStatusCallback callback);
 
     Upload getUploadStatus(UUID packageGuid);
 

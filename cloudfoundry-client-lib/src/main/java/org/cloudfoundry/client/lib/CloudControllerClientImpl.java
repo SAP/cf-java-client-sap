@@ -16,10 +16,11 @@
 
 package org.cloudfoundry.client.lib;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -614,18 +615,18 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public void uploadApplication(String applicationName, String file) throws IOException {
-        handleUploadExceptions(() -> delegate.uploadApplication(applicationName, new File(file), null));
+    public void uploadApplication(String applicationName, String file) {
+        handleExceptions(() -> delegate.uploadApplication(applicationName, Paths.get(file), null));
     }
 
     @Override
-    public void uploadApplication(String applicationName, File file) throws IOException {
-        handleUploadExceptions(() -> delegate.uploadApplication(applicationName, file, null));
+    public void uploadApplication(String applicationName, Path file) {
+        handleExceptions(() -> delegate.uploadApplication(applicationName, file, null));
     }
 
     @Override
-    public void uploadApplication(String applicationName, File file, UploadStatusCallback callback) throws IOException {
-        handleUploadExceptions(() -> delegate.uploadApplication(applicationName, file, callback));
+    public void uploadApplication(String applicationName, Path file, UploadStatusCallback callback) {
+        handleExceptions(() -> delegate.uploadApplication(applicationName, file, callback));
     }
 
     @Override
@@ -639,13 +640,13 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public CloudPackage asyncUploadApplication(String applicationName, File file) throws IOException {
-        return handleUploadExceptions(() -> delegate.asyncUploadApplication(applicationName, file, null));
+    public CloudPackage asyncUploadApplication(String applicationName, Path file) {
+        return handleExceptions(() -> delegate.asyncUploadApplication(applicationName, file, null));
     }
 
     @Override
-    public CloudPackage asyncUploadApplication(String applicationName, File file, UploadStatusCallback callback) throws IOException {
-        return handleUploadExceptions(() -> delegate.asyncUploadApplication(applicationName, file, callback));
+    public CloudPackage asyncUploadApplication(String applicationName, Path file, UploadStatusCallback callback) {
+        return handleExceptions(() -> delegate.asyncUploadApplication(applicationName, file, callback));
     }
 
     @Override
@@ -729,15 +730,8 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     private void handleUploadExceptions(UploadRunnable runnable) throws IOException {
-        handleUploadExceptions(() -> {
-            runnable.run();
-            return null;
-        });
-    }
-
-    private <T> T handleUploadExceptions(UploadSupplier<T> runnable) throws IOException {
         try {
-            return runnable.get();
+            runnable.run();
         } catch (AbstractCloudFoundryException e) {
             throw convertV3ClientException(e);
         }
@@ -755,16 +749,6 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     private interface UploadRunnable {
 
         void run() throws IOException;
-
-    }
-
-    /**
-     * Necessary, because upload methods can throw IOExceptions and the standard Supplier interface cannot.
-     */
-    @FunctionalInterface
-    private interface UploadSupplier<T> {
-
-        T get() throws IOException;
 
     }
 
