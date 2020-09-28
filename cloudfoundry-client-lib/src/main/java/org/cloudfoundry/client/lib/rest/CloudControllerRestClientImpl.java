@@ -1660,14 +1660,14 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                         .list(pageRequestSupplier.apply(page)));
     }
 
-    private Mono<? extends Resource<ServiceBindingEntity>>
+    private Flux<? extends Resource<ServiceBindingEntity>>
             getServiceBindingResourceByApplicationGuidAndServiceInstanceGuid(UUID applicationGuid, UUID serviceInstanceGuid) {
         IntFunction<ListApplicationServiceBindingsRequest> pageRequestSupplier = page -> ListApplicationServiceBindingsRequest.builder()
                                                                                                                               .applicationId(applicationGuid.toString())
                                                                                                                               .serviceInstanceId(serviceInstanceGuid.toString())
                                                                                                                               .page(page)
                                                                                                                               .build();
-        return getApplicationServiceBindingResources(pageRequestSupplier).singleOrEmpty();
+        return getApplicationServiceBindingResources(pageRequestSupplier);
     }
 
     private Flux<? extends Resource<ServiceBindingEntity>> getServiceBindingResourcesByApplicationGuid(UUID applicationGuid) {
@@ -2514,7 +2514,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     private UUID getServiceBindingGuid(UUID applicationGuid, UUID serviceInstanceGuid) {
         return getServiceBindingResourceByApplicationGuidAndServiceInstanceGuid(applicationGuid, serviceInstanceGuid).map(this::getGuid)
-                                                                                                                     .block();
+                                                                                                                     .blockFirst();
     }
 
     private List<UUID> getGuids(Flux<? extends Resource<?>> resources) {
