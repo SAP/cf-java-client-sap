@@ -15,7 +15,6 @@
     </parent>
 
     <properties>
-        <java.version>1.8</java.version>
         <spring.framework.version>5.2.8.RELEASE</spring.framework.version>
         <jackson.version>2.10.1</jackson.version>
     </properties>
@@ -84,8 +83,8 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.8.1</version>
                 <configuration>
-                    <source>${java.version}</source>
-                    <target>${java.version}</target>
+                    <source>11</source>
+                    <target>11</target>
                 </configuration>
             </plugin>
             <plugin>
