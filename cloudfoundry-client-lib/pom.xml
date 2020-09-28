@@ -54,7 +54,7 @@
         <dependency>
             <groupId>org.cloudfoundry</groupId>
             <artifactId>cloudfoundry-client-reactor</artifactId>
-            <version>4.8.0.RELEASE</version>
+            <version>4.10.0.RELEASE</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/io.micrometer/micrometer-core -->
         <dependency>
