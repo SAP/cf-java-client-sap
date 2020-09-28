@@ -37,29 +37,7 @@ public abstract class CloudBuild extends CloudEntity implements Derivable<CloudB
     }
 
     public enum State {
-
-        FAILED("FAILED"), STAGED("STAGED"), STAGING("STAGING");
-
-        private final String value;
-
-        State(String value) {
-            this.value = value;
-        }
-
-        public static State fromString(String value) {
-            for (State state : State.values()) {
-                if (state.value.equals(value)) {
-                    return state;
-                }
-            }
-            throw new IllegalArgumentException("Invalid build state: " + value);
-        }
-
-        @Override
-        public String toString() {
-            return value;
-        }
-
+        FAILED, STAGED, STAGING
     }
 
     @Value.Immutable

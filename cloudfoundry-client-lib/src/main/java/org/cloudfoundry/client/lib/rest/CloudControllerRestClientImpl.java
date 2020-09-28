@@ -16,16 +16,15 @@
 
 package org.cloudfoundry.client.lib.rest;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -223,7 +222,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
-import org.springframework.util.FileCopyUtils;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import reactor.core.publisher.Flux;
@@ -758,9 +756,8 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         RecentLogsRequest request = RecentLogsRequest.builder()
                                                      .applicationId(applicationGuid.toString())
                                                      .build();
-        return fetchFlux(() -> dopplerClient.recentLogs(request),
-                         ImmutableRawApplicationLog::of).collectSortedList(Comparator.comparing(ApplicationLog::getTimestamp))
-                                                        .block();
+        return fetchFlux(() -> dopplerClient.recentLogs(request), ImmutableRawApplicationLog::of).collectSortedList()
+                                                                                                 .block();
     }
 
     @Override
@@ -1310,7 +1307,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public void uploadApplication(String applicationName, File file, UploadStatusCallback callback) throws IOException {
+    public void uploadApplication(String applicationName, Path file, UploadStatusCallback callback) {
         CloudPackage cloudPackage = startUpload(applicationName, file);
         processAsyncUpload(cloudPackage, callback);
     }
@@ -1319,20 +1316,20 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     public void uploadApplication(String applicationName, InputStream inputStream, UploadStatusCallback callback) throws IOException {
         Assert.notNull(inputStream, "InputStream must not be null");
 
-        File file = null;
+        Path file = null;
         try {
             file = createTemporaryUploadFile(inputStream);
             uploadApplication(applicationName, file, callback);
         } finally {
             IOUtils.closeQuietly(inputStream);
             if (file != null) {
-                file.delete();
+                Files.deleteIfExists(file);
             }
         }
     }
 
     @Override
-    public CloudPackage asyncUploadApplication(String applicationName, File file, UploadStatusCallback callback) throws IOException {
+    public CloudPackage asyncUploadApplication(String applicationName, Path file, UploadStatusCallback callback) {
         CloudPackage cloudPackage = startUpload(applicationName, file);
         processAsyncUploadInBackground(cloudPackage, callback);
         return cloudPackage;
@@ -1792,15 +1789,13 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                       .build());
     }
 
-    private File createTemporaryUploadFile(InputStream inputStream) throws IOException {
-        File file = File.createTempFile("cfjava", null);
-        FileOutputStream outputStream = new FileOutputStream(file);
-        FileCopyUtils.copy(inputStream, outputStream);
-        outputStream.close();
+    private Path createTemporaryUploadFile(InputStream inputStream) throws IOException {
+        Path file = Files.createTempFile("cfjava", null);
+        Files.copy(inputStream, file);
         return file;
     }
 
-    private CloudPackage startUpload(String applicationName, File file) {
+    private CloudPackage startUpload(String applicationName, Path file) {
         Assert.notNull(applicationName, "AppName must not be null");
         Assert.notNull(file, "File must not be null");
 
@@ -1809,7 +1804,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
         delegate.packages()
                 .upload(UploadPackageRequest.builder()
-                                            .bits(file.toPath())
+                                            .bits(file)
                                             .packageId(packageGuid.toString())
                                             .build())
                 .block();
@@ -1915,17 +1910,11 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     private void extractDomainInfo(Map<String, UUID> existingDomains, Map<String, String> uriInfo, String domain, String hostName,
                                    String path) {
-        for (String existingDomain : existingDomains.keySet()) {
-            if (domain.equals(existingDomain)) {
-                uriInfo.put("domainName", existingDomain);
-                uriInfo.put("host", hostName);
-                uriInfo.put("path", path);
-            }
+        if (existingDomains.containsKey(domain)) {
+            uriInfo.put("domainName", domain);
+            uriInfo.put("host", hostName);
+            uriInfo.put("path", path);
         }
-    }
-
-    protected String getUrl(String path) {
-        return controllerUrl + (path.startsWith(DEFAULT_PATH_SEPARATOR) ? path : DEFAULT_PATH_SEPARATOR + path);
     }
 
     private void addUris(List<String> uris, UUID applicationGuid) {
@@ -2345,13 +2334,9 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     private List<CloudRoute> fetchOrphanRoutes(String domainName) {
-        List<CloudRoute> orphanRoutes = new ArrayList<>();
-        for (CloudRoute route : getRoutes(domainName)) {
-            if (!route.isUsed()) {
-                orphanRoutes.add(route);
-            }
-        }
-        return orphanRoutes;
+        return getRoutes(domainName).stream()
+                                    .filter(route -> !route.isUsed())
+                                    .collect(Collectors.toList());
     }
 
     private CloudStack findStackResource(String name) {
