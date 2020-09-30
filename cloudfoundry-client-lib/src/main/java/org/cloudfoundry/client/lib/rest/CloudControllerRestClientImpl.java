@@ -180,6 +180,7 @@ import org.cloudfoundry.client.v2.stacks.GetStackRequest;
 import org.cloudfoundry.client.v2.stacks.ListStacksRequest;
 import org.cloudfoundry.client.v2.stacks.StackEntity;
 import org.cloudfoundry.client.v2.userprovidedserviceinstances.CreateUserProvidedServiceInstanceRequest;
+import org.cloudfoundry.client.v2.userprovidedserviceinstances.UpdateUserProvidedServiceInstanceRequest;
 import org.cloudfoundry.client.v2.users.UserEntity;
 import org.cloudfoundry.client.v3.BuildpackData;
 import org.cloudfoundry.client.v3.Lifecycle;
@@ -626,12 +627,12 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     @Override
     public List<CloudEvent> getApplicationEvents(String applicationName) {
         UUID applicationGuid = getRequiredApplicationGuid(applicationName);
-        return getApplicationEvents(applicationGuid);
+        return getEventsByActee(applicationGuid);
     }
 
     @Override
-    public List<CloudEvent> getApplicationEvents(UUID applicationGuid) {
-        return findEventsByActee(applicationGuid.toString());
+    public List<CloudEvent> getEventsByActee(UUID uuid) {
+        return findEventsByActee(uuid.toString());
     }
 
     @Override
@@ -863,6 +864,53 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     @Override
     public List<CloudServiceOffering> getServiceOfferings() {
         return fetchListWithAuxiliaryContent(this::getServiceResources, this::zipWithAuxiliaryServiceOfferingContent);
+    }
+
+    @Override
+    public void updateServicePlan(CloudServiceInstance service) {
+        CloudServicePlan plan = findPlanForService(service);
+        delegate.servicePlans()
+                .update(UpdateServicePlanRequest.builder()
+                                                .servicePlanId(plan.getGuid()
+                                                                   .toString())
+                                                .build())
+                .block();
+    }
+
+    @Override
+    public void updateServiceParameters(CloudServiceInstance service) {
+        if (service.isUserProvided()) {
+            delegate.userProvidedServiceInstances()
+                    .update(UpdateUserProvidedServiceInstanceRequest.builder()
+                                                                    .credentials(service.getCredentials())
+                                                                    .build())
+                    .block();
+            return;
+        }
+        delegate.serviceInstances()
+                .update(org.cloudfoundry.client.v2.serviceinstances.UpdateServiceInstanceRequest.builder()
+                                                                                                .parameters(service.getCredentials())
+                                                                                                .acceptsIncomplete(true)
+                                                                                                .build())
+                .block();
+    }
+
+    @Override
+    public void updateServiceTags(CloudServiceInstance service) {
+        if (service.isUserProvided()) {
+            delegate.userProvidedServiceInstances()
+                    .update(UpdateUserProvidedServiceInstanceRequest.builder()
+                                                                    .tags(service.getTags())
+                                                                    .build())
+                    .block();
+            return;
+        }
+        delegate.serviceInstances()
+                .update(org.cloudfoundry.client.v2.serviceinstances.UpdateServiceInstanceRequest.builder()
+                                                                                                .tags(service.getTags())
+                                                                                                .acceptsIncomplete(true)
+                                                                                                .build())
+                .block();
     }
 
     @Override

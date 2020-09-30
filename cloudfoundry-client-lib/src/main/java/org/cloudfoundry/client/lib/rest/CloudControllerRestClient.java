@@ -117,7 +117,7 @@ public interface CloudControllerRestClient {
 
     List<CloudEvent> getApplicationEvents(String applicationName);
 
-    List<CloudEvent> getApplicationEvents(UUID applicationGuid);
+    List<CloudEvent> getEventsByActee(UUID uuid);
 
     InstancesInfo getApplicationInstances(String applicationName);
 
@@ -248,6 +248,12 @@ public interface CloudControllerRestClient {
     void updateServiceBroker(CloudServiceBroker serviceBroker);
 
     void updateServicePlanVisibilityForBroker(String name, boolean visibility);
+
+    void updateServicePlan(CloudServiceInstance service);
+
+    void updateServiceParameters(CloudServiceInstance service);
+
+    void updateServiceTags(CloudServiceInstance service);
 
     void uploadApplication(String applicationName, Path file, UploadStatusCallback callback);
 

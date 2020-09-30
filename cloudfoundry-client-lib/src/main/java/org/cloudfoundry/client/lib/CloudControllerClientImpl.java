@@ -247,6 +247,11 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
+    public List<CloudEvent> getEventsByActee(UUID uuid) {
+        return handleExceptions(() -> delegate.getEventsByActee(uuid));
+    }
+
+    @Override
     public InstancesInfo getApplicationInstances(String applicationName) {
         return handleExceptions(() -> delegate.getApplicationInstances(applicationName));
     }
@@ -612,6 +617,21 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     @Override
     public void updateServicePlanVisibilityForBroker(String name, boolean visibility) {
         handleExceptions(() -> delegate.updateServicePlanVisibilityForBroker(name, visibility));
+    }
+
+    @Override
+    public void updateServicePlan(CloudServiceInstance service) {
+        handleExceptions(() -> delegate.updateServicePlan(service));
+    }
+
+    @Override
+    public void updateServiceParameters(CloudServiceInstance service) {
+        handleExceptions(() -> delegate.updateServiceParameters(service));
+    }
+
+    @Override
+    public void updateServiceTags(CloudServiceInstance service) {
+        handleExceptions(() -> delegate.updateServiceTags(service));
     }
 
     @Override
