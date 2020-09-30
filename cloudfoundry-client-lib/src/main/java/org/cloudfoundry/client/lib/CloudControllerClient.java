@@ -280,6 +280,8 @@ public interface CloudControllerClient {
      */
     List<CloudEvent> getApplicationEvents(String applicationName);
 
+    List<CloudEvent> getEventsByActee(UUID uuid);
+
     /**
      * Get application instances info for application.
      *
@@ -772,6 +774,12 @@ public interface CloudControllerClient {
      * @param visibility true for public, false for private
      */
     void updateServicePlanVisibilityForBroker(String name, boolean visibility);
+
+    void updateServicePlan(CloudServiceInstance service);
+
+    void updateServiceParameters(CloudServiceInstance service);
+
+    void updateServiceTags(CloudServiceInstance service);
 
     /**
      * Upload an application to Cloud Foundry.
