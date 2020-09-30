@@ -37,6 +37,9 @@ public abstract class CloudServiceInstance extends CloudEntity implements Deriva
 
     @Nullable
     public abstract ServiceInstanceType getType();
+    
+    @Nullable
+    public abstract ServiceOperation getLastOperation();
 
     public boolean isUserProvided() {
         return getType() != null && getType().equals(ServiceInstanceType.USER_PROVIDED);
