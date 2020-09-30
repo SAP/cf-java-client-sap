@@ -5,6 +5,7 @@ import java.util.Optional;
 import org.cloudfoundry.client.lib.domain.CloudServiceInstance;
 import org.cloudfoundry.client.lib.domain.ImmutableCloudServiceInstance;
 import org.cloudfoundry.client.lib.domain.ServiceInstanceType;
+import org.cloudfoundry.client.lib.domain.ServiceOperation;
 import org.cloudfoundry.client.lib.domain.annotation.Nullable;
 import org.cloudfoundry.client.v2.Resource;
 import org.cloudfoundry.client.v2.serviceinstances.UnionServiceInstanceEntity;
@@ -36,6 +37,7 @@ public abstract class RawCloudServiceInstance extends RawCloudEntity<CloudServic
                                             .type(ServiceInstanceType.valueOfWithDefault(entity.getType()))
                                             .tags(entity.getTags())
                                             .credentials(entity.getCredentials())
+                                            .lastOperation(ServiceOperation.fromLastOperation(entity.getLastOperation()))
                                             .build();
     }
 
