@@ -868,12 +868,18 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public void updateServicePlan(CloudServiceInstance service) {
+        if (service.isUserProvided()) {
+            return;
+        }
         CloudServicePlan plan = findPlanForService(service);
-        delegate.servicePlans()
-                .update(UpdateServicePlanRequest.builder()
-                                                .servicePlanId(plan.getGuid()
-                                                                   .toString())
-                                                .build())
+        delegate.serviceInstances()
+                .update(org.cloudfoundry.client.v2.serviceinstances.UpdateServiceInstanceRequest.builder()
+                                                                                                .serviceInstanceId(service.getGuid()
+                                                                                                                          .toString())
+                                                                                                .servicePlanId(plan.getGuid()
+                                                                                                                   .toString())
+                                                                                                .acceptsIncomplete(true)
+                                                                                                .build())
                 .block();
     }
 
@@ -882,6 +888,8 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         if (service.isUserProvided()) {
             delegate.userProvidedServiceInstances()
                     .update(UpdateUserProvidedServiceInstanceRequest.builder()
+                                                                    .userProvidedServiceInstanceId(service.getGuid()
+                                                                                                          .toString())
                                                                     .credentials(service.getCredentials())
                                                                     .build())
                     .block();
@@ -889,6 +897,8 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         }
         delegate.serviceInstances()
                 .update(org.cloudfoundry.client.v2.serviceinstances.UpdateServiceInstanceRequest.builder()
+                                                                                                .serviceInstanceId(service.getGuid()
+                                                                                                                          .toString())
                                                                                                 .parameters(service.getCredentials())
                                                                                                 .acceptsIncomplete(true)
                                                                                                 .build())
@@ -900,6 +910,8 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         if (service.isUserProvided()) {
             delegate.userProvidedServiceInstances()
                     .update(UpdateUserProvidedServiceInstanceRequest.builder()
+                                                                    .userProvidedServiceInstanceId(service.getGuid()
+                                                                                                          .toString())
                                                                     .tags(service.getTags())
                                                                     .build())
                     .block();
@@ -907,6 +919,8 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         }
         delegate.serviceInstances()
                 .update(org.cloudfoundry.client.v2.serviceinstances.UpdateServiceInstanceRequest.builder()
+                                                                                                .serviceInstanceId(service.getGuid()
+                                                                                                                          .toString())
                                                                                                 .tags(service.getTags())
                                                                                                 .acceptsIncomplete(true)
                                                                                                 .build())
