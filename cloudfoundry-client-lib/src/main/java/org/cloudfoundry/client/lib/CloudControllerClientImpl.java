@@ -620,18 +620,18 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public void updateServicePlan(CloudServiceInstance service) {
-        handleExceptions(() -> delegate.updateServicePlan(service));
+    public void updateServicePlan(String serviceName, String planName) {
+        handleExceptions(() -> delegate.updateServicePlan(serviceName, planName));
     }
 
     @Override
-    public void updateServiceParameters(CloudServiceInstance service) {
-        handleExceptions(() -> delegate.updateServiceParameters(service));
+    public void updateServiceParameters(String serviceName, Map<String, Object> parameters) {
+        handleExceptions(() -> delegate.updateServiceParameters(serviceName, parameters));
     }
 
     @Override
-    public void updateServiceTags(CloudServiceInstance service) {
-        handleExceptions(() -> delegate.updateServiceTags(service));
+    public void updateServiceTags(String serviceName, List<String> tags) {
+        handleExceptions(() -> delegate.updateServiceTags(serviceName, tags));
     }
 
     @Override

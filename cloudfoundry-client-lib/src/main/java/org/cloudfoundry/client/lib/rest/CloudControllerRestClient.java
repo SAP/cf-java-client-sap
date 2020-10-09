@@ -249,11 +249,11 @@ public interface CloudControllerRestClient {
 
     void updateServicePlanVisibilityForBroker(String name, boolean visibility);
 
-    void updateServicePlan(CloudServiceInstance service);
+    void updateServicePlan(String serviceName, String planName);
 
-    void updateServiceParameters(CloudServiceInstance service);
+    void updateServiceParameters(String serviceName, Map<String, Object> parameters);
 
-    void updateServiceTags(CloudServiceInstance service);
+    void updateServiceTags(String serviceName, List<String> tags);
 
     void uploadApplication(String applicationName, Path file, UploadStatusCallback callback);
 
