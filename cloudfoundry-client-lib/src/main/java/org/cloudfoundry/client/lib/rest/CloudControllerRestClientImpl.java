@@ -417,7 +417,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         assertSpaceProvided("create service instance");
         Assert.notNull(serviceInstance, "Service instance must not be null.");
 
-        CloudServicePlan servicePlan = findPlanForService(serviceInstance);
+        CloudServicePlan servicePlan = findPlanForService(serviceInstance, serviceInstance.getPlan());
         UUID servicePlanGuid = servicePlan.getMetadata()
                                           .getGuid();
         delegate.serviceInstances()
@@ -867,11 +867,12 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public void updateServicePlan(CloudServiceInstance service) {
+    public void updateServicePlan(String serviceName, String planName) {
+        CloudServiceInstance service = getServiceInstance(serviceName);
         if (service.isUserProvided()) {
             return;
         }
-        CloudServicePlan plan = findPlanForService(service);
+        CloudServicePlan plan = findPlanForService(service, planName);
         delegate.serviceInstances()
                 .update(org.cloudfoundry.client.v2.serviceinstances.UpdateServiceInstanceRequest.builder()
                                                                                                 .serviceInstanceId(service.getGuid()
@@ -884,13 +885,14 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public void updateServiceParameters(CloudServiceInstance service) {
+    public void updateServiceParameters(String serviceName, Map<String, Object> parameters) {
+        CloudServiceInstance service = getServiceInstance(serviceName);
         if (service.isUserProvided()) {
             delegate.userProvidedServiceInstances()
                     .update(UpdateUserProvidedServiceInstanceRequest.builder()
                                                                     .userProvidedServiceInstanceId(service.getGuid()
                                                                                                           .toString())
-                                                                    .credentials(service.getCredentials())
+                                                                    .credentials(parameters)
                                                                     .build())
                     .block();
             return;
@@ -899,20 +901,21 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                 .update(org.cloudfoundry.client.v2.serviceinstances.UpdateServiceInstanceRequest.builder()
                                                                                                 .serviceInstanceId(service.getGuid()
                                                                                                                           .toString())
-                                                                                                .parameters(service.getCredentials())
+                                                                                                .parameters(parameters)
                                                                                                 .acceptsIncomplete(true)
                                                                                                 .build())
                 .block();
     }
 
     @Override
-    public void updateServiceTags(CloudServiceInstance service) {
+    public void updateServiceTags(String serviceName, List<String> tags) {
+        CloudServiceInstance service = getServiceInstance(serviceName);
         if (service.isUserProvided()) {
             delegate.userProvidedServiceInstances()
                     .update(UpdateUserProvidedServiceInstanceRequest.builder()
                                                                     .userProvidedServiceInstanceId(service.getGuid()
                                                                                                           .toString())
-                                                                    .tags(service.getTags())
+                                                                    .tags(tags)
                                                                     .build())
                     .block();
             return;
@@ -921,7 +924,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                 .update(org.cloudfoundry.client.v2.serviceinstances.UpdateServiceInstanceRequest.builder()
                                                                                                 .serviceInstanceId(service.getGuid()
                                                                                                                           .toString())
-                                                                                                .tags(service.getTags())
+                                                                                                .tags(tags)
                                                                                                 .acceptsIncomplete(true)
                                                                                                 .build())
                 .block();
@@ -2502,7 +2505,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return usersRetriever.apply(getGuid(space));
     }
 
-    private CloudServicePlan findPlanForService(CloudServiceInstance service) {
+    private CloudServicePlan findPlanForService(CloudServiceInstance service, String planName) {
         List<CloudServiceOffering> offerings = findServiceOfferingsByLabel(service.getLabel());
         for (CloudServiceOffering offering : offerings) {
             if (service.getBroker() != null && !service.getBroker()
@@ -2512,8 +2515,8 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
             if (service.getVersion() == null || service.getVersion()
                                                        .equals(offering.getVersion())) {
                 for (CloudServicePlan plan : offering.getServicePlans()) {
-                    if (service.getPlan() != null && service.getPlan()
-                                                            .equals(plan.getName())) {
+                    if (plan.getName()
+                            .equals(planName)) {
                         return plan;
                     }
                 }
