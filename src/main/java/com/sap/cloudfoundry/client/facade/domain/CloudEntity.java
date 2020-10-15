@@ -20,7 +20,7 @@ import java.util.UUID;
 
 import org.cloudfoundry.client.v3.Metadata;
 
-import com.sap.cloudfoundry.client.facade.domain.annotation.Nullable;
+import com.sap.cloudfoundry.client.facade.Nullable;
 
 /**
  * Do not extend {@code Derivable<T>} in this interface. It is tempting, because all of its children have the same implementation, but
