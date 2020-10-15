@@ -4,11 +4,11 @@ import org.cloudfoundry.client.v2.Resource;
 import org.cloudfoundry.client.v2.spaces.SpaceEntity;
 import org.immutables.value.Value;
 
+import com.sap.cloudfoundry.client.facade.Nullable;
 import com.sap.cloudfoundry.client.facade.domain.CloudOrganization;
 import com.sap.cloudfoundry.client.facade.domain.CloudSpace;
 import com.sap.cloudfoundry.client.facade.domain.Derivable;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudSpace;
-import com.sap.cloudfoundry.client.facade.domain.annotation.Nullable;
 
 @Value.Immutable
 public abstract class RawCloudSpace extends RawCloudEntity<CloudSpace> {

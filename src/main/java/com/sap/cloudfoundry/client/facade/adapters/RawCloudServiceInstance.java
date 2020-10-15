@@ -8,11 +8,11 @@ import org.cloudfoundry.client.v2.serviceplans.ServicePlanEntity;
 import org.cloudfoundry.client.v2.services.ServiceEntity;
 import org.immutables.value.Value;
 
+import com.sap.cloudfoundry.client.facade.Nullable;
 import com.sap.cloudfoundry.client.facade.domain.CloudServiceInstance;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudServiceInstance;
 import com.sap.cloudfoundry.client.facade.domain.ServiceInstanceType;
 import com.sap.cloudfoundry.client.facade.domain.ServiceOperation;
-import com.sap.cloudfoundry.client.facade.domain.annotation.Nullable;
 
 @Value.Immutable
 public abstract class RawCloudServiceInstance extends RawCloudEntity<CloudServiceInstance> {

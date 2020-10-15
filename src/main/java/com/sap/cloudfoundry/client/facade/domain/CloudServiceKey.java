@@ -6,7 +6,7 @@ import org.immutables.value.Value;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.sap.cloudfoundry.client.facade.domain.annotation.Nullable;
+import com.sap.cloudfoundry.client.facade.Nullable;
 
 @Value.Immutable
 @JsonSerialize(as = ImmutableCloudServiceKey.class)
