@@ -85,7 +85,7 @@
                 <configuration>
                     <archive>
                         <manifestEntries>
-                            <Automatic-Module-Name>org.cloudfoundry.client.lib</Automatic-Module-Name>
+                            <Automatic-Module-Name>com.sap.cloudfoundry.client.facade</Automatic-Module-Name>
                         </manifestEntries>
                     </archive>
                 </configuration>
