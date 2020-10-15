@@ -21,7 +21,6 @@ import reactor.netty.http.client.HttpClient;
 /**
  * Some helper utilities for creating classes used for the REST support.
  *
- * @author Thomas Risberg
  */
 public class RestUtil {
 
