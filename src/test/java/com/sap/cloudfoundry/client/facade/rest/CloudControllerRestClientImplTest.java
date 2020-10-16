@@ -5,11 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.cloudfoundry.client.CloudFoundryClient;
@@ -27,7 +24,6 @@ import org.cloudfoundry.doppler.DopplerClient;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.function.Executable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -38,9 +34,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import com.sap.cloudfoundry.client.facade.CloudCredentials;
-import com.sap.cloudfoundry.client.facade.CloudOperationException;
-import com.sap.cloudfoundry.client.facade.TestUtil;
-import com.sap.cloudfoundry.client.facade.domain.CloudDomain;
+import com.sap.cloudfoundry.client.facade.domain.CloudRouteSummary;
+import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudRouteSummary;
 import com.sap.cloudfoundry.client.facade.oauth2.OAuthClient;
 
 import reactor.core.publisher.Mono;
@@ -165,96 +160,69 @@ public class CloudControllerRestClientImplTest {
     }
 
     // @formatter:off
-    public static Stream<Arguments> testExtractUriInfo() {
+    public static Stream<Arguments> testSelectRoutesOnlyInFirst() {
         return Stream.of(
-                // Select matching domain
-                Arguments.of("domain-1.json", null),
-                // Test with port and user
-                Arguments.of("domain-2.json", null),
-                // Test with route path
-                Arguments.of("domain-3.json", null),
-                // Test with invalid uri, should throw an exception
-                Arguments.of("domain-4.json", CloudOperationException.class),
-                // Uri equals the domain -> no host
-                Arguments.of("domain-5.json", null),
-                // Uri equals the domain (with path)
-                Arguments.of("domain-6.json", null),
-                // Test with domain which does not exist, should throw exception
-                Arguments.of("domain-7.json", CloudOperationException.class)
+                // (1) two input routes, have to subtract one of them
+                Arguments.of(Set.of(routeSummary("foo", "domain.com", "/path"), 
+                                    routeSummary("bar", "domain.com", "/path")),
+                             Set.of(routeSummary("foo", "domain.com", "/path")),
+                             Set.of(routeSummary("bar", "domain.com", "/path"))),
+                // (2) the second set contains all the same routes but foo.domain.com has no hostname this time
+                Arguments.of(Set.of(routeSummary("foo", "domain.com", "/path"), 
+                                    routeSummary("bar", "domain.com", "/path"),
+                                    routeSummary("baz", "another.domain.com", ""), 
+                                    routeSummary("", "sub.domain", "/some/complex/path"),
+                                    routeSummary("complex-host-not-that-it-matters", "third.domain.com", "/complex/path")),
+                             Set.of(routeSummary("", "foo.domain.com", "/path"), 
+                                    routeSummary("bar", "domain.com", "/path"),
+                                    routeSummary("baz", "another.domain.com", null), 
+                                    routeSummary(null, "sub.domain", "/some/complex/path"),
+                                    routeSummary("complex-host-not-that-it-matters", "third.domain.com", "/complex/path")),
+                             Set.of(routeSummary("foo", "domain.com", "/path"))),
+                // (3) the second set contains all the same routes but slightly different - difference is the same as first set
+                Arguments.of(Set.of(routeSummary("foo", "domain.com", "/path"), 
+                                    routeSummary("bar", "domain.com", "/path"),
+                                    routeSummary("baz", "another.domain.com", ""), 
+                                    routeSummary("", "sub.domain", "/some/complex/path"),
+                                    routeSummary("complex-host-this-time-it-matters", "third.domain.com", "/complex/path")),
+                             Set.of(routeSummary("foo", "domain.com", ""), 
+                                    routeSummary("", "bar.domain.com", "/path"),
+                                    routeSummary("baz", "another.domain.com", "/has/path"), 
+                                    routeSummary("", "sub.domain", "/other/complex/path"),
+                                    routeSummary("complex-host-it-matters", "third.domain.com", "/complex/path")),
+                             Set.of(routeSummary("foo", "domain.com", "/path"), 
+                                    routeSummary("bar", "domain.com", "/path"),
+                                    routeSummary("baz", "another.domain.com", ""), 
+                                    routeSummary("", "sub.domain", "/some/complex/path"),
+                                    routeSummary("complex-host-this-time-it-matters", "third.domain.com", "/complex/path"))),
+                // (4) two input routes, have to subtract one of them
+                Arguments.of(Set.of(routeSummary("foo", "domain.com", "/path"), 
+                                    routeSummary("bar", "domain.com", "/path"),
+                                    routeSummary("baz", "another.domain.com", ""), 
+                                    routeSummary("", "sub.domain", "/some/complex/path"),
+                                    routeSummary("complex-host-this-time-it-matters", "third.domain.com", "/complex/path")),
+                             Set.of(routeSummary("complex-host-this-time-it-matters", "third.domain.com", "/complex/path"),
+                                    routeSummary("baz", "another.domain.com", ""),
+                                    routeSummary("foo", "domain.com", "/path"), 
+                                    routeSummary("", "sub.domain", "/some/complex/path"),
+                                    routeSummary("bar", "domain.com", "/path")),
+                             Set.of())
         );
     }
     // @formatter:on
 
     @ParameterizedTest
     @MethodSource
-    public void testExtractUriInfo(String fileName, Class<? extends RuntimeException> expectedException) throws Throwable {
-        String fileContent = TestUtil.readFileContent(fileName, getClass());
-        Input input = TestUtil.fromJson(fileContent, Input.class);
-        Map<String, String> uriInfo = new HashMap<>();
-        Map<String, UUID> domainsAsMap = input.getDomainsAsMap();
-
-        executeWithErrorHandling(() -> controllerClient.extractUriInfo(domainsAsMap, input.getUri(), uriInfo), expectedException,
-                                 input.getErrorMessage());
-
-        validateUriInfo(uriInfo, domainsAsMap, input.getExpectedDomain(), input.getExpectedHost(), input.getExpectedPath());
+    public void testSelectRoutesOnlyInFirst(Set<CloudRouteSummary> routes, Set<CloudRouteSummary> routesToSubtract,
+                                                   Set<CloudRouteSummary> resultRoutes) {
+        Assertions.assertEquals(controllerClient.selectRoutesOnlyInFirst(routes, routesToSubtract), resultRoutes);
     }
 
-    private void executeWithErrorHandling(Executable executable, Class<? extends RuntimeException> expectedException,
-                                          String exceptionMessage)
-        throws Throwable {
-        if (expectedException != null) {
-            RuntimeException runtimeException = Assertions.assertThrows(expectedException, executable);
-            Assertions.assertEquals(exceptionMessage, runtimeException.getMessage());
-            return;
-        }
-        executable.execute();
-    }
-
-    private void validateUriInfo(Map<String, String> uriInfo, Map<String, UUID> domainsAsMap, String expectedDomain, String expectedHost,
-                                 String expectedPath) {
-        Assertions.assertEquals(domainsAsMap.get(expectedDomain), domainsAsMap.get(uriInfo.get("domainName")));
-        Assertions.assertEquals(expectedHost, uriInfo.get("host"));
-        Assertions.assertEquals(expectedPath, uriInfo.get("path"));
-    }
-
-    private static class Input {
-
-        private String uri;
-        private List<CloudDomain> domains;
-        private String expectedPath;
-        private String expectedHost;
-        private String expectedDomain;
-        private String errorMessage;
-
-        public String getUri() {
-            return uri;
-        }
-
-        public List<CloudDomain> getDomains() {
-            return domains;
-        }
-
-        public String getExpectedPath() {
-            return expectedPath;
-        }
-
-        public String getExpectedHost() {
-            return expectedHost;
-        }
-
-        public String getExpectedDomain() {
-            return expectedDomain;
-        }
-
-        public String getErrorMessage() {
-            return errorMessage;
-        }
-
-        public Map<String, UUID> getDomainsAsMap() {
-            return getDomains().stream()
-                               .collect(Collectors.toMap(CloudDomain::getName, domain -> domain.getMetadata()
-                                                                                               .getGuid()));
-        }
-
+    private static CloudRouteSummary routeSummary(String host, String domain, String path) {
+        return ImmutableCloudRouteSummary.builder()
+                                         .host(host)
+                                         .domain(domain)
+                                         .path(path)
+                                         .build();
     }
 }

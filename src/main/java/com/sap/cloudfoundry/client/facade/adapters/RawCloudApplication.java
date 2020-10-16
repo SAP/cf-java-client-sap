@@ -3,24 +3,24 @@ package com.sap.cloudfoundry.client.facade.adapters;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.cloudfoundry.client.v2.Resource;
 import org.cloudfoundry.client.v2.applications.ApplicationEntity;
 import org.cloudfoundry.client.v2.applications.SummaryApplicationResponse;
-import org.cloudfoundry.client.v2.domains.Domain;
-import org.cloudfoundry.client.v2.routes.Route;
 import org.cloudfoundry.client.v2.serviceinstances.ServiceInstance;
 import org.immutables.value.Value;
 
 import com.sap.cloudfoundry.client.facade.domain.CloudApplication;
+import com.sap.cloudfoundry.client.facade.domain.CloudRouteSummary;
 import com.sap.cloudfoundry.client.facade.domain.CloudSpace;
 import com.sap.cloudfoundry.client.facade.domain.CloudStack;
 import com.sap.cloudfoundry.client.facade.domain.Derivable;
 import com.sap.cloudfoundry.client.facade.domain.DockerCredentials;
 import com.sap.cloudfoundry.client.facade.domain.DockerInfo;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudApplication;
+import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudRouteSummary;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableDockerCredentials;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableDockerInfo;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableStaging;
@@ -30,9 +30,6 @@ import com.sap.cloudfoundry.client.facade.util.JsonUtil;
 
 @Value.Immutable
 public abstract class RawCloudApplication extends RawCloudEntity<CloudApplication> {
-
-    private static final String HOST_SEPARATOR = ".";
-    private static final String PORT_SEPARATOR = ":";
 
     public abstract Resource<ApplicationEntity> getResource();
 
@@ -49,7 +46,7 @@ public abstract class RawCloudApplication extends RawCloudEntity<CloudApplicatio
                                         .metadata(parseResourceMetadata(getResource()))
                                         .name(summary.getName())
                                         .memory(summary.getMemory())
-                                        .uris(toUrlStrings(summary.getRoutes()))
+                                        .routes(parseRoutes(summary.getRoutes()))
                                         .diskQuota(summary.getDiskQuota())
                                         .instances(summary.getInstances())
                                         .runningInstances(summary.getRunningInstances())
@@ -112,49 +109,23 @@ public abstract class RawCloudApplication extends RawCloudEntity<CloudApplicatio
         return PackageState.valueOf(state);
     }
 
-    private static List<String> toUrlStrings(List<org.cloudfoundry.client.v2.routes.Route> routes) {
+    private static Set<CloudRouteSummary> parseRoutes(List<org.cloudfoundry.client.v2.routes.Route> routes) {
         return routes.stream()
-                     .map(RawCloudApplication::toUrlString)
-                     .collect(Collectors.toList());
+                     .map(RawCloudApplication::parseRoute)
+                     .collect(Collectors.toSet());
     }
 
-    private static String toUrlString(org.cloudfoundry.client.v2.routes.Route route) {
-        StringBuilder url = new StringBuilder();
-        appendHost(url, route);
-        appendDomain(url, route);
-        appendPort(url, route);
-        appendPath(url, route);
-        return url.toString();
-    }
-
-    private static void appendHost(StringBuilder url, Route route) {
-        String host = route.getHost();
-        if (host != null && !host.isEmpty()) {
-            url.append(host);
-            url.append(HOST_SEPARATOR);
-        }
-    }
-
-    private static void appendDomain(StringBuilder url, Route route) {
-        Optional.ofNullable(route.getDomain())
-                .map(Domain::getName)
-                .ifPresent(url::append);
-    }
-
-    private static void appendPort(StringBuilder url, Route route) {
-        Integer port = route.getPort();
-        if (port != null) {
-            url.append(PORT_SEPARATOR);
-            url.append(port);
-        }
-    }
-
-    private static void appendPath(StringBuilder url, Route route) {
-        String path = route.getPath();
-        if (path != null) {
-            // Paths always start with a forward slash, so we don't need to append one.
-            url.append(path);
-        }
+    private static CloudRouteSummary parseRoute(org.cloudfoundry.client.v2.routes.Route route) {
+        return ImmutableCloudRouteSummary.builder()
+                                         .host(route.getHost())
+                                         .port(route.getPort())
+                                         .path(route.getPath())
+                                         .domain(route.getDomain()
+                                                      .getName())
+                                         .domainGuid(parseNullableGuid(route.getDomain()
+                                                                            .getId()))
+                                         .guid(parseNullableGuid(route.getId()))
+                                         .build();
     }
 
     private static List<String> getNames(List<ServiceInstance> services) {

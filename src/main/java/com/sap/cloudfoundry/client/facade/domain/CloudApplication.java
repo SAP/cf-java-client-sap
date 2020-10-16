@@ -2,6 +2,7 @@ package com.sap.cloudfoundry.client.facade.domain;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.cloudfoundry.AllowNulls;
 import org.immutables.value.Value;
@@ -51,7 +52,7 @@ public abstract class CloudApplication extends CloudEntity implements Derivable<
     @Nullable
     public abstract String getStagingError();
 
-    public abstract List<String> getUris();
+    public abstract Set<CloudRouteSummary> getRoutes();
 
     public abstract List<String> getServices();
 

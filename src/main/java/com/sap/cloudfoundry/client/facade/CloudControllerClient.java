@@ -6,6 +6,7 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import com.sap.cloudfoundry.client.facade.domain.UserRole;
@@ -21,6 +22,7 @@ import com.sap.cloudfoundry.client.facade.domain.CloudInfo;
 import com.sap.cloudfoundry.client.facade.domain.CloudOrganization;
 import com.sap.cloudfoundry.client.facade.domain.CloudPackage;
 import com.sap.cloudfoundry.client.facade.domain.CloudRoute;
+import com.sap.cloudfoundry.client.facade.domain.CloudRouteSummary;
 import com.sap.cloudfoundry.client.facade.domain.CloudServiceBinding;
 import com.sap.cloudfoundry.client.facade.domain.CloudServiceBroker;
 import com.sap.cloudfoundry.client.facade.domain.CloudServiceInstance;
@@ -81,9 +83,9 @@ public interface CloudControllerClient {
      * @param applicationName application name
      * @param staging staging info
      * @param memory memory to use in MB
-     * @param uris list of URIs for the app
+     * @param routes list of route summary info for the app
      */
-    void createApplication(String applicationName, Staging staging, Integer memory, List<String> uris);
+    void createApplication(String applicationName, Staging staging, Integer memory, Set<CloudRouteSummary> routes);
 
     /**
      * Create application.
@@ -92,10 +94,10 @@ public interface CloudControllerClient {
      * @param staging staging info
      * @param disk disk quota to use in MB
      * @param memory memory to use in MB
-     * @param uris list of URIs for the app
+     * @param routes list of route summary info for the app
      * @param dockerInfo docker params(image, username, password)
      */
-    void createApplication(String applicationName, Staging staging, Integer disk, Integer memory, List<String> uris, DockerInfo dockerInfo);
+    void createApplication(String applicationName, Staging staging, Integer disk, Integer memory, Set<CloudRouteSummary> routes, DockerInfo dockerInfo);
 
     /**
      * Create a service instance.
@@ -668,12 +670,12 @@ public interface CloudControllerClient {
     void updateApplicationStaging(String applicationName, Staging staging);
 
     /**
-     * Update application URIs.
+     * Update application Routes.
      *
      * @param applicationName name of application
-     * @param uris list of URIs the app should use
+     * @param routes list of route summary info for the routes the app should use
      */
-    void updateApplicationUris(String applicationName, List<String> uris);
+    void updateApplicationRoutes(String applicationName, Set<CloudRouteSummary> routes);
 
     /**
      * Update a service broker (unchanged forces catalog refresh).

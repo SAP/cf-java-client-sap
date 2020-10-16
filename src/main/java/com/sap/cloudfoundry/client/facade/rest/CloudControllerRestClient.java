@@ -6,6 +6,7 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import org.cloudfoundry.client.v3.Metadata;
@@ -23,6 +24,7 @@ import com.sap.cloudfoundry.client.facade.domain.CloudInfo;
 import com.sap.cloudfoundry.client.facade.domain.CloudOrganization;
 import com.sap.cloudfoundry.client.facade.domain.CloudPackage;
 import com.sap.cloudfoundry.client.facade.domain.CloudRoute;
+import com.sap.cloudfoundry.client.facade.domain.CloudRouteSummary;
 import com.sap.cloudfoundry.client.facade.domain.CloudServiceBinding;
 import com.sap.cloudfoundry.client.facade.domain.CloudServiceBroker;
 import com.sap.cloudfoundry.client.facade.domain.CloudServiceInstance;
@@ -53,9 +55,9 @@ public interface CloudControllerRestClient {
 
     void bindServiceInstance(String applicationName, String serviceInstanceName, Map<String, Object> parameters);
 
-    void createApplication(String applicationName, Staging staging, Integer memory, List<String> uris);
+    void createApplication(String applicationName, Staging staging, Integer memory, Set<CloudRouteSummary> routes);
 
-    void createApplication(String applicationName, Staging staging, Integer disk, Integer memory, List<String> uris, DockerInfo dockerInfo);
+    void createApplication(String applicationName, Staging staging, Integer disk, Integer memory, Set<CloudRouteSummary> routes, DockerInfo dockerInfo);
 
     void createServiceInstance(CloudServiceInstance serviceInstance);
 
@@ -203,7 +205,7 @@ public interface CloudControllerRestClient {
 
     void updateApplicationStaging(String applicationName, Staging staging);
 
-    void updateApplicationUris(String applicationName, List<String> uris);
+    void updateApplicationRoutes(String applicationName, Set<CloudRouteSummary> routes);
 
     void updateServiceBroker(CloudServiceBroker serviceBroker);
 
