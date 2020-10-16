@@ -2,7 +2,6 @@ package com.sap.cloudfoundry.client.facade.rest;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URI;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -10,9 +9,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -142,6 +143,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import com.sap.cloudfoundry.client.facade.CloudCredentials;
@@ -183,6 +185,7 @@ import com.sap.cloudfoundry.client.facade.domain.CloudMetadata;
 import com.sap.cloudfoundry.client.facade.domain.CloudOrganization;
 import com.sap.cloudfoundry.client.facade.domain.CloudPackage;
 import com.sap.cloudfoundry.client.facade.domain.CloudRoute;
+import com.sap.cloudfoundry.client.facade.domain.CloudRouteSummary;
 import com.sap.cloudfoundry.client.facade.domain.CloudServiceBinding;
 import com.sap.cloudfoundry.client.facade.domain.CloudServiceBroker;
 import com.sap.cloudfoundry.client.facade.domain.CloudServiceInstance;
@@ -224,8 +227,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CloudControllerRestClientImpl.class);
 
-    private static final String DEFAULT_HOST_DOMAIN_SEPARATOR = "\\.";
-    private static final String DEFAULT_PATH_SEPARATOR = "/";
     private static final long JOB_POLLING_PERIOD = TimeUnit.SECONDS.toMillis(5);
     private static final int MAX_CHAR_LENGTH_FOR_PARAMS_IN_REQUEST = 4000;
 
@@ -317,12 +318,12 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public void createApplication(String name, Staging staging, Integer memory, List<String> uris) {
-        createApplication(name, staging, null, memory, uris, null);
+    public void createApplication(String name, Staging staging, Integer memory, Set<CloudRouteSummary> routes) {
+        createApplication(name, staging, null, memory, routes, null);
     }
 
     @Override
-    public void createApplication(String name, Staging staging, Integer diskQuota, Integer memory, List<String> uris,
+    public void createApplication(String name, Staging staging, Integer diskQuota, Integer memory, Set<CloudRouteSummary> routes,
                                   DockerInfo dockerInfo) {
         CreateApplicationRequest.Builder requestBuilder = CreateApplicationRequest.builder()
                                                                                   .spaceId(getTargetSpaceGuid().toString())
@@ -367,8 +368,8 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
             updateBuildpacks(newAppGuid, staging.getBuildpacks());
         }
 
-        if (!CollectionUtils.isEmpty(uris)) {
-            addUris(uris, newAppGuid);
+        if (!CollectionUtils.isEmpty(routes)) {
+            addRoutes(routes, newAppGuid);
         }
     }
 
@@ -1218,16 +1219,25 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public void updateApplicationUris(String applicationName, List<String> uris) {
+    public void updateApplicationRoutes(String applicationName, Set<CloudRouteSummary> updatedRoutes) {
         CloudApplication application = getApplication(applicationName);
-        List<String> newUris = new ArrayList<>(uris);
-        newUris.removeAll(application.getUris());
-        List<String> removeUris = new ArrayList<>(application.getUris());
-        removeUris.removeAll(uris);
-        removeUris(removeUris, application.getMetadata()
-                                          .getGuid());
-        addUris(newUris, application.getMetadata()
-                                    .getGuid());
+        Set<CloudRouteSummary> currentRoutes = application.getRoutes();
+
+        Set<CloudRouteSummary> outdatedRoutes = selectRoutesOnlyInFirst(currentRoutes, updatedRoutes);
+
+        Set<CloudRouteSummary> newRoutes = selectRoutesOnlyInFirst(updatedRoutes, currentRoutes);
+
+        removeRoutes(outdatedRoutes, application.getMetadata()
+                                                .getGuid());
+        addRoutes(newRoutes, application.getMetadata()
+                                        .getGuid());
+    }
+
+    protected Set<CloudRouteSummary> selectRoutesOnlyInFirst(Set<CloudRouteSummary> allRoutes,
+                                                                    Set<CloudRouteSummary> routesToSubtract) {
+        Set<CloudRouteSummary> selectedRoutes = new HashSet<>(allRoutes);
+        selectedRoutes.removeAll(routesToSubtract);
+        return selectedRoutes;
     }
 
     @Override
@@ -1856,64 +1866,46 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                         .list(pageRequestSupplier.apply(page)));
     }
 
-    protected void extractUriInfo(Map<String, UUID> existingDomains, String uri, Map<String, String> uriInfo) {
-        URI newUri = URI.create(uri);
-        String host = newUri.getScheme() != null ? newUri.getHost() : newUri.getPath();
-        String[] hostAndDomain = host.split(DEFAULT_HOST_DOMAIN_SEPARATOR, 2);
-        if (hostAndDomain.length != 2) {
-            throw new CloudOperationException(HttpStatus.BAD_REQUEST,
-                                              HttpStatus.BAD_REQUEST.getReasonPhrase(),
-                                              "Invalid URI " + uri + " -- host or domain is not specified");
-        }
-        String hostName = hostAndDomain[0];
-        int indexOfPathSeparator = hostAndDomain[1].indexOf(DEFAULT_PATH_SEPARATOR);
-        String domain = hostAndDomain[1];
-        String path = "";
-        if (indexOfPathSeparator > 0) {
-            domain = hostAndDomain[1].substring(0, indexOfPathSeparator);
-            path = hostAndDomain[1].substring(indexOfPathSeparator);
-        }
-
-        extractDomainInfo(existingDomains, uriInfo, domain, hostName, path);
-
-        if (uriInfo.get("domainName") == null) {
-            domain = host.split(DEFAULT_PATH_SEPARATOR)[0];
-            extractDomainInfo(existingDomains, uriInfo, domain, "", path);
-        }
-        if (uriInfo.get("domainName") == null) {
-            throw new CloudOperationException(HttpStatus.NOT_FOUND,
-                                              HttpStatus.NOT_FOUND.getReasonPhrase(),
-                                              "Domain not found for URI " + uri);
-        }
-    }
-
-    private void extractDomainInfo(Map<String, UUID> existingDomains, Map<String, String> uriInfo, String domain, String hostName,
-                                   String path) {
-        if (existingDomains.containsKey(domain)) {
-            uriInfo.put("domainName", domain);
-            uriInfo.put("host", hostName);
-            uriInfo.put("path", path);
-        }
-    }
-
-    private void addUris(List<String> uris, UUID applicationGuid) {
-        Map<String, UUID> domains = getDomainGuids();
-        for (String uri : uris) {
-            Map<String, String> uriInfo = new HashMap<>(2);
-            extractUriInfo(domains, uri, uriInfo);
-            UUID domainGuid = domains.get(uriInfo.get("domainName"));
-            String host = uriInfo.get("host");
-            String path = uriInfo.get("path");
-            bindRoute(domainGuid, host, path, applicationGuid);
-        }
-    }
-
     private void assertSpaceProvided(String operation) {
         Assert.notNull(target, "Unable to " + operation + " without specifying organization and space to use.");
     }
 
-    private void bindRoute(UUID domainGuid, String host, String path, UUID applicationGuid) {
-        UUID routeGuid = getOrAddRoute(domainGuid, host, path);
+    private void removeRoutes(Set<CloudRouteSummary> routes, UUID applicationGuid) {
+        for (CloudRouteSummary route : routes) {
+            unbindRoute(route.getGuid(), applicationGuid);
+        }
+    }
+
+    private void addRoutes(Set<CloudRouteSummary> routes, UUID applicationGuid) {
+        Map<String, UUID> domains = getDomainGuids();
+        for (CloudRouteSummary route : routes) {
+            validateDomainForRoute(route, domains);
+            UUID domainGuid = domains.get(route.getDomain());
+
+            UUID routeGuid = getOrAddRoute(domainGuid, route.getHost(), route.getPath());
+
+            bindRoute(routeGuid, applicationGuid);
+        }
+    }
+
+    protected void validateDomainForRoute(CloudRouteSummary route, Map<String, UUID> existingDomains) {
+        if (StringUtils.isEmpty(route.getDomain()) || !existingDomains.containsKey(route.getDomain())) {
+            throw new CloudOperationException(HttpStatus.NOT_FOUND,
+                                              HttpStatus.NOT_FOUND.getReasonPhrase(),
+                                              "Domain '" + route.getDomain() + "' not found for URI " + route.toUriString());
+        }
+    }
+
+    private void unbindRoute(UUID routeGuid, UUID applicationGuid) {
+        delegate.applicationsV2()
+                .removeRoute(RemoveApplicationRouteRequest.builder()
+                                                          .applicationId(applicationGuid.toString())
+                                                          .routeId(routeGuid.toString())
+                                                          .build())
+                .block();
+    }
+
+    private void bindRoute(UUID routeGuid, UUID applicationGuid) {
         delegate.applicationsV2()
                 .associateRoute(AssociateApplicationRouteRequest.builder()
                                                                 .applicationId(applicationGuid.toString())
@@ -2535,31 +2527,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                      .build();
         return delegate.packages()
                        .get(request);
-    }
-
-    private void removeUris(List<String> uris, UUID applicationGuid) {
-        Map<String, UUID> domains = getDomainGuids();
-        for (String uri : uris) {
-            Map<String, String> uriInfo = new HashMap<>(2);
-            extractUriInfo(domains, uri, uriInfo);
-            UUID domainGuid = domains.get(uriInfo.get("domainName"));
-            String host = uriInfo.get("host");
-            String path = uriInfo.get("path");
-            unbindRoute(domainGuid, host, path, applicationGuid);
-        }
-    }
-
-    private void unbindRoute(UUID domainGuid, String host, String path, UUID applicationGuid) {
-        UUID routeGuid = getRouteGuid(domainGuid, host, path);
-        if (routeGuid == null) {
-            return;
-        }
-        delegate.applicationsV2()
-                .removeRoute(RemoveApplicationRouteRequest.builder()
-                                                          .applicationId(applicationGuid.toString())
-                                                          .routeId(routeGuid.toString())
-                                                          .build())
-                .block();
     }
 
     private String getTargetOrganizationName() {

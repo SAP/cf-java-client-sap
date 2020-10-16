@@ -7,6 +7,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Supplier;
 
@@ -25,6 +26,7 @@ import com.sap.cloudfoundry.client.facade.domain.CloudInfo;
 import com.sap.cloudfoundry.client.facade.domain.CloudOrganization;
 import com.sap.cloudfoundry.client.facade.domain.CloudPackage;
 import com.sap.cloudfoundry.client.facade.domain.CloudRoute;
+import com.sap.cloudfoundry.client.facade.domain.CloudRouteSummary;
 import com.sap.cloudfoundry.client.facade.domain.CloudServiceBinding;
 import com.sap.cloudfoundry.client.facade.domain.CloudServiceBroker;
 import com.sap.cloudfoundry.client.facade.domain.CloudServiceInstance;
@@ -105,14 +107,14 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public void createApplication(String applicationName, Staging staging, Integer memory, List<String> uris) {
-        handleExceptions(() -> delegate.createApplication(applicationName, staging, memory, uris));
+    public void createApplication(String applicationName, Staging staging, Integer memory, Set<CloudRouteSummary> routes) {
+        handleExceptions(() -> delegate.createApplication(applicationName, staging, memory, routes));
     }
 
     @Override
-    public void createApplication(String applicationName, Staging staging, Integer disk, Integer memory, List<String> uris,
+    public void createApplication(String applicationName, Staging staging, Integer disk, Integer memory, Set<CloudRouteSummary> routes,
                                   DockerInfo dockerInfo) {
-        handleExceptions(() -> delegate.createApplication(applicationName, staging, disk, memory, uris, dockerInfo));
+        handleExceptions(() -> delegate.createApplication(applicationName, staging, disk, memory, routes, dockerInfo));
     }
 
     @Override
@@ -520,8 +522,8 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public void updateApplicationUris(String applicationName, List<String> uris) {
-        handleExceptions(() -> delegate.updateApplicationUris(applicationName, uris));
+    public void updateApplicationRoutes(String applicationName, Set<CloudRouteSummary> routes) {
+        handleExceptions(() -> delegate.updateApplicationRoutes(applicationName, routes));
     }
 
     @Override

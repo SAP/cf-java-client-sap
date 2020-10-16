@@ -5,6 +5,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.cloudfoundry.client.v2.Resource;
@@ -19,10 +21,12 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import com.sap.cloudfoundry.client.facade.domain.CloudApplication;
+import com.sap.cloudfoundry.client.facade.domain.CloudRouteSummary;
 import com.sap.cloudfoundry.client.facade.domain.CloudSpace;
 import com.sap.cloudfoundry.client.facade.domain.CloudStack;
 import com.sap.cloudfoundry.client.facade.domain.DockerInfo;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudApplication;
+import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudRouteSummary;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudSpace;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudStack;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableDockerCredentials;
@@ -40,6 +44,7 @@ public class RawCloudApplicationTest {
     private static final String STATE = "STARTED";
     private static final String PACKAGE_STATE = "PENDING";
     private static final List<Route> ROUTES = buildRoutes();
+    private static final Set<CloudRouteSummary> EXPECTED_ROUTES = buildRouteSummaries();
     private static final List<ServiceInstance> SERVICE_INSTANCES = buildServiceInstances();
     private static final Map<String, Object> ENVIRONMENT = buildEnvironment();
     private static final String BUILDPACK = "ruby_buildpack";
@@ -65,8 +70,6 @@ public class RawCloudApplicationTest {
 
     private static final CloudApplication.State EXPECTED_STATE = CloudApplication.State.STARTED;
     private static final PackageState EXPECTED_PACKAGE_STATE = PackageState.PENDING;
-    private static final List<String> EXPECTED_URIS = Arrays.asList("foo.example.com/does/this/work", "bar.example.com:30030",
-                                                                    "baz.example.com", "example.com", "example.com");
     private static final List<String> EXPECTED_SERVICES = Arrays.asList("foo", "bar");
     private static final Map<String, String> EXPECTED_ENVIRONMENT = buildExpectedEnvironment();
     private static final DockerInfo DOCKER_INFO_WITHOUT_CREDENTIALS = ImmutableDockerInfo.builder()
@@ -120,7 +123,7 @@ public class RawCloudApplicationTest {
         return ImmutableCloudApplication.builder()
                                         .metadata(RawCloudEntityTest.EXPECTED_METADATA)
                                         .name(RawCloudEntityTest.NAME)
-                                        .uris(EXPECTED_URIS)
+                                        .routes(EXPECTED_ROUTES)
                                         .memory(MEMORY)
                                         .diskQuota(DISK_QUOTA)
                                         .instances(INSTANCES)
@@ -237,28 +240,53 @@ public class RawCloudApplicationTest {
         Domain domain = Domain.builder()
                               .name("example.com")
                               .build();
-        Route foo = Route.builder()
-                         .host("foo")
-                         .domain(domain)
-                         .path("/does/this/work")
-                         .build();
-        Route bar = Route.builder()
-                         .host("bar")
-                         .domain(domain)
-                         .port(30030)
-                         .build();
-        Route baz = Route.builder()
-                         .host("baz")
-                         .domain(domain)
-                         .build();
-        Route qux = Route.builder()
-                         .domain(domain)
-                         .build();
-        Route quux = Route.builder()
-                          .host("")
-                          .domain(domain)
-                          .build();
-        return Arrays.asList(foo, bar, baz, qux, quux);
+        return Stream.of(Route.builder()
+                              .host("foo")
+                              .domain(domain)
+                              .path("/does/this/work")
+                              .build(),
+                         Route.builder()
+                              .host("bar")
+                              .domain(domain)
+                              .port(30030)
+                              .build(),
+                         Route.builder()
+                              .host("baz")
+                              .domain(domain)
+                              .build(),
+                         Route.builder()
+                              .domain(domain)
+                              .build(),
+                         Route.builder()
+                              .host("")
+                              .domain(domain)
+                              .build())
+                     .collect(Collectors.toList());
+    }
+
+    private static Set<CloudRouteSummary> buildRouteSummaries() {
+        return Stream.of(ImmutableCloudRouteSummary.builder()
+                                                   .host("foo")
+                                                   .domain("example.com")
+                                                   .path("/does/this/work")
+                                                   .build(),
+                         ImmutableCloudRouteSummary.builder()
+                                                   .host("bar")
+                                                   .domain("example.com")
+                                                   .port(30030)
+                                                   .build(),
+                         ImmutableCloudRouteSummary.builder()
+                                                   .host("baz")
+                                                   .domain("example.com")
+                                                   .build(),
+                         ImmutableCloudRouteSummary.builder()
+                                                   .domain("example.com")
+                                                   .build(),
+                         ImmutableCloudRouteSummary.builder()
+                                                   .host("")
+                                                   .domain("example.com")
+                                                   .build())
+                     .collect(Collectors.toSet());
     }
 
     private static List<ServiceInstance> buildServiceInstances() {
