@@ -44,11 +44,9 @@ public abstract class RawCloudApplication extends RawCloudEntity<CloudApplicatio
 
     @Override
     public CloudApplication derive() {
-        Resource<ApplicationEntity> resource = getResource();
-        ApplicationEntity entity = resource.getEntity();
         SummaryApplicationResponse summary = getSummary();
         return ImmutableCloudApplication.builder()
-                                        .metadata(parseResourceMetadata(resource))
+                                        .metadata(parseResourceMetadata(getResource()))
                                         .name(summary.getName())
                                         .memory(summary.getMemory())
                                         .uris(toUrlStrings(summary.getRoutes()))
@@ -60,7 +58,7 @@ public abstract class RawCloudApplication extends RawCloudEntity<CloudApplicatio
                                         .packageState(parsePackageState(summary.getPackageState()))
                                         .stagingError(summary.getStagingFailedDescription())
                                         .services(getNames(summary.getServices()))
-                                        .env(parseEnv(entity.getEnvironmentJsons()))
+                                        .env(parseEnv(summary.getEnvironmentJsons()))
                                         .space(getSpace().derive())
                                         .build();
     }
