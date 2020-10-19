@@ -13,11 +13,11 @@ In order to use this client in your application, you need to include the followi
 ```xml
 <dependency>
     <groupId>com.sap.cloud.lm.sl</groupId>
-    <artifactId>cloudfoundry-java-client-facade</artifactId>
+    <artifactId>cloudfoundry-client-facade</artifactId>
     <version>...</version>
 </dependency>
 ```
-The latest version can always be found in Maven Central: https://mvnrepository.com/artifact/com.sap.cloud.lm.sl/cloudfoundry-java-client-facade
+The latest version can always be found in Maven Central: https://mvnrepository.com/artifact/com.sap.cloud.lm.sl/cloudfoundry-client-facade
 
 The following is a very simple sample application that connects to a Cloud Foundry instance, logs in, and displays some information about the Cloud Foundry account. When running the program, provide the Cloud Foundry target API endpoint, along with a valid user name and password as command-line parameters.
 
