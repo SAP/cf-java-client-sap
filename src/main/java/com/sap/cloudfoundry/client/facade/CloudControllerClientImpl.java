@@ -38,6 +38,7 @@ import com.sap.cloudfoundry.client.facade.domain.DropletInfo;
 import com.sap.cloudfoundry.client.facade.domain.InstancesInfo;
 import com.sap.cloudfoundry.client.facade.domain.Staging;
 import com.sap.cloudfoundry.client.facade.domain.Upload;
+import com.sap.cloudfoundry.client.facade.domain.UserRole;
 import com.sap.cloudfoundry.client.facade.rest.CloudControllerRestClient;
 import com.sap.cloudfoundry.client.facade.rest.CloudControllerRestClientFactory;
 import com.sap.cloudfoundry.client.facade.rest.ImmutableCloudControllerRestClientFactory;
@@ -414,66 +415,6 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public List<UUID> getSpaceAuditors() {
-        return handleExceptions(() -> delegate.getSpaceAuditors());
-    }
-
-    @Override
-    public List<UUID> getSpaceAuditors(String spaceName) {
-        return handleExceptions(() -> delegate.getSpaceAuditors(spaceName));
-    }
-
-    @Override
-    public List<UUID> getSpaceAuditors(String organizationName, String spaceName) {
-        return handleExceptions(() -> delegate.getSpaceAuditors(organizationName, spaceName));
-    }
-
-    @Override
-    public List<UUID> getSpaceAuditors(UUID spaceGuid) {
-        return handleExceptions(() -> delegate.getSpaceAuditors(spaceGuid));
-    }
-
-    @Override
-    public List<UUID> getSpaceDevelopers() {
-        return handleExceptions(() -> delegate.getSpaceDevelopers());
-    }
-
-    @Override
-    public List<UUID> getSpaceDevelopers(String spaceName) {
-        return handleExceptions(() -> delegate.getSpaceDevelopers(spaceName));
-    }
-
-    @Override
-    public List<UUID> getSpaceDevelopers(String organizationName, String spaceName) {
-        return handleExceptions(() -> delegate.getSpaceDevelopers(organizationName, spaceName));
-    }
-
-    @Override
-    public List<UUID> getSpaceDevelopers(UUID spaceGuid) {
-        return handleExceptions(() -> delegate.getSpaceDevelopers(spaceGuid));
-    }
-
-    @Override
-    public List<UUID> getSpaceManagers() {
-        return handleExceptions(() -> delegate.getSpaceManagers());
-    }
-
-    @Override
-    public List<UUID> getSpaceManagers(String spaceName) {
-        return handleExceptions(() -> delegate.getSpaceManagers(spaceName));
-    }
-
-    @Override
-    public List<UUID> getSpaceManagers(String organizationName, String spaceName) {
-        return handleExceptions(() -> delegate.getSpaceManagers(organizationName, spaceName));
-    }
-
-    @Override
-    public List<UUID> getSpaceManagers(UUID spaceGuid) {
-        return handleExceptions(() -> delegate.getSpaceManagers(spaceGuid));
-    }
-
-    @Override
     public List<CloudSpace> getSpaces() {
         return handleExceptions(() -> delegate.getSpaces());
     }
@@ -711,6 +652,11 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     @Override
     public List<CloudPackage> getPackagesForApplication(UUID applicationGuid) {
         return handleExceptions(() -> delegate.getPackagesForApplication(applicationGuid));
+    }
+
+    @Override
+    public UserRole getUserRoleBySpaceGuidAndUserGuid(UUID spaceGuid, UUID userGuid) {
+        return handleExceptions(() -> delegate.getUserRoleBySpaceGuidAndUserGuid(spaceGuid, userGuid));
     }
 
     private void handleExceptions(Runnable runnable) {

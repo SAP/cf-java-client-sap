@@ -36,6 +36,7 @@ import com.sap.cloudfoundry.client.facade.domain.DropletInfo;
 import com.sap.cloudfoundry.client.facade.domain.InstancesInfo;
 import com.sap.cloudfoundry.client.facade.domain.Staging;
 import com.sap.cloudfoundry.client.facade.domain.Upload;
+import com.sap.cloudfoundry.client.facade.domain.UserRole;
 import com.sap.cloudfoundry.client.facade.oauth2.OAuthClient;
 
 /**
@@ -166,30 +167,6 @@ public interface CloudControllerRestClient {
 
     CloudSpace getSpace(String spaceName, boolean required);
 
-    List<UUID> getSpaceAuditors();
-
-    List<UUID> getSpaceAuditors(String spaceName);
-
-    List<UUID> getSpaceAuditors(String organizationName, String spaceName);
-
-    List<UUID> getSpaceAuditors(UUID spaceGuid);
-
-    List<UUID> getSpaceDevelopers();
-
-    List<UUID> getSpaceDevelopers(String spaceName);
-
-    List<UUID> getSpaceDevelopers(String organizationName, String spaceName);
-
-    List<UUID> getSpaceDevelopers(UUID spaceGuid);
-
-    List<UUID> getSpaceManagers();
-
-    List<UUID> getSpaceManagers(String spaceName);
-
-    List<UUID> getSpaceManagers(String organizationName, String spaceName);
-
-    List<UUID> getSpaceManagers(UUID spaceGuid);
-
     List<CloudSpace> getSpaces();
 
     List<CloudSpace> getSpaces(String organizationName);
@@ -285,4 +262,6 @@ public interface CloudControllerRestClient {
     CloudPackage getPackage(UUID packageGuid);
 
     List<CloudPackage> getPackagesForApplication(UUID applicationGuid);
+
+    UserRole getUserRoleBySpaceGuidAndUserGuid(UUID spaceGuid, UUID userGuid);
 }
