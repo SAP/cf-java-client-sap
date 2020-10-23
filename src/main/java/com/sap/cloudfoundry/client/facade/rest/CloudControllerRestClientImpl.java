@@ -89,20 +89,18 @@ import org.cloudfoundry.client.v2.shareddomains.ListSharedDomainsRequest;
 import org.cloudfoundry.client.v2.shareddomains.SharedDomainEntity;
 import org.cloudfoundry.client.v2.spaces.GetSpaceRequest;
 import org.cloudfoundry.client.v2.spaces.ListSpaceApplicationsRequest;
-import org.cloudfoundry.client.v2.spaces.ListSpaceAuditorsRequest;
-import org.cloudfoundry.client.v2.spaces.ListSpaceDevelopersRequest;
-import org.cloudfoundry.client.v2.spaces.ListSpaceManagersRequest;
 import org.cloudfoundry.client.v2.spaces.ListSpaceRoutesRequest;
 import org.cloudfoundry.client.v2.spaces.ListSpaceServiceInstancesRequest;
 import org.cloudfoundry.client.v2.spaces.ListSpaceServicesRequest;
+import org.cloudfoundry.client.v2.spaces.ListSpaceUserRolesRequest;
 import org.cloudfoundry.client.v2.spaces.ListSpacesRequest;
 import org.cloudfoundry.client.v2.spaces.SpaceEntity;
+import org.cloudfoundry.client.v2.spaces.UserSpaceRoleResource;
 import org.cloudfoundry.client.v2.stacks.GetStackRequest;
 import org.cloudfoundry.client.v2.stacks.ListStacksRequest;
 import org.cloudfoundry.client.v2.stacks.StackEntity;
 import org.cloudfoundry.client.v2.userprovidedserviceinstances.CreateUserProvidedServiceInstanceRequest;
 import org.cloudfoundry.client.v2.userprovidedserviceinstances.UpdateUserProvidedServiceInstanceRequest;
-import org.cloudfoundry.client.v2.users.UserEntity;
 import org.cloudfoundry.client.v3.BuildpackData;
 import org.cloudfoundry.client.v3.Lifecycle;
 import org.cloudfoundry.client.v3.LifecycleType;
@@ -171,6 +169,7 @@ import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudSpace;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudStack;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudTask;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawInstancesInfo;
+import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawUserRole;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawV2CloudDomain;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawV3CloudDomain;
 import com.sap.cloudfoundry.client.facade.domain.ApplicationLog;
@@ -203,11 +202,13 @@ import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudServiceInstance;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableDropletInfo;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableErrorDetails;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableUpload;
+import com.sap.cloudfoundry.client.facade.domain.ImmutableUserRole;
 import com.sap.cloudfoundry.client.facade.domain.InstancesInfo;
 import com.sap.cloudfoundry.client.facade.domain.ServiceInstanceType;
 import com.sap.cloudfoundry.client.facade.domain.Staging;
 import com.sap.cloudfoundry.client.facade.domain.Status;
 import com.sap.cloudfoundry.client.facade.domain.Upload;
+import com.sap.cloudfoundry.client.facade.domain.UserRole;
 import com.sap.cloudfoundry.client.facade.oauth2.OAuthClient;
 
 import reactor.core.publisher.Flux;
@@ -1016,66 +1017,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public List<UUID> getSpaceAuditors(String spaceName) {
-        return getSpaceAuditors(getTargetOrganizationName(), spaceName);
-    }
-
-    @Override
-    public List<UUID> getSpaceAuditors(String organizationName, String spaceName) {
-        return findSpaceUsers(organizationName, spaceName, this::getSpaceAuditors);
-    }
-
-    @Override
-    public List<UUID> getSpaceAuditors() {
-        return getSpaceAuditors(getTargetSpaceGuid());
-    }
-
-    @Override
-    public List<UUID> getSpaceAuditors(UUID spaceGuid) {
-        return getGuids(getSpaceAuditorResourcesBySpaceGuid(spaceGuid));
-    }
-
-    @Override
-    public List<UUID> getSpaceDevelopers(String spaceName) {
-        return getSpaceDevelopers(getTargetOrganizationName(), spaceName);
-    }
-
-    @Override
-    public List<UUID> getSpaceDevelopers(String organizationName, String spaceName) {
-        return findSpaceUsers(organizationName, spaceName, this::getSpaceDevelopers);
-    }
-
-    @Override
-    public List<UUID> getSpaceDevelopers() {
-        return getSpaceDevelopers(getTargetSpaceGuid());
-    }
-
-    @Override
-    public List<UUID> getSpaceDevelopers(UUID spaceGuid) {
-        return getGuids(getSpaceDeveloperResourcesBySpaceGuid(spaceGuid));
-    }
-
-    @Override
-    public List<UUID> getSpaceManagers(String spaceName) {
-        return getSpaceManagers(getTargetOrganizationName(), spaceName);
-    }
-
-    @Override
-    public List<UUID> getSpaceManagers(String organizationName, String spaceName) {
-        return findSpaceUsers(organizationName, spaceName, this::getSpaceManagers);
-    }
-
-    @Override
-    public List<UUID> getSpaceManagers() {
-        return getSpaceManagers(getTargetSpaceGuid());
-    }
-
-    @Override
-    public List<UUID> getSpaceManagers(UUID spaceGuid) {
-        return getGuids(getSpaceManagerResourcesBySpaceGuid(spaceGuid));
-    }
-
-    @Override
     public List<CloudSpace> getSpaces() {
         return fetchListWithAuxiliaryContent(this::getSpaceResources, this::zipWithAuxiliarySpaceContent);
     }
@@ -1471,6 +1412,28 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                         .listPackages(pageRequestSupplier.apply(page)));
     }
 
+    @Override
+    public UserRole getUserRoleBySpaceGuidAndUserGuid(UUID spaceGuid, UUID userGuid) {
+        return fetchList(() -> getSpaceRoles(spaceGuid.toString()), ImmutableRawUserRole::of).stream()
+                                                                                             .filter(userRole -> userRole.getMetadata()
+                                                                                                                         .getGuid()
+                                                                                                                         .equals(userGuid))
+                                                                                             .findFirst()
+                                                                                             .orElse(ImmutableUserRole.builder()
+                                                                                                                      .isActive(false)
+                                                                                                                      .spaceRoles(Collections.emptyList())
+                                                                                                                      .build());
+    }
+
+    private Flux<? extends UserSpaceRoleResource> getSpaceRoles(String spaceGuid) {
+        IntFunction<ListSpaceUserRolesRequest> pageRequestSupplier = page -> ListSpaceUserRolesRequest.builder()
+                                                                                                      .page(page)
+                                                                                                      .spaceId(spaceGuid)
+                                                                                                      .build();
+        return PaginationUtils.requestClientV2Resources(page -> delegate.spaces()
+                                                                        .listUserRoles(pageRequestSupplier.apply(page)));
+    }
+
     private CloudApplication addMetadataIfNotNull(CloudApplication application) {
         return application == null ? null : addMetadata(application);
     }
@@ -1748,33 +1711,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         delegate.servicePlans()
                 .update(request)
                 .block();
-    }
-
-    private Flux<? extends Resource<UserEntity>> getSpaceAuditorResourcesBySpaceGuid(UUID spaceGuid) {
-        IntFunction<ListSpaceAuditorsRequest> pageRequestSupplier = page -> ListSpaceAuditorsRequest.builder()
-                                                                                                    .spaceId(spaceGuid.toString())
-                                                                                                    .page(page)
-                                                                                                    .build();
-        return PaginationUtils.requestClientV2Resources(page -> delegate.spaces()
-                                                                        .listAuditors(pageRequestSupplier.apply(page)));
-    }
-
-    private Flux<? extends Resource<UserEntity>> getSpaceDeveloperResourcesBySpaceGuid(UUID spaceGuid) {
-        IntFunction<ListSpaceDevelopersRequest> pageRequestSupplier = page -> ListSpaceDevelopersRequest.builder()
-                                                                                                        .spaceId(spaceGuid.toString())
-                                                                                                        .page(page)
-                                                                                                        .build();
-        return PaginationUtils.requestClientV2Resources(page -> delegate.spaces()
-                                                                        .listDevelopers(pageRequestSupplier.apply(page)));
-    }
-
-    private Flux<? extends Resource<UserEntity>> getSpaceManagerResourcesBySpaceGuid(UUID spaceGuid) {
-        IntFunction<ListSpaceManagersRequest> pageRequestSupplier = page -> ListSpaceManagersRequest.builder()
-                                                                                                    .spaceId(spaceGuid.toString())
-                                                                                                    .page(page)
-                                                                                                    .build();
-        return PaginationUtils.requestClientV2Resources(page -> delegate.spaces()
-                                                                        .listManagers(pageRequestSupplier.apply(page)));
     }
 
     private Mono<? extends Task> getTaskResource(UUID guid) {
