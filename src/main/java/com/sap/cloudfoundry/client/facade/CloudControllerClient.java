@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import com.sap.cloudfoundry.client.facade.domain.UserRole;
 import org.cloudfoundry.client.v3.Metadata;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 
@@ -518,69 +519,6 @@ public interface CloudControllerClient {
      */
     CloudSpace getSpace(String spaceName, boolean required);
 
-    List<UUID> getSpaceAuditors();
-
-    /**
-     * Get list of space auditor UUID for the space.
-     *
-     * @param spaceName name of the space
-     * @return List of space auditor UUID
-     */
-    List<UUID> getSpaceAuditors(String spaceName);
-
-    /**
-     * Get list of space auditor UUID for the space.
-     *
-     * @param organizationName name of the organization containing the space
-     * @param spaceName name of the space
-     * @return List of space auditor UUID
-     */
-    List<UUID> getSpaceAuditors(String organizationName, String spaceName);
-
-    List<UUID> getSpaceAuditors(UUID spaceGuid);
-
-    List<UUID> getSpaceDevelopers();
-
-    /**
-     * Get list of space developer UUID for the space.
-     *
-     * @param spaceName name of the space
-     * @return List of space developer UUID
-     */
-    List<UUID> getSpaceDevelopers(String spaceName);
-
-    /**
-     * Get list of space developer UUID for the space.
-     *
-     * @param organizationName name of the organization containing the space
-     * @param spaceName name of the space
-     * @return List of space developer UUID
-     */
-    List<UUID> getSpaceDevelopers(String organizationName, String spaceName);
-
-    List<UUID> getSpaceDevelopers(UUID spaceGuid);
-
-    List<UUID> getSpaceManagers();
-
-    /**
-     * Get list of space manager UUID for the space.
-     *
-     * @param spaceName name of the space
-     * @return List of space manager UUID
-     */
-    List<UUID> getSpaceManagers(String spaceName);
-
-    /**
-     * Get list of space manager UUID for the space.
-     *
-     * @param organizationName name of the organization containing the space
-     * @param spaceName name of the space
-     * @return List of space manager UUID
-     */
-    List<UUID> getSpaceManagers(String organizationName, String spaceName);
-
-    List<UUID> getSpaceManagers(UUID spaceGuid);
-
     /**
      * Get all spaces for the current cloud. This method has EXTREMELY poor performance when there are a lot of spaces.
      *
@@ -865,4 +803,7 @@ public interface CloudControllerClient {
     CloudPackage getPackage(UUID packageGuid);
 
     List<CloudPackage> getPackagesForApplication(UUID applicationGuid);
+
+    UserRole getUserRoleBySpaceGuidAndUserGuid(UUID spaceGuid, UUID userGuid);
+
 }
