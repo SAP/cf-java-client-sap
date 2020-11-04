@@ -17,8 +17,6 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @JsonDeserialize(as = ImmutableUserRole.class)
 public abstract class UserRole extends CloudEntity {
 
-    public abstract boolean isActive();
-
     public abstract List<SpaceRole> getSpaceRoles();
 
     public enum SpaceRole {

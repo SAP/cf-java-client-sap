@@ -1430,7 +1430,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                                                                          .equals(userGuid))
                                                                                              .findFirst()
                                                                                              .orElse(ImmutableUserRole.builder()
-                                                                                                                      .isActive(false)
                                                                                                                       .spaceRoles(Collections.emptyList())
                                                                                                                       .build());
     }
