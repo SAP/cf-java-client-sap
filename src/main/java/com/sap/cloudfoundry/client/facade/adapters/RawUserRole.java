@@ -22,7 +22,6 @@ public abstract class RawUserRole extends RawCloudEntity<UserRole> {
         UserSpaceRoleEntity entity = resource.getEntity();
         return ImmutableUserRole.builder()
                                 .metadata(parseResourceMetadata(resource))
-                                .isActive(entity.getActive())
                                 .spaceRoles(parseSpaceRoles(entity))
                                 .build();
     }
