@@ -9,6 +9,7 @@ import javax.net.ssl.X509TrustManager;
 import org.cloudfoundry.reactor.ConnectionContext;
 import org.springframework.http.client.reactive.ClientHttpConnector;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
+import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import com.sap.cloudfoundry.client.facade.oauth2.OAuthClient;
@@ -24,6 +25,8 @@ import reactor.netty.http.client.HttpClient;
  */
 public class RestUtil {
 
+    private static final int MAX_IN_MEMORY_SIZE = 1 * 1024 * 1024; // 1MB
+    
     public OAuthClient createOAuthClient(URL authorizationUrl, boolean trustSelfSignedCerts) {
         return new OAuthClient(authorizationUrl, createWebClient(trustSelfSignedCerts));
     }
@@ -34,7 +37,11 @@ public class RestUtil {
     }
 
     public WebClient createWebClient(boolean trustSelfSignedCerts) {
-        return WebClient.builder()
+        return WebClient.builder().exchangeStrategies(ExchangeStrategies.builder()
+                                                      .codecs(configurer -> configurer
+                                                              .defaultCodecs()
+                                                              .maxInMemorySize(MAX_IN_MEMORY_SIZE))
+                                                            .build())
                         .clientConnector(buildClientConnector(trustSelfSignedCerts))
                         .build();
     }
