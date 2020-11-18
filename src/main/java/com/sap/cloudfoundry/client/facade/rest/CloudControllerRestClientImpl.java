@@ -39,9 +39,6 @@ import org.cloudfoundry.client.v2.applications.RemoveApplicationRouteRequest;
 import org.cloudfoundry.client.v2.applications.SummaryApplicationRequest;
 import org.cloudfoundry.client.v2.applications.SummaryApplicationResponse;
 import org.cloudfoundry.client.v2.applications.UpdateApplicationRequest;
-import org.cloudfoundry.client.v2.domains.CreateDomainRequest;
-import org.cloudfoundry.client.v2.domains.DomainEntity;
-import org.cloudfoundry.client.v2.domains.ListDomainsRequest;
 import org.cloudfoundry.client.v2.events.EventEntity;
 import org.cloudfoundry.client.v2.events.ListEventsRequest;
 import org.cloudfoundry.client.v2.info.GetInfoRequest;
@@ -118,7 +115,11 @@ import org.cloudfoundry.client.v3.builds.Build;
 import org.cloudfoundry.client.v3.builds.CreateBuildRequest;
 import org.cloudfoundry.client.v3.builds.GetBuildRequest;
 import org.cloudfoundry.client.v3.builds.ListBuildsRequest;
+import org.cloudfoundry.client.v3.domains.CreateDomainRequest;
 import org.cloudfoundry.client.v3.domains.Domain;
+import org.cloudfoundry.client.v3.domains.DomainRelationships;
+import org.cloudfoundry.client.v3.domains.DomainResource;
+import org.cloudfoundry.client.v3.domains.ListDomainsRequest;
 import org.cloudfoundry.client.v3.organizations.GetOrganizationDefaultDomainRequest;
 import org.cloudfoundry.client.v3.packages.CreatePackageRequest;
 import org.cloudfoundry.client.v3.packages.GetPackageRequest;
@@ -172,7 +173,6 @@ import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudStack;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudTask;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawInstancesInfo;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawUserRole;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawV2CloudDomain;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawV3CloudDomain;
 import com.sap.cloudfoundry.client.facade.domain.ApplicationLog;
 import com.sap.cloudfoundry.client.facade.domain.CloudApplication;
@@ -1233,8 +1233,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                         .getGuid());
     }
 
-    protected Set<CloudRouteSummary> selectRoutesOnlyInFirst(Set<CloudRouteSummary> allRoutes,
-                                                                    Set<CloudRouteSummary> routesToSubtract) {
+    protected Set<CloudRouteSummary> selectRoutesOnlyInFirst(Set<CloudRouteSummary> allRoutes, Set<CloudRouteSummary> routesToSubtract) {
         Set<CloudRouteSummary> selectedRoutes = new HashSet<>(allRoutes);
         selectedRoutes.removeAll(routesToSubtract);
         return selectedRoutes;
@@ -1935,11 +1934,12 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     private void doCreateDomain(String name) {
-        delegate.domains()
+        delegate.domainsV3()
                 .create(CreateDomainRequest.builder()
-                                           .wildcard(true)
-                                           .owningOrganizationId(getTargetOrganizationGuid().toString())
                                            .name(name)
+                                           .relationships(DomainRelationships.builder()
+                                                                             .organization(buildToOneRelationship(getTargetOrganizationGuid()))
+                                                                             .build())
                                            .build())
                 .block();
     }
@@ -2001,19 +2001,19 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     private CloudDomain findDomainByName(String name) {
-        return fetch(() -> getDomainResourceByName(name), ImmutableRawV2CloudDomain::of);
+        return fetch(() -> getDomainResourceByName(name), ImmutableRawV3CloudDomain::of);
     }
 
     private List<CloudDomain> findDomainsByOrganizationGuid(UUID organizationGuid) {
         return fetchList(() -> getPrivateDomainResourcesByOrganizationGuid(organizationGuid), ImmutableRawCloudPrivateDomain::of);
     }
 
-    private Mono<? extends Resource<DomainEntity>> getDomainResourceByName(String name) {
+    private Mono<? extends DomainResource> getDomainResourceByName(String name) {
         IntFunction<ListDomainsRequest> pageRequestSupplier = page -> ListDomainsRequest.builder()
                                                                                         .name(name)
                                                                                         .page(page)
                                                                                         .build();
-        return PaginationUtils.requestClientV2Resources(page -> delegate.domains()
+        return PaginationUtils.requestClientV3Resources(page -> delegate.domainsV3()
                                                                         .list(pageRequestSupplier.apply(page)))
                               .singleOrEmpty();
     }
