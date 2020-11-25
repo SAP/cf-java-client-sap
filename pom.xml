@@ -12,6 +12,8 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.surefire.version>2.22.2</maven.surefire.version>
+        <maven.failsafe.version>2.22.2</maven.failsafe.version>
         <junit.version>5.7.0</junit.version>
         <junit.platform.version>1.7.0</junit.platform.version>
         <mockito.version>3.5.13</mockito.version>
@@ -72,9 +74,12 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.22.2</version>
+                <version>${maven.surefire.version}</version>
                 <configuration>
                     <runOrder>random</runOrder>
+                    <excludes>
+                      <exclude>**/*IntegrationTest</exclude>
+                    </excludes>
                 </configuration>
             </plugin>
             <!-- https://mvnrepository.com/artifact/org.apache.maven.plugins/maven-jar-plugin -->
@@ -308,6 +313,40 @@
                     </plugin>
                 </plugins>
             </build>
+        </profile>
+        <profile>
+          <id>integration</id>
+          <build>
+            <plugins>
+              <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>${maven.surefire.version}</version>
+                <configuration>
+                    <excludes>
+                      <exclude>**/*</exclude>
+                    </excludes>
+                </configuration>
+              </plugin>
+              <plugin>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                  <version>${maven.failsafe.version}</version>
+                  <executions>
+                    <execution>
+                      <goals>
+                        <goal>integration-test</goal>
+                        <goal>verify</goal>
+                      </goals>
+                    </execution>
+                  </executions>
+                  <configuration>
+                    <includes>
+                      <include>**/*IntegrationTest</include>
+                    </includes>
+                  </configuration>
+               </plugin>
+            </plugins>
+          </build>
         </profile>
     </profiles>
 
