@@ -226,7 +226,6 @@ import reactor.util.function.Tuples;
 public class CloudControllerRestClientImpl implements CloudControllerRestClient {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CloudControllerRestClientImpl.class);
-
     private static final long JOB_POLLING_PERIOD = TimeUnit.SECONDS.toMillis(5);
     private static final int MAX_CHAR_LENGTH_FOR_PARAMS_IN_REQUEST = 4000;
 
