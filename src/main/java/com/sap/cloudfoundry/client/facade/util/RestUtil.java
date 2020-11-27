@@ -47,11 +47,11 @@ public class RestUtil {
     }
 
     private ClientHttpConnector buildClientConnector(boolean trustSelfSignedCerts) {
-        HttpClient httpClient = HttpClient.create();
+        HttpClient httpClient = HttpClient.create().followRedirect(true);
         if (trustSelfSignedCerts) {
-            httpClient.secure(sslContextSpec -> sslContextSpec.sslContext(buildSslContext()));
+            httpClient = httpClient.secure(sslContextSpec -> sslContextSpec.sslContext(buildSslContext()));
         } else {
-            httpClient.secure();
+            httpClient = httpClient.secure();
         }
         return new ReactorClientHttpConnector(httpClient);
     }
