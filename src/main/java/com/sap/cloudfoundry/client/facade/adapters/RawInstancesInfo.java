@@ -1,12 +1,11 @@
 package com.sap.cloudfoundry.client.facade.adapters;
 
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
-import org.cloudfoundry.client.v2.applications.ApplicationInstanceInfo;
-import org.cloudfoundry.client.v2.applications.ApplicationInstancesResponse;
+import org.cloudfoundry.client.v3.applications.GetApplicationProcessStatisticsResponse;
+import org.cloudfoundry.client.v3.processes.ProcessState;
+import org.cloudfoundry.client.v3.processes.ProcessStatisticsResource;
 import org.immutables.value.Value;
 
 import com.sap.cloudfoundry.client.facade.domain.ImmutableInstanceInfo;
@@ -19,37 +18,31 @@ import com.sap.cloudfoundry.client.facade.domain.InstancesInfo;
 public abstract class RawInstancesInfo extends RawCloudEntity<InstancesInfo> {
 
     @Value.Parameter
-    public abstract ApplicationInstancesResponse getInstancesResponse();
+    public abstract GetApplicationProcessStatisticsResponse getApplicationProcessStatisticsResponse();
 
     @Override
     public InstancesInfo derive() {
-        ApplicationInstancesResponse instancesResponse = getInstancesResponse();
+        GetApplicationProcessStatisticsResponse applicationProcessStatisticsResponse = getApplicationProcessStatisticsResponse();
         return ImmutableInstancesInfo.builder()
-                                     .instances(parseInstancesMap(instancesResponse.getInstances()))
+                                     .instances(parseInstanceResources(applicationProcessStatisticsResponse.getResources()))
                                      .build();
     }
 
-    private static List<InstanceInfo> parseInstancesMap(Map<String, ApplicationInstanceInfo> instances) {
-        return instances.entrySet()
-                        .stream()
-                        .map(RawInstancesInfo::parseInstance)
-                        .collect(Collectors.toList());
+    private static List<InstanceInfo> parseInstanceResources(List<ProcessStatisticsResource> processStatisticsResources) {
+        return processStatisticsResources.stream()
+                                         .map(RawInstancesInfo::parseInstance)
+                                         .collect(Collectors.toList());
     }
 
-    private static InstanceInfo parseInstance(Map.Entry<String, ApplicationInstanceInfo> instance) {
+    private static InstanceInfo parseInstance(ProcessStatisticsResource processStatisticsResource) {
         return ImmutableInstanceInfo.builder()
-                                    .index(parseIndex(instance))
-                                    .state(parseState(instance))
+                                    .index(processStatisticsResource.getIndex())
+                                    .state(parseState(processStatisticsResource.getState()))
                                     .build();
     }
 
-    private static int parseIndex(Entry<String, ApplicationInstanceInfo> instance) {
-        return Integer.parseInt(instance.getKey());
-    }
-
-    private static InstanceState parseState(Entry<String, ApplicationInstanceInfo> instance) {
-        return InstanceState.valueOfWithDefault(instance.getValue()
-                                                        .getState());
+    private static InstanceState parseState(ProcessState processState) {
+        return InstanceState.valueOfWithDefault(processState.getValue());
     }
 
 }
