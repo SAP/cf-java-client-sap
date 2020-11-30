@@ -1,7 +1,7 @@
 package com.sap.cloudfoundry.client.facade.domain;
 
 public enum InstanceState {
-    DOWN, STARTING, RUNNING, CRASHED, FLAPPING, UNKNOWN;
+    CRASHED, DOWN, RUNNING, STARTING, UNKNOWN;
 
     public static InstanceState valueOfWithDefault(String s) {
         try {
