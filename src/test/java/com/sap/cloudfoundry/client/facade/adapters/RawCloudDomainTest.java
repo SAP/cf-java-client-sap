@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 import com.sap.cloudfoundry.client.facade.domain.CloudDomain;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudDomain;
 
-public class RawV3CloudDomainTest {
+public class RawCloudDomainTest {
 
     private static final String DOMAIN_NAME = "example.com";
 
@@ -26,8 +26,8 @@ public class RawV3CloudDomainTest {
                                    .build();
     }
 
-    private static RawV3CloudDomain buildRawDomain() {
-        return ImmutableRawV3CloudDomain.of(buildTestResource());
+    private static RawCloudDomain buildRawDomain() {
+        return ImmutableRawCloudDomain.of(buildTestResource());
     }
 
     private static Domain buildTestResource() {
