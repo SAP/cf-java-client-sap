@@ -35,13 +35,9 @@ import org.cloudfoundry.client.v2.events.ListEventsRequest;
 import org.cloudfoundry.client.v2.info.GetInfoRequest;
 import org.cloudfoundry.client.v2.info.GetInfoResponse;
 import org.cloudfoundry.client.v2.organizations.GetOrganizationRequest;
-import org.cloudfoundry.client.v2.organizations.ListOrganizationPrivateDomainsRequest;
 import org.cloudfoundry.client.v2.organizations.ListOrganizationSpacesRequest;
 import org.cloudfoundry.client.v2.organizations.ListOrganizationsRequest;
 import org.cloudfoundry.client.v2.organizations.OrganizationEntity;
-import org.cloudfoundry.client.v2.privatedomains.DeletePrivateDomainRequest;
-import org.cloudfoundry.client.v2.privatedomains.ListPrivateDomainsRequest;
-import org.cloudfoundry.client.v2.privatedomains.PrivateDomainEntity;
 import org.cloudfoundry.client.v2.routemappings.ListRouteMappingsRequest;
 import org.cloudfoundry.client.v2.routemappings.RouteMappingEntity;
 import org.cloudfoundry.client.v2.routes.CreateRouteRequest;
@@ -74,8 +70,6 @@ import org.cloudfoundry.client.v2.serviceplans.ServicePlanEntity;
 import org.cloudfoundry.client.v2.serviceplans.UpdateServicePlanRequest;
 import org.cloudfoundry.client.v2.services.GetServiceRequest;
 import org.cloudfoundry.client.v2.services.ServiceEntity;
-import org.cloudfoundry.client.v2.shareddomains.ListSharedDomainsRequest;
-import org.cloudfoundry.client.v2.shareddomains.SharedDomainEntity;
 import org.cloudfoundry.client.v2.spaces.GetSpaceRequest;
 import org.cloudfoundry.client.v2.spaces.ListSpaceRoutesRequest;
 import org.cloudfoundry.client.v2.spaces.ListSpaceServiceInstancesRequest;
@@ -127,6 +121,7 @@ import org.cloudfoundry.client.v3.builds.CreateBuildRequest;
 import org.cloudfoundry.client.v3.builds.GetBuildRequest;
 import org.cloudfoundry.client.v3.builds.ListBuildsRequest;
 import org.cloudfoundry.client.v3.domains.CreateDomainRequest;
+import org.cloudfoundry.client.v3.domains.DeleteDomainRequest;
 import org.cloudfoundry.client.v3.domains.Domain;
 import org.cloudfoundry.client.v3.domains.DomainRelationships;
 import org.cloudfoundry.client.v3.domains.DomainResource;
@@ -170,11 +165,11 @@ import com.sap.cloudfoundry.client.facade.UploadStatusCallback;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawApplicationLog;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudApplication;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudBuild;
+import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudDomain;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudEvent;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudInfo;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudOrganization;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudPackage;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudPrivateDomain;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudRoute;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudServiceBinding;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudServiceBroker;
@@ -182,13 +177,11 @@ import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudServiceInsta
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudServiceKey;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudServiceOffering;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudServicePlan;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudSharedDomain;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudSpace;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudStack;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudTask;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawInstancesInfo;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawUserRole;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawV3CloudDomain;
 import com.sap.cloudfoundry.client.facade.domain.ApplicationLog;
 import com.sap.cloudfoundry.client.facade.domain.CloudApplication;
 import com.sap.cloudfoundry.client.facade.domain.CloudBuild;
@@ -749,7 +742,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public CloudDomain getDefaultDomain() {
-        return fetch(() -> getDefaultDomainResource(getTargetOrganizationGuid().toString()), ImmutableRawV3CloudDomain::of);
+        return fetch(() -> getDefaultDomainResource(getTargetOrganizationGuid().toString()), ImmutableRawCloudDomain::of);
     }
 
     private Mono<? extends Domain> getDefaultDomainResource(String guid) {
@@ -761,12 +754,12 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public List<CloudDomain> getSharedDomains() {
-        return fetchList(this::getSharedDomainResources, ImmutableRawCloudSharedDomain::of);
+        return fetchList(this::getSharedDomainResources, ImmutableRawCloudDomain::of);
     }
 
     @Override
     public List<CloudDomain> getDomains() {
-        return getPrivateDomains();
+        return fetchList(this::getDomainResources, ImmutableRawCloudDomain::of);
     }
 
     @Override
@@ -777,7 +770,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public List<CloudDomain> getPrivateDomains() {
-        return fetchList(this::getPrivateDomainResources, ImmutableRawCloudPrivateDomain::of);
+        return fetchList(this::getPrivateDomainResources, ImmutableRawCloudDomain::of);
     }
 
     @Override
@@ -2040,10 +2033,10 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     private void doDeleteDomain(UUID guid) {
-        delegate.privateDomains()
-                .delete(DeletePrivateDomainRequest.builder()
-                                                  .privateDomainId(guid.toString())
-                                                  .build())
+        delegate.domainsV3()
+                .delete(DeleteDomainRequest.builder()
+                                           .domainId(guid.toString())
+                                           .build())
                 .block();
     }
 
@@ -2096,14 +2089,14 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     private CloudDomain findDomainByName(String name) {
-        return fetch(() -> getDomainResourceByName(name), ImmutableRawV3CloudDomain::of);
+        return fetch(() -> getDomainResourceByName(name), ImmutableRawCloudDomain::of);
     }
 
     private List<CloudDomain> findDomainsByOrganizationGuid(UUID organizationGuid) {
-        return fetchList(() -> getPrivateDomainResourcesByOrganizationGuid(organizationGuid), ImmutableRawCloudPrivateDomain::of);
+        return fetchList(() -> getDomainResourcesByOrganizationGuid(organizationGuid), ImmutableRawCloudDomain::of);
     }
 
-    private Mono<? extends DomainResource> getDomainResourceByName(String name) {
+    private Mono<DomainResource> getDomainResourceByName(String name) {
         IntFunction<ListDomainsRequest> pageRequestSupplier = page -> ListDomainsRequest.builder()
                                                                                         .name(name)
                                                                                         .page(page)
@@ -2113,29 +2106,33 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                               .singleOrEmpty();
     }
 
-    private Flux<? extends Resource<SharedDomainEntity>> getSharedDomainResources() {
-        IntFunction<ListSharedDomainsRequest> pageRequestSupplier = page -> ListSharedDomainsRequest.builder()
-                                                                                                    .page(page)
-                                                                                                    .build();
-        return PaginationUtils.requestClientV2Resources(page -> delegate.sharedDomains()
+    private Flux<DomainResource> getDomainResources() {
+        IntFunction<ListDomainsRequest> pageRequestSupplier = page -> ListDomainsRequest.builder()
+                                                                                        .page(page)
+                                                                                        .build();
+        return PaginationUtils.requestClientV3Resources(page -> delegate.domainsV3()
                                                                         .list(pageRequestSupplier.apply(page)));
     }
 
-    private Flux<? extends Resource<PrivateDomainEntity>> getPrivateDomainResources() {
-        IntFunction<ListPrivateDomainsRequest> pageRequestSupplier = page -> ListPrivateDomainsRequest.builder()
-                                                                                                      .page(page)
-                                                                                                      .build();
-        return PaginationUtils.requestClientV2Resources(page -> delegate.privateDomains()
-                                                                        .list(pageRequestSupplier.apply(page)));
+    private Flux<DomainResource> getSharedDomainResources() {
+        return getDomainResources().filter(domain -> domain.getRelationships()
+                                                           .getOrganization()
+                                                           .getData() != null);
     }
 
-    private Flux<? extends Resource<PrivateDomainEntity>> getPrivateDomainResourcesByOrganizationGuid(UUID organizationGuid) {
-        IntFunction<ListOrganizationPrivateDomainsRequest> pageRequestSupplier = page -> ListOrganizationPrivateDomainsRequest.builder()
-                                                                                                                              .organizationId(organizationGuid.toString())
-                                                                                                                              .page(page)
-                                                                                                                              .build();
-        return PaginationUtils.requestClientV2Resources(page -> delegate.organizations()
-                                                                        .listPrivateDomains(pageRequestSupplier.apply(page)));
+    private Flux<DomainResource> getPrivateDomainResources() {
+        return getDomainResources().filter(domain -> domain.getRelationships()
+                                                           .getOrganization()
+                                                           .getData() == null);
+    }
+
+    private Flux<DomainResource> getDomainResourcesByOrganizationGuid(UUID organizationGuid) {
+        IntFunction<ListDomainsRequest> pageRequestSupplier = page -> ListDomainsRequest.builder()
+                                                                                        .owningOrganizationId(organizationGuid.toString())
+                                                                                        .page(page)
+                                                                                        .build();
+        return PaginationUtils.requestClientV3Resources(page -> delegate.domainsV3()
+                                                                        .list(pageRequestSupplier.apply(page)));
     }
 
     private List<CloudSpace> findSpacesByOrganizationGuid(UUID organizationGuid) {
