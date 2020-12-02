@@ -1,7 +1,8 @@
 package com.sap.cloudfoundry.client.facade.adapters;
 
-import org.cloudfoundry.client.v2.Resource;
-import org.cloudfoundry.client.v2.events.EventEntity;
+import org.cloudfoundry.client.v3.auditevents.AuditEventActor;
+import org.cloudfoundry.client.v3.auditevents.AuditEventResource;
+import org.cloudfoundry.client.v3.auditevents.AuditEventTarget;
 import org.immutables.value.Value;
 
 import com.sap.cloudfoundry.client.facade.domain.CloudEvent;
@@ -13,34 +14,42 @@ import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudEvent.ImmutablePa
 public abstract class RawCloudEvent extends RawCloudEntity<CloudEvent> {
 
     @Value.Parameter
-    public abstract Resource<EventEntity> getResource();
+    public abstract AuditEventResource getResource();
 
     @Override
     public CloudEvent derive() {
-        Resource<EventEntity> resource = getResource();
-        EventEntity entity = resource.getEntity();
+        AuditEventResource resource = getResource();
         return ImmutableCloudEvent.builder()
                                   .metadata(parseResourceMetadata(resource))
-                                  .actee(parseActee(entity))
-                                  .actor(parseActor(entity))
-                                  .timestamp(parseNullableDate(entity.getTimestamp()))
-                                  .type(entity.getType())
+                                  .target(parseTarget(resource))
+                                  .actor(parseActor(resource))
+                                  .type(resource.getType())
                                   .build();
     }
 
-    private static Participant parseActee(EventEntity entity) {
+    private static Participant parseTarget(AuditEventResource resource) {
+        AuditEventTarget target = resource.getAuditEventTarget();
+        if (target == null) {
+            return ImmutableParticipant.builder()
+                                       .build();
+        }
         return ImmutableParticipant.builder()
-                                   .guid(parseNullableGuid(entity.getActee()))
-                                   .name(entity.getActeeName())
-                                   .type(entity.getActeeType())
+                                   .guid(parseNullableGuid(target.getId()))
+                                   .name(target.getName())
+                                   .type(target.getType())
                                    .build();
     }
 
-    private static Participant parseActor(EventEntity entity) {
+    private static Participant parseActor(AuditEventResource resource) {
+        AuditEventActor actor = resource.getAuditEventActor();
+        if (actor == null) {
+            return ImmutableParticipant.builder()
+                                       .build();
+        }
         return ImmutableParticipant.builder()
-                                   .guid(parseNullableGuid(entity.getActor()))
-                                   .name(entity.getActorName())
-                                   .type(entity.getActorType())
+                                   .guid(parseNullableGuid(actor.getId()))
+                                   .name(actor.getName())
+                                   .type(actor.getType())
                                    .build();
     }
 

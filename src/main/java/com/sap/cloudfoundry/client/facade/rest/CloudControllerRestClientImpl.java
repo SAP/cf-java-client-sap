@@ -105,6 +105,8 @@ import org.cloudfoundry.client.v3.applications.StopApplicationRequest;
 import org.cloudfoundry.client.v3.applications.UpdateApplicationEnvironmentVariablesRequest;
 import org.cloudfoundry.client.v3.applications.UpdateApplicationFeatureRequest;
 import org.cloudfoundry.client.v3.applications.UpdateApplicationRequest;
+import org.cloudfoundry.client.v3.auditevents.AuditEventResource;
+import org.cloudfoundry.client.v3.auditevents.ListAuditEventsRequest;
 import org.cloudfoundry.client.v3.builds.Build;
 import org.cloudfoundry.client.v3.builds.CreateBuildRequest;
 import org.cloudfoundry.client.v3.builds.GetBuildRequest;
@@ -684,12 +686,12 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     @Override
     public List<CloudEvent> getApplicationEvents(String applicationName) {
         UUID applicationGuid = getRequiredApplicationGuid(applicationName);
-        return getEventsByActee(applicationGuid);
+        return getEventsByTarget(applicationGuid);
     }
 
     @Override
-    public List<CloudEvent> getEventsByActee(UUID uuid) {
-        return findEventsByActee(uuid.toString());
+    public List<CloudEvent> getEventsByTarget(UUID uuid) {
+        return findEventsByTarget(uuid.toString());
     }
 
     @Override
@@ -2451,24 +2453,24 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                         .list(requestForPage.apply(page)));
     }
 
-    private List<CloudEvent> findEventsByActee(String actee) {
-        return fetchList(() -> getEventResourcesByActee(actee), ImmutableRawCloudEvent::of);
+    private List<CloudEvent> findEventsByTarget(String target) {
+        return fetchList(() -> getEventResourcesByTarget(target), ImmutableRawCloudEvent::of);
     }
 
-    private Flux<? extends Resource<EventEntity>> getEventResources() {
-        IntFunction<ListEventsRequest> pageRequestSupplier = page -> ListEventsRequest.builder()
-                                                                                      .page(page)
-                                                                                      .build();
-        return PaginationUtils.requestClientV2Resources(page -> delegate.events()
+    private Flux<AuditEventResource> getEventResources() {
+        IntFunction<ListAuditEventsRequest> pageRequestSupplier = page -> ListAuditEventsRequest.builder()
+                                                                                                .page(page)
+                                                                                                .build();
+        return PaginationUtils.requestClientV3Resources(page -> delegate.auditEventsV3()
                                                                         .list(pageRequestSupplier.apply(page)));
     }
 
-    private Flux<? extends Resource<EventEntity>> getEventResourcesByActee(String actee) {
-        IntFunction<ListEventsRequest> pageRequestSupplier = page -> ListEventsRequest.builder()
-                                                                                      .actee(actee)
-                                                                                      .page(page)
-                                                                                      .build();
-        return PaginationUtils.requestClientV2Resources(page -> delegate.events()
+    private Flux<AuditEventResource> getEventResourcesByTarget(String target) {
+        IntFunction<ListAuditEventsRequest> pageRequestSupplier = page -> ListAuditEventsRequest.builder()
+                                                                                                .targetId(target)
+                                                                                                .page(page)
+                                                                                                .build();
+        return PaginationUtils.requestClientV3Resources(page -> delegate.auditEventsV3()
                                                                         .list(pageRequestSupplier.apply(page)));
     }
 
