@@ -23,10 +23,12 @@ public abstract class CloudEvent extends CloudEntity implements Derivable<CloudE
     public abstract Participant getActor();
 
     @Nullable
-    public abstract Participant getActee();
+    public abstract Participant getTarget();
 
     @Nullable
-    public abstract Date getTimestamp();
+    public Date getTimestamp() {
+        return getMetadata().getCreatedAt();
+    }
 
     @Override
     public CloudEvent derive() {

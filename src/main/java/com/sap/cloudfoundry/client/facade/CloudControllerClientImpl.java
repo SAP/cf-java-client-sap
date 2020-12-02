@@ -229,7 +229,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
 
     @Override
     public List<CloudEvent> getEventsByActee(UUID uuid) {
-        return handleExceptions(() -> delegate.getEventsByActee(uuid));
+        return handleExceptions(() -> delegate.getEventsByTarget(uuid));
     }
 
     @Override
