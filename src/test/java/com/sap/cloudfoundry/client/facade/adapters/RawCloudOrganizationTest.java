@@ -1,8 +1,6 @@
 package com.sap.cloudfoundry.client.facade.adapters;
 
-import org.cloudfoundry.client.v2.Resource;
-import org.cloudfoundry.client.v2.organizations.OrganizationEntity;
-import org.cloudfoundry.client.v2.organizations.OrganizationResource;
+import org.cloudfoundry.client.v3.organizations.OrganizationResource;
 import org.junit.jupiter.api.Test;
 
 import com.sap.cloudfoundry.client.facade.domain.CloudOrganization;
@@ -19,7 +17,7 @@ public class RawCloudOrganizationTest {
 
     private static CloudOrganization buildExpectedOrganization() {
         return ImmutableCloudOrganization.builder()
-                                         .metadata(RawCloudEntityTest.EXPECTED_METADATA)
+                                         .metadata(RawCloudEntityTest.EXPECTED_METADATA_PARSED_FROM_V3_RESOURCE)
                                          .name(ORGANIZATION_NAME)
                                          .build();
     }
@@ -28,17 +26,14 @@ public class RawCloudOrganizationTest {
         return ImmutableRawCloudOrganization.of(buildTestResource());
     }
 
-    private static Resource<OrganizationEntity> buildTestResource() {
+    private static OrganizationResource buildTestResource() {
         return OrganizationResource.builder()
-                                   .metadata(RawCloudEntityTest.METADATA)
-                                   .entity(buildTestEntity())
+                                   .id(RawCloudEntityTest.GUID_STRING)
+                                   .createdAt(RawCloudEntityTest.CREATED_AT_STRING)
+                                   .updatedAt(RawCloudEntityTest.UPDATED_AT_STRING)
+                                   .metadata(RawCloudEntityTest.V3_METADATA)
+                                   .name(ORGANIZATION_NAME)
                                    .build();
-    }
-
-    private static OrganizationEntity buildTestEntity() {
-        return OrganizationEntity.builder()
-                                 .name(ORGANIZATION_NAME)
-                                 .build();
     }
 
 }
