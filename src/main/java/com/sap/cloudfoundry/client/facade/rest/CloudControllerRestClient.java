@@ -101,7 +101,7 @@ public interface CloudControllerRestClient {
 
     List<CloudEvent> getApplicationEvents(String applicationName);
 
-    List<CloudEvent> getEventsByActee(UUID uuid);
+    List<CloudEvent> getEventsByTarget(UUID uuid);
 
     InstancesInfo getApplicationInstances(CloudApplication app);
 
