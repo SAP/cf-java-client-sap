@@ -1,5 +1,6 @@
 package com.sap.cloudfoundry.client.facade.domain;
 
+import java.util.Collections;
 import java.util.List;
 
 import org.immutables.value.Value;
@@ -12,6 +13,9 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @JsonDeserialize(as = ImmutableInstancesInfo.class)
 public interface InstancesInfo {
 
-    List<InstanceInfo> getInstances();
+    @Value.Default
+    default List<InstanceInfo> getInstances() {
+        return Collections.emptyList();
+    }
 
 }
