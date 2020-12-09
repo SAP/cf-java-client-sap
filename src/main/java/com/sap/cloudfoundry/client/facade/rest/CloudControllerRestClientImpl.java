@@ -32,7 +32,6 @@ import org.cloudfoundry.client.v2.applications.SummaryApplicationRequest;
 import org.cloudfoundry.client.v2.applications.SummaryApplicationResponse;
 import org.cloudfoundry.client.v2.events.EventEntity;
 import org.cloudfoundry.client.v2.events.ListEventsRequest;
-import org.cloudfoundry.client.v2.featureflags.SetFeatureFlagRequest;
 import org.cloudfoundry.client.v2.info.GetInfoRequest;
 import org.cloudfoundry.client.v2.info.GetInfoResponse;
 import org.cloudfoundry.client.v2.organizations.GetOrganizationRequest;
@@ -97,6 +96,7 @@ import org.cloudfoundry.client.v3.LifecycleType;
 import org.cloudfoundry.client.v3.Metadata;
 import org.cloudfoundry.client.v3.Relationship;
 import org.cloudfoundry.client.v3.ToOneRelationship;
+import org.cloudfoundry.client.v3.applications.Application;
 import org.cloudfoundry.client.v3.applications.ApplicationRelationships;
 import org.cloudfoundry.client.v3.applications.ApplicationResource;
 import org.cloudfoundry.client.v3.applications.ApplicationState;
@@ -112,7 +112,6 @@ import org.cloudfoundry.client.v3.applications.GetApplicationProcessResponse;
 import org.cloudfoundry.client.v3.applications.GetApplicationProcessStatisticsRequest;
 import org.cloudfoundry.client.v3.applications.GetApplicationProcessStatisticsResponse;
 import org.cloudfoundry.client.v3.applications.GetApplicationRequest;
-import org.cloudfoundry.client.v3.applications.GetApplicationResponse;
 import org.cloudfoundry.client.v3.applications.ListApplicationBuildsRequest;
 import org.cloudfoundry.client.v3.applications.ListApplicationPackagesRequest;
 import org.cloudfoundry.client.v3.applications.ListApplicationsRequest;
@@ -121,6 +120,7 @@ import org.cloudfoundry.client.v3.applications.SetApplicationCurrentDropletReque
 import org.cloudfoundry.client.v3.applications.StartApplicationRequest;
 import org.cloudfoundry.client.v3.applications.StopApplicationRequest;
 import org.cloudfoundry.client.v3.applications.UpdateApplicationEnvironmentVariablesRequest;
+import org.cloudfoundry.client.v3.applications.UpdateApplicationFeatureRequest;
 import org.cloudfoundry.client.v3.applications.UpdateApplicationRequest;
 import org.cloudfoundry.client.v3.builds.Build;
 import org.cloudfoundry.client.v3.builds.CreateBuildRequest;
@@ -334,9 +334,9 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public void createApplication(String name, Staging staging, Integer disk, Integer memory, Set<CloudRouteSummary> routes) {
-        CreateApplicationRequest.Builder applicationRequestBuilder = createApplicationRequestBuilder(name);
-        applicationRequestBuilder.lifecycle(buildApplicationLifecycle(staging));
-        doCreateApplication(staging, disk, memory, routes, applicationRequestBuilder.build());
+        CreateApplicationRequest applicationRequest = createApplicationRequestBuilder(name).lifecycle(buildApplicationLifecycle(staging))
+                                                                                           .build();
+        doCreateApplication(staging, disk, memory, routes, applicationRequest);
     }
 
     private Lifecycle buildApplicationLifecycle(Staging staging) {
@@ -373,7 +373,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                              CreateApplicationResponse createApplicationResponse) {
         UUID createdApplicationGuid = UUID.fromString(createApplicationResponse.getId());
         GetApplicationProcessResponse applicationProcess = getApplicationProcess(createdApplicationGuid);
-        updateApplicationProcess(staging, applicationProcess);
+        updateApplicationProcess(createdApplicationGuid, staging, applicationProcess);
         delegate.applicationsV3()
                 .scale(ScaleApplicationRequest.builder()
                                               .applicationId(createdApplicationGuid.toString())
@@ -418,9 +418,9 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                        .block();
     }
 
-    private void updateApplicationProcess(Staging staging, GetApplicationProcessResponse applicationProcess) {
+    private void updateApplicationProcess(UUID applicationGuid, Staging staging, GetApplicationProcessResponse applicationProcess) {
         if (staging.isSshEnabled() != null) {
-            updateSsh(staging.isSshEnabled());
+            updateSsh(applicationGuid, staging.isSshEnabled());
         }
         UpdateProcessRequest.Builder updateProcessRequestBuilder = UpdateProcessRequest.builder()
                                                                                        .processId(applicationProcess.getId())
@@ -433,17 +433,18 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                 .block();
     }
 
-    private void updateSsh(boolean isSshEnabled) {
-        delegate.featureFlags()
-                .set(SetFeatureFlagRequest.builder()
-                                          .name("ssh")
-                                          .enabled(isSshEnabled)
-                                          .build())
+    private void updateSsh(UUID applicationGuid, boolean isSshEnabled) {
+        delegate.applicationsV3()
+                .updateFeature(UpdateApplicationFeatureRequest.builder()
+                                                              .featureName("ssh")
+                                                              .enabled(isSshEnabled)
+                                                              .applicationId(applicationGuid.toString())
+                                                              .build())
                 .block();
     }
 
     private HealthCheck buildHealthCheck(Staging staging) {
-        HealthCheckType healthCheckType = parseHealthCheckType(staging.getHealthCheckType());
+        HealthCheckType healthCheckType = HealthCheckType.from(staging.getHealthCheckType());
         return HealthCheck.builder()
                           .type(healthCheckType)
                           .data(Data.builder()
@@ -451,16 +452,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                     .timeout(staging.getHealthCheckTimeout())
                                     .build())
                           .build();
-    }
-
-    private HealthCheckType parseHealthCheckType(String healthCheckType) {
-        // TODO: Deprecate the usage of "NONE" health check type since it is no longer supported by the CC v3 (PROCESS should be used
-        // instead)
-        if (HealthCheckType.NONE.getValue()
-                                .equalsIgnoreCase(healthCheckType)) {
-            return HealthCheckType.PROCESS;
-        }
-        return HealthCheckType.from(healthCheckType);
     }
 
     private boolean shouldUpdateWithV3Buildpacks(Staging staging) {
@@ -713,17 +704,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     @Override
     public InstancesInfo getApplicationInstances(String applicationName) {
         UUID applicationGuid = getRequiredApplicationGuid(applicationName);
-        ApplicationState applicationState = getApplicationResponseByName(applicationName).getState();
-        return applicationState == ApplicationState.STARTED ? findApplicationInstances(applicationGuid) : null;
-    }
-
-    private GetApplicationResponse getApplicationResponseByName(String applicationName) {
-        ApplicationResource applicationResource = getApplicationResourceByName(applicationName).block();
-        return delegate.applicationsV3()
-                       .get(GetApplicationRequest.builder()
-                                                 .applicationId(applicationResource.getId())
-                                                 .build())
-                       .block();
+        return findApplicationInstances(applicationGuid);
     }
 
     @Override
@@ -751,12 +732,9 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     private List<UUID> getApplicationIds() {
-        return getApplicationResources().collectList()
-                                        .block()
-                                        .stream()
-                                        .map(org.cloudfoundry.client.v3.Resource::getId)
-                                        .map(UUID::fromString)
-                                        .collect(Collectors.toList());
+        return getApplicationResources().map(this::getGuid)
+                                        .collectList()
+                                        .block();
     }
 
     private Map<String, Metadata> getApplicationsMetadataByLabelSelector(String labelSelector) {
@@ -1191,11 +1169,11 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public void startApplication(String applicationName) {
-        GetApplicationResponse applicationResponse = getApplicationResponseByName(applicationName);
-        if (applicationResponse.getState() == ApplicationState.STARTED) {
+        Application application = getApplicationByName(applicationName).block();
+        if (application.getState() == ApplicationState.STARTED) {
             return;
         }
-        UUID applicationGuid = UUID.fromString(applicationResponse.getId());
+        UUID applicationGuid = UUID.fromString(application.getId());
         delegate.applicationsV3()
                 .start(StartApplicationRequest.builder()
                                               .applicationId(applicationGuid.toString())
@@ -1205,11 +1183,11 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public void stopApplication(String applicationName) {
-        GetApplicationResponse applicationResponse = getApplicationResponseByName(applicationName);
-        if (applicationResponse.getState() == ApplicationState.STOPPED) {
+        Application application = getApplicationByName(applicationName).block();
+        if (application.getState() == ApplicationState.STOPPED) {
             return;
         }
-        UUID applicationGuid = UUID.fromString(applicationResponse.getId());
+        UUID applicationGuid = UUID.fromString(application.getId());
         delegate.applicationsV3()
                 .stop(StopApplicationRequest.builder()
                                             .applicationId(applicationGuid.toString())
@@ -1301,7 +1279,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                 .update(updateApplicationRequest)
                 .block();
         GetApplicationProcessResponse applicationProcess = getApplicationProcess(applicationGuid);
-        updateApplicationProcess(staging, applicationProcess);
+        updateApplicationProcess(applicationGuid, staging, applicationProcess);
     }
 
     @Override
@@ -1628,14 +1606,14 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     private CloudApplication findApplicationByName(String name) {
-        return fetchWithAuxiliaryContent(() -> getApplicationResourceByName(name), this::zipWithAuxiliaryApplicationContent);
+        return fetchWithAuxiliaryContent(() -> getApplicationByName(name), this::zipWithAuxiliaryApplicationContent);
     }
 
     private CloudApplication findApplication(UUID guid) {
-        return fetchWithAuxiliaryContent(() -> getApplicationResource(guid), this::zipWithAuxiliaryApplicationContent);
+        return fetchWithAuxiliaryContent(() -> getApplicationByGuid(guid), this::zipWithAuxiliaryApplicationContent);
     }
 
-    private Flux<? extends org.cloudfoundry.client.v3.Resource> getApplicationResources() {
+    private Flux<? extends Application> getApplicationResources() {
         IntFunction<ListApplicationsRequest> pageRequestSupplier = page -> ListApplicationsRequest.builder()
                                                                                                   .spaceId(getTargetSpaceGuid().toString())
                                                                                                   .page(page)
@@ -1644,15 +1622,14 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                         .list(pageRequestSupplier.apply(page)));
     }
 
-    private Mono<? extends org.cloudfoundry.client.v3.Resource> getApplicationResource(UUID guid) {
-        GetApplicationRequest request = GetApplicationRequest.builder()
-                                                             .applicationId(guid.toString())
-                                                             .build();
+    private Mono<? extends Application> getApplicationByGuid(UUID guid) {
         return delegate.applicationsV3()
-                       .get(request);
+                       .get(GetApplicationRequest.builder()
+                                                 .applicationId(guid.toString())
+                                                 .build());
     }
 
-    private Mono<? extends org.cloudfoundry.client.v3.applications.ApplicationResource> getApplicationResourceByName(String name) {
+    private Mono<? extends Application> getApplicationByName(String name) {
         IntFunction<ListApplicationsRequest> pageRequestSupplier = page -> ListApplicationsRequest.builder()
                                                                                                   .spaceId(getTargetSpaceGuid().toString())
                                                                                                   .name(name)
@@ -1663,12 +1640,12 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                               .singleOrEmpty();
     }
 
-    private Flux<? extends org.cloudfoundry.client.v3.Resource> getApplicationResourcesByNamesInBatches(Collection<String> names) {
+    private Flux<? extends Application> getApplicationResourcesByNamesInBatches(Collection<String> names) {
         return Flux.fromIterable(toBatches(names, MAX_CHAR_LENGTH_FOR_PARAMS_IN_REQUEST))
                    .flatMap(this::getApplicationResourcesByNames);
     }
 
-    private Flux<? extends org.cloudfoundry.client.v3.Resource> getApplicationResourcesByNames(Collection<String> names) {
+    private Flux<? extends Application> getApplicationResourcesByNames(Collection<String> names) {
         if (names.isEmpty()) {
             return Flux.empty();
         }
@@ -1681,11 +1658,11 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                         .list(pageRequestSupplier.apply(page)));
     }
 
-    private Mono<Derivable<CloudApplication>> zipWithAuxiliaryApplicationContent(org.cloudfoundry.client.v3.Resource applicationResource) {
-        UUID applicationGuid = getGuid(applicationResource);
+    private Mono<Derivable<CloudApplication>> zipWithAuxiliaryApplicationContent(Application application) {
+        UUID applicationGuid = getGuid(application);
         return getApplicationSummary(applicationGuid).zipWhen(this::getApplicationStackResource)
                                                      .map(tuple -> ImmutableRawCloudApplication.builder()
-                                                                                               .resource(applicationResource)
+                                                                                               .application(application)
                                                                                                .summary(tuple.getT1())
                                                                                                .stack(ImmutableRawCloudStack.of(tuple.getT2()))
                                                                                                .space(target)
@@ -2546,7 +2523,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     private UUID getRequiredApplicationGuid(String name) {
-        org.cloudfoundry.client.v3.Resource applicationResource = getApplicationResourceByName(name).block();
+        org.cloudfoundry.client.v3.Resource applicationResource = getApplicationByName(name).block();
         if (applicationResource == null) {
             throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Application " + name + " not found.");
         }
