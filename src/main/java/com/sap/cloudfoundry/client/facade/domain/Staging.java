@@ -66,6 +66,9 @@ public interface Staging {
     @Nullable
     DockerInfo getDockerInfo();
 
+    @Nullable
+    Integer getInvocationTimeout();
+
     default String getBuildpack() {
         return getBuildpacks().isEmpty() ? null : getBuildpacks().get(0);
     }
