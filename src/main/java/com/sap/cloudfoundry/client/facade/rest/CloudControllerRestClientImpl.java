@@ -219,6 +219,7 @@ import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudApplication;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudServiceInstance;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableDropletInfo;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableErrorDetails;
+import com.sap.cloudfoundry.client.facade.domain.ImmutableInstancesInfo;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableUpload;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableUserRole;
 import com.sap.cloudfoundry.client.facade.domain.InstancesInfo;
@@ -703,18 +704,14 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public InstancesInfo getApplicationInstances(String applicationName) {
-        UUID applicationGuid = getRequiredApplicationGuid(applicationName);
-        return findApplicationInstances(applicationGuid);
-    }
-
-    @Override
     public InstancesInfo getApplicationInstances(CloudApplication application) {
         if (application.getState()
                        .equals(CloudApplication.State.STARTED)) {
             return findApplicationInstances(getGuid(application));
         }
-        return null;
+        return ImmutableInstancesInfo.builder()
+                                     .instances(Collections.emptyList())
+                                     .build();
     }
 
     @Override

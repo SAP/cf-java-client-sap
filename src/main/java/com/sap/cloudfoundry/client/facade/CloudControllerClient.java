@@ -9,7 +9,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-import com.sap.cloudfoundry.client.facade.domain.UserRole;
 import org.cloudfoundry.client.v3.Metadata;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 
@@ -36,6 +35,7 @@ import com.sap.cloudfoundry.client.facade.domain.DropletInfo;
 import com.sap.cloudfoundry.client.facade.domain.InstancesInfo;
 import com.sap.cloudfoundry.client.facade.domain.Staging;
 import com.sap.cloudfoundry.client.facade.domain.Upload;
+import com.sap.cloudfoundry.client.facade.domain.UserRole;
 
 /**
  * The interface defining operations making up the Cloud Foundry Java client's API.
@@ -259,14 +259,6 @@ public interface CloudControllerClient {
     List<CloudEvent> getApplicationEvents(String applicationName);
 
     List<CloudEvent> getEventsByActee(UUID uuid);
-
-    /**
-     * Get application instances info for application.
-     *
-     * @param applicationName name of application.
-     * @return instances info
-     */
-    InstancesInfo getApplicationInstances(String applicationName);
 
     /**
      * Get application instances info for application.
