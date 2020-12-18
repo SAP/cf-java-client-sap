@@ -2625,14 +2625,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                        .get(request);
     }
 
-    private String getTargetOrganizationName() {
-        return getName(target.getOrganization());
-    }
-
-    private String getName(CloudEntity entity) {
-        return entity == null ? null : entity.getName();
-    }
-
     private UUID getTargetOrganizationGuid() {
         return getGuid(target.getOrganization());
     }
