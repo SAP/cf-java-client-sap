@@ -18,8 +18,6 @@ import java.util.UUID;
 
 import org.cloudfoundry.client.v3.Metadata;
 import org.cloudfoundry.client.v3.processes.HealthCheckType;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
@@ -28,7 +26,6 @@ import com.sap.cloudfoundry.client.facade.domain.CloudApplication;
 import com.sap.cloudfoundry.client.facade.domain.CloudBuild;
 import com.sap.cloudfoundry.client.facade.domain.CloudMetadata;
 import com.sap.cloudfoundry.client.facade.domain.CloudPackage;
-import com.sap.cloudfoundry.client.facade.domain.CloudRoute;
 import com.sap.cloudfoundry.client.facade.domain.CloudRouteSummary;
 import com.sap.cloudfoundry.client.facade.domain.DockerInfo;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudApplication;
@@ -46,22 +43,10 @@ class ApplicationsCloudControllerClientIntegrationTest extends CloudControllerCl
     private static final int HEALTH_CHECK_TIMEMOUT = 100;
     private static final int DISK_IN_MB = 128;
     private static final int MEMORY_IN_MB = 128;
-    private static final String DEFAULT_DOMAIN = "deploy-service.custom.domain.for.integration.tests";
+    private static final String DEFAULT_DOMAIN = "cfapps.sap.hana.ondemand.com";
     private static final String APPLICATION_HOST = "test-application-hostname-ztana-test";
     private static final String STATICFILE_APPLICATION_CONTENT = "staticfile.zip";
     private static final Path STATICFILE_APPLICATION_PATH = getStaticfileApplicationContentPath();
-
-    @BeforeAll
-    static void createDefaultDomain() {
-        client.addDomain(DEFAULT_DOMAIN);
-    }
-
-    @AfterAll
-    static void deleteDefaultDomain() {
-        List<CloudRoute> routes = client.getRoutes(DEFAULT_DOMAIN);
-        routes.forEach(route -> client.deleteRoute(route.getHost(), DEFAULT_DOMAIN, null));
-        client.deleteDomain(DEFAULT_DOMAIN);
-    }
 
     @Test
     @DisplayName("Create application and verify its attributes")
