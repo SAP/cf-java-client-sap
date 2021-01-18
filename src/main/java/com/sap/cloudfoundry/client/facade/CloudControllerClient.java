@@ -9,7 +9,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-import com.sap.cloudfoundry.client.facade.domain.UserRole;
 import org.cloudfoundry.client.v3.Metadata;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 
@@ -36,6 +35,7 @@ import com.sap.cloudfoundry.client.facade.domain.DropletInfo;
 import com.sap.cloudfoundry.client.facade.domain.InstancesInfo;
 import com.sap.cloudfoundry.client.facade.domain.Staging;
 import com.sap.cloudfoundry.client.facade.domain.Upload;
+import com.sap.cloudfoundry.client.facade.domain.UserRole;
 
 /**
  * The interface defining operations making up the Cloud Foundry Java client's API.
@@ -793,10 +793,12 @@ public interface CloudControllerClient {
     List<CloudBuild> getBuildsForPackage(UUID packageGuid);
 
     List<CloudApplication> getApplicationsByMetadataLabelSelector(String labelSelector);
-
+    
     void updateApplicationMetadata(UUID guid, Metadata metadata);
 
     List<CloudServiceInstance> getServiceInstancesByMetadataLabelSelector(String labelSelector);
+    
+    List<CloudServiceInstance> getServiceInstancesWithoutAuxiliaryContentByMetadataLabelSelector(String labelSelector);
 
     void updateServiceInstanceMetadata(UUID guid, Metadata metadata);
 

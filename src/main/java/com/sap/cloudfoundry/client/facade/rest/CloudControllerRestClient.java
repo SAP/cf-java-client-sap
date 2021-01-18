@@ -252,8 +252,10 @@ public interface CloudControllerRestClient {
     List<CloudBuild> getBuildsForPackage(UUID packageGuid);
 
     List<CloudApplication> getApplicationsByMetadataLabelSelector(String labelSelector);
-
+    
     List<CloudServiceInstance> getServiceInstancesByMetadataLabelSelector(String labelSelector);
+    
+    List<CloudServiceInstance> getServiceInstancesWithoutAuxiliaryContentByMetadataLabelSelector(String labelSelector);
 
     void updateApplicationMetadata(UUID guid, Metadata metadata);
 

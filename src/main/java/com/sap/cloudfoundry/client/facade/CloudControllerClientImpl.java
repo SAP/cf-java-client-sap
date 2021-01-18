@@ -385,6 +385,11 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     public List<CloudServiceInstance> getServiceInstancesByMetadataLabelSelector(String labelSelector) {
         return handleExceptions(() -> delegate.getServiceInstancesByMetadataLabelSelector(labelSelector));
     }
+    
+    @Override
+    public List<CloudServiceInstance> getServiceInstancesWithoutAuxiliaryContentByMetadataLabelSelector(String labelSelector) {
+        return handleExceptions(() -> delegate.getServiceInstancesWithoutAuxiliaryContentByMetadataLabelSelector(labelSelector));
+    }
 
     @Override
     public List<CloudDomain> getSharedDomains() {
