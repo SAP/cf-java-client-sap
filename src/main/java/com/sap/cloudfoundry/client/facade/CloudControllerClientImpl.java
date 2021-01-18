@@ -107,8 +107,14 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public void createApplication(String applicationName, Staging staging, Integer disk, Integer memory, Set<CloudRouteSummary> routes) {
-        handleExceptions(() -> delegate.createApplication(applicationName, staging, disk, memory, routes));
+    public void createApplication(String applicationName, Staging staging, Integer memory, Set<CloudRouteSummary> routes) {
+        handleExceptions(() -> delegate.createApplication(applicationName, staging, memory, routes));
+    }
+
+    @Override
+    public void createApplication(String applicationName, Staging staging, Integer disk, Integer memory, Set<CloudRouteSummary> routes,
+                                  DockerInfo dockerInfo) {
+        handleExceptions(() -> delegate.createApplication(applicationName, staging, disk, memory, routes, dockerInfo));
     }
 
     @Override
@@ -205,11 +211,6 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     @Override
     public CloudApplication getApplication(UUID applicationGuid) {
         return handleExceptions(() -> delegate.getApplication(applicationGuid));
-    }
-
-    @Override
-    public UUID getApplicationGuid(String applicationName) {
-        return handleExceptions(() -> delegate.getApplicationGuid(applicationName));
     }
 
     @Override
@@ -456,13 +457,13 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public void restartApplication(String applicationName) {
-        handleExceptions(() -> delegate.restartApplication(applicationName));
+    public StartingInfo restartApplication(String applicationName) {
+        return handleExceptions(() -> delegate.restartApplication(applicationName));
     }
 
     @Override
-    public void startApplication(String applicationName) {
-        handleExceptions(() -> delegate.startApplication(applicationName));
+    public StartingInfo startApplication(String applicationName) {
+        return handleExceptions(() -> delegate.startApplication(applicationName));
     }
 
     @Override
@@ -653,11 +654,6 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     @Override
     public List<CloudPackage> getPackagesForApplication(UUID applicationGuid) {
         return handleExceptions(() -> delegate.getPackagesForApplication(applicationGuid));
-    }
-
-    @Override
-    public CloudPackage createDockerPackage(UUID applicationGuid, DockerInfo dockerInfo) {
-        return handleExceptions(() -> delegate.createDockerPackage(applicationGuid, dockerInfo));
     }
 
     @Override

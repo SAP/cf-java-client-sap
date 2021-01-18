@@ -54,12 +54,6 @@ public class RawCloudEntityTest {
                                                                          .url(URL_STRING)
                                                                          .build();
 
-    static final CloudMetadata EXPECTED_METADATA_V3 = ImmutableCloudMetadata.builder()
-                                                                            .guid(GUID)
-                                                                            .createdAt(CREATED_AT)
-                                                                            .updatedAt(UPDATED_AT)
-                                                                            .build();
-
     static Date fromZonedDateTime(ZonedDateTime dateTime) {
         return Date.from(dateTime.toInstant());
     }
