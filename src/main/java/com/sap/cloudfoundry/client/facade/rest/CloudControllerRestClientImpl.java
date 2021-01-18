@@ -643,7 +643,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                                  this::zipWithAuxiliaryApplicationContent);
         return addMetadata(cloudApplications, applicationsMetadata);
     }
-
+    
     private Map<String, Metadata> getApplicationsMetadataByLabelSelector(String labelSelector) {
         IntFunction<org.cloudfoundry.client.v3.applications.ListApplicationsRequest> pageRequestSupplier = page -> org.cloudfoundry.client.v3.applications.ListApplicationsRequest.builder()
                                                                                                                                                                                   .spaceId(getTargetSpaceGuid().toString())
@@ -974,6 +974,18 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         List<CloudServiceInstance> serviceInstances = fetchListWithAuxiliaryContent(() -> getServiceInstanceResourcesByNamesInBatches(serviceInstancesMetadata.keySet()),
                                                                                     this::zipWithAuxiliaryServiceInstanceContent);
         return getServiceInstancesWithMetadata(serviceInstances, serviceInstancesMetadata);
+    }
+    
+    @Override
+    public  List<CloudServiceInstance> getServiceInstancesWithoutAuxiliaryContentByMetadataLabelSelector(String labelSelector) {
+        Map<String, Metadata> serviceInstancesMetadata = getServiceInstancesMetadataByLabelSelector(labelSelector);
+        List<CloudServiceInstance> cloudServiceInstances = serviceInstancesMetadata.keySet()
+                                                                                           .stream()
+                                                                                           .map(serviceInstanceName -> ImmutableCloudServiceInstance.builder()
+                                                                                                                                                    .name(serviceInstanceName)
+                                                                                                                                                    .build())
+                                                                                           .collect(Collectors.toList());
+        return getServiceInstancesWithMetadata(cloudServiceInstances, serviceInstancesMetadata);
     }
 
     private Map<String, Metadata> getServiceInstancesMetadataByLabelSelector(String labelSelector) {
