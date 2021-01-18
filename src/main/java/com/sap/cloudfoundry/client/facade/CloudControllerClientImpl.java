@@ -233,6 +233,11 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
+    public InstancesInfo getApplicationInstances(String applicationName) {
+        return handleExceptions(() -> delegate.getApplicationInstances(applicationName));
+    }
+
+    @Override
     public InstancesInfo getApplicationInstances(CloudApplication app) {
         return handleExceptions(() -> delegate.getApplicationInstances(app));
     }
