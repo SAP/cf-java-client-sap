@@ -40,7 +40,7 @@ import com.sap.cloudfoundry.client.facade.oauth2.OAuthClient;
 
 import reactor.core.publisher.Mono;
 
-class CloudControllerRestClientImplTest {
+public class CloudControllerRestClientImplTest {
 
     private static final CloudCredentials CREDENTIALS = new CloudCredentials("admin", "admin");
     private static final URL CONTROLLER_URL = createUrl("https://localhost:8080");
@@ -67,14 +67,13 @@ class CloudControllerRestClientImplTest {
     private CloudControllerRestClientImpl controllerClient;
 
     @BeforeEach
-    public void setUp() throws Exception {
-        MockitoAnnotations.openMocks(this)
-                          .close();
+    public void setUp() {
+        MockitoAnnotations.initMocks(this);
         controllerClient = new CloudControllerRestClientImpl(CONTROLLER_URL, CREDENTIALS, webClient, oAuthClient, delegate);
     }
 
     @Test
-    void testGetServiceResource() {
+    public void testGetServiceResource() {
         GetServiceRequest request = GetServiceRequest.builder()
                                                      .serviceId(GUID)
                                                      .build();
@@ -97,7 +96,7 @@ class CloudControllerRestClientImplTest {
     }
 
     @Test
-    void testGetServiceResourceWithForbidden() {
+    public void testGetServiceResourceWithForbidden() {
         GetServiceRequest request = GetServiceRequest.builder()
                                                      .serviceId(GUID)
                                                      .build();
@@ -115,7 +114,7 @@ class CloudControllerRestClientImplTest {
     }
 
     @Test
-    void testGetServicePlanResource() {
+    public void testGetServicePlanResource() {
         GetServicePlanRequest request = GetServicePlanRequest.builder()
                                                              .servicePlanId(GUID)
                                                              .build();
@@ -139,7 +138,7 @@ class CloudControllerRestClientImplTest {
     }
 
     @Test
-    void testGetServicePlanResourceWithForbidden() {
+    public void testGetServicePlanResourceWithForbidden() {
         GetServicePlanRequest request = GetServicePlanRequest.builder()
                                                              .servicePlanId(GUID)
                                                              .build();
@@ -214,8 +213,8 @@ class CloudControllerRestClientImplTest {
 
     @ParameterizedTest
     @MethodSource
-    void testSelectRoutesOnlyInFirst(Set<CloudRouteSummary> routes, Set<CloudRouteSummary> routesToSubtract,
-                                     Set<CloudRouteSummary> resultRoutes) {
+    public void testSelectRoutesOnlyInFirst(Set<CloudRouteSummary> routes, Set<CloudRouteSummary> routesToSubtract,
+                                                   Set<CloudRouteSummary> resultRoutes) {
         Assertions.assertEquals(controllerClient.selectRoutesOnlyInFirst(routes, routesToSubtract), resultRoutes);
     }
 
