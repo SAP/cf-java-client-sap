@@ -4,10 +4,10 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.sap.cloudfoundry.client.facade.util.EnvironmentUtil;
 import org.cloudfoundry.client.v2.applications.SummaryApplicationResponse;
 import org.cloudfoundry.client.v2.serviceinstances.ServiceInstance;
-import org.cloudfoundry.client.v3.applications.Application;
-import org.cloudfoundry.client.v3.applications.ApplicationState;
+import org.cloudfoundry.client.v3.Resource;
 import org.immutables.value.Value;
 
 import com.sap.cloudfoundry.client.facade.domain.CloudApplication;
@@ -24,12 +24,11 @@ import com.sap.cloudfoundry.client.facade.domain.ImmutableDockerInfo;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableStaging;
 import com.sap.cloudfoundry.client.facade.domain.PackageState;
 import com.sap.cloudfoundry.client.facade.domain.Staging;
-import com.sap.cloudfoundry.client.facade.util.EnvironmentUtil;
 
 @Value.Immutable
 public abstract class RawCloudApplication extends RawCloudEntity<CloudApplication> {
 
-    public abstract Application getApplication();
+    public abstract Resource getResource();
 
     public abstract SummaryApplicationResponse getSummary();
 
@@ -41,14 +40,14 @@ public abstract class RawCloudApplication extends RawCloudEntity<CloudApplicatio
     public CloudApplication derive() {
         SummaryApplicationResponse summary = getSummary();
         return ImmutableCloudApplication.builder()
-                                        .metadata(parseResourceMetadata(getApplication()))
+                                        .metadata(parseResourceMetadata(getResource()))
                                         .name(summary.getName())
                                         .memory(summary.getMemory())
                                         .routes(parseRoutes(summary.getRoutes()))
                                         .diskQuota(summary.getDiskQuota())
                                         .instances(summary.getInstances())
                                         .runningInstances(summary.getRunningInstances())
-                                        .state(parseState(getApplication().getState()))
+                                        .state(parseState(summary.getState()))
                                         .staging(parseStaging(summary, getStack()))
                                         .packageState(parsePackageState(summary.getPackageState()))
                                         .stagingError(summary.getStagingFailedDescription())
@@ -58,8 +57,8 @@ public abstract class RawCloudApplication extends RawCloudEntity<CloudApplicatio
                                         .build();
     }
 
-    private static CloudApplication.State parseState(ApplicationState state) {
-        return CloudApplication.State.valueOf(state.getValue());
+    private static CloudApplication.State parseState(String state) {
+        return CloudApplication.State.valueOf(state);
     }
 
     private static Staging parseStaging(SummaryApplicationResponse summary, Derivable<CloudStack> stack) {
