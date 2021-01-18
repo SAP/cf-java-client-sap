@@ -450,7 +450,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                           .data(Data.builder()
                                     .endpoint(staging.getHealthCheckHttpEndpoint())
                                     .timeout(staging.getHealthCheckTimeout())
-                                    .invocationTimeout(staging.getInvocationTimeout())
                                     .build())
                           .build();
     }
