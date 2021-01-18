@@ -227,7 +227,7 @@ public interface CloudControllerClient {
     CloudApplication getApplication(UUID guid);
 
     /**
-     * Get the GUID of the cloud application with the specified name.
+     * Get cloud application with the specified GUID.
      *
      * @param applicationName name of the app
      * @return the cloud application's guid
