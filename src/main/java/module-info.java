@@ -1,8 +1,8 @@
 open module com.sap.cloudfoundry.client.facade {
 
-    requires cloudfoundry.client;
-    requires cloudfoundry.client.reactor;
-    requires cloudfoundry.util;
+    requires org.cloudfoundry.client;
+    requires org.cloudfoundry.client.reactor;
+    requires org.cloudfoundry.util;
     requires com.fasterxml.jackson.databind;
     requires org.apache.commons.io;
     requires org.slf4j;
