@@ -90,10 +90,8 @@ import org.cloudfoundry.client.v2.spaces.ListSpaceApplicationsRequest;
 import org.cloudfoundry.client.v2.spaces.ListSpaceRoutesRequest;
 import org.cloudfoundry.client.v2.spaces.ListSpaceServiceInstancesRequest;
 import org.cloudfoundry.client.v2.spaces.ListSpaceServicesRequest;
-import org.cloudfoundry.client.v2.spaces.ListSpaceUserRolesRequest;
 import org.cloudfoundry.client.v2.spaces.ListSpacesRequest;
 import org.cloudfoundry.client.v2.spaces.SpaceEntity;
-import org.cloudfoundry.client.v2.spaces.UserSpaceRoleResource;
 import org.cloudfoundry.client.v2.stacks.GetStackRequest;
 import org.cloudfoundry.client.v2.stacks.ListStacksRequest;
 import org.cloudfoundry.client.v2.stacks.StackEntity;
@@ -127,6 +125,8 @@ import org.cloudfoundry.client.v3.packages.PackageRelationships;
 import org.cloudfoundry.client.v3.packages.PackageResource;
 import org.cloudfoundry.client.v3.packages.PackageType;
 import org.cloudfoundry.client.v3.packages.UploadPackageRequest;
+import org.cloudfoundry.client.v3.roles.ListRolesRequest;
+import org.cloudfoundry.client.v3.roles.RoleResource;
 import org.cloudfoundry.client.v3.serviceInstances.ListServiceInstancesRequest;
 import org.cloudfoundry.client.v3.serviceInstances.ServiceInstanceResource;
 import org.cloudfoundry.client.v3.serviceInstances.UpdateServiceInstanceRequest;
@@ -205,7 +205,6 @@ import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudServiceInstance;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableDropletInfo;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableErrorDetails;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableUpload;
-import com.sap.cloudfoundry.client.facade.domain.ImmutableUserRole;
 import com.sap.cloudfoundry.client.facade.domain.InstancesInfo;
 import com.sap.cloudfoundry.client.facade.domain.ServiceInstanceType;
 import com.sap.cloudfoundry.client.facade.domain.Staging;
@@ -1433,24 +1432,18 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public UserRole getUserRoleBySpaceGuidAndUserGuid(UUID spaceGuid, UUID userGuid) {
-        return fetchList(() -> getSpaceRoles(spaceGuid.toString()), ImmutableRawUserRole::of).stream()
-                                                                                             .filter(userRole -> userRole.getMetadata()
-                                                                                                                         .getGuid()
-                                                                                                                         .equals(userGuid))
-                                                                                             .findFirst()
-                                                                                             .orElse(ImmutableUserRole.builder()
-                                                                                                                      .spaceRoles(Collections.emptyList())
-                                                                                                                      .build());
+    public List<UserRole> getUserRolesBySpaceAndUser(UUID spaceGuid, UUID userGuid) {
+        return fetchList(() -> getRoles(spaceGuid, userGuid), ImmutableRawUserRole::of);
     }
 
-    private Flux<? extends UserSpaceRoleResource> getSpaceRoles(String spaceGuid) {
-        IntFunction<ListSpaceUserRolesRequest> pageRequestSupplier = page -> ListSpaceUserRolesRequest.builder()
-                                                                                                      .page(page)
-                                                                                                      .spaceId(spaceGuid)
-                                                                                                      .build();
-        return PaginationUtils.requestClientV2Resources(page -> delegate.spaces()
-                                                                        .listUserRoles(pageRequestSupplier.apply(page)));
+    private Flux<RoleResource> getRoles(UUID spaceGuid, UUID userGuid) {
+        IntFunction<ListRolesRequest> pageRequestSupplier = page -> ListRolesRequest.builder()
+                                                                                    .page(page)
+                                                                                    .spaceId(spaceGuid.toString())
+                                                                                    .userId(userGuid.toString())
+                                                                                    .build();
+        return PaginationUtils.requestClientV3Resources(page -> delegate.rolesV3()
+                                                                        .list(pageRequestSupplier.apply(page)));
     }
 
     private CloudApplication addMetadataIfNotNull(CloudApplication application) {

@@ -662,8 +662,8 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public UserRole getUserRoleBySpaceGuidAndUserGuid(UUID spaceGuid, UUID userGuid) {
-        return handleExceptions(() -> delegate.getUserRoleBySpaceGuidAndUserGuid(spaceGuid, userGuid));
+    public List<UserRole> getUserRolesBySpaceAndUser(UUID spaceGuid, UUID userGuid) {
+        return handleExceptions(() -> delegate.getUserRolesBySpaceAndUser(spaceGuid, userGuid));
     }
 
     private void handleExceptions(Runnable runnable) {

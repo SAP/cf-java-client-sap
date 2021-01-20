@@ -2,41 +2,35 @@ package com.sap.cloudfoundry.client.facade.domain;
 
 import java.text.MessageFormat;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import org.immutables.value.Value;
+import org.cloudfoundry.client.v3.roles.RoleType;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+public enum UserRole {
 
-@Value.Immutable
-@JsonSerialize(as = ImmutableUserRole.class)
-@JsonDeserialize(as = ImmutableUserRole.class)
-public abstract class UserRole extends CloudEntity {
+    ORGANIZATION_AUDITOR,
+    ORGANIZATION_BILLING_MANAGER,
+    ORGANIZATION_MANAGER,
+    ORGANIZATION_USER,
+    SPACE_AUDITOR,
+    SPACE_DEVELOPER,
+    SPACE_MANAGER;
 
-    public abstract List<SpaceRole> getSpaceRoles();
+    private static final Map<String, UserRole> NAMES_TO_VALUES = Arrays.stream(values())
+                                                                       .collect(Collectors.toMap(UserRole::getName,
+                                                                                                 roleType ->  roleType));
 
-    public enum SpaceRole {
-        SPACE_AUDITOR, SPACE_DEVELOPER, SPACE_MANAGER;
-
-        private static final Map<String, SpaceRole> NAMES_TO_VALUES = Arrays.stream(SpaceRole.values())
-                                                                            .collect(Collectors.toMap(role -> role.toString()
-                                                                                                                  .toLowerCase(),
-                                                                                                      Function.identity()));
-
-        public static SpaceRole fromString(String spaceRoleName) {
-            SpaceRole spaceRole = NAMES_TO_VALUES.get(spaceRoleName);
-            if (spaceRole == null) {
-                throw new IllegalStateException(MessageFormat.format("Space role not found: \"{0}\"", spaceRoleName));
-            }
-            return spaceRole;
+    public static UserRole fromRoleType(RoleType roleType) {
+        UserRole userRole = NAMES_TO_VALUES.get(roleType.getValue());
+        if (userRole == null) {
+            throw new IllegalArgumentException("Unknown user role: " + roleType.getValue());
         }
+        return userRole;
     }
 
-    public boolean hasSpaceRole(SpaceRole spaceRole) {
-        return getSpaceRoles().contains(spaceRole);
+    public String getName() {
+        return name().toLowerCase();
     }
+
 }
