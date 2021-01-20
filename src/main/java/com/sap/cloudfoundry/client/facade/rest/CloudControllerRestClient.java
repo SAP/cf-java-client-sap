@@ -265,5 +265,5 @@ public interface CloudControllerRestClient {
 
     List<CloudPackage> getPackagesForApplication(UUID applicationGuid);
 
-    UserRole getUserRoleBySpaceGuidAndUserGuid(UUID spaceGuid, UUID userGuid);
+    List<UserRole> getUserRolesBySpaceAndUser(UUID spaceGuid, UUID userGuid);
 }
