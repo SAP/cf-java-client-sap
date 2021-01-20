@@ -22,7 +22,6 @@ import com.sap.cloudfoundry.client.facade.domain.CloudApplication;
 import com.sap.cloudfoundry.client.facade.domain.CloudBuild;
 import com.sap.cloudfoundry.client.facade.domain.CloudDomain;
 import com.sap.cloudfoundry.client.facade.domain.CloudEvent;
-import com.sap.cloudfoundry.client.facade.domain.CloudInfo;
 import com.sap.cloudfoundry.client.facade.domain.CloudOrganization;
 import com.sap.cloudfoundry.client.facade.domain.CloudPackage;
 import com.sap.cloudfoundry.client.facade.domain.CloudRoute;
@@ -52,7 +51,6 @@ import com.sap.cloudfoundry.client.facade.rest.ImmutableCloudControllerRestClien
 public class CloudControllerClientImpl implements CloudControllerClient {
 
     private CloudControllerRestClient delegate;
-    private CloudInfo info;
 
     /**
      * Construct client without a default organization and space.
@@ -256,14 +254,6 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     @Override
     public URL getCloudControllerUrl() {
         return delegate.getControllerUrl();
-    }
-
-    @Override
-    public CloudInfo getCloudInfo() {
-        if (info == null) {
-            info = handleExceptions(() -> delegate.getInfo());
-        }
-        return info;
     }
 
     @Override
