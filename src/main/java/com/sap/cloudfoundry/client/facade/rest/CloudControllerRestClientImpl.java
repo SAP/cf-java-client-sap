@@ -41,8 +41,6 @@ import org.cloudfoundry.client.v2.applications.SummaryApplicationResponse;
 import org.cloudfoundry.client.v2.applications.UpdateApplicationRequest;
 import org.cloudfoundry.client.v2.events.EventEntity;
 import org.cloudfoundry.client.v2.events.ListEventsRequest;
-import org.cloudfoundry.client.v2.info.GetInfoRequest;
-import org.cloudfoundry.client.v2.info.GetInfoResponse;
 import org.cloudfoundry.client.v2.organizations.GetOrganizationRequest;
 import org.cloudfoundry.client.v2.organizations.ListOrganizationPrivateDomainsRequest;
 import org.cloudfoundry.client.v2.organizations.ListOrganizationSpacesRequest;
@@ -156,7 +154,6 @@ import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawApplicationLog;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudApplication;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudBuild;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudEvent;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudInfo;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudOrganization;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudPackage;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudPrivateDomain;
@@ -180,7 +177,6 @@ import com.sap.cloudfoundry.client.facade.domain.CloudBuild;
 import com.sap.cloudfoundry.client.facade.domain.CloudDomain;
 import com.sap.cloudfoundry.client.facade.domain.CloudEntity;
 import com.sap.cloudfoundry.client.facade.domain.CloudEvent;
-import com.sap.cloudfoundry.client.facade.domain.CloudInfo;
 import com.sap.cloudfoundry.client.facade.domain.CloudMetadata;
 import com.sap.cloudfoundry.client.facade.domain.CloudOrganization;
 import com.sap.cloudfoundry.client.facade.domain.CloudPackage;
@@ -691,11 +687,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     @Override
     public List<CloudEvent> getEvents() {
         return fetchList(this::getEventResources, ImmutableRawCloudEvent::of);
-    }
-
-    @Override
-    public CloudInfo getInfo() {
-        return fetch(this::getInfoResource, ImmutableRawCloudInfo::of);
     }
 
     @Override
@@ -2376,12 +2367,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                          .build();
         return delegate.applicationsV2()
                        .instances(request);
-    }
-
-    private Mono<GetInfoResponse> getInfoResource() {
-        return delegate.info()
-                       .get(GetInfoRequest.builder()
-                                          .build());
     }
 
     private CloudServiceBroker findServiceBrokerByName(String name) {

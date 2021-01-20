@@ -17,7 +17,6 @@ import com.sap.cloudfoundry.client.facade.domain.CloudApplication;
 import com.sap.cloudfoundry.client.facade.domain.CloudBuild;
 import com.sap.cloudfoundry.client.facade.domain.CloudDomain;
 import com.sap.cloudfoundry.client.facade.domain.CloudEvent;
-import com.sap.cloudfoundry.client.facade.domain.CloudInfo;
 import com.sap.cloudfoundry.client.facade.domain.CloudOrganization;
 import com.sap.cloudfoundry.client.facade.domain.CloudPackage;
 import com.sap.cloudfoundry.client.facade.domain.CloudRoute;
@@ -293,13 +292,6 @@ public interface CloudControllerClient {
      * @return the cloud controller URL
      */
     URL getCloudControllerUrl();
-
-    /**
-     * Get CloudInfo for the current cloud.
-     *
-     * @return CloudInfo object containing the cloud info
-     */
-    CloudInfo getCloudInfo();
 
     /**
      * Gets the default domain for the current org, which is the first shared domain.

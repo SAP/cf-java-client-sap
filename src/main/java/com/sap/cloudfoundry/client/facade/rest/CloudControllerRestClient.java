@@ -20,7 +20,6 @@ import com.sap.cloudfoundry.client.facade.domain.CloudApplication;
 import com.sap.cloudfoundry.client.facade.domain.CloudBuild;
 import com.sap.cloudfoundry.client.facade.domain.CloudDomain;
 import com.sap.cloudfoundry.client.facade.domain.CloudEvent;
-import com.sap.cloudfoundry.client.facade.domain.CloudInfo;
 import com.sap.cloudfoundry.client.facade.domain.CloudOrganization;
 import com.sap.cloudfoundry.client.facade.domain.CloudPackage;
 import com.sap.cloudfoundry.client.facade.domain.CloudRoute;
@@ -120,8 +119,6 @@ public interface CloudControllerRestClient {
     List<CloudDomain> getDomainsForOrganization();
 
     List<CloudEvent> getEvents();
-
-    CloudInfo getInfo();
 
     CloudOrganization getOrganization(String organizationName);
 
