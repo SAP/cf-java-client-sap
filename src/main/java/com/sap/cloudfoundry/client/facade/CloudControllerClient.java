@@ -262,14 +262,6 @@ public interface CloudControllerClient {
     /**
      * Get application instances info for application.
      *
-     * @param applicationName name of application.
-     * @return instances info
-     */
-    InstancesInfo getApplicationInstances(String applicationName);
-
-    /**
-     * Get application instances info for application.
-     *
      * @param app the application.
      * @return instances info
      */
