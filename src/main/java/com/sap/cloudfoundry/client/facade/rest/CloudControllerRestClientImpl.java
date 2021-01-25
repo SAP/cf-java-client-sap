@@ -25,6 +25,8 @@ import org.apache.commons.io.IOUtils;
 import org.cloudfoundry.AbstractCloudFoundryException;
 import org.cloudfoundry.client.CloudFoundryClient;
 import org.cloudfoundry.client.v2.Resource;
+import org.cloudfoundry.client.v2.applications.ApplicationInstancesRequest;
+import org.cloudfoundry.client.v2.applications.ApplicationInstancesResponse;
 import org.cloudfoundry.client.v2.applications.AssociateApplicationRouteRequest;
 import org.cloudfoundry.client.v2.applications.ListApplicationServiceBindingsRequest;
 import org.cloudfoundry.client.v2.applications.RemoveApplicationRouteRequest;
@@ -32,8 +34,6 @@ import org.cloudfoundry.client.v2.applications.SummaryApplicationRequest;
 import org.cloudfoundry.client.v2.applications.SummaryApplicationResponse;
 import org.cloudfoundry.client.v2.events.EventEntity;
 import org.cloudfoundry.client.v2.events.ListEventsRequest;
-import org.cloudfoundry.client.v2.info.GetInfoRequest;
-import org.cloudfoundry.client.v2.info.GetInfoResponse;
 import org.cloudfoundry.client.v2.organizations.GetOrganizationRequest;
 import org.cloudfoundry.client.v2.organizations.ListOrganizationPrivateDomainsRequest;
 import org.cloudfoundry.client.v2.organizations.ListOrganizationSpacesRequest;
@@ -107,8 +107,6 @@ import org.cloudfoundry.client.v3.applications.GetApplicationEnvironmentRequest;
 import org.cloudfoundry.client.v3.applications.GetApplicationEnvironmentResponse;
 import org.cloudfoundry.client.v3.applications.GetApplicationProcessRequest;
 import org.cloudfoundry.client.v3.applications.GetApplicationProcessResponse;
-import org.cloudfoundry.client.v3.applications.GetApplicationProcessStatisticsRequest;
-import org.cloudfoundry.client.v3.applications.GetApplicationProcessStatisticsResponse;
 import org.cloudfoundry.client.v3.applications.GetApplicationRequest;
 import org.cloudfoundry.client.v3.applications.ListApplicationBuildsRequest;
 import org.cloudfoundry.client.v3.applications.ListApplicationPackagesRequest;
@@ -2455,15 +2453,16 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     private InstancesInfo findApplicationInstances(UUID applicationGuid) {
-        return fetch(() -> getApplicationProcessStatistics(applicationGuid), ImmutableRawInstancesInfo::of);
+        return fetch(() -> getApplicationInstancesResource(applicationGuid), ImmutableRawInstancesInfo::of);
     }
 
-    private Mono<GetApplicationProcessStatisticsResponse> getApplicationProcessStatistics(UUID applicationGuid) {
-        return delegate.applicationsV3()
-                       .getProcessStatistics(GetApplicationProcessStatisticsRequest.builder()
-                                                                                   .applicationId(applicationGuid.toString())
-                                                                                   .type("web")
-                                                                                   .build());
+    private Mono<ApplicationInstancesResponse> getApplicationInstancesResource(UUID applicationGuid) {
+        ApplicationInstancesRequest request = ApplicationInstancesRequest.builder()
+                                                                         .applicationId(applicationGuid.toString())
+                                                                         .build();
+        // TODO: Use v3 API when this issue is fixed: https://github.com/cloudfoundry/cf-java-client/issues/1086
+        return delegate.applicationsV2()
+                       .instances(request);
     }
 
     private CloudServiceBroker findServiceBrokerByName(String name) {
