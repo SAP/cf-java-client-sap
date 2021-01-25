@@ -13,7 +13,6 @@ import org.cloudfoundry.client.v3.Metadata;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import com.sap.cloudfoundry.client.facade.StartingInfo;
 import com.sap.cloudfoundry.client.facade.UploadStatusCallback;
 import com.sap.cloudfoundry.client.facade.domain.ApplicationLog;
 import com.sap.cloudfoundry.client.facade.domain.CloudApplication;
@@ -54,9 +53,7 @@ public interface CloudControllerRestClient {
 
     void bindServiceInstance(String applicationName, String serviceInstanceName, Map<String, Object> parameters);
 
-    void createApplication(String applicationName, Staging staging, Integer memory, Set<CloudRouteSummary> routes);
-
-    void createApplication(String applicationName, Staging staging, Integer disk, Integer memory, Set<CloudRouteSummary> routes, DockerInfo dockerInfo);
+    void createApplication(String applicationName, Staging staging, Integer disk, Integer memory, Set<CloudRouteSummary> routes);
 
     void createServiceInstance(CloudServiceInstance serviceInstance);
 
@@ -95,6 +92,8 @@ public interface CloudControllerRestClient {
     CloudApplication getApplication(String applicationName, boolean required);
 
     CloudApplication getApplication(UUID applicationGuid);
+
+    UUID getApplicationGuid(String applicationName);
 
     Map<String, String> getApplicationEnvironment(UUID applicationGuid);
 
@@ -182,9 +181,9 @@ public interface CloudControllerRestClient {
 
     void rename(String applicationName, String newName);
 
-    StartingInfo restartApplication(String applicationName);
+    void restartApplication(String applicationName);
 
-    StartingInfo startApplication(String applicationName);
+    void startApplication(String applicationName);
 
     void stopApplication(String applicationName);
 
@@ -265,4 +264,7 @@ public interface CloudControllerRestClient {
     List<CloudPackage> getPackagesForApplication(UUID applicationGuid);
 
     List<UserRole> getUserRolesBySpaceAndUser(UUID spaceGuid, UUID userGuid);
+
+    CloudPackage createDockerPackage(UUID applicationGuid, DockerInfo dockerInfo);
+
 }

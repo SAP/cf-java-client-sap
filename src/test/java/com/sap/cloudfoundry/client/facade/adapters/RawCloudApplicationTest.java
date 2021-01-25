@@ -2,20 +2,25 @@ package com.sap.cloudfoundry.client.facade.adapters;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.cloudfoundry.client.v2.Resource;
-import org.cloudfoundry.client.v2.applications.ApplicationEntity;
-import org.cloudfoundry.client.v2.applications.ApplicationResource;
 import org.cloudfoundry.client.v2.applications.SummaryApplicationResponse;
 import org.cloudfoundry.client.v2.domains.Domain;
 import org.cloudfoundry.client.v2.routes.Route;
 import org.cloudfoundry.client.v2.serviceinstances.ServiceInstance;
+import org.cloudfoundry.client.v3.BuildpackData;
+import org.cloudfoundry.client.v3.Lifecycle;
+import org.cloudfoundry.client.v3.LifecycleType;
+import org.cloudfoundry.client.v3.Resource;
+import org.cloudfoundry.client.v3.applications.ApplicationResource;
+import org.cloudfoundry.client.v3.applications.ApplicationState;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -121,7 +126,7 @@ public class RawCloudApplicationTest {
 
     private static CloudApplication buildApplication(Staging staging) {
         return ImmutableCloudApplication.builder()
-                                        .metadata(RawCloudEntityTest.EXPECTED_METADATA)
+                                        .metadata(RawCloudEntityTest.EXPECTED_METADATA_V3)
                                         .name(RawCloudEntityTest.NAME)
                                         .routes(EXPECTED_ROUTES)
                                         .memory(MEMORY)
@@ -205,9 +210,21 @@ public class RawCloudApplicationTest {
                                            .build();
     }
 
-    private static Resource<ApplicationEntity> buildApplicationResource() {
+    private static Resource buildApplicationResource() {
+
         return ApplicationResource.builder()
-                                  .metadata(RawCloudEntityTest.METADATA)
+                                  .metadata(RawCloudEntityTest.V3_METADATA)
+                                  .createdAt(RawCloudEntityTest.CREATED_AT_STRING)
+                .updatedAt(RawCloudEntityTest.UPDATED_AT_STRING)
+                .id(RawCloudEntityTest.GUID.toString())
+                                  .lifecycle(Lifecycle.builder()
+                                                      .type(LifecycleType.BUILDPACK)
+                                                      .data(BuildpackData.builder()
+                                                                         .buildpack("buildpack")
+                                                                         .build())
+                                                      .build())
+                                  .name("foo")
+                                  .state(ApplicationState.STOPPED)
                                   .build();
     }
 

@@ -81,22 +81,11 @@ public interface CloudControllerClient {
      *
      * @param applicationName application name
      * @param staging staging info
-     * @param memory memory to use in MB
-     * @param routes list of route summary info for the app
-     */
-    void createApplication(String applicationName, Staging staging, Integer memory, Set<CloudRouteSummary> routes);
-
-    /**
-     * Create application.
-     *
-     * @param applicationName application name
-     * @param staging staging info
      * @param disk disk quota to use in MB
      * @param memory memory to use in MB
      * @param routes list of route summary info for the app
-     * @param dockerInfo docker params(image, username, password)
      */
-    void createApplication(String applicationName, Staging staging, Integer disk, Integer memory, Set<CloudRouteSummary> routes, DockerInfo dockerInfo);
+    void createApplication(String applicationName, Staging staging, Integer disk, Integer memory, Set<CloudRouteSummary> routes);
 
     /**
      * Create a service instance.
@@ -118,7 +107,7 @@ public interface CloudControllerClient {
      * @param serviceInstanceName name of service instance
      * @param serviceKeyName name of service-key
      * @param parameters parameters of service-key
-     * @return
+     * @return cloudServiceKey
      */
     CloudServiceKey createServiceKey(String serviceInstanceName, String serviceKeyName, Map<String, Object> parameters);
 
@@ -235,6 +224,14 @@ public interface CloudControllerClient {
      * @return the cloud application
      */
     CloudApplication getApplication(UUID guid);
+
+    /**
+     * Get cloud application with the specified GUID.
+     *
+     * @param applicationName name of the app
+     * @return the cloud application's guid
+     */
+    UUID getApplicationGuid(String applicationName);
 
     /**
      * Get application environment variables for the app with the specified name.
@@ -576,16 +573,15 @@ public interface CloudControllerClient {
      *
      * @param applicationName name of application
      */
-    StartingInfo restartApplication(String applicationName);
+    void restartApplication(String applicationName);
 
     /**
      * Start application. May return starting info if the response obtained after the start request contains headers . If the response does
      * not contain headers, null is returned instead.
      *
      * @param applicationName name of application
-     * @return Starting info containing response headers, if headers are present in the response. If there are no headers, return null.
      */
-    StartingInfo startApplication(String applicationName);
+    void startApplication(String applicationName);
 
     /**
      * Stop application.
@@ -785,11 +781,11 @@ public interface CloudControllerClient {
     List<CloudBuild> getBuildsForPackage(UUID packageGuid);
 
     List<CloudApplication> getApplicationsByMetadataLabelSelector(String labelSelector);
-    
+
     void updateApplicationMetadata(UUID guid, Metadata metadata);
 
     List<CloudServiceInstance> getServiceInstancesByMetadataLabelSelector(String labelSelector);
-    
+
     List<CloudServiceInstance> getServiceInstancesWithoutAuxiliaryContentByMetadataLabelSelector(String labelSelector);
 
     void updateServiceInstanceMetadata(UUID guid, Metadata metadata);
@@ -801,5 +797,7 @@ public interface CloudControllerClient {
     List<CloudPackage> getPackagesForApplication(UUID applicationGuid);
 
     List<UserRole> getUserRolesBySpaceAndUser(UUID spaceGuid, UUID userGuid);
+
+    CloudPackage createDockerPackage(UUID applicationGuid, DockerInfo dockerInfo);
 
 }

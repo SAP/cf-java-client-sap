@@ -1,15 +1,13 @@
 package com.sap.cloudfoundry.client.facade.adapters;
 
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.cloudfoundry.client.v2.Resource;
-import org.cloudfoundry.client.v2.applications.ApplicationEntity;
+import com.sap.cloudfoundry.client.facade.util.EnvironmentUtil;
 import org.cloudfoundry.client.v2.applications.SummaryApplicationResponse;
 import org.cloudfoundry.client.v2.serviceinstances.ServiceInstance;
+import org.cloudfoundry.client.v3.Resource;
 import org.immutables.value.Value;
 
 import com.sap.cloudfoundry.client.facade.domain.CloudApplication;
@@ -26,12 +24,11 @@ import com.sap.cloudfoundry.client.facade.domain.ImmutableDockerInfo;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableStaging;
 import com.sap.cloudfoundry.client.facade.domain.PackageState;
 import com.sap.cloudfoundry.client.facade.domain.Staging;
-import com.sap.cloudfoundry.client.facade.util.JsonUtil;
 
 @Value.Immutable
 public abstract class RawCloudApplication extends RawCloudEntity<CloudApplication> {
 
-    public abstract Resource<ApplicationEntity> getResource();
+    public abstract Resource getResource();
 
     public abstract SummaryApplicationResponse getSummary();
 
@@ -55,7 +52,7 @@ public abstract class RawCloudApplication extends RawCloudEntity<CloudApplicatio
                                         .packageState(parsePackageState(summary.getPackageState()))
                                         .stagingError(summary.getStagingFailedDescription())
                                         .services(getNames(summary.getServices()))
-                                        .env(parseEnv(summary.getEnvironmentJsons()))
+                                        .env(EnvironmentUtil.parse(summary.getEnvironmentJsons()))
                                         .space(getSpace().derive())
                                         .build();
     }
@@ -132,24 +129,6 @@ public abstract class RawCloudApplication extends RawCloudEntity<CloudApplicatio
         return services.stream()
                        .map(ServiceInstance::getName)
                        .collect(Collectors.toList());
-    }
-
-    private static Map<String, String> parseEnv(Map<String, Object> env) {
-        Map<String, String> result = new LinkedHashMap<>();
-        if (env == null) {
-            return result;
-        }
-        for (Map.Entry<String, Object> envEntry : env.entrySet()) {
-            result.put(envEntry.getKey(), convertValueToString(envEntry.getValue()));
-        }
-        return result;
-    }
-
-    private static String convertValueToString(Object value) {
-        if (value == null) {
-            return null;
-        }
-        return value instanceof String ? (String) value : JsonUtil.convertToJson(value);
     }
 
 }
