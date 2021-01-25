@@ -2,12 +2,10 @@ package com.sap.cloudfoundry.client.facade.adapters;
 
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -18,7 +16,6 @@ import org.cloudfoundry.client.v2.serviceinstances.ServiceInstance;
 import org.cloudfoundry.client.v3.BuildpackData;
 import org.cloudfoundry.client.v3.Lifecycle;
 import org.cloudfoundry.client.v3.LifecycleType;
-import org.cloudfoundry.client.v3.Resource;
 import org.cloudfoundry.client.v3.applications.ApplicationResource;
 import org.cloudfoundry.client.v3.applications.ApplicationState;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -40,7 +37,7 @@ import com.sap.cloudfoundry.client.facade.domain.ImmutableStaging;
 import com.sap.cloudfoundry.client.facade.domain.PackageState;
 import com.sap.cloudfoundry.client.facade.domain.Staging;
 
-public class RawCloudApplicationTest {
+class RawCloudApplicationTest {
 
     private static final int MEMORY = 256;
     private static final int DISK_QUOTA = 512;
@@ -90,7 +87,7 @@ public class RawCloudApplicationTest {
 
     @MethodSource
     @ParameterizedTest
-    public void testDerive(CloudApplication expectedApplication, RawCloudApplication rawApplication) {
+    void testDerive(CloudApplication expectedApplication, RawCloudApplication rawApplication) {
         RawCloudEntityTest.testDerive(expectedApplication, rawApplication);
     }
 
@@ -145,7 +142,7 @@ public class RawCloudApplicationTest {
 
     private static Staging buildStaging() {
         return ImmutableStaging.builder()
-                               .buildpacks(Arrays.asList(BUILDPACK))
+                               .buildpacks(List.of(BUILDPACK))
                                .command(COMMAND)
                                .detectedBuildpack(DETECTED_BUILDPACK)
                                .dockerInfo(DOCKER_INFO)
@@ -203,20 +200,20 @@ public class RawCloudApplicationTest {
 
     private static RawCloudApplication buildRawApplication(SummaryApplicationResponse summary) {
         return ImmutableRawCloudApplication.builder()
-                                           .resource(buildApplicationResource())
+                                           .application(buildApplicationResource())
                                            .summary(summary)
                                            .stack(STACK)
                                            .space(SPACE)
                                            .build();
     }
 
-    private static Resource buildApplicationResource() {
-
+    private static ApplicationResource buildApplicationResource() {
         return ApplicationResource.builder()
                                   .metadata(RawCloudEntityTest.V3_METADATA)
                                   .createdAt(RawCloudEntityTest.CREATED_AT_STRING)
-                .updatedAt(RawCloudEntityTest.UPDATED_AT_STRING)
-                .id(RawCloudEntityTest.GUID.toString())
+                                  .updatedAt(RawCloudEntityTest.UPDATED_AT_STRING)
+                                  .state(ApplicationState.STARTED)
+                                  .id(RawCloudEntityTest.GUID.toString())
                                   .lifecycle(Lifecycle.builder()
                                                       .type(LifecycleType.BUILDPACK)
                                                       .data(BuildpackData.builder()
@@ -224,7 +221,6 @@ public class RawCloudApplicationTest {
                                                                          .build())
                                                       .build())
                                   .name("foo")
-                                  .state(ApplicationState.STOPPED)
                                   .build();
     }
 

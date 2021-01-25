@@ -17,7 +17,7 @@ import com.sap.cloudfoundry.client.facade.Nullable;
 public abstract class CloudApplication extends CloudEntity implements Derivable<CloudApplication> {
 
     public enum State {
-        UPDATING, STARTED, STOPPED
+        STARTED, STOPPED
     }
 
     @Value.Default
