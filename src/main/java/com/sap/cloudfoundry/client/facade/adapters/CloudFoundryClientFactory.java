@@ -16,6 +16,8 @@ import org.immutables.value.Value;
 
 import com.sap.cloudfoundry.client.facade.oauth2.OAuthClient;
 
+import reactor.netty.http.client.HttpClient;
+
 @Value.Immutable
 public abstract class CloudFoundryClientFactory {
 
@@ -28,6 +30,8 @@ public abstract class CloudFoundryClientFactory {
     public abstract Optional<Integer> getConnectionPoolSize();
 
     public abstract Optional<Integer> getThreadPoolSize();
+
+    public abstract Optional<Duration> getResponseTimeout();
 
     public CloudFoundryClient createClient(URL controllerUrl, OAuthClient oAuthClient) {
         return ReactorCloudFoundryClient.builder()
@@ -54,8 +58,17 @@ public abstract class CloudFoundryClientFactory {
         getConnectTimeout().ifPresent(builder::connectTimeout);
         getConnectionPoolSize().ifPresent(builder::connectionPoolSize);
         getThreadPoolSize().ifPresent(builder::threadPoolSize);
-        builder.additionalHttpClientConfiguration(client -> client.metrics(true));
+        builder.additionalHttpClientConfiguration(this::getAdditionalHttpClientConfiguration);
         return builder.build();
+    }
+
+    private HttpClient getAdditionalHttpClientConfiguration(HttpClient client) {
+        HttpClient clientWithOptions = client;
+        if (getResponseTimeout().isPresent()) {
+            clientWithOptions = clientWithOptions.responseTimeout(getResponseTimeout().get());
+        }
+        clientWithOptions = clientWithOptions.metrics(true);
+        return clientWithOptions;
     }
 
 }

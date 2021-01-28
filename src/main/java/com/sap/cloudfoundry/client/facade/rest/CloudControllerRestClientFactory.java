@@ -45,6 +45,8 @@ public abstract class CloudControllerRestClientFactory {
 
     public abstract Optional<Integer> getThreadPoolSize();
 
+    public abstract Optional<Duration> getResponseTimeout();
+
     @Value.Default
     public boolean shouldTrustSelfSignedCertificates() {
         return false;
@@ -57,6 +59,7 @@ public abstract class CloudControllerRestClientFactory {
         getConnectTimeout().ifPresent(builder::connectTimeout);
         getConnectionPoolSize().ifPresent(builder::connectionPoolSize);
         getThreadPoolSize().ifPresent(builder::threadPoolSize);
+        getResponseTimeout().ifPresent(builder::responseTimeout);
         return builder.build();
     }
 
