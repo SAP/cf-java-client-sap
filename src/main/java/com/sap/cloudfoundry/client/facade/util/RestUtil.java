@@ -26,28 +26,28 @@ import reactor.netty.http.client.HttpClient;
 public class RestUtil {
 
     private static final int MAX_IN_MEMORY_SIZE = 1 * 1024 * 1024; // 1MB
-    
-    public OAuthClient createOAuthClient(URL authorizationUrl, boolean trustSelfSignedCerts) {
-        return new OAuthClient(authorizationUrl, createWebClient(trustSelfSignedCerts));
+
+    public OAuthClient createOAuthClient(URL authorizationUrl) {
+        return new OAuthClient(authorizationUrl);
     }
 
-    public OAuthClient createOAuthClient(URL authorizationUrl, boolean trustSelfSignedCerts, ConnectionContext connectionContext,
-                                         String origin) {
-        return new OAuthClientWithLoginHint(authorizationUrl, createWebClient(trustSelfSignedCerts), connectionContext, origin);
+    public OAuthClient createOAuthClient(URL authorizationUrl, ConnectionContext connectionContext, String origin) {
+        return new OAuthClientWithLoginHint(authorizationUrl, connectionContext, origin);
     }
 
     public WebClient createWebClient(boolean trustSelfSignedCerts) {
-        return WebClient.builder().exchangeStrategies(ExchangeStrategies.builder()
-                                                      .codecs(configurer -> configurer
-                                                              .defaultCodecs()
-                                                              .maxInMemorySize(MAX_IN_MEMORY_SIZE))
-                                                            .build())
+        return WebClient.builder()
+                        .exchangeStrategies(ExchangeStrategies.builder()
+                                                              .codecs(configurer -> configurer.defaultCodecs()
+                                                                                              .maxInMemorySize(MAX_IN_MEMORY_SIZE))
+                                                              .build())
                         .clientConnector(buildClientConnector(trustSelfSignedCerts))
                         .build();
     }
 
     private ClientHttpConnector buildClientConnector(boolean trustSelfSignedCerts) {
-        HttpClient httpClient = HttpClient.create().followRedirect(true);
+        HttpClient httpClient = HttpClient.create()
+                                          .followRedirect(true);
         if (trustSelfSignedCerts) {
             httpClient = httpClient.secure(sslContextSpec -> sslContextSpec.sslContext(buildSslContext()));
         } else {

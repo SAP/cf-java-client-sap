@@ -97,10 +97,10 @@ public abstract class CloudControllerRestClientFactory {
         Map<String, Object> infoMap = getInfoMap(controllerUrl);
         URL authorizationEndpoint = getAuthorizationEndpoint(infoMap);
         if (StringUtils.isEmpty(origin)) {
-            return restUtil.createOAuthClient(authorizationEndpoint, shouldTrustSelfSignedCertificates());
+            return restUtil.createOAuthClient(authorizationEndpoint);
         }
         ConnectionContext connectionContext = getCloudFoundryClientFactory().getOrCreateConnectionContext(controllerUrl.getHost());
-        return restUtil.createOAuthClient(authorizationEndpoint, shouldTrustSelfSignedCertificates(), connectionContext, origin);
+        return restUtil.createOAuthClient(authorizationEndpoint, connectionContext, origin);
     }
 
     private Map<String, Object> getInfoMap(URL controllerUrl) {

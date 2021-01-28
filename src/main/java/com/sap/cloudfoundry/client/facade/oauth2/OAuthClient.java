@@ -12,7 +12,6 @@ import org.springframework.security.oauth2.client.token.grant.password.ResourceO
 import org.springframework.security.oauth2.client.token.grant.password.ResourceOwnerPasswordResourceDetails;
 import org.springframework.security.oauth2.common.AuthenticationScheme;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
-import org.springframework.web.reactive.function.client.WebClient;
 
 import com.sap.cloudfoundry.client.facade.CloudCredentials;
 import com.sap.cloudfoundry.client.facade.CloudOperationException;
@@ -25,13 +24,11 @@ import com.sap.cloudfoundry.client.facade.adapters.OAuthTokenProvider;
 public class OAuthClient {
 
     private URL authorizationUrl;
-    private WebClient webClient;
     protected OAuth2AccessToken token;
     protected CloudCredentials credentials;
 
-    public OAuthClient(URL authorizationUrl, WebClient webClient) {
+    public OAuthClient(URL authorizationUrl) {
         this.authorizationUrl = authorizationUrl;
-        this.webClient = webClient;
     }
 
     public void init(CloudCredentials credentials) {
