@@ -131,9 +131,13 @@ public interface CloudControllerRestClient {
 
     List<CloudRoute> getRoutes(String domainName);
 
+    UUID getRequiredServiceInstanceGuid(String name);
+
     CloudServiceInstance getServiceInstance(String serviceInstanceName);
 
     CloudServiceInstance getServiceInstance(String serviceInstanceName, boolean required);
+
+    List<CloudServiceBinding> getServiceBindings(UUID serviceInstanceGuid);
 
     CloudServiceBinding getServiceBindingForApplication(UUID applicationId, UUID serviceInstanceGuid);
 
