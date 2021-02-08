@@ -52,7 +52,6 @@ import org.cloudfoundry.client.v2.servicebindings.CreateServiceBindingRequest;
 import org.cloudfoundry.client.v2.servicebindings.DeleteServiceBindingRequest;
 import org.cloudfoundry.client.v2.servicebindings.GetServiceBindingParametersRequest;
 import org.cloudfoundry.client.v2.servicebindings.GetServiceBindingParametersResponse;
-import org.cloudfoundry.client.v2.servicebindings.ListServiceBindingsRequest;
 import org.cloudfoundry.client.v2.servicebindings.ServiceBindingEntity;
 import org.cloudfoundry.client.v2.servicebrokers.CreateServiceBrokerRequest;
 import org.cloudfoundry.client.v2.servicebrokers.DeleteServiceBrokerRequest;
@@ -864,8 +863,9 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public List<CloudServiceBinding> getServiceBindings(UUID serviceInstanceGuid) {
-        return fetchList(() -> getServiceBindingResourcesByServiceInstanceGuid(serviceInstanceGuid), ImmutableRawCloudServiceBinding::of);
+    public CloudServiceBinding getServiceBindingForApplication(UUID applicationId, UUID serviceInstanceGuid) {
+        return fetch(() -> getServiceBindingResourceByApplicationGuidAndServiceInstanceGuid(applicationId, serviceInstanceGuid),
+                     ImmutableRawCloudServiceBinding::of);
     }
 
     @Override
@@ -1750,15 +1750,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     private List<UUID> getServiceBindingGuids(UUID applicationGuid) {
         Flux<? extends Resource<ServiceBindingEntity>> bindings = getServiceBindingResourcesByApplicationGuid(applicationGuid);
         return getGuids(bindings);
-    }
-
-    private Flux<? extends Resource<ServiceBindingEntity>> getServiceBindingResourcesByServiceInstanceGuid(UUID serviceInstanceGuid) {
-        IntFunction<ListServiceBindingsRequest> pageRequestSupplier = page -> ListServiceBindingsRequest.builder()
-                                                                                                        .serviceInstanceId(serviceInstanceGuid.toString())
-                                                                                                        .page(page)
-                                                                                                        .build();
-        return PaginationUtils.requestClientV2Resources(page -> delegate.serviceBindingsV2()
-                                                                        .list(pageRequestSupplier.apply(page)));
     }
 
     private Mono<? extends Resource<ServiceBindingEntity>>

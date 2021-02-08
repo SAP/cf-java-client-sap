@@ -135,7 +135,7 @@ public interface CloudControllerRestClient {
 
     CloudServiceInstance getServiceInstance(String serviceInstanceName, boolean required);
 
-    List<CloudServiceBinding> getServiceBindings(UUID serviceInstanceGuid);
+    CloudServiceBinding getServiceBindingForApplication(UUID applicationId, UUID serviceInstanceGuid);
 
     CloudServiceBroker getServiceBroker(String name);
 
