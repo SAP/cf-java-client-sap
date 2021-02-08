@@ -321,6 +321,11 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
+    public UUID getRequiredServiceInstanceGuid(String name) {
+        return handleExceptions(() -> delegate.getRequiredServiceInstanceGuid(name));
+    }
+
+    @Override
     public CloudServiceInstance getServiceInstance(String serviceInstanceName) {
         return handleExceptions(() -> delegate.getServiceInstance(serviceInstanceName));
     }
@@ -328,6 +333,11 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     @Override
     public CloudServiceInstance getServiceInstance(String serviceInstanceName, boolean required) {
         return handleExceptions(() -> delegate.getServiceInstance(serviceInstanceName, required));
+    }
+
+    @Override
+    public List<CloudServiceBinding> getServiceBindings(UUID serviceInstanceGuid) {
+        return handleExceptions(() -> delegate.getServiceBindings(serviceInstanceGuid));
     }
 
     @Override

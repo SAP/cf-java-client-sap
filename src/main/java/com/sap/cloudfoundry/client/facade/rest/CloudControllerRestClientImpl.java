@@ -52,6 +52,7 @@ import org.cloudfoundry.client.v2.servicebindings.CreateServiceBindingRequest;
 import org.cloudfoundry.client.v2.servicebindings.DeleteServiceBindingRequest;
 import org.cloudfoundry.client.v2.servicebindings.GetServiceBindingParametersRequest;
 import org.cloudfoundry.client.v2.servicebindings.GetServiceBindingParametersResponse;
+import org.cloudfoundry.client.v2.servicebindings.ListServiceBindingsRequest;
 import org.cloudfoundry.client.v2.servicebindings.ServiceBindingEntity;
 import org.cloudfoundry.client.v2.servicebrokers.CreateServiceBrokerRequest;
 import org.cloudfoundry.client.v2.servicebrokers.DeleteServiceBrokerRequest;
@@ -316,8 +317,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     @Override
     public void bindServiceInstance(String applicationName, String serviceInstanceName, Map<String, Object> parameters) {
         UUID applicationGuid = getRequiredApplicationGuid(applicationName);
-        UUID serviceInstanceGuid = getServiceInstance(serviceInstanceName).getMetadata()
-                                                                          .getGuid();
+        UUID serviceInstanceGuid = getRequiredServiceInstanceGuid(serviceInstanceName);
         delegate.serviceBindingsV2()
                 .create(CreateServiceBindingRequest.builder()
                                                    .applicationId(applicationGuid.toString())
@@ -828,6 +828,15 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
+    public UUID getRequiredServiceInstanceGuid(String name) {
+        org.cloudfoundry.client.v3.Resource serviceInstanceResource = getServiceInstanceByName(name).block();
+        if (serviceInstanceResource == null) {
+            throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Service instance " + name + " not found.");
+        }
+        return UUID.fromString(serviceInstanceResource.getId());
+    }
+
+    @Override
     public CloudServiceInstance getServiceInstance(String serviceInstanceName) {
         return getServiceInstance(serviceInstanceName, true);
     }
@@ -860,6 +869,11 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
             throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Service instance " + serviceInstanceName + " not found.");
         }
         return serviceInstance == null ? null : getServiceInstanceWithMetadata(serviceInstance);
+    }
+
+    @Override
+    public List<CloudServiceBinding> getServiceBindings(UUID serviceInstanceGuid) {
+        return fetchList(() -> getServiceBindingResourcesByServiceInstanceGuid(serviceInstanceGuid), ImmutableRawCloudServiceBinding::of);
     }
 
     @Override
@@ -1198,8 +1212,8 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     @Override
     public void unbindServiceInstance(String applicationName, String serviceInstanceName) {
         UUID applicationGuid = getRequiredApplicationGuid(applicationName);
-        UUID serviceInstanceGuid = getServiceInstance(serviceInstanceName).getMetadata()
-                                                                          .getGuid();
+        UUID serviceInstanceGuid = getRequiredServiceInstanceGuid(serviceInstanceName);
+
         doUnbindServiceInstance(applicationGuid, serviceInstanceGuid);
     }
 
@@ -1750,6 +1764,15 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     private List<UUID> getServiceBindingGuids(UUID applicationGuid) {
         Flux<? extends Resource<ServiceBindingEntity>> bindings = getServiceBindingResourcesByApplicationGuid(applicationGuid);
         return getGuids(bindings);
+    }
+
+    private Flux<? extends Resource<ServiceBindingEntity>> getServiceBindingResourcesByServiceInstanceGuid(UUID serviceInstanceGuid) {
+        IntFunction<ListServiceBindingsRequest> pageRequestSupplier = page -> ListServiceBindingsRequest.builder()
+                                                                                                        .serviceInstanceId(serviceInstanceGuid.toString())
+                                                                                                        .page(page)
+                                                                                                        .build();
+        return PaginationUtils.requestClientV2Resources(page -> delegate.serviceBindingsV2()
+                                                                        .list(pageRequestSupplier.apply(page)));
     }
 
     private Mono<? extends Resource<ServiceBindingEntity>>
@@ -2507,6 +2530,17 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
             throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Application " + name + " not found.");
         }
         return UUID.fromString(applicationResource.getId());
+    }
+
+    private Mono<ServiceInstanceResource> getServiceInstanceByName(String name) {
+        IntFunction<ListServiceInstancesRequest> pageRequestSupplier = page -> ListServiceInstancesRequest.builder()
+                                                                                                          .spaceId(getTargetSpaceGuid().toString())
+                                                                                                          .serviceInstanceName(name)
+                                                                                                          .page(page)
+                                                                                                          .build();
+        return PaginationUtils.requestClientV3Resources(page -> delegate.serviceInstancesV3()
+                                                                        .list(pageRequestSupplier.apply(page)))
+                              .singleOrEmpty();
     }
 
     private UUID getRequiredDomainGuid(String name) {
