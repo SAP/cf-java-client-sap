@@ -10,7 +10,6 @@ import java.util.Set;
 import java.util.UUID;
 
 import org.cloudfoundry.client.v3.Metadata;
-import org.springframework.security.oauth2.common.OAuth2AccessToken;
 
 import com.sap.cloudfoundry.client.facade.domain.ApplicationLog;
 import com.sap.cloudfoundry.client.facade.domain.CloudApplication;
@@ -35,6 +34,7 @@ import com.sap.cloudfoundry.client.facade.domain.InstancesInfo;
 import com.sap.cloudfoundry.client.facade.domain.Staging;
 import com.sap.cloudfoundry.client.facade.domain.Upload;
 import com.sap.cloudfoundry.client.facade.domain.UserRole;
+import com.sap.cloudfoundry.client.facade.oauth2.OAuth2AccessTokenWithAdditionalInfo;
 
 /**
  * The interface defining operations making up the Cloud Foundry Java client's API.
@@ -550,7 +550,7 @@ public interface CloudControllerClient {
      *
      * @return authentication token
      */
-    OAuth2AccessToken login();
+    OAuth2AccessTokenWithAdditionalInfo login();
 
     /**
      * Logout closing the current session.

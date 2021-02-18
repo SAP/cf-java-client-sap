@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.sap.cloud.lm.sl</groupId>
@@ -19,7 +19,7 @@
         <mockito.version>3.5.13</mockito.version>
         <jackson.version>2.11.3</jackson.version>
         <spring.version>5.2.9.RELEASE</spring.version>
-        <spring-security-oauth2.version>2.5.0.RELEASE</spring-security-oauth2.version>
+        <spring-security.version>5.4.4</spring-security.version>
         <commons-io.version>2.8.0</commons-io.version>
         <micrometer.version>1.5.5</micrometer.version>
         <immutables.version>2.8.8</immutables.version>
@@ -85,7 +85,7 @@
                 <configuration>
                     <runOrder>random</runOrder>
                     <excludes>
-                      <exclude>**/*IntegrationTest</exclude>
+                        <exclude>**/*IntegrationTest</exclude>
                     </excludes>
                 </configuration>
             </plugin>
@@ -209,17 +209,27 @@
                 </exclusion>
             </exclusions>
         </dependency>
-        <!-- https://mvnrepository.com/artifact/org.springframework.security.oauth/spring-security-oauth2 -->
+        <!-- https://mvnrepository.com/artifact/org.springframework.security/spring-security-core -->
         <dependency>
-            <groupId>org.springframework.security.oauth</groupId>
-            <artifactId>spring-security-oauth2</artifactId>
-            <version>${spring-security-oauth2.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.springframework</groupId>
-                    <artifactId>spring-jdbc</artifactId>
-                </exclusion>
-            </exclusions>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-core</artifactId>
+            <version>${spring-security.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-config</artifactId>
+            <version>${spring-security.version}</version>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/org.springframework.security/spring-security-web -->
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-web</artifactId>
+            <version>${spring-security.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-oauth2-client</artifactId>
+            <version>${spring-security.version}</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/commons-io/commons-io -->
         <dependency>
@@ -322,38 +332,38 @@
             </build>
         </profile>
         <profile>
-          <id>integration</id>
-          <build>
-            <plugins>
-              <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>${maven.surefire.version}</version>
-                <configuration>
-                    <excludes>
-                      <exclude>**/*</exclude>
-                    </excludes>
-                </configuration>
-              </plugin>
-              <plugin>
-                <artifactId>maven-failsafe-plugin</artifactId>
-                  <version>${maven.failsafe.version}</version>
-                  <executions>
-                    <execution>
-                      <goals>
-                        <goal>integration-test</goal>
-                        <goal>verify</goal>
-                      </goals>
-                    </execution>
-                  </executions>
-                  <configuration>
-                    <includes>
-                      <include>**/*IntegrationTest</include>
-                    </includes>
-                  </configuration>
-               </plugin>
-            </plugins>
-          </build>
+            <id>integration</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <version>${maven.surefire.version}</version>
+                        <configuration>
+                            <excludes>
+                                <exclude>**/*</exclude>
+                            </excludes>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <artifactId>maven-failsafe-plugin</artifactId>
+                        <version>${maven.failsafe.version}</version>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>integration-test</goal>
+                                    <goal>verify</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <includes>
+                                <include>**/*IntegrationTest</include>
+                            </includes>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
     </profiles>
 

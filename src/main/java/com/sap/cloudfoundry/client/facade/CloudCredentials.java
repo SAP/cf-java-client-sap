@@ -1,6 +1,8 @@
 package com.sap.cloudfoundry.client.facade;
 
-import org.springframework.security.oauth2.common.OAuth2AccessToken;
+import org.springframework.security.oauth2.core.OAuth2AccessToken;
+
+import com.sap.cloudfoundry.client.facade.oauth2.OAuth2AccessTokenWithAdditionalInfo;
 
 /**
  * Class that encapsulates credentials used for authentication
@@ -15,7 +17,7 @@ public class CloudCredentials {
     private String proxyUser;
     private String origin;
     private boolean refreshable = true;
-    private OAuth2AccessToken token;
+    private OAuth2AccessTokenWithAdditionalInfo token;
 
     /**
      * Create credentials using email and password.
@@ -78,7 +80,7 @@ public class CloudCredentials {
      *
      * @param token token to use for authorization
      */
-    public CloudCredentials(OAuth2AccessToken token) {
+    public CloudCredentials(OAuth2AccessTokenWithAdditionalInfo token) {
         this.token = token;
     }
 
@@ -88,7 +90,7 @@ public class CloudCredentials {
      * @param token token to use for authorization
      * @param refreshable indicates if the token can be refreshed or not
      */
-    public CloudCredentials(OAuth2AccessToken token, boolean refreshable) {
+    public CloudCredentials(OAuth2AccessTokenWithAdditionalInfo token, boolean refreshable) {
         this.token = token;
         this.refreshable = refreshable;
     }
@@ -99,7 +101,7 @@ public class CloudCredentials {
      * @param token token to use for authorization
      * @param clientId the client ID to use for authorization
      */
-    public CloudCredentials(OAuth2AccessToken token, String clientId) {
+    public CloudCredentials(OAuth2AccessTokenWithAdditionalInfo token, String clientId) {
         this.token = token;
         this.clientId = clientId;
     }
@@ -111,7 +113,7 @@ public class CloudCredentials {
      * @param clientId the client ID to use for authorization
      * @param clientSecret the password for the specified client
      */
-    public CloudCredentials(OAuth2AccessToken token, String clientId, String clientSecret) {
+    public CloudCredentials(OAuth2AccessTokenWithAdditionalInfo token, String clientId, String clientSecret) {
         this.token = token;
         this.clientId = clientId;
         this.clientSecret = clientSecret;
@@ -190,7 +192,7 @@ public class CloudCredentials {
      *
      * @return the token
      */
-    public OAuth2AccessToken getToken() {
+    public OAuth2AccessTokenWithAdditionalInfo getToken() {
         return token;
     }
 

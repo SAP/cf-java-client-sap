@@ -7,8 +7,7 @@ import java.util.Map;
 import org.cloudfoundry.reactor.ConnectionContext;
 import org.cloudfoundry.reactor.TokenProvider;
 import org.cloudfoundry.reactor.tokenprovider.PasswordGrantTokenProvider;
-import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
-import org.springframework.security.oauth2.common.OAuth2AccessToken;
+import org.springframework.web.reactive.function.client.WebClient;
 
 import com.sap.cloudfoundry.client.facade.util.JsonUtil;
 
@@ -20,20 +19,15 @@ public class OAuthClientWithLoginHint extends OAuthClient {
     private TokenProvider tokenProvider;
     private Map<String, String> loginHintMap;
 
-    public OAuthClientWithLoginHint(URL authorizationUrl, ConnectionContext connectionContext, String origin) {
-        super(authorizationUrl);
+    public OAuthClientWithLoginHint(URL authorizationUrl, ConnectionContext connectionContext, String origin, WebClient webClient) {
+        super(authorizationUrl, webClient);
         this.connectionContext = connectionContext;
         this.loginHintMap = new HashMap<>();
         loginHintMap.put(ORIGIN_KEY, origin);
     }
 
     @Override
-    protected OAuth2AccessToken createToken() {
-        return getOrRefreshToken();
-    }
-
-    @Override
-    protected OAuth2AccessToken refreshToken() {
+    protected OAuth2AccessTokenWithAdditionalInfo createToken() {
         return getOrRefreshToken();
     }
 
@@ -56,10 +50,10 @@ public class OAuthClientWithLoginHint extends OAuthClient {
                                          .build();
     }
 
-    private OAuth2AccessToken getOrRefreshToken() {
+    private OAuth2AccessTokenWithAdditionalInfo getOrRefreshToken() {
         String token = getTokenProvider().getToken(connectionContext)
                                          .block();
-        return new DefaultOAuth2AccessToken(getTokenValue(token));
+        return new TokenFactory().createToken(getTokenValue(token));
     }
 
     private String getTokenValue(String token) {

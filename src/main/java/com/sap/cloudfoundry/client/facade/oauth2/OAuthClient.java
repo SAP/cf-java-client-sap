@@ -1,20 +1,20 @@
 package com.sap.cloudfoundry.client.facade.oauth2;
 
 import java.net.URL;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 
 import org.cloudfoundry.reactor.TokenProvider;
-import org.springframework.http.HttpStatus;
-import org.springframework.security.oauth2.client.resource.OAuth2AccessDeniedException;
-import org.springframework.security.oauth2.client.resource.OAuth2ProtectedResourceDetails;
-import org.springframework.security.oauth2.client.token.AccessTokenRequest;
-import org.springframework.security.oauth2.client.token.DefaultAccessTokenRequest;
-import org.springframework.security.oauth2.client.token.grant.password.ResourceOwnerPasswordAccessTokenProvider;
-import org.springframework.security.oauth2.client.token.grant.password.ResourceOwnerPasswordResourceDetails;
-import org.springframework.security.oauth2.common.AuthenticationScheme;
-import org.springframework.security.oauth2.common.OAuth2AccessToken;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.reactive.function.BodyInserters;
+import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.sap.cloudfoundry.client.facade.CloudCredentials;
-import com.sap.cloudfoundry.client.facade.CloudOperationException;
 import com.sap.cloudfoundry.client.facade.adapters.OAuthTokenProvider;
 
 /**
@@ -23,18 +23,21 @@ import com.sap.cloudfoundry.client.facade.adapters.OAuthTokenProvider;
  */
 public class OAuthClient {
 
-    private URL authorizationUrl;
-    protected OAuth2AccessToken token;
+    private final URL authorizationUrl;
+    protected OAuth2AccessTokenWithAdditionalInfo token;
     protected CloudCredentials credentials;
+    protected final WebClient webClient;
+    protected final TokenFactory tokenFactory;
 
-    public OAuthClient(URL authorizationUrl) {
+    public OAuthClient(URL authorizationUrl, WebClient webClient) {
         this.authorizationUrl = authorizationUrl;
+        this.webClient = webClient;
+        this.tokenFactory = new TokenFactory();
     }
 
     public void init(CloudCredentials credentials) {
         if (credentials != null) {
             this.credentials = credentials;
-
             if (credentials.getToken() != null) {
                 this.token = credentials.getToken();
             } else {
@@ -48,67 +51,59 @@ public class OAuthClient {
         this.credentials = null;
     }
 
-    public OAuth2AccessToken getToken() {
+    public OAuth2AccessTokenWithAdditionalInfo getToken() {
         if (token == null) {
             return null;
         }
-        if (credentials.isRefreshable() && token.getExpiresIn() < 50) { // 50 seconds before expiration? Then refresh it.
-            token = refreshToken();
+        if (shouldRefreshToken()) {
+            token = createToken();
         }
         return token;
     }
 
-    public String getAuthorizationHeader() {
-        OAuth2AccessToken accessToken = getToken();
+    public String getAuthorizationHeaderValue() {
+        OAuth2AccessTokenWithAdditionalInfo accessToken = getToken();
         if (accessToken != null) {
-            return accessToken.getTokenType() + " " + accessToken.getValue();
+            return accessToken.getAuthorizationHeaderValue();
         }
         return null;
-    }
-
-    protected OAuth2AccessToken createToken() {
-        OAuth2ProtectedResourceDetails resource = getResourceDetails(credentials.getEmail(), credentials.getPassword(),
-                                                                     credentials.getClientId(), credentials.getClientSecret());
-        AccessTokenRequest request = createAccessTokenRequest(credentials.getEmail(), credentials.getPassword());
-
-        ResourceOwnerPasswordAccessTokenProvider provider = new ResourceOwnerPasswordAccessTokenProvider();
-        try {
-            return provider.obtainAccessToken(resource, request);
-        } catch (OAuth2AccessDeniedException oauthEx) {
-            HttpStatus status = HttpStatus.valueOf(oauthEx.getHttpErrorCode());
-            throw new CloudOperationException(status, oauthEx.getMessage(), oauthEx.getSummary());
-        }
-    }
-
-    protected OAuth2AccessToken refreshToken() {
-        OAuth2ProtectedResourceDetails resource = getResourceDetails(credentials.getEmail(), credentials.getPassword(),
-                                                                     credentials.getClientId(), credentials.getClientSecret());
-        AccessTokenRequest request = createAccessTokenRequest(credentials.getEmail(), credentials.getPassword());
-
-        ResourceOwnerPasswordAccessTokenProvider provider = new ResourceOwnerPasswordAccessTokenProvider();
-
-        return provider.refreshAccessToken(resource, token.getRefreshToken(), request);
     }
 
     public TokenProvider getTokenProvider() {
         return new OAuthTokenProvider(this);
     }
 
-    private AccessTokenRequest createAccessTokenRequest(String username, String password) {
-        return new DefaultAccessTokenRequest();
+    private boolean shouldRefreshToken() {
+        return credentials.isRefreshable() && token.getOAuth2AccessToken()
+                                                   .getExpiresAt()
+                                                   .isBefore(Instant.now()
+                                                                    .plus(50, ChronoUnit.SECONDS));
     }
 
-    private OAuth2ProtectedResourceDetails getResourceDetails(String username, String password, String clientId, String clientSecret) {
-        ResourceOwnerPasswordResourceDetails resource = new ResourceOwnerPasswordResourceDetails();
-        resource.setUsername(username);
-        resource.setPassword(password);
-
-        resource.setClientId(clientId);
-        resource.setClientSecret(clientSecret);
-        resource.setId(clientId);
-        resource.setClientAuthenticationScheme(AuthenticationScheme.header);
-        resource.setAccessTokenUri(authorizationUrl + "/oauth/token");
-
-        return resource;
+    protected OAuth2AccessTokenWithAdditionalInfo createToken() {
+        MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
+        formData.add("grant_type", "password");
+        formData.add("client_id", credentials.getClientId());
+        formData.add("client_secret", credentials.getClientSecret());
+        formData.add("username", credentials.getEmail());
+        formData.add("password", credentials.getPassword());
+        formData.add("response_type", "token");
+        Oauth2AccessTokenResponse oauth2AccessTokenResponse = fetchOauth2AccessToken(formData);
+        return tokenFactory.createToken(oauth2AccessTokenResponse);
     }
+
+    private Oauth2AccessTokenResponse fetchOauth2AccessToken(MultiValueMap<String, String> formData) {
+        try {
+            return webClient.post()
+                            .uri(authorizationUrl + "/oauth/token")
+                            .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+                            .body(BodyInserters.fromFormData(formData))
+                            .retrieve()
+                            .bodyToFlux(Oauth2AccessTokenResponse.class)
+                            .blockFirst();
+        } catch (WebClientResponseException e) {
+            throw new ResponseStatusException(e.getStatusCode(), e.getMessage(), e);
+        }
+    }
+
 }
