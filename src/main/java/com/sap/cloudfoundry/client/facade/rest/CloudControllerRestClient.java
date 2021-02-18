@@ -10,7 +10,6 @@ import java.util.Set;
 import java.util.UUID;
 
 import org.cloudfoundry.client.v3.Metadata;
-import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import com.sap.cloudfoundry.client.facade.UploadStatusCallback;
@@ -37,6 +36,7 @@ import com.sap.cloudfoundry.client.facade.domain.InstancesInfo;
 import com.sap.cloudfoundry.client.facade.domain.Staging;
 import com.sap.cloudfoundry.client.facade.domain.Upload;
 import com.sap.cloudfoundry.client.facade.domain.UserRole;
+import com.sap.cloudfoundry.client.facade.oauth2.OAuth2AccessTokenWithAdditionalInfo;
 import com.sap.cloudfoundry.client.facade.oauth2.OAuthClient;
 
 /**
@@ -177,7 +177,7 @@ public interface CloudControllerRestClient {
 
     List<CloudStack> getStacks();
 
-    OAuth2AccessToken login();
+    OAuth2AccessTokenWithAdditionalInfo login();
 
     void logout();
 
@@ -252,7 +252,7 @@ public interface CloudControllerRestClient {
     List<CloudApplication> getApplicationsByMetadataLabelSelector(String labelSelector);
     
     List<CloudServiceInstance> getServiceInstancesByMetadataLabelSelector(String labelSelector);
-    
+
     List<CloudServiceInstance> getServiceInstancesWithoutAuxiliaryContentByMetadataLabelSelector(String labelSelector);
 
     void updateApplicationMetadata(UUID guid, Metadata metadata);

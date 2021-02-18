@@ -14,7 +14,6 @@ import java.util.function.Supplier;
 import org.cloudfoundry.AbstractCloudFoundryException;
 import org.cloudfoundry.client.v3.Metadata;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.util.Assert;
 
 import com.sap.cloudfoundry.client.facade.domain.ApplicationLog;
@@ -40,6 +39,7 @@ import com.sap.cloudfoundry.client.facade.domain.InstancesInfo;
 import com.sap.cloudfoundry.client.facade.domain.Staging;
 import com.sap.cloudfoundry.client.facade.domain.Upload;
 import com.sap.cloudfoundry.client.facade.domain.UserRole;
+import com.sap.cloudfoundry.client.facade.oauth2.OAuth2AccessTokenWithAdditionalInfo;
 import com.sap.cloudfoundry.client.facade.rest.CloudControllerRestClient;
 import com.sap.cloudfoundry.client.facade.rest.CloudControllerRestClientFactory;
 import com.sap.cloudfoundry.client.facade.rest.ImmutableCloudControllerRestClientFactory;
@@ -441,7 +441,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public OAuth2AccessToken login() {
+    public OAuth2AccessTokenWithAdditionalInfo login() {
         return handleExceptions(() -> delegate.login());
     }
 

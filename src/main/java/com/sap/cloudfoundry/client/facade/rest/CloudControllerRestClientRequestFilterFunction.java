@@ -12,7 +12,7 @@ import reactor.core.publisher.Mono;
 
 public class CloudControllerRestClientRequestFilterFunction implements ExchangeFilterFunction {
 
-    private OAuthClient oAuthClient;
+    private final OAuthClient oAuthClient;
 
     public CloudControllerRestClientRequestFilterFunction(OAuthClient oAuthClient) {
         this.oAuthClient = oAuthClient;
@@ -20,10 +20,10 @@ public class CloudControllerRestClientRequestFilterFunction implements ExchangeF
 
     @Override
     public Mono<ClientResponse> filter(ClientRequest clientRequest, ExchangeFunction nextFilter) {
-        String authorizationHeader = oAuthClient.getAuthorizationHeader();
-        if (authorizationHeader != null) {
+        String authorizationHeaderValue = oAuthClient.getAuthorizationHeaderValue();
+        if (authorizationHeaderValue != null) {
             clientRequest.headers()
-                         .add(HttpHeaders.AUTHORIZATION, authorizationHeader);
+                         .add(HttpHeaders.AUTHORIZATION, authorizationHeaderValue);
         }
         return nextFilter.exchange(clientRequest);
     }
