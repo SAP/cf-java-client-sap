@@ -1,7 +1,9 @@
 package com.sap.cloudfoundry.client.facade.util;
 
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.cert.X509Certificate;
+import java.text.MessageFormat;
 
 import javax.net.ssl.SSLException;
 import javax.net.ssl.X509TrustManager;
@@ -27,12 +29,31 @@ public class RestUtil {
 
     private static final int MAX_IN_MEMORY_SIZE = 1 * 1024 * 1024; // 1MB
 
-    public OAuthClient createOAuthClient(URL authorizationUrl) {
-        return new OAuthClient(authorizationUrl);
+    public OAuthClient createOAuthClient(URL controllerUrl, ConnectionContext connectionContext, String origin,
+                                         boolean shouldTrustSelfSignedCertificates) {
+        URL authorizationUrl = getAuthorizationUrl(controllerUrl, createWebClient(shouldTrustSelfSignedCertificates));
+        return new OAuthClientWithLoginHint(authorizationUrl, connectionContext, origin, createWebClient(true));
     }
 
-    public OAuthClient createOAuthClient(URL authorizationUrl, ConnectionContext connectionContext, String origin) {
-        return new OAuthClientWithLoginHint(authorizationUrl, connectionContext, origin);
+    public OAuthClient createOAuthClientByControllerUrl(URL controllerUrl, boolean shouldTrustSelfSignedCertificates) {
+        WebClient webClient = createWebClient(shouldTrustSelfSignedCertificates);
+        URL authorizationUrl = getAuthorizationUrl(controllerUrl, webClient);
+        return new OAuthClient(authorizationUrl, webClient);
+    }
+
+    private URL getAuthorizationUrl(URL controllerUrl, WebClient webClient) {
+        AuthorizationEndpointGetter authorizationEndpointGetter = new AuthorizationEndpointGetter(webClient);
+        return getAuthorizationUrl(authorizationEndpointGetter.getAuthorizationEndpoint(controllerUrl.toString()));
+    }
+
+    private URL getAuthorizationUrl(String authorizationEndpoint) {
+        try {
+            return new URL(authorizationEndpoint);
+        } catch (MalformedURLException e) {
+            throw new IllegalArgumentException(MessageFormat.format("Error creating authorization endpoint URL for endpoint {0}.",
+                                                                    authorizationEndpoint),
+                                               e);
+        }
     }
 
     public WebClient createWebClient(boolean trustSelfSignedCerts) {
