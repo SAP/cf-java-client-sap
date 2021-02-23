@@ -2077,6 +2077,11 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     private void doUnbindServiceInstance(UUID applicationGuid, UUID serviceInstanceGuid) {
         UUID serviceBindingGuid = getServiceBindingGuid(applicationGuid, serviceInstanceGuid);
+        if (serviceBindingGuid == null) {
+            throw new CloudOperationException(HttpStatus.NOT_FOUND,
+                                              "Not Found",
+                                              "Service binding between service with GUID " + serviceInstanceGuid + " and application with GUID " + applicationGuid + " not found.");
+        }
         doUnbindServiceInstance(serviceBindingGuid);
     }
 
