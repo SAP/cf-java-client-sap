@@ -95,6 +95,8 @@ public interface CloudControllerRestClient {
 
     UUID getApplicationGuid(String applicationName);
 
+    String getApplicationName(UUID applicationGuid);
+
     Map<String, String> getApplicationEnvironment(UUID applicationGuid);
 
     Map<String, String> getApplicationEnvironment(String applicationName);
@@ -192,6 +194,8 @@ public interface CloudControllerRestClient {
     void unbindServiceInstance(String applicationName, String serviceInstanceName);
 
     void unbindServiceInstance(CloudApplication application, CloudServiceInstance serviceInstance);
+
+    void unbindServiceInstance(UUID applicationGuid, UUID serviceInstanceGuid);
 
     void updateApplicationDiskQuota(String applicationName, int disk);
 

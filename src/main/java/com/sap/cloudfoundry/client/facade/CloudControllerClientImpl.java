@@ -211,6 +211,11 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
+    public String getApplicationName(UUID applicationGuid) {
+        return handleExceptions(() -> delegate.getApplicationName(applicationGuid));
+    }
+
+    @Override
     public Map<String, String> getApplicationEnvironment(UUID applicationGuid) {
         return handleExceptions(() -> delegate.getApplicationEnvironment(applicationGuid));
     }
@@ -483,6 +488,11 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     @Override
     public void unbindServiceInstance(String applicationName, String serviceInstanceName) {
         handleExceptions(() -> delegate.unbindServiceInstance(applicationName, serviceInstanceName));
+    }
+
+    @Override
+    public void unbindServiceInstance(UUID applicationGuid, UUID serviceInstanceGuid) {
+        handleExceptions(() -> delegate.unbindServiceInstance(applicationGuid, serviceInstanceGuid));
     }
 
     @Override

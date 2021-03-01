@@ -32,8 +32,6 @@ import org.cloudfoundry.client.v2.applications.ListApplicationServiceBindingsReq
 import org.cloudfoundry.client.v2.applications.RemoveApplicationRouteRequest;
 import org.cloudfoundry.client.v2.applications.SummaryApplicationRequest;
 import org.cloudfoundry.client.v2.applications.SummaryApplicationResponse;
-import org.cloudfoundry.client.v2.events.EventEntity;
-import org.cloudfoundry.client.v2.events.ListEventsRequest;
 import org.cloudfoundry.client.v2.routemappings.ListRouteMappingsRequest;
 import org.cloudfoundry.client.v2.routemappings.RouteMappingEntity;
 import org.cloudfoundry.client.v2.routes.CreateRouteRequest;
@@ -664,6 +662,13 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
+    public String getApplicationName(UUID applicationGuid) {
+        //This will throw a CloudOperationException with a 404 if no app with given GUID is present
+        return getApplicationByGuid(applicationGuid).block()
+                                                    .getName();
+    }
+
+    @Override
     public Map<String, String> getApplicationEnvironment(UUID applicationGuid) {
         GetApplicationEnvironmentResponse applicationEnvironmentResponse = getApplicationEnvironmentResponse(applicationGuid);
         return EnvironmentUtil.parse(applicationEnvironmentResponse.getEnvironmentVariables());
@@ -1071,13 +1076,13 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     @Override
     public  List<CloudServiceInstance> getServiceInstancesWithoutAuxiliaryContentByMetadataLabelSelector(String labelSelector) {
         Map<String, Metadata> serviceInstancesMetadata = getServiceInstancesMetadataByLabelSelector(labelSelector);
-        List<CloudServiceInstance> cloudServiceInstances = serviceInstancesMetadata.keySet()
-                                                                                           .stream()
-                                                                                           .map(serviceInstanceName -> ImmutableCloudServiceInstance.builder()
-                                                                                                                                                    .name(serviceInstanceName)
-                                                                                                                                                    .build())
-                                                                                           .collect(Collectors.toList());
-        return getServiceInstancesWithMetadata(cloudServiceInstances, serviceInstancesMetadata);
+        return serviceInstancesMetadata.entrySet()
+                                       .stream()
+                                       .map(entry -> ImmutableCloudServiceInstance.builder()
+                                                                                  .name(entry.getKey())
+                                                                                  .v3Metadata(entry.getValue())
+                                                                                  .build())
+                                       .collect(Collectors.toList());
     }
 
     private Map<String, Metadata> getServiceInstancesMetadataByLabelSelector(String labelSelector) {
@@ -1219,6 +1224,11 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         UUID applicationGuid = getGuid(application);
         UUID serviceInstanceGuid = getGuid(serviceInstance);
 
+        doUnbindServiceInstance(applicationGuid, serviceInstanceGuid);
+    }
+
+    @Override
+    public void unbindServiceInstance(UUID applicationGuid, UUID serviceInstanceGuid) {
         doUnbindServiceInstance(applicationGuid, serviceInstanceGuid);
     }
 

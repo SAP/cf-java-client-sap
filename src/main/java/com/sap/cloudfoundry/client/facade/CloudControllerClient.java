@@ -233,6 +233,8 @@ public interface CloudControllerClient {
      */
     UUID getApplicationGuid(String applicationName);
 
+    String getApplicationName(UUID applicationGuid);
+
     /**
      * Get application environment variables for the app with the specified name.
      *
@@ -612,6 +614,8 @@ public interface CloudControllerClient {
      * @param serviceInstance the service instance
      */
     void unbindServiceInstance(CloudApplication application, CloudServiceInstance serviceInstance);
+
+    void unbindServiceInstance(UUID applicationGuid, UUID serviceInstanceGuid);
 
     /**
      * Update application disk quota.
