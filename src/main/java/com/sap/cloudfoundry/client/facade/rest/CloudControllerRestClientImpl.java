@@ -179,6 +179,7 @@ import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudServicePlan;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudSpace;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudStack;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudTask;
+import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawV3CloudServiceInstance;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawInstancesInfo;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawUserRole;
 import com.sap.cloudfoundry.client.facade.domain.ApplicationLog;
@@ -1023,7 +1024,10 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     private Map<String, Metadata> getServiceInstancesMetadataInBatches(List<String> serviceInstanceNames) {
         Map<String, Metadata> serviceInstancesMetadata = new HashMap<>();
         for (List<String> batchOfServiceInstanceNames : toBatches(serviceInstanceNames, MAX_CHAR_LENGTH_FOR_PARAMS_IN_REQUEST)) {
-            serviceInstancesMetadata.putAll(getServiceInstancesMetadata(batchOfServiceInstanceNames));
+            Map<String, Metadata> batchServicesMetadata = getServiceInstancesByNames(batchOfServiceInstanceNames).collectMap(ServiceInstanceResource::getName,
+                                                                                                                             ServiceInstanceResource::getMetadata)
+                                                                                                                 .block();
+            serviceInstancesMetadata.putAll(batchServicesMetadata);
         }
         return serviceInstancesMetadata;
     }
@@ -1052,7 +1056,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return batches;
     }
 
-    private Map<String, Metadata> getServiceInstancesMetadata(List<String> serviceInstanceNames) {
+    private Flux<ServiceInstanceResource> getServiceInstancesByNames(List<String> serviceInstanceNames) {
         String spaceGuid = getTargetSpaceGuid().toString();
         IntFunction<ListServiceInstancesRequest> pageRequestSupplier = page -> ListServiceInstancesRequest.builder()
                                                                                                           .spaceId(spaceGuid)
@@ -1060,9 +1064,18 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                                                           .page(page)
                                                                                                           .build();
         return PaginationUtils.requestClientV3Resources(page -> delegate.serviceInstancesV3()
-                                                                        .list(pageRequestSupplier.apply(page)))
-                              .collectMap(ServiceInstanceResource::getName, ServiceInstanceResource::getMetadata)
-                              .block();
+                                                                        .list(pageRequestSupplier.apply(page)));
+    }
+
+    @Override
+    public List<CloudServiceInstance> getServiceInstancesWithoutAuxiliaryContentByNames(List<String> names) {
+        List<CloudServiceInstance> allServiceInstances = new ArrayList<>();
+        for (List<String> batchOfServiceInstanceNames : toBatches(names, MAX_CHAR_LENGTH_FOR_PARAMS_IN_REQUEST)) {
+            List<CloudServiceInstance> serviceInstances = fetchList(() -> getServiceInstancesByNames(batchOfServiceInstanceNames),
+                                                                    ImmutableRawV3CloudServiceInstance::of);
+            allServiceInstances.addAll(serviceInstances);
+        }
+        return allServiceInstances;
     }
 
     @Override
@@ -1072,17 +1085,17 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                                     this::zipWithAuxiliaryServiceInstanceContent);
         return getServiceInstancesWithMetadata(serviceInstances, serviceInstancesMetadata);
     }
-    
+
     @Override
     public  List<CloudServiceInstance> getServiceInstancesWithoutAuxiliaryContentByMetadataLabelSelector(String labelSelector) {
         Map<String, Metadata> serviceInstancesMetadata = getServiceInstancesMetadataByLabelSelector(labelSelector);
-        return serviceInstancesMetadata.entrySet()
-                                       .stream()
-                                       .map(entry -> ImmutableCloudServiceInstance.builder()
-                                                                                  .name(entry.getKey())
-                                                                                  .v3Metadata(entry.getValue())
-                                                                                  .build())
-                                       .collect(Collectors.toList());
+        List<CloudServiceInstance> cloudServiceInstances = serviceInstancesMetadata.keySet()
+                                                                                   .stream()
+                                                                                   .map(serviceInstanceName -> ImmutableCloudServiceInstance.builder()
+                                                                                                                                            .name(serviceInstanceName)
+                                                                                                                                            .build())
+                                                                                   .collect(Collectors.toList());
+        return getServiceInstancesWithMetadata(cloudServiceInstances, serviceInstancesMetadata);
     }
 
     private Map<String, Metadata> getServiceInstancesMetadataByLabelSelector(String labelSelector) {

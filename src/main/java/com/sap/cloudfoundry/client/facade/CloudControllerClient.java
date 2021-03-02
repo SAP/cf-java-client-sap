@@ -785,6 +785,8 @@ public interface CloudControllerClient {
 
     void updateApplicationMetadata(UUID guid, Metadata metadata);
 
+    List<CloudServiceInstance> getServiceInstancesWithoutAuxiliaryContentByNames(List<String> names);
+
     List<CloudServiceInstance> getServiceInstancesByMetadataLabelSelector(String labelSelector);
 
     List<CloudServiceInstance> getServiceInstancesWithoutAuxiliaryContentByMetadataLabelSelector(String labelSelector);
