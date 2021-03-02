@@ -254,7 +254,9 @@ public interface CloudControllerRestClient {
     List<CloudBuild> getBuildsForPackage(UUID packageGuid);
 
     List<CloudApplication> getApplicationsByMetadataLabelSelector(String labelSelector);
-    
+
+    List<CloudServiceInstance> getServiceInstancesWithoutAuxiliaryContentByNames(List<String> names);
+
     List<CloudServiceInstance> getServiceInstancesByMetadataLabelSelector(String labelSelector);
     
     List<CloudServiceInstance> getServiceInstancesWithoutAuxiliaryContentByMetadataLabelSelector(String labelSelector);

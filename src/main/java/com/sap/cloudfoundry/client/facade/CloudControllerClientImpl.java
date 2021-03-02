@@ -521,6 +521,11 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
+    public List<CloudServiceInstance> getServiceInstancesWithoutAuxiliaryContentByNames(List<String> names) {
+        return handleExceptions(() -> delegate.getServiceInstancesWithoutAuxiliaryContentByNames(names));
+    }
+
+    @Override
     public void updateApplicationMemory(String applicationName, int memory) {
         handleExceptions(() -> delegate.updateApplicationMemory(applicationName, memory));
     }
