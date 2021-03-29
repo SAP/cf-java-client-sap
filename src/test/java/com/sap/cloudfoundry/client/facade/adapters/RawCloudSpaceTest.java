@@ -1,6 +1,8 @@
 package com.sap.cloudfoundry.client.facade.adapters;
 
-import org.cloudfoundry.client.v3.spaces.SpaceResource;
+import org.cloudfoundry.client.v2.Resource;
+import org.cloudfoundry.client.v2.spaces.SpaceEntity;
+import org.cloudfoundry.client.v2.spaces.SpaceResource;
 import org.junit.jupiter.api.Test;
 
 import com.sap.cloudfoundry.client.facade.domain.CloudSpace;
@@ -17,7 +19,7 @@ public class RawCloudSpaceTest {
 
     private static CloudSpace buildExpectedSpace() {
         return ImmutableCloudSpace.builder()
-                                  .metadata(RawCloudEntityTest.EXPECTED_METADATA_PARSED_FROM_V3_RESOURCE)
+                                  .metadata(RawCloudEntityTest.EXPECTED_METADATA)
                                   .name(NAME)
                                   .build();
     }
@@ -26,14 +28,17 @@ public class RawCloudSpaceTest {
         return ImmutableRawCloudSpace.of(buildTestResource());
     }
 
-    private static SpaceResource buildTestResource() {
+    private static Resource<SpaceEntity> buildTestResource() {
         return SpaceResource.builder()
-                            .id(RawCloudEntityTest.GUID_STRING)
-                            .createdAt(RawCloudEntityTest.CREATED_AT_STRING)
-                            .updatedAt(RawCloudEntityTest.UPDATED_AT_STRING)
-                            .metadata(RawCloudEntityTest.V3_METADATA)
-                            .name(NAME)
+                            .metadata(RawCloudEntityTest.METADATA)
+                            .entity(buildTestEntity())
                             .build();
+    }
+
+    private static SpaceEntity buildTestEntity() {
+        return SpaceEntity.builder()
+                          .name(NAME)
+                          .build();
     }
 
 }
