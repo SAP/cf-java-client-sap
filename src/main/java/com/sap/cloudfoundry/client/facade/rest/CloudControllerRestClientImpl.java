@@ -417,9 +417,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         UpdateProcessRequest.Builder updateProcessRequestBuilder = UpdateProcessRequest.builder()
                                                                                        .processId(applicationProcess.getId())
                                                                                        .command(staging.getCommand());
-        if (staging.getHealthCheckType() != null) {
-            updateProcessRequestBuilder.healthCheck(buildHealthCheck(staging));
-        }
+        updateProcessRequestBuilder.healthCheck(buildHealthCheck(staging));
         delegate.processes()
                 .update(updateProcessRequestBuilder.build())
                 .block();
