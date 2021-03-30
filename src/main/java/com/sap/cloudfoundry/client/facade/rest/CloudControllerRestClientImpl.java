@@ -34,6 +34,10 @@ import org.cloudfoundry.client.v2.applications.SummaryApplicationRequest;
 import org.cloudfoundry.client.v2.applications.SummaryApplicationResponse;
 import org.cloudfoundry.client.v2.events.EventEntity;
 import org.cloudfoundry.client.v2.events.ListEventsRequest;
+import org.cloudfoundry.client.v2.organizations.GetOrganizationRequest;
+import org.cloudfoundry.client.v2.organizations.ListOrganizationSpacesRequest;
+import org.cloudfoundry.client.v2.organizations.ListOrganizationsRequest;
+import org.cloudfoundry.client.v2.organizations.OrganizationEntity;
 import org.cloudfoundry.client.v2.routemappings.ListRouteMappingsRequest;
 import org.cloudfoundry.client.v2.routemappings.RouteMappingEntity;
 import org.cloudfoundry.client.v2.routes.CreateRouteRequest;
@@ -66,9 +70,12 @@ import org.cloudfoundry.client.v2.serviceplans.ServicePlanEntity;
 import org.cloudfoundry.client.v2.serviceplans.UpdateServicePlanRequest;
 import org.cloudfoundry.client.v2.services.GetServiceRequest;
 import org.cloudfoundry.client.v2.services.ServiceEntity;
+import org.cloudfoundry.client.v2.spaces.GetSpaceRequest;
 import org.cloudfoundry.client.v2.spaces.ListSpaceRoutesRequest;
 import org.cloudfoundry.client.v2.spaces.ListSpaceServiceInstancesRequest;
 import org.cloudfoundry.client.v2.spaces.ListSpaceServicesRequest;
+import org.cloudfoundry.client.v2.spaces.ListSpacesRequest;
+import org.cloudfoundry.client.v2.spaces.SpaceEntity;
 import org.cloudfoundry.client.v2.stacks.GetStackRequest;
 import org.cloudfoundry.client.v2.stacks.ListStacksRequest;
 import org.cloudfoundry.client.v2.stacks.StackEntity;
@@ -119,10 +126,6 @@ import org.cloudfoundry.client.v3.domains.DomainResource;
 import org.cloudfoundry.client.v3.domains.ListDomainsRequest;
 import org.cloudfoundry.client.v3.organizations.GetOrganizationDefaultDomainRequest;
 import org.cloudfoundry.client.v3.organizations.ListOrganizationDomainsRequest;
-import org.cloudfoundry.client.v3.organizations.GetOrganizationRequest;
-import org.cloudfoundry.client.v3.organizations.ListOrganizationsRequest;
-import org.cloudfoundry.client.v3.organizations.Organization;
-import org.cloudfoundry.client.v3.organizations.OrganizationResource;
 import org.cloudfoundry.client.v3.packages.CreatePackageRequest;
 import org.cloudfoundry.client.v3.packages.CreatePackageResponse;
 import org.cloudfoundry.client.v3.packages.GetPackageRequest;
@@ -139,10 +142,6 @@ import org.cloudfoundry.client.v3.roles.RoleResource;
 import org.cloudfoundry.client.v3.serviceInstances.ListServiceInstancesRequest;
 import org.cloudfoundry.client.v3.serviceInstances.ServiceInstanceResource;
 import org.cloudfoundry.client.v3.serviceInstances.UpdateServiceInstanceRequest;
-import org.cloudfoundry.client.v3.spaces.GetSpaceRequest;
-import org.cloudfoundry.client.v3.spaces.ListSpacesRequest;
-import org.cloudfoundry.client.v3.spaces.Space;
-import org.cloudfoundry.client.v3.spaces.SpaceResource;
 import org.cloudfoundry.client.v3.tasks.CancelTaskRequest;
 import org.cloudfoundry.client.v3.tasks.CreateTaskRequest;
 import org.cloudfoundry.client.v3.tasks.GetTaskRequest;
@@ -2173,22 +2172,22 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                          this::zipWithAuxiliarySpaceContent);
     }
 
-    private Flux<SpaceResource> getSpaceResources() {
+    private Flux<? extends Resource<SpaceEntity>> getSpaceResources() {
         IntFunction<ListSpacesRequest> pageRequestSupplier = page -> ListSpacesRequest.builder()
                                                                                       .page(page)
                                                                                       .build();
         return getSpaceResources(pageRequestSupplier);
     }
 
-    private Mono<? extends Space> getSpaceResource(UUID guid) {
+    private Mono<? extends Resource<SpaceEntity>> getSpaceResource(UUID guid) {
         GetSpaceRequest request = GetSpaceRequest.builder()
                                                  .spaceId(guid.toString())
                                                  .build();
-        return delegate.spacesV3()
+        return delegate.spaces()
                        .get(request);
     }
 
-    private Flux<SpaceResource> getSpaceResourcesByOrganizationGuid(UUID organizationGuid) {
+    private Flux<? extends Resource<SpaceEntity>> getSpaceResourcesByOrganizationGuid(UUID organizationGuid) {
         IntFunction<ListSpacesRequest> pageRequestSupplier = page -> ListSpacesRequest.builder()
                                                                                       .organizationId(organizationGuid.toString())
                                                                                       .page(page)
@@ -2196,29 +2195,27 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return getSpaceResources(pageRequestSupplier);
     }
 
-    private Mono<SpaceResource> getSpaceResourceByOrganizationGuidAndName(UUID organizationGuid, String name) {
-        IntFunction<ListSpacesRequest> pageRequestSupplier = page -> ListSpacesRequest.builder()
-                                                                                      .organizationId(organizationGuid.toString())
-                                                                                      .name(name)
-                                                                                      .page(page)
-                                                                                      .build();
-        return PaginationUtils.requestClientV3Resources(page -> delegate.spacesV3()
-                                                                        .list(pageRequestSupplier.apply(page)))
+    private Mono<? extends Resource<SpaceEntity>> getSpaceResourceByOrganizationGuidAndName(UUID organizationGuid, String name) {
+        IntFunction<ListOrganizationSpacesRequest> pageRequestSupplier = page -> ListOrganizationSpacesRequest.builder()
+                                                                                                              .organizationId(organizationGuid.toString())
+                                                                                                              .name(name)
+                                                                                                              .page(page)
+                                                                                                              .build();
+        return PaginationUtils.requestClientV2Resources(page -> delegate.organizations()
+                                                                        .listSpaces(pageRequestSupplier.apply(page)))
                               .singleOrEmpty();
     }
 
-    private Flux<SpaceResource> getSpaceResources(IntFunction<ListSpacesRequest> requestForPage) {
-        return PaginationUtils.requestClientV3Resources(page -> delegate.spacesV3()
+    private Flux<? extends Resource<SpaceEntity>> getSpaceResources(IntFunction<ListSpacesRequest> requestForPage) {
+        return PaginationUtils.requestClientV2Resources(page -> delegate.spaces()
                                                                         .list(requestForPage.apply(page)));
     }
 
-    private Mono<Derivable<CloudSpace>> zipWithAuxiliarySpaceContent(Space space) {
-        UUID organizationGuid = UUID.fromString(space.getRelationships()
-                                                     .getOrganization()
-                                                     .getData()
-                                                     .getId());
+    private Mono<Derivable<CloudSpace>> zipWithAuxiliarySpaceContent(Resource<SpaceEntity> resource) {
+        UUID organizationGuid = UUID.fromString(resource.getEntity()
+                                                        .getOrganizationId());
         return getOrganizationMono(organizationGuid).map(organization -> ImmutableRawCloudSpace.builder()
-                                                                                               .space(space)
+                                                                                               .resource(resource)
                                                                                                .organization(organization)
                                                                                                .build());
     }
@@ -2231,22 +2228,22 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return fetch(() -> getOrganizationResourceByName(name), ImmutableRawCloudOrganization::of);
     }
 
-    private Flux<OrganizationResource> getOrganizationResources() {
+    private Flux<? extends Resource<OrganizationEntity>> getOrganizationResources() {
         IntFunction<ListOrganizationsRequest> pageRequestSupplier = page -> ListOrganizationsRequest.builder()
                                                                                                     .page(page)
                                                                                                     .build();
         return getOrganizationResources(pageRequestSupplier);
     }
 
-    private Mono<? extends Organization> getOrganizationResource(UUID guid) {
+    private Mono<? extends Resource<OrganizationEntity>> getOrganizationResource(UUID guid) {
         GetOrganizationRequest request = GetOrganizationRequest.builder()
                                                                .organizationId(guid.toString())
                                                                .build();
-        return delegate.organizationsV3()
+        return delegate.organizations()
                        .get(request);
     }
 
-    private Mono<OrganizationResource> getOrganizationResourceByName(String name) {
+    private Mono<? extends Resource<OrganizationEntity>> getOrganizationResourceByName(String name) {
         IntFunction<ListOrganizationsRequest> pageRequestSupplier = page -> ListOrganizationsRequest.builder()
                                                                                                     .name(name)
                                                                                                     .page(page)
@@ -2254,9 +2251,9 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return getOrganizationResources(pageRequestSupplier).singleOrEmpty();
     }
 
-    private Flux<OrganizationResource>
+    private Flux<? extends Resource<OrganizationEntity>>
             getOrganizationResources(IntFunction<ListOrganizationsRequest> pageRequestSupplier) {
-        return PaginationUtils.requestClientV3Resources(page -> delegate.organizationsV3()
+        return PaginationUtils.requestClientV2Resources(page -> delegate.organizations()
                                                                         .list(pageRequestSupplier.apply(page)));
     }
 
