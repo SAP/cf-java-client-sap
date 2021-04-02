@@ -4,6 +4,7 @@ import java.net.URL;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.cloudfoundry.client.CloudFoundryClient;
@@ -54,27 +55,29 @@ public abstract class CloudControllerRestClientFactory {
     }
 
     public CloudControllerRestClient createClient(URL controllerUrl, CloudCredentials credentials, String organizationName,
-                                                  String spaceName, OAuthClient oAuthClient, List<ExchangeFilterFunction> exchangeFilters) {
+                                                  String spaceName, OAuthClient oAuthClient, List<ExchangeFilterFunction> exchangeFilters,
+                                                  Map<String, String> requestTags) {
         CloudControllerRestClient clientWithoutTarget = createClient(controllerUrl, credentials, oAuthClient);
         CloudSpace target = clientWithoutTarget.getSpace(organizationName, spaceName);
 
-        return createClient(controllerUrl, credentials, target, oAuthClient, exchangeFilters);
+        return createClient(controllerUrl, credentials, target, oAuthClient, exchangeFilters, requestTags);
     }
 
     public CloudControllerRestClient createClient(URL controllerUrl, CloudCredentials credentials, OAuthClient oAuthClient) {
-        return createClient(controllerUrl, credentials, null, oAuthClient, Collections.emptyList());
+        return createClient(controllerUrl, credentials, null, oAuthClient, Collections.emptyList(), Collections.emptyMap());
     }
 
     public CloudControllerRestClient createClient(URL controllerUrl, CloudCredentials credentials, CloudSpace target) {
         return createClient(controllerUrl, credentials, target, createOAuthClient(controllerUrl, credentials.getOrigin()),
-                            Collections.emptyList());
+                            Collections.emptyList(), Collections.emptyMap());
     }
 
     public CloudControllerRestClient createClient(URL controllerUrl, CloudCredentials credentials, CloudSpace target,
-                                                  OAuthClient oAuthClient, List<ExchangeFilterFunction> exchangeFilters) {
+                                                  OAuthClient oAuthClient, List<ExchangeFilterFunction> exchangeFilters,
+                                                  Map<String, String> requestTags) {
         WebClient webClient = createWebClient(credentials, oAuthClient, exchangeFilters);
-        CloudFoundryClient delegate = getCloudFoundryClientFactory().createClient(controllerUrl, oAuthClient);
-        DopplerClient dopplerClient = getCloudFoundryClientFactory().createDopplerClient(controllerUrl, oAuthClient);
+        CloudFoundryClient delegate = getCloudFoundryClientFactory().createClient(controllerUrl, oAuthClient, requestTags);
+        DopplerClient dopplerClient = getCloudFoundryClientFactory().createDopplerClient(controllerUrl, oAuthClient, requestTags);
 
         return new CloudControllerRestClientImpl(controllerUrl, credentials, webClient, oAuthClient, delegate, dopplerClient, target);
     }

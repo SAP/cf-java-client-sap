@@ -33,17 +33,19 @@ public abstract class CloudFoundryClientFactory {
 
     public abstract Optional<Duration> getResponseTimeout();
 
-    public CloudFoundryClient createClient(URL controllerUrl, OAuthClient oAuthClient) {
+    public CloudFoundryClient createClient(URL controllerUrl, OAuthClient oAuthClient, Map<String, String> requestTags) {
         return ReactorCloudFoundryClient.builder()
                                         .connectionContext(getOrCreateConnectionContext(controllerUrl.getHost()))
                                         .tokenProvider(oAuthClient.getTokenProvider())
+                                        .requestTags(requestTags)
                                         .build();
     }
 
-    public DopplerClient createDopplerClient(URL controllerUrl, OAuthClient oAuthClient) {
+    public DopplerClient createDopplerClient(URL controllerUrl, OAuthClient oAuthClient, Map<String, String> requestTags) {
         return ReactorDopplerClient.builder()
                                    .connectionContext(getOrCreateConnectionContext(controllerUrl.getHost()))
                                    .tokenProvider(oAuthClient.getTokenProvider())
+                                   .requestTags(requestTags)
                                    .build();
     }
 
