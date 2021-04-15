@@ -1,7 +1,6 @@
 package com.sap.cloudfoundry.client.facade.adapters;
 
-import org.cloudfoundry.client.v2.Resource;
-import org.cloudfoundry.client.v2.spaces.SpaceEntity;
+import org.cloudfoundry.client.v3.spaces.Space;
 import org.immutables.value.Value;
 
 import com.sap.cloudfoundry.client.facade.Nullable;
@@ -14,18 +13,17 @@ import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudSpace;
 public abstract class RawCloudSpace extends RawCloudEntity<CloudSpace> {
 
     @Value.Parameter
-    public abstract Resource<SpaceEntity> getResource();
+    public abstract Space getSpace();
 
     @Nullable
     public abstract Derivable<CloudOrganization> getOrganization();
 
     @Override
     public CloudSpace derive() {
-        Resource<SpaceEntity> resource = getResource();
-        SpaceEntity entity = resource.getEntity();
+        Space space = getSpace();
         return ImmutableCloudSpace.builder()
-                                  .metadata(parseResourceMetadata(resource))
-                                  .name(entity.getName())
+                                  .metadata(parseResourceMetadata(space))
+                                  .name(space.getName())
                                   .organization(deriveFromNullable(getOrganization()))
                                   .build();
     }

@@ -1,7 +1,6 @@
 package com.sap.cloudfoundry.client.facade.adapters;
 
-import org.cloudfoundry.client.v2.Resource;
-import org.cloudfoundry.client.v2.organizations.OrganizationEntity;
+import org.cloudfoundry.client.v3.organizations.Organization;
 import org.immutables.value.Value;
 
 import com.sap.cloudfoundry.client.facade.domain.CloudOrganization;
@@ -11,15 +10,14 @@ import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudOrganization;
 public abstract class RawCloudOrganization extends RawCloudEntity<CloudOrganization> {
 
     @Value.Parameter
-    public abstract Resource<OrganizationEntity> getResource();
+    public abstract Organization getOrganization();
 
     @Override
     public CloudOrganization derive() {
-        Resource<OrganizationEntity> resource = getResource();
-        OrganizationEntity entity = resource.getEntity();
+        Organization org = getOrganization();
         return ImmutableCloudOrganization.builder()
-                                         .metadata(parseResourceMetadata(resource))
-                                         .name(entity.getName())
+                                         .metadata(parseResourceMetadata(org))
+                                         .name(org.getName())
                                          .build();
     }
 
