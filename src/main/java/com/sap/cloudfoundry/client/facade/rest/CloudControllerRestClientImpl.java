@@ -22,6 +22,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import com.sap.cloudfoundry.client.facade.oauth2.OAuth2AccessTokenWithAdditionalInfo;
+import com.sap.cloudfoundry.client.facade.util.UriUtil;
 import org.apache.commons.io.IOUtils;
 import org.cloudfoundry.AbstractCloudFoundryException;
 import org.cloudfoundry.client.CloudFoundryClient;
@@ -153,7 +154,6 @@ import org.cloudfoundry.util.PaginationUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -237,6 +237,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     private static final Logger LOGGER = LoggerFactory.getLogger(CloudControllerRestClientImpl.class);
     private static final long JOB_POLLING_PERIOD = TimeUnit.SECONDS.toMillis(5);
     private static final int MAX_CHAR_LENGTH_FOR_PARAMS_IN_REQUEST = 4000;
+    private static final List<String> CHARS_TO_ENCODE = List.of(",");
 
     private CloudCredentials credentials;
     private URL controllerUrl;
@@ -2221,7 +2222,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     private Mono<SpaceResource> getSpaceResourceByOrganizationGuidAndName(UUID organizationGuid, String name) {
         IntFunction<ListSpacesRequest> pageRequestSupplier = page -> ListSpacesRequest.builder()
                                                                                       .organizationId(organizationGuid.toString())
-                                                                                      .name(name)
+                                                                                      .name(encodeAsQueryParam(name))
                                                                                       .page(page)
                                                                                       .build();
         return PaginationUtils.requestClientV3Resources(page -> delegate.spacesV3()
@@ -2270,7 +2271,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     private Mono<OrganizationResource> getOrganizationResourceByName(String name) {
         IntFunction<ListOrganizationsRequest> pageRequestSupplier = page -> ListOrganizationsRequest.builder()
-                                                                                                    .name(name)
+                                                                                                    .name(encodeAsQueryParam(name))
                                                                                                     .page(page)
                                                                                                     .build();
         return getOrganizationResources(pageRequestSupplier).singleOrEmpty();
@@ -2667,14 +2668,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                        .get(request);
     }
 
-    private String getTargetOrganizationName() {
-        return getName(target.getOrganization());
-    }
-
-    private String getName(CloudEntity entity) {
-        return entity == null ? null : entity.getName();
-    }
-
     private UUID getTargetOrganizationGuid() {
         return getGuid(target.getOrganization());
     }
@@ -2715,6 +2708,10 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     private boolean isForbidden(AbstractCloudFoundryException e) {
         return e.getStatusCode() == HttpStatus.FORBIDDEN.value();
+    }
+
+    private String encodeAsQueryParam(String param) {
+        return UriUtil.encodeChars(param, CHARS_TO_ENCODE);
     }
 
     private <T, R, D extends Derivable<T>> Flux<T> fetchFluxWithAuxiliaryContent(Supplier<Flux<R>> resourceSupplier,
