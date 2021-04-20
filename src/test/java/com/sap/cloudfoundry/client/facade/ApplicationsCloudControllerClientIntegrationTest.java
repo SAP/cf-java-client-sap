@@ -56,6 +56,11 @@ class ApplicationsCloudControllerClientIntegrationTest extends CloudControllerCl
         client.addDomain(DEFAULT_DOMAIN);
     }
 
+    @BeforeAll
+    static void deleteExistingApps() {
+        client.deleteAllApplications();
+    }
+
     @AfterAll
     static void deleteDefaultDomain() {
         List<CloudRoute> routes = client.getRoutes(DEFAULT_DOMAIN);
