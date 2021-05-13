@@ -20,6 +20,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -683,6 +684,17 @@ public interface CloudControllerClient {
      * @return the list of recent log entries
      */
     List<ApplicationLog> getRecentLogs(String appName);
+
+    /**
+     * Stream recent log entries.
+     *
+     * Stream logs that were recently produced for an app.
+     * @param appName the name of the application
+     * @param since the start of the time frame for the logs
+     * @param till the end of the time frame for the logs
+     * @return the list of recent log entries
+     */
+    List<ApplicationLog> getRecentLogs(String appName, Date since, Date till);
 
     /**
      * Get the info for all routes for a domain.
