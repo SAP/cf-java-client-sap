@@ -802,5 +802,7 @@ public interface CloudControllerClient {
     List<UserRole> getUserRolesBySpaceAndUser(UUID spaceGuid, UUID userGuid);
 
     CloudPackage createDockerPackage(UUID applicationGuid, DockerInfo dockerInfo);
+    
+    
 
 }
