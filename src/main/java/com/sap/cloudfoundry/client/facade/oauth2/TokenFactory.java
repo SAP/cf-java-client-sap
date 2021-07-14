@@ -1,6 +1,7 @@
 package com.sap.cloudfoundry.client.facade.oauth2;
 
 import java.nio.charset.StandardCharsets;
+import java.text.MessageFormat;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.Base64.Decoder;
@@ -46,7 +47,8 @@ public class TokenFactory {
         Number expiresAt = (Number) tokenInfo.get(EXPIRES_AT_KEY);
         Number instantiatedAt = (Number) tokenInfo.get(ISSUED_AT_KEY);
         if (scope == null || expiresAt == null || instantiatedAt == null) {
-            return null;
+            throw new IllegalStateException(MessageFormat.format("One or more of the following elements are missing from the token: \"{0}\"",
+                                                                 List.of(SCOPE, EXPIRES_AT_KEY, ISSUED_AT_KEY)));
         }
         return new OAuth2AccessTokenWithAdditionalInfo(createOAuth2AccessToken(tokenString, scope, expiresAt, instantiatedAt), tokenInfo);
     }
