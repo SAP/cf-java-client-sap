@@ -1,6 +1,7 @@
 package com.sap.cloudfoundry.client.facade.domain;
 
 import java.util.List;
+import java.util.UUID;
 
 import org.immutables.value.Value;
 
@@ -13,7 +14,6 @@ import com.sap.cloudfoundry.client.facade.SkipNulls;
 @JsonSerialize(as = ImmutableStaging.class)
 @JsonDeserialize(as = ImmutableStaging.class)
 public interface Staging {
-
     /**
      * @return The buildpacks, or empty to use the default buildpack detected based on application content
      */
@@ -61,7 +61,10 @@ public interface Staging {
      * @return the stack to use when staging the application, or null to use the default stack
      */
     @Nullable
-    String getStack();
+    String getStackName();
+
+    @Nullable
+    UUID getStackId();
 
     @Nullable
     DockerInfo getDockerInfo();

@@ -1,9 +1,12 @@
 package com.sap.cloudfoundry.client.facade.adapters;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
+import com.sap.cloudfoundry.client.facade.Nullable;
 import org.cloudfoundry.client.v2.applications.SummaryApplicationResponse;
 import org.cloudfoundry.client.v2.serviceinstances.ServiceInstance;
 import org.cloudfoundry.client.v3.applications.Application;
@@ -33,7 +36,11 @@ public abstract class RawCloudApplication extends RawCloudEntity<CloudApplicatio
 
     public abstract SummaryApplicationResponse getSummary();
 
+    @Nullable
     public abstract Derivable<CloudStack> getStack();
+
+    @Nullable
+    public abstract UUID getStackId();
 
     public abstract Derivable<CloudSpace> getSpace();
 
@@ -72,7 +79,8 @@ public abstract class RawCloudApplication extends RawCloudEntity<CloudApplicatio
                                .healthCheckType(summary.getHealthCheckType())
                                .isSshEnabled(summary.getEnableSsh())
                                .dockerInfo(parseDockerInfo(summary))
-                               .stack(parseStackName(stack))
+                               .stackName(parseStackName(stack))
+                               .stackId(parseStackId(summary.getStackId()))
                                .build();
     }
 
@@ -99,8 +107,16 @@ public abstract class RawCloudApplication extends RawCloudEntity<CloudApplicatio
     }
 
     private static String parseStackName(Derivable<CloudStack> derivableStack) {
-        return derivableStack.derive()
-                             .getName();
+        return Optional.ofNullable(derivableStack)
+                       .map(Derivable::derive)
+                       .map(CloudStack::getName)
+                       .orElse(null);
+    }
+
+    private static UUID parseStackId(String id) {
+        return Optional.ofNullable(id)
+                       .map(UUID::fromString)
+                       .orElse(null);
     }
 
     private static PackageState parsePackageState(String state) {
