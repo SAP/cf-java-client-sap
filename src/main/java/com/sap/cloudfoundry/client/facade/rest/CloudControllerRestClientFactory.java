@@ -1,12 +1,12 @@
 package com.sap.cloudfoundry.client.facade.rest;
 
-import java.net.URL;
-import java.time.Duration;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
+import com.sap.cloudfoundry.client.facade.CloudCredentials;
+import com.sap.cloudfoundry.client.facade.adapters.CloudFoundryClientFactory;
+import com.sap.cloudfoundry.client.facade.adapters.ImmutableCloudFoundryClientFactory;
+import com.sap.cloudfoundry.client.facade.domain.CloudSpace;
+import com.sap.cloudfoundry.client.facade.oauth2.OAuthClient;
+import com.sap.cloudfoundry.client.facade.util.CloudStackCache;
+import com.sap.cloudfoundry.client.facade.util.RestUtil;
 import org.cloudfoundry.client.CloudFoundryClient;
 import org.cloudfoundry.doppler.DopplerClient;
 import org.cloudfoundry.reactor.ConnectionContext;
@@ -16,16 +16,15 @@ import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClient.Builder;
 
-import com.sap.cloudfoundry.client.facade.CloudCredentials;
-import com.sap.cloudfoundry.client.facade.adapters.CloudFoundryClientFactory;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableCloudFoundryClientFactory;
-import com.sap.cloudfoundry.client.facade.domain.CloudSpace;
-import com.sap.cloudfoundry.client.facade.oauth2.OAuthClient;
-import com.sap.cloudfoundry.client.facade.util.RestUtil;
+import java.net.URL;
+import java.time.Duration;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 @Value.Immutable
 public abstract class CloudControllerRestClientFactory {
-
     private final RestUtil restUtil = new RestUtil();
 
     public abstract Optional<Duration> getSslHandshakeTimeout();
@@ -78,8 +77,19 @@ public abstract class CloudControllerRestClientFactory {
         WebClient webClient = createWebClient(credentials, oAuthClient, exchangeFilters);
         CloudFoundryClient delegate = getCloudFoundryClientFactory().createClient(controllerUrl, oAuthClient, requestTags);
         DopplerClient dopplerClient = getCloudFoundryClientFactory().createDopplerClient(controllerUrl, oAuthClient, requestTags);
+        CloudStackCache cloudStackCache = getCloudStackCache();
+        return new CloudControllerRestClientImpl(controllerUrl,
+                                                 credentials,
+                                                 webClient,
+                                                 oAuthClient,
+                                                 delegate,
+                                                 dopplerClient,
+                                                 target,
+                                                 cloudStackCache);
+    }
 
-        return new CloudControllerRestClientImpl(controllerUrl, credentials, webClient, oAuthClient, delegate, dopplerClient, target);
+    private CloudStackCache getCloudStackCache() {
+        return new CloudStackCache();
     }
 
     private OAuthClient createOAuthClient(URL controllerUrl, String origin) {

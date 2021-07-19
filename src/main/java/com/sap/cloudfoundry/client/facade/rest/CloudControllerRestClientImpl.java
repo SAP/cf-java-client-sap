@@ -1,27 +1,71 @@
 package com.sap.cloudfoundry.client.facade.rest;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
-import java.util.function.IntFunction;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-
+import com.sap.cloudfoundry.client.facade.CloudCredentials;
+import com.sap.cloudfoundry.client.facade.CloudOperationException;
+import com.sap.cloudfoundry.client.facade.Constants;
+import com.sap.cloudfoundry.client.facade.UploadStatusCallback;
+import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawApplicationLog;
+import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudApplication;
+import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudBuild;
+import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudDomain;
+import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudEvent;
+import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudOrganization;
+import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudPackage;
+import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudRoute;
+import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudServiceBinding;
+import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudServiceBroker;
+import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudServiceInstance;
+import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudServiceKey;
+import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudServiceOffering;
+import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudServicePlan;
+import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudSpace;
+import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudStack;
+import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudTask;
+import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawV3CloudServiceInstance;
+import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawInstancesInfo;
+import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawUserRole;
+import com.sap.cloudfoundry.client.facade.domain.ApplicationLog;
+import com.sap.cloudfoundry.client.facade.domain.CloudApplication;
+import com.sap.cloudfoundry.client.facade.domain.CloudBuild;
+import com.sap.cloudfoundry.client.facade.domain.CloudDomain;
+import com.sap.cloudfoundry.client.facade.domain.CloudEntity;
+import com.sap.cloudfoundry.client.facade.domain.CloudEvent;
+import com.sap.cloudfoundry.client.facade.domain.CloudMetadata;
+import com.sap.cloudfoundry.client.facade.domain.CloudOrganization;
+import com.sap.cloudfoundry.client.facade.domain.CloudPackage;
+import com.sap.cloudfoundry.client.facade.domain.CloudRoute;
+import com.sap.cloudfoundry.client.facade.domain.CloudRouteSummary;
+import com.sap.cloudfoundry.client.facade.domain.CloudServiceBinding;
+import com.sap.cloudfoundry.client.facade.domain.CloudServiceBroker;
+import com.sap.cloudfoundry.client.facade.domain.CloudServiceInstance;
+import com.sap.cloudfoundry.client.facade.domain.CloudServiceKey;
+import com.sap.cloudfoundry.client.facade.domain.CloudServiceOffering;
+import com.sap.cloudfoundry.client.facade.domain.CloudServicePlan;
+import com.sap.cloudfoundry.client.facade.domain.CloudSpace;
+import com.sap.cloudfoundry.client.facade.domain.CloudStack;
+import com.sap.cloudfoundry.client.facade.domain.CloudTask;
+import com.sap.cloudfoundry.client.facade.domain.Derivable;
+import com.sap.cloudfoundry.client.facade.domain.DockerCredentials;
+import com.sap.cloudfoundry.client.facade.domain.DockerInfo;
+import com.sap.cloudfoundry.client.facade.domain.DropletInfo;
+import com.sap.cloudfoundry.client.facade.domain.ErrorDetails;
+import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudApplication;
+import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudServiceInstance;
+import com.sap.cloudfoundry.client.facade.domain.ImmutableDropletInfo;
+import com.sap.cloudfoundry.client.facade.domain.ImmutableErrorDetails;
+import com.sap.cloudfoundry.client.facade.domain.ImmutableInstancesInfo;
+import com.sap.cloudfoundry.client.facade.domain.ImmutableUpload;
+import com.sap.cloudfoundry.client.facade.domain.InstancesInfo;
+import com.sap.cloudfoundry.client.facade.domain.ServiceInstanceType;
+import com.sap.cloudfoundry.client.facade.domain.Staging;
+import com.sap.cloudfoundry.client.facade.domain.Status;
+import com.sap.cloudfoundry.client.facade.domain.Upload;
+import com.sap.cloudfoundry.client.facade.domain.UserRole;
+import com.sap.cloudfoundry.client.facade.oauth2.OAuthClient;
+import com.sap.cloudfoundry.client.facade.util.EnvironmentUtil;
+import com.sap.cloudfoundry.client.facade.domain.ImmutableStaging;
 import com.sap.cloudfoundry.client.facade.oauth2.OAuth2AccessTokenWithAdditionalInfo;
+import com.sap.cloudfoundry.client.facade.util.CloudStackCache;
 import com.sap.cloudfoundry.client.facade.util.UriUtil;
 import org.apache.commons.io.IOUtils;
 import org.cloudfoundry.AbstractCloudFoundryException;
@@ -159,74 +203,31 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import com.sap.cloudfoundry.client.facade.CloudCredentials;
-import com.sap.cloudfoundry.client.facade.CloudOperationException;
-import com.sap.cloudfoundry.client.facade.Constants;
-import com.sap.cloudfoundry.client.facade.UploadStatusCallback;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawApplicationLog;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudApplication;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudBuild;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudDomain;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudEvent;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudOrganization;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudPackage;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudRoute;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudServiceBinding;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudServiceBroker;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudServiceInstance;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudServiceKey;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudServiceOffering;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudServicePlan;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudSpace;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudStack;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudTask;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawV3CloudServiceInstance;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawInstancesInfo;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawUserRole;
-import com.sap.cloudfoundry.client.facade.domain.ApplicationLog;
-import com.sap.cloudfoundry.client.facade.domain.CloudApplication;
-import com.sap.cloudfoundry.client.facade.domain.CloudBuild;
-import com.sap.cloudfoundry.client.facade.domain.CloudDomain;
-import com.sap.cloudfoundry.client.facade.domain.CloudEntity;
-import com.sap.cloudfoundry.client.facade.domain.CloudEvent;
-import com.sap.cloudfoundry.client.facade.domain.CloudMetadata;
-import com.sap.cloudfoundry.client.facade.domain.CloudOrganization;
-import com.sap.cloudfoundry.client.facade.domain.CloudPackage;
-import com.sap.cloudfoundry.client.facade.domain.CloudRoute;
-import com.sap.cloudfoundry.client.facade.domain.CloudRouteSummary;
-import com.sap.cloudfoundry.client.facade.domain.CloudServiceBinding;
-import com.sap.cloudfoundry.client.facade.domain.CloudServiceBroker;
-import com.sap.cloudfoundry.client.facade.domain.CloudServiceInstance;
-import com.sap.cloudfoundry.client.facade.domain.CloudServiceKey;
-import com.sap.cloudfoundry.client.facade.domain.CloudServiceOffering;
-import com.sap.cloudfoundry.client.facade.domain.CloudServicePlan;
-import com.sap.cloudfoundry.client.facade.domain.CloudSpace;
-import com.sap.cloudfoundry.client.facade.domain.CloudStack;
-import com.sap.cloudfoundry.client.facade.domain.CloudTask;
-import com.sap.cloudfoundry.client.facade.domain.Derivable;
-import com.sap.cloudfoundry.client.facade.domain.DockerCredentials;
-import com.sap.cloudfoundry.client.facade.domain.DockerInfo;
-import com.sap.cloudfoundry.client.facade.domain.DropletInfo;
-import com.sap.cloudfoundry.client.facade.domain.ErrorDetails;
-import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudApplication;
-import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudServiceInstance;
-import com.sap.cloudfoundry.client.facade.domain.ImmutableDropletInfo;
-import com.sap.cloudfoundry.client.facade.domain.ImmutableErrorDetails;
-import com.sap.cloudfoundry.client.facade.domain.ImmutableInstancesInfo;
-import com.sap.cloudfoundry.client.facade.domain.ImmutableUpload;
-import com.sap.cloudfoundry.client.facade.domain.InstancesInfo;
-import com.sap.cloudfoundry.client.facade.domain.ServiceInstanceType;
-import com.sap.cloudfoundry.client.facade.domain.Staging;
-import com.sap.cloudfoundry.client.facade.domain.Status;
-import com.sap.cloudfoundry.client.facade.domain.Upload;
-import com.sap.cloudfoundry.client.facade.domain.UserRole;
-import com.sap.cloudfoundry.client.facade.oauth2.OAuthClient;
-import com.sap.cloudfoundry.client.facade.util.EnvironmentUtil;
-
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import java.util.function.IntFunction;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 /**
  * Abstract implementation of the CloudControllerClient intended to serve as the base.
@@ -244,6 +245,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     private OAuthClient oAuthClient;
     private WebClient webClient;
     private CloudSpace target;
+    private CloudStackCache cloudStackCache;
 
     private CloudFoundryClient delegate;
     private DopplerClient dopplerClient;
@@ -256,12 +258,13 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     public CloudControllerRestClientImpl(URL controllerUrl, CloudCredentials credentials, WebClient webClient, OAuthClient oAuthClient,
-                                         CloudFoundryClient delegate) {
-        this(controllerUrl, credentials, webClient, oAuthClient, delegate, null, null);
+                                         CloudFoundryClient delegate, CloudStackCache cloudStackCache) {
+        this(controllerUrl, credentials, webClient, oAuthClient, delegate, null, null, cloudStackCache);
     }
 
     public CloudControllerRestClientImpl(URL controllerUrl, CloudCredentials credentials, WebClient webClient, OAuthClient oAuthClient,
-                                         CloudFoundryClient delegate, DopplerClient dopplerClient, CloudSpace target) {
+                                         CloudFoundryClient delegate, DopplerClient dopplerClient, CloudSpace target,
+                                         CloudStackCache cloudStackCache) {
         Assert.notNull(controllerUrl, "CloudControllerUrl cannot be null");
         Assert.notNull(webClient, "WebClient cannot be null");
         Assert.notNull(oAuthClient, "OAuthClient cannot be null");
@@ -271,6 +274,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         this.webClient = webClient;
         this.oAuthClient = oAuthClient;
         this.target = target;
+        this.cloudStackCache = cloudStackCache;
 
         this.delegate = delegate;
         this.dopplerClient = dopplerClient;
@@ -352,7 +356,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     private BuildpackData createBuildpackData(Staging staging) {
         BuildpackData.Builder buildpackDataBuilder = BuildpackData.builder()
-                                                                  .stack(staging.getStack());
+                                                                  .stack(staging.getStackName());
         if (staging.getBuildpack() != null) {
             buildpackDataBuilder.buildpack(staging.getBuildpack());
         }
@@ -666,7 +670,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public String getApplicationName(UUID applicationGuid) {
-        //This will throw a CloudOperationException with a 404 if no app with given GUID is present
+        // This will throw a CloudOperationException with a 404 if no app with given GUID is present
         return getApplicationByGuid(applicationGuid).block()
                                                     .getName();
     }
@@ -717,15 +721,39 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     public List<CloudApplication> getApplications() {
         List<CloudApplication> applications = fetchListWithAuxiliaryContent(this::getApplicationResources,
                                                                             this::zipWithAuxiliaryApplicationContent);
-        return addMetadataIfNotEmpty(applications);
+        return addMetadataIfNotEmpty(addStacksToCloudApplications(applications));
+    }
+
+    private List<CloudApplication> addStacksToCloudApplications(List<CloudApplication> cloudApps) {
+        return cloudApps.stream()
+                        .map(this::addStackToCloudApplication)
+                        .collect(Collectors.toList());
+    }
+
+    private CloudApplication addStackToCloudApplication(CloudApplication application) {
+        UUID cloudStackId = application.getStaging()
+                                       .getStackId();
+        CloudStack cloudStack = retrieveCloudStack(cloudStackId, () -> ImmutableRawCloudStack.of(getStackResource(cloudStackId).block())
+                                                                                             .derive());
+        return copyCloudApplicationWithStacks(application, cloudStack).derive();
+    }
+
+    private CloudStack retrieveCloudStack(UUID rawCloudStackId, Supplier<CloudStack> cloudStack) {
+        return cloudStackCache.getCloudStack(rawCloudStackId, cloudStack);
+    }
+
+    private ImmutableCloudApplication copyCloudApplicationWithStacks(CloudApplication cloudApp, CloudStack cloudStack) {
+        return ImmutableCloudApplication.copyOf(cloudApp)
+                                        .withStaging(ImmutableStaging.copyOf(cloudApp.getStaging())
+                                                                     .withStackName(cloudStack.getName()));
     }
 
     @Override
     public List<CloudApplication> getApplicationsByMetadataLabelSelector(String labelSelector) {
         Map<String, Metadata> applicationsMetadata = getApplicationsMetadataByLabelSelector(labelSelector);
-        List<CloudApplication> cloudApplications = fetchListWithAuxiliaryContent(() -> getApplicationResourcesByNamesInBatches(applicationsMetadata.keySet()),
-                                                                                 this::zipWithAuxiliaryApplicationContent);
-        return addMetadata(cloudApplications, applicationsMetadata);
+        return addMetadata(addStacksToCloudApplications(fetchListWithAuxiliaryContent(() -> getApplicationResourcesByNamesInBatches(applicationsMetadata.keySet()),
+                                                                                      this::zipWithAuxiliaryApplicationContent)),
+                           applicationsMetadata);
     }
 
     private List<UUID> getApplicationIds() {
@@ -1089,7 +1117,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public  List<CloudServiceInstance> getServiceInstancesWithoutAuxiliaryContentByMetadataLabelSelector(String labelSelector) {
+    public List<CloudServiceInstance> getServiceInstancesWithoutAuxiliaryContentByMetadataLabelSelector(String labelSelector) {
         Map<String, Metadata> serviceInstancesMetadata = getServiceInstancesMetadataByLabelSelector(labelSelector);
         List<CloudServiceInstance> cloudServiceInstances = serviceInstancesMetadata.keySet()
                                                                                    .stream()
@@ -1635,11 +1663,15 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     private CloudApplication findApplicationByName(String name) {
-        return fetchWithAuxiliaryContent(() -> getApplicationByName(name), this::zipWithAuxiliaryApplicationContent);
+        CloudApplication application = fetchWithAuxiliaryContent(() -> getApplicationByName(name),
+                                                                 this::zipWithAuxiliaryApplicationContent);
+        return application != null ? addStackToCloudApplication(application) : null;
     }
 
     private CloudApplication findApplication(UUID guid) {
-        return fetchWithAuxiliaryContent(() -> getApplicationByGuid(guid), this::zipWithAuxiliaryApplicationContent);
+        CloudApplication application = fetchWithAuxiliaryContent(() -> getApplicationByGuid(guid),
+                                                                 this::zipWithAuxiliaryApplicationContent);
+        return application != null ? addStackToCloudApplication(application) : null;
     }
 
     private Flux<? extends Application> getApplicationResources() {
@@ -1689,13 +1721,12 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     private Mono<Derivable<CloudApplication>> zipWithAuxiliaryApplicationContent(Application application) {
         UUID applicationGuid = getGuid(application);
-        return getApplicationSummary(applicationGuid).zipWhen(this::getApplicationStackResource)
-                                                     .map(tuple -> ImmutableRawCloudApplication.builder()
-                                                                                               .application(application)
-                                                                                               .summary(tuple.getT1())
-                                                                                               .stack(ImmutableRawCloudStack.of(tuple.getT2()))
-                                                                                               .space(target)
-                                                                                               .build());
+        return getApplicationSummary(applicationGuid).map(summary -> ImmutableRawCloudApplication.builder()
+                                                                                                 .application(application)
+                                                                                                 .summary(summary)
+                                                                                                 .stackId(UUID.fromString(summary.getStackId()))
+                                                                                                 .space(target)
+                                                                                                 .build());
     }
 
     // TODO: Use v3 if possible. Currently no summary endpoint, the "include" parameter
@@ -2102,7 +2133,8 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         if (serviceBindingGuid == null) {
             throw new CloudOperationException(HttpStatus.NOT_FOUND,
                                               "Not Found",
-                                              "Service binding between service with GUID " + serviceInstanceGuid + " and application with GUID " + applicationGuid + " not found.");
+                                              "Service binding between service with GUID " + serviceInstanceGuid
+                                                  + " and application with GUID " + applicationGuid + " not found.");
         }
         doUnbindServiceInstance(serviceBindingGuid);
     }
@@ -2279,8 +2311,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return getOrganizationResources(pageRequestSupplier).singleOrEmpty();
     }
 
-    private Flux<OrganizationResource>
-            getOrganizationResources(IntFunction<ListOrganizationsRequest> pageRequestSupplier) {
+    private Flux<OrganizationResource> getOrganizationResources(IntFunction<ListOrganizationsRequest> pageRequestSupplier) {
         return PaginationUtils.requestClientV3Resources(page -> delegate.organizationsV3()
                                                                         .list(pageRequestSupplier.apply(page)));
     }

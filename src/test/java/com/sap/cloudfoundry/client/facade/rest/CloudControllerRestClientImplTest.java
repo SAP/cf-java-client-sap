@@ -9,6 +9,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
 
+import com.sap.cloudfoundry.client.facade.util.CloudStackCache;
 import org.cloudfoundry.client.CloudFoundryClient;
 import org.cloudfoundry.client.v2.ClientV2Exception;
 import org.cloudfoundry.client.v2.Resource;
@@ -64,13 +65,20 @@ class CloudControllerRestClientImplTest {
     private DopplerClient dopplerClient;
     @Mock
     private CloudFoundryClient delegate;
+    @Mock
+    private CloudStackCache cloudStackCache;
     private CloudControllerRestClientImpl controllerClient;
 
     @BeforeEach
     public void setUp() throws Exception {
         MockitoAnnotations.openMocks(this)
                           .close();
-        controllerClient = new CloudControllerRestClientImpl(CONTROLLER_URL, CREDENTIALS, webClient, oAuthClient, delegate);
+        controllerClient = new CloudControllerRestClientImpl(CONTROLLER_URL,
+                                                             CREDENTIALS,
+                                                             webClient,
+                                                             oAuthClient,
+                                                             delegate,
+                                                             cloudStackCache);
     }
 
     @Test
