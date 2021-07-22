@@ -5,8 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -23,9 +21,6 @@ abstract class CloudControllerClientIntegrationTest {
     private static CloudControllerClient clientWithoutTarget;
     protected static CloudControllerClient client;
 
-    // Make sure tests are not running in parallel
-    private static Lock sequential = new ReentrantLock();
-
     @BeforeAll
     static void login() throws MalformedURLException {
         assertAllRequiredVariablesAreDefined();
@@ -41,12 +36,10 @@ abstract class CloudControllerClientIntegrationTest {
     public void setUp(TestInfo testInfo) {
         System.out.println("================================");
         System.out.println(String.format("Test started: %s", testInfo.getDisplayName()));
-        sequential.lock();
     }
 
     @AfterEach
     public void tearDown(TestInfo testInfo) {
-        sequential.unlock();
         System.out.println(String.format("Test finished: %s", testInfo.getDisplayName()));
     }
 
