@@ -43,7 +43,7 @@ class DomainsCloudControllerClientIntegrationTest extends CloudControllerClientI
     @Test
     @DisplayName("Delete existing domain")
     void deleteDomain() throws IOException {
-        String domainName = ITVariable.DOMAIN_NAME.getValue();
+        String domainName = "delete-domain" + ITVariable.DOMAIN_NAME.getValue();
         client.addDomain(domainName);
         assertDomainExists(domainName, true);
         client.deleteDomain(domainName);
@@ -53,7 +53,7 @@ class DomainsCloudControllerClientIntegrationTest extends CloudControllerClientI
     @Test
     @DisplayName("Delete missing domain and verify deletion fails")
     void deleteDomainMissing() throws IOException {
-        String domainName = ITVariable.DOMAIN_NAME.getValue();
+        String domainName = "delete-domain-missing" + ITVariable.DOMAIN_NAME.getValue();
         assertDomainExists(domainName, false);
         try {
             client.deleteDomain(domainName);
