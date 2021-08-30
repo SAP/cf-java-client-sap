@@ -1,8 +1,7 @@
 package com.sap.cloudfoundry.client.facade.adapters;
 
-import org.cloudfoundry.client.v2.Resource;
-import org.cloudfoundry.client.v2.stacks.StackEntity;
-import org.cloudfoundry.client.v2.stacks.StackResource;
+import org.cloudfoundry.client.v3.stacks.Stack;
+import org.cloudfoundry.client.v3.stacks.StackResource;
 import org.junit.jupiter.api.Test;
 
 import com.sap.cloudfoundry.client.facade.domain.CloudStack;
@@ -19,7 +18,7 @@ public class RawCloudStackTest {
 
     private static CloudStack buildExpectedStack() {
         return ImmutableCloudStack.builder()
-                                  .metadata(RawCloudEntityTest.EXPECTED_METADATA)
+                                  .metadata(RawCloudEntityTest.EXPECTED_METADATA_V3)
                                   .name(NAME)
                                   .build();
     }
@@ -28,17 +27,14 @@ public class RawCloudStackTest {
         return ImmutableRawCloudStack.of(buildTestResource());
     }
 
-    private static Resource<StackEntity> buildTestResource() {
+    private static Stack buildTestResource() {
         return StackResource.builder()
-                            .metadata(RawCloudEntityTest.METADATA)
-                            .entity(buildTestEntity())
+                            .id(RawCloudEntityTest.GUID_STRING)
+                            .createdAt(RawCloudEntityTest.CREATED_AT_STRING)
+                            .updatedAt(RawCloudEntityTest.UPDATED_AT_STRING)
+                            .metadata(RawCloudEntityTest.V3_METADATA)
+                            .name(NAME)
                             .build();
-    }
-
-    private static StackEntity buildTestEntity() {
-        return StackEntity.builder()
-                          .name(NAME)
-                          .build();
     }
 
 }

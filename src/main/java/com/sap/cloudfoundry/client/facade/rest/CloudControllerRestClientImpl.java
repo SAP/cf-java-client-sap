@@ -112,9 +112,6 @@ import org.cloudfoundry.client.v2.services.ServiceEntity;
 import org.cloudfoundry.client.v2.spaces.ListSpaceRoutesRequest;
 import org.cloudfoundry.client.v2.spaces.ListSpaceServiceInstancesRequest;
 import org.cloudfoundry.client.v2.spaces.ListSpaceServicesRequest;
-import org.cloudfoundry.client.v2.stacks.GetStackRequest;
-import org.cloudfoundry.client.v2.stacks.ListStacksRequest;
-import org.cloudfoundry.client.v2.stacks.StackEntity;
 import org.cloudfoundry.client.v2.userprovidedserviceinstances.CreateUserProvidedServiceInstanceRequest;
 import org.cloudfoundry.client.v2.userprovidedserviceinstances.UpdateUserProvidedServiceInstanceRequest;
 import org.cloudfoundry.client.v3.BuildpackData;
@@ -186,6 +183,9 @@ import org.cloudfoundry.client.v3.spaces.GetSpaceRequest;
 import org.cloudfoundry.client.v3.spaces.ListSpacesRequest;
 import org.cloudfoundry.client.v3.spaces.Space;
 import org.cloudfoundry.client.v3.spaces.SpaceResource;
+import org.cloudfoundry.client.v3.stacks.GetStackRequest;
+import org.cloudfoundry.client.v3.stacks.ListStacksRequest;
+import org.cloudfoundry.client.v3.stacks.Stack;
 import org.cloudfoundry.client.v3.tasks.CancelTaskRequest;
 import org.cloudfoundry.client.v3.tasks.CreateTaskRequest;
 import org.cloudfoundry.client.v3.tasks.GetTaskRequest;
@@ -1712,7 +1712,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                        .summary(request);
     }
 
-    private Mono<? extends Resource<StackEntity>> getApplicationStackResource(SummaryApplicationResponse summary) {
+    private Mono<? extends Stack> getApplicationStackResource(SummaryApplicationResponse summary) {
         UUID stackGuid = UUID.fromString(summary.getStackId());
         if (stacksCache.containsStack(stackGuid)) {
             return Mono.just(stacksCache.getStack(stackGuid));
@@ -2455,22 +2455,22 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return fetch(() -> getStackResourceByName(name), ImmutableRawCloudStack::of);
     }
 
-    private Flux<? extends Resource<StackEntity>> getStackResources() {
+    private Flux<? extends Stack> getStackResources() {
         IntFunction<ListStacksRequest> pageRequestSupplier = page -> ListStacksRequest.builder()
                                                                                       .page(page)
                                                                                       .build();
         return getStackResources(pageRequestSupplier);
     }
 
-    private Mono<? extends Resource<StackEntity>> getStackResource(UUID guid) {
+    private Mono<? extends Stack> getStackResource(UUID guid) {
         GetStackRequest request = GetStackRequest.builder()
                                                  .stackId(guid.toString())
                                                  .build();
-        return delegate.stacks()
+        return delegate.stacksV3()
                        .get(request);
     }
 
-    private Mono<? extends Resource<StackEntity>> getStackResourceByName(String name) {
+    private Mono<? extends Stack> getStackResourceByName(String name) {
         IntFunction<ListStacksRequest> pageRequestSupplier = page -> ListStacksRequest.builder()
                                                                                       .name(name)
                                                                                       .page(page)
@@ -2478,8 +2478,8 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return getStackResources(pageRequestSupplier).singleOrEmpty();
     }
 
-    private Flux<? extends Resource<StackEntity>> getStackResources(IntFunction<ListStacksRequest> requestForPage) {
-        return PaginationUtils.requestClientV2Resources(page -> delegate.stacks()
+    private Flux<? extends Stack> getStackResources(IntFunction<ListStacksRequest> requestForPage) {
+        return PaginationUtils.requestClientV3Resources(page -> delegate.stacksV3()
                                                                         .list(requestForPage.apply(page)));
     }
 

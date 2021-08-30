@@ -1,16 +1,15 @@
 package com.sap.cloudfoundry.client.facade.util;
 
-import org.cloudfoundry.client.v2.Resource;
-import org.cloudfoundry.client.v2.stacks.StackEntity;
+import org.cloudfoundry.client.v3.stacks.Stack;
 import org.springframework.util.ConcurrentReferenceHashMap;
 
 import java.util.UUID;
 
 public class StacksCache {
 
-    private final ConcurrentReferenceHashMap<UUID, Resource<StackEntity>> cachedStacks = new ConcurrentReferenceHashMap<>();
+    private final ConcurrentReferenceHashMap<UUID, Stack> cachedStacks = new ConcurrentReferenceHashMap<>();
 
-    public Resource<StackEntity> getStack(UUID stackId) {
+    public Stack getStack(UUID stackId) {
         return cachedStacks.get(stackId);
     }
 
@@ -18,7 +17,7 @@ public class StacksCache {
         return cachedStacks.containsKey(stackId);
     }
 
-    public void setStack(UUID stackId, Resource<StackEntity> stack) {
+    public void setStack(UUID stackId, Stack stack) {
         cachedStacks.putIfAbsent(stackId, stack);
     }
 
