@@ -2,7 +2,7 @@ package com.sap.cloudfoundry.client.facade.adapters;
 
 import com.sap.cloudfoundry.client.facade.domain.CloudServiceInstance;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudServiceInstance;
-import org.cloudfoundry.client.v3.serviceInstances.ServiceInstance;
+import org.cloudfoundry.client.v3.serviceinstances.ServiceInstance;
 import org.immutables.value.Value;
 
 @Value.Immutable
