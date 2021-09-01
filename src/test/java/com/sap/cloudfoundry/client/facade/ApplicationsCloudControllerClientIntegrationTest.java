@@ -6,16 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.text.MessageFormat;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-
 import org.cloudfoundry.client.v3.Metadata;
 import org.cloudfoundry.client.v3.processes.HealthCheckType;
 import org.junit.jupiter.api.AfterAll;
@@ -38,17 +28,27 @@ import com.sap.cloudfoundry.client.facade.domain.ImmutableStaging;
 import com.sap.cloudfoundry.client.facade.domain.InstancesInfo;
 import com.sap.cloudfoundry.client.facade.domain.Staging;
 import com.sap.cloudfoundry.client.facade.domain.Status;
+import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.JAVA_BUILDPACK;
+import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.APPLICATION_HOST;
+import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.DEFAULT_DOMAIN;
+import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.DISK_IN_MB;
+import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.HEALTH_CHECK_ENDPOINT;
+import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.HEALTH_CHECK_TIMEMOUT;
+import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.MEMORY_IN_MB;
+import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.STATICFILE_APPLICATION_CONTENT;
+
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.text.MessageFormat;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 
 class ApplicationsCloudControllerClientIntegrationTest extends CloudControllerClientIntegrationTest {
 
-    private static final String HEALTH_CHECK_ENDPOINT = "/public/ping";
-    private static final String JAVA_BUILDPACK = "java_buildpack";
-    private static final int HEALTH_CHECK_TIMEMOUT = 100;
-    private static final int DISK_IN_MB = 128;
-    private static final int MEMORY_IN_MB = 128;
-    private static final String DEFAULT_DOMAIN = "deploy-service.custom.domain.for.integration.tests";
-    private static final String APPLICATION_HOST = "test-application-hostname-ztana-test";
-    private static final String STATICFILE_APPLICATION_CONTENT = "staticfile.zip";
     private static final Path STATICFILE_APPLICATION_PATH = getStaticfileApplicationContentPath();
 
     @BeforeAll
@@ -64,7 +64,9 @@ class ApplicationsCloudControllerClientIntegrationTest extends CloudControllerCl
     @AfterAll
     static void deleteDefaultDomain() {
         List<CloudRoute> routes = client.getRoutes(DEFAULT_DOMAIN);
-        routes.forEach(route -> client.deleteRoute(route.getHost(), DEFAULT_DOMAIN, null));
+        for (CloudRoute route : routes) {
+            client.deleteRoute(route.getHost(), DEFAULT_DOMAIN, null);
+        }
         client.deleteDomain(DEFAULT_DOMAIN);
     }
 

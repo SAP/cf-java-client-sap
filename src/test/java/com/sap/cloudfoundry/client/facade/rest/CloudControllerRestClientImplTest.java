@@ -9,7 +9,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-import com.sap.cloudfoundry.client.facade.util.CloudStackCache;
 import org.cloudfoundry.client.CloudFoundryClient;
 import org.cloudfoundry.client.v2.ClientV2Exception;
 import org.cloudfoundry.client.v2.Resource;
@@ -65,8 +64,6 @@ class CloudControllerRestClientImplTest {
     private DopplerClient dopplerClient;
     @Mock
     private CloudFoundryClient delegate;
-    @Mock
-    private CloudStackCache cloudStackCache;
     private CloudControllerRestClientImpl controllerClient;
 
     @BeforeEach
@@ -77,8 +74,7 @@ class CloudControllerRestClientImplTest {
                                                              CREDENTIALS,
                                                              webClient,
                                                              oAuthClient,
-                                                             delegate,
-                                                             cloudStackCache);
+                                                             delegate);
     }
 
     @Test
