@@ -1,14 +1,12 @@
 package com.sap.cloudfoundry.client.facade.domain;
 
-import java.util.List;
-import java.util.UUID;
-
-import org.immutables.value.Value;
-
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.sap.cloudfoundry.client.facade.Nullable;
 import com.sap.cloudfoundry.client.facade.SkipNulls;
+import org.immutables.value.Value;
+
+import java.util.List;
 
 @Value.Immutable
 @JsonSerialize(as = ImmutableStaging.class)
@@ -62,9 +60,6 @@ public interface Staging {
      */
     @Nullable
     String getStackName();
-
-    @Nullable
-    UUID getStackId();
 
     @Nullable
     DockerInfo getDockerInfo();

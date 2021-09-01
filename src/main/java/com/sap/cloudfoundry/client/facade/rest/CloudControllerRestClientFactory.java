@@ -5,7 +5,6 @@ import com.sap.cloudfoundry.client.facade.adapters.CloudFoundryClientFactory;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableCloudFoundryClientFactory;
 import com.sap.cloudfoundry.client.facade.domain.CloudSpace;
 import com.sap.cloudfoundry.client.facade.oauth2.OAuthClient;
-import com.sap.cloudfoundry.client.facade.util.CloudStackCache;
 import com.sap.cloudfoundry.client.facade.util.RestUtil;
 import org.cloudfoundry.client.CloudFoundryClient;
 import org.cloudfoundry.doppler.DopplerClient;
@@ -77,19 +76,13 @@ public abstract class CloudControllerRestClientFactory {
         WebClient webClient = createWebClient(credentials, oAuthClient, exchangeFilters);
         CloudFoundryClient delegate = getCloudFoundryClientFactory().createClient(controllerUrl, oAuthClient, requestTags);
         DopplerClient dopplerClient = getCloudFoundryClientFactory().createDopplerClient(controllerUrl, oAuthClient, requestTags);
-        CloudStackCache cloudStackCache = getCloudStackCache();
         return new CloudControllerRestClientImpl(controllerUrl,
                                                  credentials,
                                                  webClient,
                                                  oAuthClient,
                                                  delegate,
                                                  dopplerClient,
-                                                 target,
-                                                 cloudStackCache);
-    }
-
-    private CloudStackCache getCloudStackCache() {
-        return new CloudStackCache();
+                                                 target);
     }
 
     private OAuthClient createOAuthClient(URL controllerUrl, String origin) {

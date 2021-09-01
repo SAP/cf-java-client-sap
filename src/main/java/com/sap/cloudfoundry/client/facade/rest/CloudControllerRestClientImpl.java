@@ -21,9 +21,9 @@ import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudServicePlan;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudSpace;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudStack;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudTask;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawV3CloudServiceInstance;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawInstancesInfo;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawUserRole;
+import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawV3CloudServiceInstance;
 import com.sap.cloudfoundry.client.facade.domain.ApplicationLog;
 import com.sap.cloudfoundry.client.facade.domain.CloudApplication;
 import com.sap.cloudfoundry.client.facade.domain.CloudBuild;
@@ -61,11 +61,10 @@ import com.sap.cloudfoundry.client.facade.domain.Staging;
 import com.sap.cloudfoundry.client.facade.domain.Status;
 import com.sap.cloudfoundry.client.facade.domain.Upload;
 import com.sap.cloudfoundry.client.facade.domain.UserRole;
+import com.sap.cloudfoundry.client.facade.oauth2.OAuth2AccessTokenWithAdditionalInfo;
 import com.sap.cloudfoundry.client.facade.oauth2.OAuthClient;
 import com.sap.cloudfoundry.client.facade.util.EnvironmentUtil;
-import com.sap.cloudfoundry.client.facade.domain.ImmutableStaging;
-import com.sap.cloudfoundry.client.facade.oauth2.OAuth2AccessTokenWithAdditionalInfo;
-import com.sap.cloudfoundry.client.facade.util.CloudStackCache;
+import com.sap.cloudfoundry.client.facade.util.StacksCache;
 import com.sap.cloudfoundry.client.facade.util.UriUtil;
 import org.apache.commons.io.IOUtils;
 import org.cloudfoundry.AbstractCloudFoundryException;
@@ -162,8 +161,8 @@ import org.cloudfoundry.client.v3.domains.DomainRelationships;
 import org.cloudfoundry.client.v3.domains.DomainResource;
 import org.cloudfoundry.client.v3.domains.ListDomainsRequest;
 import org.cloudfoundry.client.v3.organizations.GetOrganizationDefaultDomainRequest;
-import org.cloudfoundry.client.v3.organizations.ListOrganizationDomainsRequest;
 import org.cloudfoundry.client.v3.organizations.GetOrganizationRequest;
+import org.cloudfoundry.client.v3.organizations.ListOrganizationDomainsRequest;
 import org.cloudfoundry.client.v3.organizations.ListOrganizationsRequest;
 import org.cloudfoundry.client.v3.organizations.Organization;
 import org.cloudfoundry.client.v3.organizations.OrganizationResource;
@@ -202,7 +201,6 @@ import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.WebClient;
-
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.util.function.Tuple2;
@@ -245,7 +243,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     private OAuthClient oAuthClient;
     private WebClient webClient;
     private CloudSpace target;
-    private CloudStackCache cloudStackCache;
+    private static final StacksCache stacksCache = new StacksCache();
 
     private CloudFoundryClient delegate;
     private DopplerClient dopplerClient;
@@ -258,13 +256,12 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     public CloudControllerRestClientImpl(URL controllerUrl, CloudCredentials credentials, WebClient webClient, OAuthClient oAuthClient,
-                                         CloudFoundryClient delegate, CloudStackCache cloudStackCache) {
-        this(controllerUrl, credentials, webClient, oAuthClient, delegate, null, null, cloudStackCache);
+                                         CloudFoundryClient delegate) {
+        this(controllerUrl, credentials, webClient, oAuthClient, delegate, null, null);
     }
 
     public CloudControllerRestClientImpl(URL controllerUrl, CloudCredentials credentials, WebClient webClient, OAuthClient oAuthClient,
-                                         CloudFoundryClient delegate, DopplerClient dopplerClient, CloudSpace target,
-                                         CloudStackCache cloudStackCache) {
+                                         CloudFoundryClient delegate, DopplerClient dopplerClient, CloudSpace target) {
         Assert.notNull(controllerUrl, "CloudControllerUrl cannot be null");
         Assert.notNull(webClient, "WebClient cannot be null");
         Assert.notNull(oAuthClient, "OAuthClient cannot be null");
@@ -274,8 +271,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         this.webClient = webClient;
         this.oAuthClient = oAuthClient;
         this.target = target;
-        this.cloudStackCache = cloudStackCache;
-
         this.delegate = delegate;
         this.dopplerClient = dopplerClient;
     }
@@ -721,39 +716,15 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     public List<CloudApplication> getApplications() {
         List<CloudApplication> applications = fetchListWithAuxiliaryContent(this::getApplicationResources,
                                                                             this::zipWithAuxiliaryApplicationContent);
-        return addMetadataIfNotEmpty(addStacksToCloudApplications(applications));
-    }
-
-    private List<CloudApplication> addStacksToCloudApplications(List<CloudApplication> cloudApps) {
-        return cloudApps.stream()
-                        .map(this::addStackToCloudApplication)
-                        .collect(Collectors.toList());
-    }
-
-    private CloudApplication addStackToCloudApplication(CloudApplication application) {
-        UUID cloudStackId = application.getStaging()
-                                       .getStackId();
-        CloudStack cloudStack = retrieveCloudStack(cloudStackId, () -> ImmutableRawCloudStack.of(getStackResource(cloudStackId).block())
-                                                                                             .derive());
-        return copyCloudApplicationWithStacks(application, cloudStack).derive();
-    }
-
-    private CloudStack retrieveCloudStack(UUID rawCloudStackId, Supplier<CloudStack> cloudStack) {
-        return cloudStackCache.getCloudStack(rawCloudStackId, cloudStack);
-    }
-
-    private ImmutableCloudApplication copyCloudApplicationWithStacks(CloudApplication cloudApp, CloudStack cloudStack) {
-        return ImmutableCloudApplication.copyOf(cloudApp)
-                                        .withStaging(ImmutableStaging.copyOf(cloudApp.getStaging())
-                                                                     .withStackName(cloudStack.getName()));
+        return addMetadataIfNotEmpty(applications);
     }
 
     @Override
     public List<CloudApplication> getApplicationsByMetadataLabelSelector(String labelSelector) {
         Map<String, Metadata> applicationsMetadata = getApplicationsMetadataByLabelSelector(labelSelector);
-        return addMetadata(addStacksToCloudApplications(fetchListWithAuxiliaryContent(() -> getApplicationResourcesByNamesInBatches(applicationsMetadata.keySet()),
-                                                                                      this::zipWithAuxiliaryApplicationContent)),
-                           applicationsMetadata);
+        List<CloudApplication> cloudApplications = fetchListWithAuxiliaryContent(() -> getApplicationResourcesByNamesInBatches(applicationsMetadata.keySet()),
+                                                                                 this::zipWithAuxiliaryApplicationContent);
+        return addMetadata(cloudApplications, applicationsMetadata);
     }
 
     private List<UUID> getApplicationIds() {
@@ -1663,15 +1634,11 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     private CloudApplication findApplicationByName(String name) {
-        CloudApplication application = fetchWithAuxiliaryContent(() -> getApplicationByName(name),
-                                                                 this::zipWithAuxiliaryApplicationContent);
-        return application != null ? addStackToCloudApplication(application) : null;
+        return fetchWithAuxiliaryContent(() -> getApplicationByName(name), this::zipWithAuxiliaryApplicationContent);
     }
 
     private CloudApplication findApplication(UUID guid) {
-        CloudApplication application = fetchWithAuxiliaryContent(() -> getApplicationByGuid(guid),
-                                                                 this::zipWithAuxiliaryApplicationContent);
-        return application != null ? addStackToCloudApplication(application) : null;
+        return fetchWithAuxiliaryContent(() -> getApplicationByGuid(guid), this::zipWithAuxiliaryApplicationContent);
     }
 
     private Flux<? extends Application> getApplicationResources() {
@@ -1721,12 +1688,16 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     private Mono<Derivable<CloudApplication>> zipWithAuxiliaryApplicationContent(Application application) {
         UUID applicationGuid = getGuid(application);
-        return getApplicationSummary(applicationGuid).map(summary -> ImmutableRawCloudApplication.builder()
-                                                                                                 .application(application)
-                                                                                                 .summary(summary)
-                                                                                                 .stackId(UUID.fromString(summary.getStackId()))
-                                                                                                 .space(target)
-                                                                                                 .build());
+        return getApplicationSummary(applicationGuid).zipWhen(this::getApplicationStackResource)
+                                                     .doOnSuccess(tuple -> stacksCache.setStack(UUID.fromString(tuple.getT1()
+                                                                                                                     .getStackId()),
+                                                                                                tuple.getT2()))
+                                                     .map(tuple -> ImmutableRawCloudApplication.builder()
+                                                                                               .application(application)
+                                                                                               .summary(tuple.getT1())
+                                                                                               .stack(ImmutableRawCloudStack.of(tuple.getT2()))
+                                                                                               .space(target)
+                                                                                               .build());
     }
 
     // TODO: Use v3 if possible. Currently no summary endpoint, the "include" parameter
@@ -1743,6 +1714,9 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     private Mono<? extends Resource<StackEntity>> getApplicationStackResource(SummaryApplicationResponse summary) {
         UUID stackGuid = UUID.fromString(summary.getStackId());
+        if (stacksCache.containsStack(stackGuid)) {
+            return Mono.just(stacksCache.getStack(stackGuid));
+        }
         return getStackResource(stackGuid);
     }
 

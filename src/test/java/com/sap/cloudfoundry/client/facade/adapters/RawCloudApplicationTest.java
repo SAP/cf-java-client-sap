@@ -6,11 +6,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.sap.cloudfoundry.client.facade.domain.CloudMetadata;
 import org.cloudfoundry.client.v2.applications.SummaryApplicationResponse;
 import org.cloudfoundry.client.v2.domains.Domain;
 import org.cloudfoundry.client.v2.routes.Route;
@@ -64,7 +62,6 @@ class RawCloudApplicationTest {
     private static final String DOCKER_PASSWORD = "troll";
     private static final org.cloudfoundry.client.v2.applications.DockerCredentials DOCKER_CREDENTIALS = buildDockerCredentials();
     private static final String STACK_NAME = "cflinuxfs3";
-    private static final String STACK_ID = "123e4567-e89b-42d3-a456-556642440000";
     private static final String SPACE_NAME = "test";
     private static final CloudStack STACK = ImmutableCloudStack.builder()
                                                                .name(STACK_NAME)
@@ -154,7 +151,6 @@ class RawCloudApplicationTest {
                                .healthCheckType(HEALTH_CHECK_TYPE)
                                .isSshEnabled(SSH_ENABLED)
                                .stackName(STACK_NAME)
-                               .stackId(RawCloudEntityTest.GUID)
                                .build();
     }
 
@@ -207,7 +203,6 @@ class RawCloudApplicationTest {
                                            .application(buildApplicationResource())
                                            .summary(summary)
                                            .stack(STACK)
-                                           .stackId(RawCloudEntityTest.GUID)
                                            .space(SPACE)
                                            .build();
     }
@@ -232,7 +227,6 @@ class RawCloudApplicationTest {
     private static SummaryApplicationResponse buildApplicationSummary() {
         return SummaryApplicationResponse.builder()
                                          .name(RawCloudEntityTest.NAME)
-                                         .stackId(RawCloudEntityTest.GUID_STRING)
                                          .memory(MEMORY)
                                          .diskQuota(DISK_QUOTA)
                                          .routes(ROUTES)
