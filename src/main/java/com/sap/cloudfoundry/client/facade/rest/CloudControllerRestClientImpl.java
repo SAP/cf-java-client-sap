@@ -72,17 +72,9 @@ import org.cloudfoundry.client.CloudFoundryClient;
 import org.cloudfoundry.client.v2.Resource;
 import org.cloudfoundry.client.v2.applications.ApplicationInstancesRequest;
 import org.cloudfoundry.client.v2.applications.ApplicationInstancesResponse;
-import org.cloudfoundry.client.v2.applications.AssociateApplicationRouteRequest;
 import org.cloudfoundry.client.v2.applications.ListApplicationServiceBindingsRequest;
-import org.cloudfoundry.client.v2.applications.RemoveApplicationRouteRequest;
 import org.cloudfoundry.client.v2.applications.SummaryApplicationRequest;
 import org.cloudfoundry.client.v2.applications.SummaryApplicationResponse;
-import org.cloudfoundry.client.v2.routemappings.ListRouteMappingsRequest;
-import org.cloudfoundry.client.v2.routemappings.RouteMappingEntity;
-import org.cloudfoundry.client.v2.routes.CreateRouteRequest;
-import org.cloudfoundry.client.v2.routes.CreateRouteResponse;
-import org.cloudfoundry.client.v2.routes.DeleteRouteRequest;
-import org.cloudfoundry.client.v2.routes.RouteEntity;
 import org.cloudfoundry.client.v2.servicebindings.CreateServiceBindingRequest;
 import org.cloudfoundry.client.v2.servicebindings.DeleteServiceBindingRequest;
 import org.cloudfoundry.client.v2.servicebindings.GetServiceBindingParametersRequest;
@@ -109,7 +101,6 @@ import org.cloudfoundry.client.v2.serviceplans.ServicePlanEntity;
 import org.cloudfoundry.client.v2.serviceplans.UpdateServicePlanRequest;
 import org.cloudfoundry.client.v2.services.GetServiceRequest;
 import org.cloudfoundry.client.v2.services.ServiceEntity;
-import org.cloudfoundry.client.v2.spaces.ListSpaceRoutesRequest;
 import org.cloudfoundry.client.v2.spaces.ListSpaceServiceInstancesRequest;
 import org.cloudfoundry.client.v2.spaces.ListSpaceServicesRequest;
 import org.cloudfoundry.client.v2.userprovidedserviceinstances.CreateUserProvidedServiceInstanceRequest;
@@ -137,6 +128,7 @@ import org.cloudfoundry.client.v3.applications.GetApplicationProcessResponse;
 import org.cloudfoundry.client.v3.applications.GetApplicationRequest;
 import org.cloudfoundry.client.v3.applications.ListApplicationBuildsRequest;
 import org.cloudfoundry.client.v3.applications.ListApplicationPackagesRequest;
+import org.cloudfoundry.client.v3.applications.ListApplicationRoutesRequest;
 import org.cloudfoundry.client.v3.applications.ListApplicationsRequest;
 import org.cloudfoundry.client.v3.applications.ScaleApplicationRequest;
 import org.cloudfoundry.client.v3.applications.SetApplicationCurrentDropletRequest;
@@ -176,9 +168,19 @@ import org.cloudfoundry.client.v3.processes.HealthCheckType;
 import org.cloudfoundry.client.v3.processes.UpdateProcessRequest;
 import org.cloudfoundry.client.v3.roles.ListRolesRequest;
 import org.cloudfoundry.client.v3.roles.RoleResource;
+import org.cloudfoundry.client.v3.routes.CreateRouteRequest;
+import org.cloudfoundry.client.v3.routes.CreateRouteResponse;
+import org.cloudfoundry.client.v3.routes.DeleteRouteRequest;
+import org.cloudfoundry.client.v3.routes.Destination;
+import org.cloudfoundry.client.v3.routes.InsertRouteDestinationsRequest;
+import org.cloudfoundry.client.v3.routes.ListRoutesRequest;
+import org.cloudfoundry.client.v3.routes.RemoveRouteDestinationsRequest;
+import org.cloudfoundry.client.v3.routes.RouteRelationships;
+import org.cloudfoundry.client.v3.routes.RouteResource;
 import org.cloudfoundry.client.v3.serviceinstances.ListServiceInstancesRequest;
 import org.cloudfoundry.client.v3.serviceinstances.ServiceInstanceResource;
 import org.cloudfoundry.client.v3.serviceinstances.UpdateServiceInstanceRequest;
+import org.cloudfoundry.client.v3.spaces.DeleteUnmappedRoutesRequest;
 import org.cloudfoundry.client.v3.spaces.GetSpaceRequest;
 import org.cloudfoundry.client.v3.spaces.ListSpacesRequest;
 import org.cloudfoundry.client.v3.spaces.Space;
@@ -193,6 +195,7 @@ import org.cloudfoundry.client.v3.tasks.ListTasksRequest;
 import org.cloudfoundry.client.v3.tasks.Task;
 import org.cloudfoundry.doppler.DopplerClient;
 import org.cloudfoundry.doppler.RecentLogsRequest;
+import org.cloudfoundry.util.JobUtils;
 import org.cloudfoundry.util.PaginationUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -211,11 +214,11 @@ import java.io.InputStream;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -234,7 +237,8 @@ import java.util.stream.Collectors;
 public class CloudControllerRestClientImpl implements CloudControllerRestClient {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CloudControllerRestClientImpl.class);
-    private static final long JOB_POLLING_PERIOD = TimeUnit.SECONDS.toMillis(5);
+    private static final long PACKAGE_UPLOAD_JOB_POLLING_PERIOD = TimeUnit.SECONDS.toMillis(5);
+    private static final Duration DELETE_JOB_TIMEOUT = Duration.ofMinutes(5);
     private static final int MAX_CHAR_LENGTH_FOR_PARAMS_IN_REQUEST = 4000;
     private static final List<String> CHARS_TO_ENCODE = List.of(",");
 
@@ -565,24 +569,15 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     /**
      * Delete routes that do not have any application which is assigned to them.
-     *
-     * @return deleted routes or an empty list if no routes have been found
      */
     @Override
-    public List<CloudRoute> deleteOrphanedRoutes() {
-        List<CloudRoute> orphanRoutes = new ArrayList<>();
-        for (CloudDomain domain : getDomainsForOrganization()) {
-            orphanRoutes.addAll(fetchOrphanRoutes(domain.getName()));
-        }
-
-        List<CloudRoute> deletedRoutes = new ArrayList<>();
-        for (CloudRoute orphanRoute : orphanRoutes) {
-            deleteRoute(orphanRoute.getHost(), orphanRoute.getDomain()
-                                                          .getName(),
-                        orphanRoute.getPath());
-            deletedRoutes.add(orphanRoute);
-        }
-        return deletedRoutes;
+    public void deleteOrphanedRoutes() {
+        delegate.spacesV3()
+                .deleteUnmappedRoutes(DeleteUnmappedRoutesRequest.builder()
+                                                                 .spaceId(getTargetSpaceGuid().toString())
+                                                                 .build())
+                .flatMap(jobId -> JobUtils.waitForCompletion(delegate, DELETE_JOB_TIMEOUT, jobId))
+                .block();
     }
 
     @Override
@@ -1306,12 +1301,11 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     @Override
     public void updateApplicationStaging(String applicationName, Staging staging) {
         UUID applicationGuid = getRequiredApplicationGuid(applicationName);
-        UpdateApplicationRequest updateApplicationRequest = UpdateApplicationRequest.builder()
-                                                                                    .applicationId(applicationGuid.toString())
-                                                                                    .lifecycle(buildApplicationLifecycle(staging))
-                                                                                    .build();
         delegate.applicationsV3()
-                .update(updateApplicationRequest)
+                .update(UpdateApplicationRequest.builder()
+                                                .applicationId(applicationGuid.toString())
+                                                .lifecycle(buildApplicationLifecycle(staging))
+                                                .build())
                 .block();
         GetApplicationProcessResponse applicationProcess = getApplicationProcess(applicationGuid);
         updateApplicationProcess(applicationGuid, staging, applicationProcess);
@@ -1319,23 +1313,33 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public void updateApplicationRoutes(String applicationName, Set<CloudRouteSummary> updatedRoutes) {
-        CloudApplication application = getApplication(applicationName);
-        Set<CloudRouteSummary> currentRoutes = application.getRoutes();
+        UUID applicationGuid = getApplicationGuid(applicationName);
+        List<RouteResource> appRoutes = getRouteResourcesByAppGuid(applicationGuid).collectList()
+                                                                                   .block();
 
-        Set<CloudRouteSummary> outdatedRoutes = selectRoutesOnlyInFirst(currentRoutes, updatedRoutes);
+        List<RouteResource> outdatedRoutes = getOutdatedRoutes(appRoutes, updatedRoutes);
+        Set<CloudRouteSummary> newRoutes = getNewRoutes(updatedRoutes, appRoutes);
 
-        Set<CloudRouteSummary> newRoutes = selectRoutesOnlyInFirst(updatedRoutes, currentRoutes);
-
-        removeRoutes(outdatedRoutes, application.getMetadata()
-                                                .getGuid());
-        addRoutes(newRoutes, application.getMetadata()
-                                        .getGuid());
+        removeRoutes(outdatedRoutes, applicationGuid);
+        addRoutes(newRoutes, applicationGuid);
     }
 
-    protected Set<CloudRouteSummary> selectRoutesOnlyInFirst(Set<CloudRouteSummary> allRoutes, Set<CloudRouteSummary> routesToSubtract) {
-        Set<CloudRouteSummary> selectedRoutes = new HashSet<>(allRoutes);
-        selectedRoutes.removeAll(routesToSubtract);
-        return selectedRoutes;
+    private List<RouteResource> getOutdatedRoutes(List<RouteResource> currentRoutes, Set<CloudRouteSummary> updatedRoutes) {
+        Set<String> urls = updatedRoutes.stream()
+                                        .map(CloudRouteSummary::toUriString)
+                                        .collect(Collectors.toSet());
+        return currentRoutes.stream()
+                            .filter(routeResource -> !urls.contains(routeResource.getUrl()))
+                            .collect(Collectors.toList());
+    }
+
+    private Set<CloudRouteSummary> getNewRoutes(Set<CloudRouteSummary> updatedRoutes, List<RouteResource> currentRoutes) {
+        Set<String> urls = currentRoutes.stream()
+                                        .map(RouteResource::getUrl)
+                                        .collect(Collectors.toSet());
+        return updatedRoutes.stream()
+                            .filter(route -> !urls.contains(route.toUriString()))
+                            .collect(Collectors.toSet());
     }
 
     @Override
@@ -1999,14 +2003,20 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         Assert.notNull(target, "Unable to " + operation + " without specifying organization and space to use.");
     }
 
-    private void removeRoutes(Set<CloudRouteSummary> routes, UUID applicationGuid) {
-        for (CloudRouteSummary route : routes) {
-            unbindRoute(route.getGuid(), applicationGuid);
+    private void removeRoutes(List<RouteResource> routes, UUID applicationGuid) {
+        for (RouteResource route : routes) {
+            for (Destination destination : route.getDestinations()) {
+                if (destination.getApplication()
+                               .getApplicationId()
+                               .equals(applicationGuid.toString())) {
+                    unbindRoute(route.getId(), destination.getDestinationId());
+                }
+            }
         }
     }
 
     private void addRoutes(Set<CloudRouteSummary> routes, UUID applicationGuid) {
-        Map<String, UUID> domains = getDomainGuids();
+        Map<String, UUID> domains = getDomainsFromRoutes(routes);
         for (CloudRouteSummary route : routes) {
             validateDomainForRoute(route, domains);
             UUID domainGuid = domains.get(route.getDomain());
@@ -2017,7 +2027,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         }
     }
 
-    protected void validateDomainForRoute(CloudRouteSummary route, Map<String, UUID> existingDomains) {
+    private void validateDomainForRoute(CloudRouteSummary route, Map<String, UUID> existingDomains) {
         if (StringUtils.isEmpty(route.getDomain()) || !existingDomains.containsKey(route.getDomain())) {
             throw new CloudOperationException(HttpStatus.NOT_FOUND,
                                               HttpStatus.NOT_FOUND.getReasonPhrase(),
@@ -2025,22 +2035,30 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         }
     }
 
-    private void unbindRoute(UUID routeGuid, UUID applicationGuid) {
-        delegate.applicationsV2()
-                .removeRoute(RemoveApplicationRouteRequest.builder()
-                                                          .applicationId(applicationGuid.toString())
-                                                          .routeId(routeGuid.toString())
-                                                          .build())
+    private void unbindRoute(String routeGuid, String destinationGuid) {
+        delegate.routesV3()
+                .removeDestinations(RemoveRouteDestinationsRequest.builder()
+                                                                  .routeId(routeGuid)
+                                                                  .destinationId(destinationGuid)
+                                                                  .build())
                 .block();
     }
 
     private void bindRoute(UUID routeGuid, UUID applicationGuid) {
-        delegate.applicationsV2()
-                .associateRoute(AssociateApplicationRouteRequest.builder()
-                                                                .applicationId(applicationGuid.toString())
-                                                                .routeId(routeGuid.toString())
-                                                                .build())
+        delegate.routesV3()
+                .insertDestinations(InsertRouteDestinationsRequest.builder()
+                                                                  .routeId(routeGuid.toString())
+                                                                  .destination(createDestination(applicationGuid))
+                                                                  .build())
                 .block();
+    }
+
+    private Destination createDestination(UUID applicationGuid) {
+        return Destination.builder()
+                          .application(org.cloudfoundry.client.v3.routes.Application.builder()
+                                                                                    .applicationId(applicationGuid.toString())
+                                                                                    .build())
+                          .build();
     }
 
     private UUID getOrAddRoute(UUID domainGuid, String host, String path) {
@@ -2053,12 +2071,14 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     private UUID doAddRoute(UUID domainGuid, String host, String path) {
         assertSpaceProvided("add route");
-        CreateRouteResponse response = delegate.routes()
+        CreateRouteResponse response = delegate.routesV3()
                                                .create(CreateRouteRequest.builder()
-                                                                         .domainId(domainGuid.toString())
                                                                          .host(host)
                                                                          .path(path)
-                                                                         .spaceId(getTargetSpaceGuid().toString())
+                                                                         .relationships(RouteRelationships.builder()
+                                                                                                          .domain(buildToOneRelationship(domainGuid))
+                                                                                                          .space(buildToOneRelationship(getTargetSpaceGuid()))
+                                                                                                          .build())
                                                                          .build())
                                                .block();
         return getGuid(response);
@@ -2080,14 +2100,16 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                 .delete(DeleteDomainRequest.builder()
                                            .domainId(guid.toString())
                                            .build())
+                .flatMap(jobId -> JobUtils.waitForCompletion(delegate, DELETE_JOB_TIMEOUT, jobId))
                 .block();
     }
 
     private void doDeleteRoute(UUID guid) {
-        delegate.routes()
+        delegate.routesV3()
                 .delete(DeleteRouteRequest.builder()
                                           .routeId(guid.toString())
                                           .build())
+                .flatMap(jobId -> JobUtils.waitForCompletion(delegate, DELETE_JOB_TIMEOUT, jobId))
                 .block();
     }
 
@@ -2182,6 +2204,15 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                                                                 .build();
         return PaginationUtils.requestClientV3Resources(page -> delegate.organizationsV3()
                                                                         .listDomains(pageRequestSupplier.apply(page)));
+    }
+
+    private Flux<DomainResource> getDomainResourcesByNames(List<String> names) {
+        IntFunction<ListDomainsRequest> pageRequestSupplier = page -> ListDomainsRequest.builder()
+                                                                                        .names(names)
+                                                                                        .page(page)
+                                                                                        .build();
+        return PaginationUtils.requestClientV3Resources(page -> delegate.domainsV3()
+                                                                        .list(pageRequestSupplier.apply(page)));
     }
 
     private List<CloudSpace> findSpacesByOrganizationGuid(UUID organizationGuid) {
@@ -2291,26 +2322,25 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     private List<CloudRoute> findRoutes(CloudDomain domain) {
-        return fetchListWithAuxiliaryContent(() -> getRouteTuple(domain, getTargetSpaceGuid()), this::zipWithAuxiliaryRouteContent);
+        return fetchList(() -> getRouteResourcesByDomainGuidAndSpaceGuid(domain.getGuid(), getTargetSpaceGuid()),
+                         routeResource -> ImmutableRawCloudRoute.builder()
+                                                                .route(routeResource)
+                                                                .domain(domain)
+                                                                .build());
     }
 
-    private Flux<Tuple2<? extends Resource<RouteEntity>, CloudDomain>> getRouteTuple(CloudDomain domain, UUID spaceGuid) {
-        UUID domainGuid = getGuid(domain);
-        return getRouteResourcesByDomainGuidAndSpaceGuid(domainGuid, spaceGuid).map(routeResource -> Tuples.of(routeResource, domain));
+    private Flux<RouteResource> getRouteResourcesByDomainGuidAndSpaceGuid(UUID domainGuid, UUID spaceGuid) {
+        IntFunction<ListRoutesRequest> pageRequestSupplier = page -> ListRoutesRequest.builder()
+                                                                                      .domainId(domainGuid.toString())
+                                                                                      .spaceId(spaceGuid.toString())
+                                                                                      .page(page)
+                                                                                      .build();
+        return PaginationUtils.requestClientV3Resources(page -> delegate.routesV3()
+                                                                        .list(pageRequestSupplier.apply(page)));
     }
 
-    private Flux<? extends Resource<RouteEntity>> getRouteResourcesByDomainGuidAndSpaceGuid(UUID domainGuid, UUID spaceGuid) {
-        IntFunction<ListSpaceRoutesRequest> pageRequestSupplier = page -> ListSpaceRoutesRequest.builder()
-                                                                                                .domainId(domainGuid.toString())
-                                                                                                .spaceId(spaceGuid.toString())
-                                                                                                .page(page)
-                                                                                                .build();
-        return PaginationUtils.requestClientV2Resources(page -> delegate.spaces()
-                                                                        .listRoutes(pageRequestSupplier.apply(page)));
-    }
-
-    private Flux<? extends Resource<RouteEntity>> getRouteResourcesByDomainGuidHostAndPath(UUID domainGuid, String host, String path) {
-        ListSpaceRoutesRequest.Builder requestBuilder = ListSpaceRoutesRequest.builder();
+    private Flux<RouteResource> getRouteResourcesByDomainGuidHostAndPath(UUID domainGuid, String host, String path) {
+        ListRoutesRequest.Builder requestBuilder = ListRoutesRequest.builder();
         if (host != null) {
             requestBuilder.host(host);
         }
@@ -2320,28 +2350,18 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         requestBuilder.spaceId(getTargetSpaceGuid().toString())
                       .domainId(domainGuid.toString());
 
-        return PaginationUtils.requestClientV2Resources(page -> delegate.spaces()
-                                                                        .listRoutes(requestBuilder.page(page)
-                                                                                                  .build()));
+        return PaginationUtils.requestClientV3Resources(page -> delegate.routesV3()
+                                                                        .list(requestBuilder.page(page)
+                                                                                            .build()));
     }
 
-    private Mono<Derivable<CloudRoute>> zipWithAuxiliaryRouteContent(Tuple2<? extends Resource<RouteEntity>, CloudDomain> routeTuple) {
-        UUID routeGuid = getGuid(routeTuple.getT1());
-        return getRouteMappingResourcesByRouteGuid(routeGuid).collectList()
-                                                             .map(routeMappingResources -> ImmutableRawCloudRoute.builder()
-                                                                                                                 .resource(routeTuple.getT1())
-                                                                                                                 .domain(routeTuple.getT2())
-                                                                                                                 .routeMappingResources(routeMappingResources)
-                                                                                                                 .build());
-    }
-
-    private Flux<? extends Resource<RouteMappingEntity>> getRouteMappingResourcesByRouteGuid(UUID routeGuid) {
-        IntFunction<ListRouteMappingsRequest> pageRequestSupplier = page -> ListRouteMappingsRequest.builder()
-                                                                                                    .routeId(routeGuid.toString())
-                                                                                                    .page(page)
-                                                                                                    .build();
-        return PaginationUtils.requestClientV2Resources(page -> delegate.routeMappings()
-                                                                        .list(pageRequestSupplier.apply(page)));
+    private Flux<RouteResource> getRouteResourcesByAppGuid(UUID applicationGuid) {
+        IntFunction<ListApplicationRoutesRequest> pageSupplier = page -> ListApplicationRoutesRequest.builder()
+                                                                                                     .applicationId(applicationGuid.toString())
+                                                                                                     .page(page)
+                                                                                                     .build();
+        return PaginationUtils.requestClientV3Resources(page -> delegate.applicationsV3()
+                                                                        .listRoutes(pageSupplier.apply(page)));
     }
 
     private List<CloudServiceOffering> findServiceOfferingsByBrokerGuid(UUID brokerGuid) {
@@ -2443,12 +2463,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                                                 .build();
         return PaginationUtils.requestClientV2Resources(page -> delegate.serviceKeys()
                                                                         .list(pageRequestSupplier.apply(page)));
-    }
-
-    private List<CloudRoute> fetchOrphanRoutes(String domainName) {
-        return getRoutes(domainName).stream()
-                                    .filter(route -> !route.isUsed())
-                                    .collect(Collectors.toList());
     }
 
     private CloudStack findStackResource(String name) {
@@ -2592,21 +2606,17 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
             : null;
     }
 
-    private Map<String, UUID> getDomainGuids() {
-        List<CloudDomain> availableDomains = new ArrayList<>();
-        availableDomains.addAll(getDomainsForOrganization());
-        availableDomains.addAll(getSharedDomains());
-        Map<String, UUID> domains = new HashMap<>(availableDomains.size());
-        for (CloudDomain availableDomain : availableDomains) {
-            domains.put(availableDomain.getName(), availableDomain.getMetadata()
-                                                                  .getGuid());
-        }
-        return domains;
+    private Map<String, UUID> getDomainsFromRoutes(Set<CloudRouteSummary> routes) {
+        List<String> domainNames = routes.stream()
+                                         .map(CloudRouteSummary::getDomain)
+                                         .filter(domain -> !StringUtils.isEmpty(domain))
+                                         .collect(Collectors.toList());
+        return getDomainResourcesByNames(domainNames).collectMap(DomainResource::getName, domain -> UUID.fromString(domain.getId()))
+                                                     .block();
     }
 
     private UUID getRouteGuid(UUID domainGuid, String host, String path) {
-        List<? extends Resource<RouteEntity>> routeEntitiesResource = getRouteResourcesByDomainGuidHostAndPath(domainGuid, host,
-                                                                                                               path).collect(Collectors.toList())
+        List<RouteResource> routeEntitiesResource = getRouteResourcesByDomainGuidHostAndPath(domainGuid, host, path).collect(Collectors.toList())
                                                                                                                     .block();
         if (CollectionUtils.isEmpty(routeEntitiesResource)) {
             return null;
@@ -2647,7 +2657,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                 return;
             }
             try {
-                Thread.sleep(JOB_POLLING_PERIOD);
+                Thread.sleep(PACKAGE_UPLOAD_JOB_POLLING_PERIOD);
             } catch (InterruptedException e) {
                 return;
             }
