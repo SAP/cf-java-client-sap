@@ -155,7 +155,7 @@ public interface CloudControllerClient {
     /**
      * Delete routes that do not have any application which is assigned to them.
      */
-    List<CloudRoute> deleteOrphanedRoutes();
+    void deleteOrphanedRoutes();
 
     /**
      * Delete a registered route from the space of the current session.
