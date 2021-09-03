@@ -1,6 +1,6 @@
 package com.sap.cloudfoundry.client.facade.domain;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 import org.immutables.value.Value;
@@ -26,7 +26,7 @@ public abstract class CloudEvent extends CloudEntity implements Derivable<CloudE
     public abstract Participant getTarget();
 
     @Nullable
-    public Date getTimestamp() {
+    public LocalDateTime getTimestamp() {
         return getMetadata().getCreatedAt();
     }
 

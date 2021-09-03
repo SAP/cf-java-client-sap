@@ -1,8 +1,8 @@
 package com.sap.cloudfoundry.client.facade.adapters;
 
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.util.Date;
 import java.util.UUID;
 
 import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudMetadata;
@@ -29,7 +29,7 @@ public class RawCloudEventTest {
 
     private static final UUID TARGET_GUID = UUID.fromString(TARGET_GUID_STRING);
     private static final UUID ACTOR_GUID = UUID.fromString(ACTOR_GUID_STRING);
-    private static final Date TIMESTAMP = RawCloudEntityTest.fromZonedDateTime(ZonedDateTime.of(2019, 7, 3, 20, 0, 46, 0, ZoneId.of("Z")));
+    private static final LocalDateTime TIMESTAMP = RawCloudEntityTest.fromZonedDateTime(ZonedDateTime.of(2019, 7, 3, 20, 0, 46, 0, ZoneId.of("Z")));
 
     @Test
     public void testDerive() {
