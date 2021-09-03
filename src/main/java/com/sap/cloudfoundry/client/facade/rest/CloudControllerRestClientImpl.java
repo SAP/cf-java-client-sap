@@ -66,6 +66,7 @@ import com.sap.cloudfoundry.client.facade.oauth2.OAuthClient;
 import com.sap.cloudfoundry.client.facade.util.EnvironmentUtil;
 import com.sap.cloudfoundry.client.facade.util.StacksCache;
 import com.sap.cloudfoundry.client.facade.util.UriUtil;
+
 import org.apache.commons.io.IOUtils;
 import org.cloudfoundry.AbstractCloudFoundryException;
 import org.cloudfoundry.client.CloudFoundryClient;
@@ -204,6 +205,7 @@ import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.WebClient;
+
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.util.function.Tuple2;
@@ -511,7 +513,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                   String syslogDrainUrl) {
         assertSpaceProvided("create service instance");
         Assert.notNull(serviceInstance, "Service instance must not be null.");
-
         delegate.userProvidedServiceInstances()
                 .create(CreateUserProvidedServiceInstanceRequest.builder()
                                                                 .spaceId(getTargetSpaceGuid().toString())
@@ -961,13 +962,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     public void updateServiceParameters(String serviceName, Map<String, Object> parameters) {
         CloudServiceInstance service = getServiceInstance(serviceName);
         if (service.isUserProvided()) {
-            delegate.userProvidedServiceInstances()
-                    .update(UpdateUserProvidedServiceInstanceRequest.builder()
-                                                                    .userProvidedServiceInstanceId(service.getGuid()
-                                                                                                          .toString())
-                                                                    .credentials(parameters)
-                                                                    .build())
-                    .block();
+            updateUserProvidedServiceParameters(service, parameters);
             return;
         }
         delegate.serviceInstances()
@@ -977,6 +972,16 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                                                 .parameters(parameters)
                                                                                                 .acceptsIncomplete(true)
                                                                                                 .build())
+                .block();
+    }
+
+    private void updateUserProvidedServiceParameters(CloudServiceInstance service, Map<String, Object> parameters) {
+        delegate.userProvidedServiceInstances()
+                .update(UpdateUserProvidedServiceInstanceRequest.builder()
+                                                                .userProvidedServiceInstanceId(service.getGuid()
+                                                                                                      .toString())
+                                                                .credentials(parameters)
+                                                                .build())
                 .block();
     }
 
@@ -1001,6 +1006,24 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                                                 .acceptsIncomplete(true)
                                                                                                 .build())
                 .block();
+    }
+
+    @Override
+    public void updateServiceSyslogDrainUrl(String serviceName, String syslogDrainUrl) {
+        CloudServiceInstance service = getServiceInstance(serviceName);
+        if (!service.isUserProvided()) {
+            return;
+        }
+
+        String updatedSyslogDrain = StringUtils.hasText(syslogDrainUrl) ? syslogDrainUrl : "";
+        delegate.userProvidedServiceInstances()
+                .update(UpdateUserProvidedServiceInstanceRequest.builder()
+                                                                .userProvidedServiceInstanceId(service.getGuid()
+                                                                                                      .toString())
+                                                                .syslogDrainUrl(updatedSyslogDrain)
+                                                                .build())
+                .block();
+
     }
 
     @Override

@@ -688,6 +688,8 @@ public interface CloudControllerClient {
 
     void updateServiceTags(String serviceName, List<String> tags);
 
+    void updateServiceSyslogDrainUrl(String serviceName, String syslogDrainUrl);
+
     /**
      * Upload an application to Cloud Foundry.
      *

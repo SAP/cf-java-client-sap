@@ -571,6 +571,11 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
+    public void updateServiceSyslogDrainUrl(String serviceName, String syslogDrainUrl) {
+        handleExceptions(() -> delegate.updateServiceSyslogDrainUrl(serviceName, syslogDrainUrl));
+    }
+
+    @Override
     public void uploadApplication(String applicationName, String file) {
         handleExceptions(() -> delegate.uploadApplication(applicationName, Paths.get(file), null));
     }

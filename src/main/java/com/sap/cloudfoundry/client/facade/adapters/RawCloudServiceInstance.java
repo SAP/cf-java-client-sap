@@ -38,6 +38,7 @@ public abstract class RawCloudServiceInstance extends RawCloudEntity<CloudServic
                                             .type(ServiceInstanceType.valueOfWithDefault(entity.getType()))
                                             .tags(entity.getTags())
                                             .credentials(entity.getCredentials())
+                                            .syslogDrainUrl(entity.getSyslogDrainUrl())
                                             .lastOperation(ServiceOperation.fromLastOperation(entity.getLastOperation()))
                                             .build();
     }

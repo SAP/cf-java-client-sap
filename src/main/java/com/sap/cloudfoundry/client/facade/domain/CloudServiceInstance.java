@@ -33,11 +33,14 @@ public abstract class CloudServiceInstance extends CloudEntity implements Deriva
     @AllowNulls
     public abstract Map<String, Object> getCredentials();
 
+    @Nullable
+    public abstract String getSyslogDrainUrl();
+
     public abstract List<String> getTags();
 
     @Nullable
     public abstract ServiceInstanceType getType();
-    
+
     @Nullable
     public abstract ServiceOperation getLastOperation();
 
