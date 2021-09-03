@@ -1,6 +1,6 @@
 package com.sap.cloudfoundry.client.facade.domain;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 import org.immutables.value.Value;
@@ -19,10 +19,10 @@ public interface CloudMetadata {
     UUID getGuid();
 
     @Nullable
-    Date getCreatedAt();
+    LocalDateTime getCreatedAt();
 
     @Nullable
-    Date getUpdatedAt();
+    LocalDateTime getUpdatedAt();
 
     @Nullable
     String getUrl();

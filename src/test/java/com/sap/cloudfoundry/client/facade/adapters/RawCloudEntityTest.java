@@ -3,10 +3,10 @@ package com.sap.cloudfoundry.client.facade.adapters;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
@@ -30,8 +30,8 @@ public class RawCloudEntityTest {
 
     static final String NAME = "foo";
     static final UUID GUID = UUID.fromString(GUID_STRING);
-    static final Date CREATED_AT = fromZonedDateTime(ZonedDateTime.of(2017, 6, 22, 13, 38, 41, 0, ZoneId.of("Z")));
-    static final Date UPDATED_AT = fromZonedDateTime(ZonedDateTime.of(2019, 3, 21, 12, 29, 24, 0, ZoneId.of("Z")));
+    static final LocalDateTime CREATED_AT = fromZonedDateTime(ZonedDateTime.of(2017, 6, 22, 13, 38, 41, 0, ZoneId.of("Z")));
+    static final LocalDateTime UPDATED_AT = fromZonedDateTime(ZonedDateTime.of(2019, 3, 21, 12, 29, 24, 0, ZoneId.of("Z")));
 
     static final org.cloudfoundry.client.v3.Metadata V3_METADATA = org.cloudfoundry.client.v3.Metadata.builder()
                                                                                                       .build();
@@ -60,8 +60,8 @@ public class RawCloudEntityTest {
                                                                             .updatedAt(UPDATED_AT)
                                                                             .build();
 
-    static Date fromZonedDateTime(ZonedDateTime dateTime) {
-        return Date.from(dateTime.toInstant());
+    static LocalDateTime fromZonedDateTime(ZonedDateTime dateTime) {
+        return dateTime.toLocalDateTime();
     }
 
     @Test

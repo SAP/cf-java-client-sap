@@ -1,7 +1,5 @@
 package com.sap.cloudfoundry.client.facade;
 
-import org.springframework.security.oauth2.core.OAuth2AccessToken;
-
 import com.sap.cloudfoundry.client.facade.oauth2.OAuth2AccessTokenWithAdditionalInfo;
 
 /**
