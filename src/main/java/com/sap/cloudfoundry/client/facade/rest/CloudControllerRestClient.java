@@ -217,6 +217,8 @@ public interface CloudControllerRestClient {
 
     void updateServiceParameters(String serviceName, Map<String, Object> parameters);
 
+    void updateServiceSyslogDrainUrl(String serviceName, String syslogDrainUrl);
+
     void updateServiceTags(String serviceName, List<String> tags);
 
     void uploadApplication(String applicationName, Path file, UploadStatusCallback callback);
