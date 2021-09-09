@@ -1,5 +1,7 @@
 package com.sap.cloudfoundry.client.facade.domain;
 
+import java.util.Map;
+
 import org.immutables.value.Value;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -15,10 +17,13 @@ public abstract class CloudServicePlan extends CloudEntity implements Derivable<
     public abstract String getDescription();
 
     @Nullable
-    public abstract String getExtra();
+    public abstract Map<String, Object> getExtra();
 
     @Nullable
     public abstract String getUniqueId();
+
+    @Nullable
+    public abstract String getServiceOfferingId();
 
     @Nullable
     public abstract Boolean isFree();

@@ -251,6 +251,8 @@ public interface CloudControllerRestClient {
 
     Map<String, Object> getServiceInstanceParameters(UUID guid);
 
+    Map<String, Object> getUserProvidedServiceInstanceParameters(UUID guid);
+
     Map<String, Object> getServiceBindingParameters(UUID guid);
 
     List<CloudBuild> getBuildsForPackage(UUID packageGuid);

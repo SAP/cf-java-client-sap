@@ -2,10 +2,15 @@ package com.sap.cloudfoundry.client.facade.adapters;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
-import org.cloudfoundry.client.v2.Resource;
-import org.cloudfoundry.client.v2.services.ServiceEntity;
-import org.cloudfoundry.client.v2.services.ServiceResource;
+import org.cloudfoundry.client.v3.Relationship;
+import org.cloudfoundry.client.v3.ToOneRelationship;
+import org.cloudfoundry.client.v3.serviceofferings.BrokerCatalog;
+import org.cloudfoundry.client.v3.serviceofferings.Features;
+import org.cloudfoundry.client.v3.serviceofferings.ServiceOfferingRelationships;
+import org.cloudfoundry.client.v3.serviceofferings.ServiceOfferingResource;
 import org.junit.jupiter.api.Test;
 
 import com.sap.cloudfoundry.client.facade.domain.CloudServiceOffering;
@@ -16,16 +21,19 @@ import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudServicePlan;
 public class RawCloudServiceOfferingTest {
 
     private static final String NAME = "postgresql";
-    private static final boolean ACTIVE = true;
-    private static final boolean BINDABLE = true;
-    private static final String DESCRIPTION = "description";
-    private static final String EXTRA = "extra";
-    private static final String DOCUMENTATION_URL = "/documentation";
-    private static final String INFO_URL = "/info";
-    private static final String PROVIDER = "provider";
-    private static final String VERSION = "9.4";
-    private static final String UNIQUE_ID = "unique-id";
-    private static final String URL = "/url";
+    static final boolean AVAILABLE = true;
+    static final boolean BINDABLE = true;
+    static final boolean ALLOW_CONTEXT_UPDATES = false;
+    static final boolean BINDINGS_RETRIEVABLE = true;
+    static final boolean INSTANCES_RETRIEVABLE = true;
+    static final boolean PLAN_UPDATEABLE = false;
+    static final boolean SHAREABLE = true;
+    static final String DESCRIPTION = "description";
+    static final String DOCUMENTATION_URL = "/documentation";
+    static final String UNIQUE_ID = "unique-id";
+    static final String SERVICE_BROKER_GUID = UUID.randomUUID()
+                                                  .toString();
+    private static final Map<String, Object> EXTRA = Map.of("key-metadata", "value-metadata");
     private static final List<CloudServicePlan> PLANS = buildTestServiceBindings();
 
     @Test
@@ -35,50 +43,56 @@ public class RawCloudServiceOfferingTest {
 
     private static CloudServiceOffering buildExpectedServiceOffering() {
         return ImmutableCloudServiceOffering.builder()
-                                            .metadata(RawCloudEntityTest.EXPECTED_METADATA)
+                                            .metadata(RawCloudEntityTest.EXPECTED_METADATA_PARSED_FROM_V3_RESOURCE)
+                                            .brokerId(SERVICE_BROKER_GUID)
                                             .name(NAME)
-                                            .isActive(ACTIVE)
+                                            .isAvailable(AVAILABLE)
                                             .isBindable(BINDABLE)
+                                            .isShareable(SHAREABLE)
                                             .description(DESCRIPTION)
                                             .extra(EXTRA)
                                             .docUrl(DOCUMENTATION_URL)
-                                            .infoUrl(INFO_URL)
-                                            .version(VERSION)
-                                            .provider(PROVIDER)
                                             .uniqueId(UNIQUE_ID)
-                                            .url(URL)
                                             .servicePlans(PLANS)
                                             .build();
     }
 
     private static RawCloudServiceOffering buildRawServiceOffering() {
         return ImmutableRawCloudServiceOffering.builder()
-                                               .resource(buildTestResource())
+                                               .serviceOffering(buildTestServiceOffering())
                                                .servicePlans(PLANS)
                                                .build();
     }
 
-    private static Resource<ServiceEntity> buildTestResource() {
-        return ServiceResource.builder()
-                              .metadata(RawCloudEntityTest.METADATA)
-                              .entity(buildTestEntity())
-                              .build();
-    }
-
-    private static ServiceEntity buildTestEntity() {
-        return ServiceEntity.builder()
-                            .label(NAME)
-                            .active(ACTIVE)
-                            .bindable(BINDABLE)
-                            .description(DESCRIPTION)
-                            .extra(EXTRA)
-                            .documentationUrl(DOCUMENTATION_URL)
-                            .infoUrl(INFO_URL)
-                            .version(VERSION)
-                            .provider(PROVIDER)
-                            .uniqueId(UNIQUE_ID)
-                            .url(URL)
-                            .build();
+    public static ServiceOfferingResource buildTestServiceOffering() {
+        return ServiceOfferingResource.builder()
+                                      .id(RawCloudEntityTest.GUID_STRING)
+                                      .createdAt(RawCloudEntityTest.CREATED_AT_STRING)
+                                      .updatedAt(RawCloudEntityTest.UPDATED_AT_STRING)
+                                      .available(AVAILABLE)
+                                      .name(NAME)
+                                      .brokerCatalog(BrokerCatalog.builder()
+                                                                  .brokerCatalogId(UNIQUE_ID)
+                                                                  .features(Features.builder()
+                                                                                    .bindable(BINDABLE)
+                                                                                    .allowContextUpdates(ALLOW_CONTEXT_UPDATES)
+                                                                                    .bindingsRetrievable(BINDINGS_RETRIEVABLE)
+                                                                                    .instancesRetrievable(INSTANCES_RETRIEVABLE)
+                                                                                    .planUpdateable(PLAN_UPDATEABLE)
+                                                                                    .build())
+                                                                  .metadata(EXTRA)
+                                                                  .build())
+                                      .relationships(ServiceOfferingRelationships.builder()
+                                                                                 .serviceBroker(ToOneRelationship.builder()
+                                                                                                                 .data(Relationship.builder()
+                                                                                                                                   .id(SERVICE_BROKER_GUID)
+                                                                                                                                   .build())
+                                                                                                                 .build())
+                                                                                 .build())
+                                      .shareable(SHAREABLE)
+                                      .description(DESCRIPTION)
+                                      .documentationUrl(DOCUMENTATION_URL)
+                                      .build();
     }
 
     private static List<CloudServicePlan> buildTestServiceBindings() {
