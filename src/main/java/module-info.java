@@ -1,12 +1,14 @@
 open module com.sap.cloudfoundry.client.facade {
 
-    requires org.cloudfoundry.client;
+    requires transitive org.cloudfoundry.client;
+
     requires org.cloudfoundry.client.reactor;
     requires org.cloudfoundry.util;
     requires com.fasterxml.jackson.databind;
     requires org.apache.commons.io;
     requires org.slf4j;
     requires spring.core;
+    requires spring.security.core;
     requires spring.security.oauth2.core;
     requires spring.security.oauth2.client;
     requires spring.web;
@@ -19,7 +21,6 @@ open module com.sap.cloudfoundry.client.facade {
 
     requires static java.compiler;
     requires static org.immutables.value;
-    requires spring.security.core;
 
     exports com.sap.cloudfoundry.client.facade;
     exports com.sap.cloudfoundry.client.facade.rest;

@@ -4,11 +4,13 @@ import java.util.List;
 import java.util.Map;
 
 import org.cloudfoundry.AllowNulls;
+import org.cloudfoundry.client.v3.serviceinstances.ServiceInstanceType;
 import org.immutables.value.Value;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.sap.cloudfoundry.client.facade.Nullable;
+import com.sap.cloudfoundry.client.facade.adapters.ServiceInstanceTypeDeserializer;
 
 @Value.Immutable
 @JsonSerialize(as = ImmutableCloudServiceInstance.class)
@@ -39,6 +41,7 @@ public abstract class CloudServiceInstance extends CloudEntity implements Deriva
     public abstract List<String> getTags();
 
     @Nullable
+    @JsonDeserialize(using = ServiceInstanceTypeDeserializer.class)
     public abstract ServiceInstanceType getType();
 
     @Nullable

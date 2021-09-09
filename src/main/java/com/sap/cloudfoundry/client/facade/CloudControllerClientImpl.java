@@ -356,6 +356,11 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
+    public Map<String, Object> getUserProvidedServiceInstanceParameters(UUID guid) {
+        return handleExceptions(() -> delegate.getUserProvidedServiceInstanceParameters(guid));
+    }
+
+    @Override
     public Map<String, Object> getServiceBindingParameters(UUID guid) {
         return handleExceptions(() -> delegate.getServiceBindingParameters(guid));
     }

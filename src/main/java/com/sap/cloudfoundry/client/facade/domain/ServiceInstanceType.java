@@ -4,10 +4,13 @@ import java.util.Arrays;
 
 import com.fasterxml.jackson.annotation.JsonValue;
 
+/**
+ * This enum is replaced by {@link org.cloudfoundry.client.v3.serviceinstances.ServiceInstanceType}
+ */
+@Deprecated
 public enum ServiceInstanceType {
 
-    USER_PROVIDED("user_provided_service_instance"),
-    MANAGED("managed_service_instance");
+    USER_PROVIDED("user_provided_service_instance"), MANAGED("managed_service_instance");
 
     @JsonValue
     private final String type;

@@ -5,12 +5,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Map;
 
+import org.cloudfoundry.client.v3.serviceinstances.ServiceInstanceType;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import com.sap.cloudfoundry.client.facade.domain.CloudServiceInstance;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudServiceInstance;
-import com.sap.cloudfoundry.client.facade.domain.ServiceInstanceType;
 
 class ServicesCloudControllerClientIntegrationTest extends CloudControllerClientIntegrationTest {
 

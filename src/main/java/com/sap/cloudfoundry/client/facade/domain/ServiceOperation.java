@@ -3,7 +3,7 @@ package com.sap.cloudfoundry.client.facade.domain;
 import java.text.MessageFormat;
 import java.util.Objects;
 
-import org.cloudfoundry.client.v2.serviceinstances.LastOperation;
+import org.cloudfoundry.client.v3.LastOperation;
 
 public class ServiceOperation {
 
@@ -82,7 +82,7 @@ public class ServiceOperation {
     }
 
     public static ServiceOperation fromLastOperation(LastOperation lastOperation) {
-        if (lastOperation == null) {
+        if (lastOperation == null || lastOperation.getType() == null || lastOperation.getState() == null) {
             return null;
         }
         Type type = Type.fromString(lastOperation.getType());

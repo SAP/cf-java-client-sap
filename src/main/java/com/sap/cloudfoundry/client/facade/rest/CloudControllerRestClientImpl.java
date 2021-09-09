@@ -1,71 +1,26 @@
 package com.sap.cloudfoundry.client.facade.rest;
 
-import com.sap.cloudfoundry.client.facade.CloudCredentials;
-import com.sap.cloudfoundry.client.facade.CloudOperationException;
-import com.sap.cloudfoundry.client.facade.Constants;
-import com.sap.cloudfoundry.client.facade.UploadStatusCallback;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawApplicationLog;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudApplication;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudBuild;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudDomain;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudEvent;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudOrganization;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudPackage;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudRoute;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudServiceBinding;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudServiceBroker;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudServiceInstance;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudServiceKey;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudServiceOffering;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudServicePlan;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudSpace;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudStack;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudTask;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawInstancesInfo;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawUserRole;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawV3CloudServiceInstance;
-import com.sap.cloudfoundry.client.facade.domain.ApplicationLog;
-import com.sap.cloudfoundry.client.facade.domain.CloudApplication;
-import com.sap.cloudfoundry.client.facade.domain.CloudBuild;
-import com.sap.cloudfoundry.client.facade.domain.CloudDomain;
-import com.sap.cloudfoundry.client.facade.domain.CloudEntity;
-import com.sap.cloudfoundry.client.facade.domain.CloudEvent;
-import com.sap.cloudfoundry.client.facade.domain.CloudMetadata;
-import com.sap.cloudfoundry.client.facade.domain.CloudOrganization;
-import com.sap.cloudfoundry.client.facade.domain.CloudPackage;
-import com.sap.cloudfoundry.client.facade.domain.CloudRoute;
-import com.sap.cloudfoundry.client.facade.domain.CloudRouteSummary;
-import com.sap.cloudfoundry.client.facade.domain.CloudServiceBinding;
-import com.sap.cloudfoundry.client.facade.domain.CloudServiceBroker;
-import com.sap.cloudfoundry.client.facade.domain.CloudServiceInstance;
-import com.sap.cloudfoundry.client.facade.domain.CloudServiceKey;
-import com.sap.cloudfoundry.client.facade.domain.CloudServiceOffering;
-import com.sap.cloudfoundry.client.facade.domain.CloudServicePlan;
-import com.sap.cloudfoundry.client.facade.domain.CloudSpace;
-import com.sap.cloudfoundry.client.facade.domain.CloudStack;
-import com.sap.cloudfoundry.client.facade.domain.CloudTask;
-import com.sap.cloudfoundry.client.facade.domain.Derivable;
-import com.sap.cloudfoundry.client.facade.domain.DockerCredentials;
-import com.sap.cloudfoundry.client.facade.domain.DockerInfo;
-import com.sap.cloudfoundry.client.facade.domain.DropletInfo;
-import com.sap.cloudfoundry.client.facade.domain.ErrorDetails;
-import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudApplication;
-import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudServiceInstance;
-import com.sap.cloudfoundry.client.facade.domain.ImmutableDropletInfo;
-import com.sap.cloudfoundry.client.facade.domain.ImmutableErrorDetails;
-import com.sap.cloudfoundry.client.facade.domain.ImmutableInstancesInfo;
-import com.sap.cloudfoundry.client.facade.domain.ImmutableUpload;
-import com.sap.cloudfoundry.client.facade.domain.InstancesInfo;
-import com.sap.cloudfoundry.client.facade.domain.ServiceInstanceType;
-import com.sap.cloudfoundry.client.facade.domain.Staging;
-import com.sap.cloudfoundry.client.facade.domain.Status;
-import com.sap.cloudfoundry.client.facade.domain.Upload;
-import com.sap.cloudfoundry.client.facade.domain.UserRole;
-import com.sap.cloudfoundry.client.facade.oauth2.OAuth2AccessTokenWithAdditionalInfo;
-import com.sap.cloudfoundry.client.facade.oauth2.OAuthClient;
-import com.sap.cloudfoundry.client.facade.util.EnvironmentUtil;
-import com.sap.cloudfoundry.client.facade.util.StacksCache;
-import com.sap.cloudfoundry.client.facade.util.UriUtil;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import java.util.function.IntFunction;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import org.apache.commons.io.IOUtils;
 import org.cloudfoundry.AbstractCloudFoundryException;
@@ -90,29 +45,14 @@ import org.cloudfoundry.client.v2.servicebindings.GetServiceBindingParametersReq
 import org.cloudfoundry.client.v2.servicebindings.GetServiceBindingParametersResponse;
 import org.cloudfoundry.client.v2.servicebindings.ListServiceBindingsRequest;
 import org.cloudfoundry.client.v2.servicebindings.ServiceBindingEntity;
-import org.cloudfoundry.client.v2.servicebrokers.CreateServiceBrokerRequest;
-import org.cloudfoundry.client.v2.servicebrokers.DeleteServiceBrokerRequest;
-import org.cloudfoundry.client.v2.servicebrokers.ListServiceBrokersRequest;
-import org.cloudfoundry.client.v2.servicebrokers.ServiceBrokerEntity;
-import org.cloudfoundry.client.v2.servicebrokers.UpdateServiceBrokerRequest;
 import org.cloudfoundry.client.v2.serviceinstances.CreateServiceInstanceRequest;
 import org.cloudfoundry.client.v2.serviceinstances.DeleteServiceInstanceRequest;
-import org.cloudfoundry.client.v2.serviceinstances.GetServiceInstanceParametersRequest;
-import org.cloudfoundry.client.v2.serviceinstances.GetServiceInstanceParametersResponse;
-import org.cloudfoundry.client.v2.serviceinstances.UnionServiceInstanceEntity;
 import org.cloudfoundry.client.v2.servicekeys.CreateServiceKeyRequest;
 import org.cloudfoundry.client.v2.servicekeys.DeleteServiceKeyRequest;
 import org.cloudfoundry.client.v2.servicekeys.ListServiceKeysRequest;
 import org.cloudfoundry.client.v2.servicekeys.ServiceKeyEntity;
-import org.cloudfoundry.client.v2.serviceplans.GetServicePlanRequest;
-import org.cloudfoundry.client.v2.serviceplans.ListServicePlansRequest;
-import org.cloudfoundry.client.v2.serviceplans.ServicePlanEntity;
 import org.cloudfoundry.client.v2.serviceplans.UpdateServicePlanRequest;
-import org.cloudfoundry.client.v2.services.GetServiceRequest;
-import org.cloudfoundry.client.v2.services.ServiceEntity;
 import org.cloudfoundry.client.v2.spaces.ListSpaceRoutesRequest;
-import org.cloudfoundry.client.v2.spaces.ListSpaceServiceInstancesRequest;
-import org.cloudfoundry.client.v2.spaces.ListSpaceServicesRequest;
 import org.cloudfoundry.client.v2.userprovidedserviceinstances.CreateUserProvidedServiceInstanceRequest;
 import org.cloudfoundry.client.v2.userprovidedserviceinstances.UpdateUserProvidedServiceInstanceRequest;
 import org.cloudfoundry.client.v3.BuildpackData;
@@ -177,9 +117,29 @@ import org.cloudfoundry.client.v3.processes.HealthCheckType;
 import org.cloudfoundry.client.v3.processes.UpdateProcessRequest;
 import org.cloudfoundry.client.v3.roles.ListRolesRequest;
 import org.cloudfoundry.client.v3.roles.RoleResource;
+import org.cloudfoundry.client.v3.servicebrokers.BasicAuthentication;
+import org.cloudfoundry.client.v3.servicebrokers.CreateServiceBrokerRequest;
+import org.cloudfoundry.client.v3.servicebrokers.DeleteServiceBrokerRequest;
+import org.cloudfoundry.client.v3.servicebrokers.ListServiceBrokersRequest;
+import org.cloudfoundry.client.v3.servicebrokers.ServiceBrokerRelationships;
+import org.cloudfoundry.client.v3.servicebrokers.ServiceBrokerResource;
+import org.cloudfoundry.client.v3.servicebrokers.UpdateServiceBrokerRequest;
+import org.cloudfoundry.client.v3.serviceinstances.GetManagedServiceParametersRequest;
+import org.cloudfoundry.client.v3.serviceinstances.GetManagedServiceParametersResponse;
+import org.cloudfoundry.client.v3.serviceinstances.GetUserProvidedCredentialsRequest;
+import org.cloudfoundry.client.v3.serviceinstances.GetUserProvidedCredentialsResponse;
 import org.cloudfoundry.client.v3.serviceinstances.ListServiceInstancesRequest;
 import org.cloudfoundry.client.v3.serviceinstances.ServiceInstanceResource;
+import org.cloudfoundry.client.v3.serviceinstances.ServiceInstanceType;
 import org.cloudfoundry.client.v3.serviceinstances.UpdateServiceInstanceRequest;
+import org.cloudfoundry.client.v3.serviceofferings.GetServiceOfferingRequest;
+import org.cloudfoundry.client.v3.serviceofferings.ListServiceOfferingsRequest;
+import org.cloudfoundry.client.v3.serviceofferings.ServiceOffering;
+import org.cloudfoundry.client.v3.serviceofferings.ServiceOfferingResource;
+import org.cloudfoundry.client.v3.serviceplans.GetServicePlanRequest;
+import org.cloudfoundry.client.v3.serviceplans.ListServicePlansRequest;
+import org.cloudfoundry.client.v3.serviceplans.ServicePlan;
+import org.cloudfoundry.client.v3.serviceplans.ServicePlanResource;
 import org.cloudfoundry.client.v3.spaces.GetSpaceRequest;
 import org.cloudfoundry.client.v3.spaces.ListSpacesRequest;
 import org.cloudfoundry.client.v3.spaces.Space;
@@ -204,32 +164,75 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import com.sap.cloudfoundry.client.facade.CloudCredentials;
+import com.sap.cloudfoundry.client.facade.CloudOperationException;
+import com.sap.cloudfoundry.client.facade.Constants;
+import com.sap.cloudfoundry.client.facade.UploadStatusCallback;
+import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawApplicationLog;
+import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudApplication;
+import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudBuild;
+import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudDomain;
+import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudEvent;
+import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudOrganization;
+import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudPackage;
+import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudRoute;
+import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudServiceBinding;
+import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudServiceBroker;
+import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudServiceInstance;
+import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudServiceKey;
+import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudServiceOffering;
+import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudServicePlan;
+import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudSpace;
+import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudStack;
+import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudTask;
+import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawInstancesInfo;
+import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawUserRole;
+import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawV3CloudServiceInstance;
+import com.sap.cloudfoundry.client.facade.domain.ApplicationLog;
+import com.sap.cloudfoundry.client.facade.domain.CloudApplication;
+import com.sap.cloudfoundry.client.facade.domain.CloudBuild;
+import com.sap.cloudfoundry.client.facade.domain.CloudDomain;
+import com.sap.cloudfoundry.client.facade.domain.CloudEntity;
+import com.sap.cloudfoundry.client.facade.domain.CloudEvent;
+import com.sap.cloudfoundry.client.facade.domain.CloudMetadata;
+import com.sap.cloudfoundry.client.facade.domain.CloudOrganization;
+import com.sap.cloudfoundry.client.facade.domain.CloudPackage;
+import com.sap.cloudfoundry.client.facade.domain.CloudRoute;
+import com.sap.cloudfoundry.client.facade.domain.CloudRouteSummary;
+import com.sap.cloudfoundry.client.facade.domain.CloudServiceBinding;
+import com.sap.cloudfoundry.client.facade.domain.CloudServiceBroker;
+import com.sap.cloudfoundry.client.facade.domain.CloudServiceInstance;
+import com.sap.cloudfoundry.client.facade.domain.CloudServiceKey;
+import com.sap.cloudfoundry.client.facade.domain.CloudServiceOffering;
+import com.sap.cloudfoundry.client.facade.domain.CloudServicePlan;
+import com.sap.cloudfoundry.client.facade.domain.CloudSpace;
+import com.sap.cloudfoundry.client.facade.domain.CloudStack;
+import com.sap.cloudfoundry.client.facade.domain.CloudTask;
+import com.sap.cloudfoundry.client.facade.domain.Derivable;
+import com.sap.cloudfoundry.client.facade.domain.DockerCredentials;
+import com.sap.cloudfoundry.client.facade.domain.DockerInfo;
+import com.sap.cloudfoundry.client.facade.domain.DropletInfo;
+import com.sap.cloudfoundry.client.facade.domain.ErrorDetails;
+import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudApplication;
+import com.sap.cloudfoundry.client.facade.domain.ImmutableDropletInfo;
+import com.sap.cloudfoundry.client.facade.domain.ImmutableErrorDetails;
+import com.sap.cloudfoundry.client.facade.domain.ImmutableInstancesInfo;
+import com.sap.cloudfoundry.client.facade.domain.ImmutableUpload;
+import com.sap.cloudfoundry.client.facade.domain.InstancesInfo;
+import com.sap.cloudfoundry.client.facade.domain.Staging;
+import com.sap.cloudfoundry.client.facade.domain.Status;
+import com.sap.cloudfoundry.client.facade.domain.Upload;
+import com.sap.cloudfoundry.client.facade.domain.UserRole;
+import com.sap.cloudfoundry.client.facade.oauth2.OAuth2AccessTokenWithAdditionalInfo;
+import com.sap.cloudfoundry.client.facade.oauth2.OAuthClient;
+import com.sap.cloudfoundry.client.facade.util.EnvironmentUtil;
+import com.sap.cloudfoundry.client.facade.util.StacksCache;
+import com.sap.cloudfoundry.client.facade.util.UriUtil;
+
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
-import java.util.function.IntFunction;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 /**
  * Abstract implementation of the CloudControllerClient intended to serve as the base.
@@ -481,13 +484,23 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     public void createServiceBroker(CloudServiceBroker serviceBroker) {
         Assert.notNull(serviceBroker, "Service broker must not be null.");
 
-        delegate.serviceBrokers()
+        ServiceBrokerRelationships serviceBrokerRelationship = Optional.ofNullable(serviceBroker.getSpaceGuid())
+                                                                       .map(UUID::fromString)
+                                                                       .map(this::buildToOneRelationship)
+                                                                       .map(spaceRelationship -> ServiceBrokerRelationships.builder()
+                                                                                                                           .space(spaceRelationship)
+                                                                                                                           .build())
+                                                                       .orElse(null);
+
+        delegate.serviceBrokersV3()
                 .create(CreateServiceBrokerRequest.builder()
                                                   .name(serviceBroker.getName())
-                                                  .brokerUrl(serviceBroker.getUrl())
-                                                  .authenticationUsername(serviceBroker.getUsername())
-                                                  .authenticationPassword(serviceBroker.getPassword())
-                                                  .spaceId(serviceBroker.getSpaceGuid())
+                                                  .url(serviceBroker.getUrl())
+                                                  .authentication(BasicAuthentication.builder()
+                                                                                     .username(serviceBroker.getUsername())
+                                                                                     .password(serviceBroker.getPassword())
+                                                                                     .build())
+                                                  .relationships(serviceBrokerRelationship)
                                                   .build())
                 .block();
     }
@@ -618,7 +631,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         CloudServiceBroker broker = getServiceBroker(name);
         UUID guid = broker.getMetadata()
                           .getGuid();
-        delegate.serviceBrokers()
+        delegate.serviceBrokersV3()
                 .delete(DeleteServiceBrokerRequest.builder()
                                                   .serviceBrokerId(guid.toString())
                                                   .build())
@@ -850,34 +863,13 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return getServiceInstance(serviceInstanceName, true);
     }
 
-    private CloudServiceInstance getServiceInstanceWithMetadata(CloudServiceInstance serviceInstance) {
-        List<CloudServiceInstance> serviceInstances = Collections.singletonList(serviceInstance);
-        Map<String, Metadata> serviceInstancesMetadata = getServiceInstancesMetadataInBatches(getServiceInstanceNames(serviceInstances));
-        return getServiceInstancesWithMetadata(serviceInstances, serviceInstancesMetadata).get(0);
-    }
-
-    private List<CloudServiceInstance> getServiceInstancesWithMetadata(List<CloudServiceInstance> serviceInstances,
-                                                                       Map<String, Metadata> serviceInstancesMetadata) {
-        return serviceInstances.stream()
-                               .map(serviceInstance -> getServiceInstanceWithMetadata(serviceInstance,
-                                                                                      serviceInstancesMetadata.get(serviceInstance.getName())))
-                               .collect(Collectors.toList());
-    }
-
-    private CloudServiceInstance getServiceInstanceWithMetadata(CloudServiceInstance serviceInstance, Metadata metadata) {
-        return ImmutableCloudServiceInstance.builder()
-                                            .from(serviceInstance)
-                                            .v3Metadata(metadata)
-                                            .build();
-    }
-
     @Override
     public CloudServiceInstance getServiceInstance(String serviceInstanceName, boolean required) {
         CloudServiceInstance serviceInstance = findServiceInstanceByName(serviceInstanceName);
         if (serviceInstance == null && required) {
             throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Service instance " + serviceInstanceName + " not found.");
         }
-        return serviceInstance == null ? null : getServiceInstanceWithMetadata(serviceInstance);
+        return serviceInstance;
     }
 
     @Override
@@ -926,11 +918,21 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public Map<String, Object> getServiceInstanceParameters(UUID guid) {
-        return delegate.serviceInstances()
-                       .getParameters(GetServiceInstanceParametersRequest.builder()
-                                                                         .serviceInstanceId(guid.toString())
-                                                                         .build())
-                       .map(GetServiceInstanceParametersResponse::getParameters)
+        return delegate.serviceInstancesV3()
+                       .getManagedServiceParameters(GetManagedServiceParametersRequest.builder()
+                                                                                      .serviceInstanceId(guid.toString())
+                                                                                      .build())
+                       .map(GetManagedServiceParametersResponse::getParameters)
+                       .block();
+    }
+
+    @Override
+    public Map<String, Object> getUserProvidedServiceInstanceParameters(UUID guid) {
+        return delegate.serviceInstancesV3()
+                       .getUserProvidedCredentials(GetUserProvidedCredentialsRequest.builder()
+                                                                                    .serviceInstanceId(guid.toString())
+                                                                                    .build())
+                       .map(GetUserProvidedCredentialsResponse::getCredentials)
                        .block();
     }
 
@@ -1037,27 +1039,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public List<CloudServiceInstance> getServiceInstances() {
-        List<CloudServiceInstance> serviceInstances = fetchListWithAuxiliaryContent(this::getServiceInstanceResources,
-                                                                                    this::zipWithAuxiliaryServiceInstanceContent);
-        Map<String, Metadata> serviceInstancesMetadata = getServiceInstancesMetadataInBatches(getServiceInstanceNames(serviceInstances));
-        return getServiceInstancesWithMetadata(serviceInstances, serviceInstancesMetadata);
-    }
-
-    private List<String> getServiceInstanceNames(List<CloudServiceInstance> serviceInstances) {
-        return serviceInstances.stream()
-                               .map(CloudEntity::getName)
-                               .collect(Collectors.toList());
-    }
-
-    private Map<String, Metadata> getServiceInstancesMetadataInBatches(List<String> serviceInstanceNames) {
-        Map<String, Metadata> serviceInstancesMetadata = new HashMap<>();
-        for (List<String> batchOfServiceInstanceNames : toBatches(serviceInstanceNames, MAX_CHAR_LENGTH_FOR_PARAMS_IN_REQUEST)) {
-            Map<String, Metadata> batchServicesMetadata = getServiceInstancesByNames(batchOfServiceInstanceNames).collectMap(ServiceInstanceResource::getName,
-                                                                                                                             ServiceInstanceResource::getMetadata)
-                                                                                                                 .block();
-            serviceInstancesMetadata.putAll(batchServicesMetadata);
-        }
-        return serviceInstancesMetadata;
+        return fetchListWithAuxiliaryContent(this::getServiceInstanceResources, this::zipWithAuxiliaryServiceInstanceContent);
     }
 
     private <T> List<List<T>> toBatches(Collection<T> largeList, int maxCharLength) {
@@ -1108,35 +1090,25 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public List<CloudServiceInstance> getServiceInstancesByMetadataLabelSelector(String labelSelector) {
-        Map<String, Metadata> serviceInstancesMetadata = getServiceInstancesMetadataByLabelSelector(labelSelector);
-        List<CloudServiceInstance> serviceInstances = fetchListWithAuxiliaryContent(() -> getServiceInstanceResourcesByNamesInBatches(serviceInstancesMetadata.keySet()),
-                                                                                    this::zipWithAuxiliaryServiceInstanceContent);
-        return getServiceInstancesWithMetadata(serviceInstances, serviceInstancesMetadata);
+        IntFunction<ListServiceInstancesRequest> pageRequestSupplier = page -> ListServiceInstancesRequest.builder()
+                                                                                                          .labelSelector(labelSelector)
+                                                                                                          .spaceId(getTargetSpaceGuid().toString())
+                                                                                                          .page(page)
+                                                                                                          .build();
+
+        return fetchListWithAuxiliaryContent(() -> getServiceInstanceResources(pageRequestSupplier),
+                                             this::zipWithAuxiliaryServiceInstanceContent);
     }
 
     @Override
     public List<CloudServiceInstance> getServiceInstancesWithoutAuxiliaryContentByMetadataLabelSelector(String labelSelector) {
-        Map<String, Metadata> serviceInstancesMetadata = getServiceInstancesMetadataByLabelSelector(labelSelector);
-        List<CloudServiceInstance> cloudServiceInstances = serviceInstancesMetadata.keySet()
-                                                                                   .stream()
-                                                                                   .map(serviceInstanceName -> ImmutableCloudServiceInstance.builder()
-                                                                                                                                            .name(serviceInstanceName)
-                                                                                                                                            .build())
-                                                                                   .collect(Collectors.toList());
-        return getServiceInstancesWithMetadata(cloudServiceInstances, serviceInstancesMetadata);
-    }
+        IntFunction<ListServiceInstancesRequest> pageRequestSupplier = page -> ListServiceInstancesRequest.builder()
+                                                                                                          .labelSelector(labelSelector)
+                                                                                                          .spaceId(getTargetSpaceGuid().toString())
+                                                                                                          .page(page)
+                                                                                                          .build();
 
-    private Map<String, Metadata> getServiceInstancesMetadataByLabelSelector(String labelSelector) {
-        IntFunction<ListServiceInstancesRequest> listServiceInstancesPageRequestSupplier = page -> ListServiceInstancesRequest.builder()
-                                                                                                                              .labelSelector(labelSelector)
-                                                                                                                              .spaceId(getTargetSpaceGuid().toString())
-                                                                                                                              .page(page)
-                                                                                                                              .build();
-
-        return PaginationUtils.requestClientV3Resources(page -> delegate.serviceInstancesV3()
-                                                                        .list(listServiceInstancesPageRequestSupplier.apply(page)))
-                              .collectMap(ServiceInstanceResource::getName, ServiceInstanceResource::getMetadata)
-                              .block();
+        return fetchList(() -> getServiceInstanceResources(pageRequestSupplier), ImmutableRawCloudServiceInstance::of);
     }
 
     @Override
@@ -1373,13 +1345,15 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         UUID brokerGuid = existingBroker.getMetadata()
                                         .getGuid();
 
-        delegate.serviceBrokers()
+        delegate.serviceBrokersV3()
                 .update(UpdateServiceBrokerRequest.builder()
                                                   .serviceBrokerId(brokerGuid.toString())
                                                   .name(serviceBroker.getName())
-                                                  .authenticationUsername(serviceBroker.getUsername())
-                                                  .authenticationPassword(serviceBroker.getPassword())
-                                                  .brokerUrl(serviceBroker.getUrl())
+                                                  .authentication(BasicAuthentication.builder()
+                                                                                     .username(serviceBroker.getUsername())
+                                                                                     .password(serviceBroker.getPassword())
+                                                                                     .build())
+                                                  .url(serviceBroker.getUrl())
                                                   .build())
                 .block();
     }
@@ -1751,68 +1725,50 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return fetchWithAuxiliaryContent(() -> getServiceInstanceResourceByName(name), this::zipWithAuxiliaryServiceInstanceContent);
     }
 
-    private Flux<? extends Resource<UnionServiceInstanceEntity>> getServiceInstanceResources() {
-        IntFunction<ListSpaceServiceInstancesRequest> pageRequestSupplier = page -> ListSpaceServiceInstancesRequest.builder()
-                                                                                                                    .returnUserProvidedServiceInstances(true)
-                                                                                                                    .spaceId(getTargetSpaceGuid().toString())
-                                                                                                                    .page(page)
-                                                                                                                    .build();
+    private Flux<ServiceInstanceResource> getServiceInstanceResources() {
+        IntFunction<ListServiceInstancesRequest> pageRequestSupplier = page -> ListServiceInstancesRequest.builder()
+                                                                                                          .spaceId(getTargetSpaceGuid().toString())
+                                                                                                          .page(page)
+                                                                                                          .build();
         return getServiceInstanceResources(pageRequestSupplier);
     }
 
-    private Mono<? extends Resource<UnionServiceInstanceEntity>> getServiceInstanceResourceByName(String name) {
-        IntFunction<ListSpaceServiceInstancesRequest> pageRequestSupplier = page -> ListSpaceServiceInstancesRequest.builder()
-                                                                                                                    .returnUserProvidedServiceInstances(true)
-                                                                                                                    .spaceId(getTargetSpaceGuid().toString())
-                                                                                                                    .name(name)
-                                                                                                                    .page(page)
-                                                                                                                    .build();
+    private Mono<ServiceInstanceResource> getServiceInstanceResourceByName(String name) {
+        IntFunction<ListServiceInstancesRequest> pageRequestSupplier = page -> ListServiceInstancesRequest.builder()
+                                                                                                          .spaceId(getTargetSpaceGuid().toString())
+                                                                                                          .serviceInstanceName(name)
+                                                                                                          .page(page)
+                                                                                                          .build();
         return getServiceInstanceResources(pageRequestSupplier).singleOrEmpty();
     }
 
-    private Flux<? extends Resource<UnionServiceInstanceEntity>> getServiceInstanceResourcesByNamesInBatches(Collection<String> names) {
-        return Flux.fromIterable(toBatches(names, MAX_CHAR_LENGTH_FOR_PARAMS_IN_REQUEST))
-                   .flatMap(this::getServiceInstanceResourcesByNames);
+    private Flux<ServiceInstanceResource> getServiceInstanceResources(IntFunction<ListServiceInstancesRequest> pageRequestSupplier) {
+        return PaginationUtils.requestClientV3Resources(page -> delegate.serviceInstancesV3()
+                                                                        .list(pageRequestSupplier.apply(page)));
     }
 
-    private Flux<? extends Resource<UnionServiceInstanceEntity>> getServiceInstanceResourcesByNames(Collection<String> names) {
-        if (names.isEmpty()) {
-            return Flux.empty();
-        }
-        IntFunction<ListSpaceServiceInstancesRequest> pageRequestSupplier = page -> ListSpaceServiceInstancesRequest.builder()
-                                                                                                                    .returnUserProvidedServiceInstances(true)
-                                                                                                                    .spaceId(getTargetSpaceGuid().toString())
-                                                                                                                    .addAllNames(names)
-                                                                                                                    .page(page)
-                                                                                                                    .build();
-        return getServiceInstanceResources(pageRequestSupplier);
-    }
-
-    private Flux<? extends Resource<UnionServiceInstanceEntity>>
-            getServiceInstanceResources(IntFunction<ListSpaceServiceInstancesRequest> pageRequestSupplier) {
-        return PaginationUtils.requestClientV2Resources(page -> delegate.spaces()
-                                                                        .listServiceInstances(pageRequestSupplier.apply(page)));
-    }
-
-    private Mono<Derivable<CloudServiceInstance>>
-            zipWithAuxiliaryServiceInstanceContent(Resource<UnionServiceInstanceEntity> serviceInstanceResource) {
-        UnionServiceInstanceEntity serviceInstance = serviceInstanceResource.getEntity();
-        if (isUserProvided(serviceInstance)) {
+    private Mono<Derivable<CloudServiceInstance>> zipWithAuxiliaryServiceInstanceContent(ServiceInstanceResource serviceInstanceResource) {
+        if (isUserProvided(serviceInstanceResource)) {
             return Mono.just(ImmutableRawCloudServiceInstance.of(serviceInstanceResource));
         }
-        UUID serviceGuid = UUID.fromString(serviceInstance.getServiceId());
-        UUID servicePlanGuid = UUID.fromString(serviceInstance.getServicePlanId());
-        return Mono.zip(Mono.just(serviceInstanceResource), getServiceResource(serviceGuid), getServicePlanResource(servicePlanGuid))
-                   .map(tuple -> ImmutableRawCloudServiceInstance.builder()
-                                                                 .resource(tuple.getT1())
-                                                                 .serviceResource(tuple.getT2())
-                                                                 .servicePlanResource(tuple.getT3())
-                                                                 .build());
+        String servicePlanGuid = serviceInstanceResource.getRelationships()
+                                                        .getServicePlan()
+                                                        .getData()
+                                                        .getId();
+
+        return getServicePlanResource(servicePlanGuid).zipWhen(servicePlan -> getServiceOffering(servicePlan.getRelationships()
+                                                                                                            .getServiceOffering()
+                                                                                                            .getData()
+                                                                                                            .getId()))
+                                                      .map(tuple -> ImmutableRawCloudServiceInstance.builder()
+                                                                                                    .resource(serviceInstanceResource)
+                                                                                                    .servicePlan(tuple.getT1())
+                                                                                                    .serviceOffering(tuple.getT2())
+                                                                                                    .build());
     }
 
-    private boolean isUserProvided(UnionServiceInstanceEntity serviceInstance) {
-        return ServiceInstanceType.valueOfWithDefault(serviceInstance.getType())
-                                  .equals(ServiceInstanceType.USER_PROVIDED);
+    private boolean isUserProvided(ServiceInstanceResource serviceInstanceResource) {
+        return ServiceInstanceType.USER_PROVIDED.equals(serviceInstanceResource.getType());
     }
 
     private List<UUID> getServiceBindingGuids(UUID applicationGuid) {
@@ -2381,78 +2337,95 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return fetchListWithAuxiliaryContent(() -> getServiceResourcesByLabel(label), this::zipWithAuxiliaryServiceOfferingContent);
     }
 
-    private Flux<? extends Resource<ServiceEntity>> getServiceResources() {
-        IntFunction<ListSpaceServicesRequest> pageRequestSupplier = page -> ListSpaceServicesRequest.builder()
-                                                                                                    .spaceId(getTargetSpaceGuid().toString())
-                                                                                                    .page(page)
-                                                                                                    .build();
+    private List<CloudServiceOffering> findServiceOfferingsByLabelAndBrokerName(String label, String brokerName) {
+        Assert.notNull(label, "Service label must not be null");
+        Assert.notNull(brokerName, "Service broker must not be null");
+        return fetchListWithAuxiliaryContent(() -> getServiceResourcesByLabelAndBrokerName(label, brokerName),
+                                             this::zipWithAuxiliaryServiceOfferingContent);
+    }
+
+    private Flux<? extends ServiceOfferingResource> getServiceResources() {
+        IntFunction<ListServiceOfferingsRequest> pageRequestSupplier = page -> ListServiceOfferingsRequest.builder()
+                                                                                                          .spaceId(getTargetSpaceGuid().toString())
+                                                                                                          .page(page)
+                                                                                                          .build();
         return getServiceResources(pageRequestSupplier);
     }
 
-    protected Mono<? extends Resource<ServiceEntity>> getServiceResource(UUID serviceGuid) {
-        GetServiceRequest request = GetServiceRequest.builder()
-                                                     .serviceId(serviceGuid.toString())
-                                                     .build();
-        return delegate.services()
+    protected Mono<? extends ServiceOffering> getServiceOffering(String offeringId) {
+        GetServiceOfferingRequest request = GetServiceOfferingRequest.builder()
+                                                                     .serviceOfferingId(offeringId)
+                                                                     .build();
+        return delegate.serviceOfferingsV3()
                        .get(request)
                        // The user may not be able to see this service, even though he created an instance from it, at some point in
                        // the past.
                        .onErrorResume(this::isForbidden, t -> Mono.empty());
     }
 
-    private Flux<? extends Resource<ServiceEntity>> getServiceResourcesByBrokerGuid(UUID brokerGuid) {
-        IntFunction<ListSpaceServicesRequest> pageRequestSupplier = page -> ListSpaceServicesRequest.builder()
-                                                                                                    .serviceBrokerId(brokerGuid.toString())
-                                                                                                    .spaceId(getTargetSpaceGuid().toString())
-                                                                                                    .page(page)
-                                                                                                    .build();
+    private Flux<? extends ServiceOfferingResource> getServiceResourcesByBrokerGuid(UUID brokerGuid) {
+        IntFunction<ListServiceOfferingsRequest> pageRequestSupplier = page -> ListServiceOfferingsRequest.builder()
+                                                                                                          .serviceBrokerId(brokerGuid.toString())
+                                                                                                          .spaceId(getTargetSpaceGuid().toString())
+                                                                                                          .page(page)
+                                                                                                          .build();
         return getServiceResources(pageRequestSupplier);
     }
 
-    private Flux<? extends Resource<ServiceEntity>> getServiceResourcesByLabel(String label) {
-        IntFunction<ListSpaceServicesRequest> pageRequestSupplier = page -> ListSpaceServicesRequest.builder()
-                                                                                                    .label(label)
-                                                                                                    .spaceId(getTargetSpaceGuid().toString())
-                                                                                                    .page(page)
-                                                                                                    .build();
+    private Flux<? extends ServiceOfferingResource> getServiceResourcesByLabel(String label) {
+        IntFunction<ListServiceOfferingsRequest> pageRequestSupplier = page -> ListServiceOfferingsRequest.builder()
+                                                                                                          .name(label)
+                                                                                                          .spaceId(getTargetSpaceGuid().toString())
+                                                                                                          .page(page)
+                                                                                                          .build();
         return getServiceResources(pageRequestSupplier);
     }
 
-    private Flux<? extends Resource<ServiceEntity>> getServiceResources(IntFunction<ListSpaceServicesRequest> pageRequestSupplier) {
-        return PaginationUtils.requestClientV2Resources(page -> delegate.spaces()
-                                                                        .listServices(pageRequestSupplier.apply(page)));
+    private Flux<? extends ServiceOfferingResource> getServiceResourcesByLabelAndBrokerName(String label, String brokerName) {
+        IntFunction<ListServiceOfferingsRequest> pageRequestSupplier = page -> ListServiceOfferingsRequest.builder()
+                                                                                                          .name(label)
+                                                                                                          .serviceBrokerName(brokerName)
+                                                                                                          .spaceId(getTargetSpaceGuid().toString())
+                                                                                                          .page(page)
+                                                                                                          .build();
+        return getServiceResources(pageRequestSupplier);
     }
 
-    private Mono<Derivable<CloudServiceOffering>> zipWithAuxiliaryServiceOfferingContent(Resource<ServiceEntity> resource) {
-        UUID serviceGuid = getGuid(resource);
-        return getServicePlansFlux(serviceGuid).collectList()
-                                               .map(servicePlans -> ImmutableRawCloudServiceOffering.builder()
-                                                                                                    .resource(resource)
-                                                                                                    .servicePlans(servicePlans)
-                                                                                                    .build());
+    private Flux<? extends ServiceOfferingResource> getServiceResources(IntFunction<ListServiceOfferingsRequest> pageRequestSupplier) {
+        return PaginationUtils.requestClientV3Resources(page -> delegate.serviceOfferingsV3()
+                                                                        .list(pageRequestSupplier.apply(page)));
     }
 
-    private Flux<CloudServicePlan> getServicePlansFlux(UUID serviceGuid) {
-        return fetchFlux(() -> getServicePlanResourcesByServiceGuid(serviceGuid), ImmutableRawCloudServicePlan::of);
+    private Mono<Derivable<CloudServiceOffering>> zipWithAuxiliaryServiceOfferingContent(ServiceOfferingResource serviceOffering) {
+        UUID serviceOfferingGuid = getGuid(serviceOffering);
+        return getServicePlansFlux(serviceOfferingGuid).collectList()
+                                                       .map(servicePlans -> ImmutableRawCloudServiceOffering.builder()
+                                                                                                            .serviceOffering(serviceOffering)
+                                                                                                            .servicePlans(servicePlans)
+                                                                                                            .build());
     }
 
-    protected Mono<? extends Resource<ServicePlanEntity>> getServicePlanResource(UUID servicePlanGuid) {
+    private Flux<CloudServicePlan> getServicePlansFlux(UUID serviceOfferingGuid) {
+        return fetchFlux(() -> getServicePlanResourcesByServiceOfferingGuid(serviceOfferingGuid), ImmutableRawCloudServicePlan::of);
+    }
+
+    protected Mono<? extends ServicePlan> getServicePlanResource(String servicePlanGuid) {
         GetServicePlanRequest request = GetServicePlanRequest.builder()
-                                                             .servicePlanId(servicePlanGuid.toString())
+                                                             .servicePlanId(servicePlanGuid)
                                                              .build();
-        return delegate.servicePlans()
+        return delegate.servicePlansV3()
                        .get(request)
                        // The user may not be able to see this service plan, even though he created an instance from it, at some point in
                        // the past.
                        .onErrorResume(this::isForbidden, t -> Mono.empty());
     }
 
-    private Flux<? extends Resource<ServicePlanEntity>> getServicePlanResourcesByServiceGuid(UUID serviceGuid) {
+    private Flux<? extends ServicePlanResource> getServicePlanResourcesByServiceOfferingGuid(UUID serviceOfferingGuid) {
         IntFunction<ListServicePlansRequest> pageRequestSupplier = page -> ListServicePlansRequest.builder()
-                                                                                                  .serviceId(serviceGuid.toString())
+                                                                                                  .serviceOfferingId(serviceOfferingGuid.toString())
                                                                                                   .page(page)
                                                                                                   .build();
-        return PaginationUtils.requestClientV2Resources(page -> delegate.servicePlans()
+        return PaginationUtils.requestClientV3Resources(page -> delegate.servicePlansV3()
                                                                         .list(pageRequestSupplier.apply(page)));
     }
 
@@ -2548,14 +2521,14 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return fetch(() -> getServiceBrokerResourceByName(name), ImmutableRawCloudServiceBroker::of);
     }
 
-    private Flux<? extends Resource<ServiceBrokerEntity>> getServiceBrokerResources() {
+    private Flux<? extends ServiceBrokerResource> getServiceBrokerResources() {
         IntFunction<ListServiceBrokersRequest> pageRequestSupplier = page -> ListServiceBrokersRequest.builder()
                                                                                                       .page(page)
                                                                                                       .build();
         return getServiceBrokerResources(pageRequestSupplier);
     }
 
-    private Mono<? extends Resource<ServiceBrokerEntity>> getServiceBrokerResourceByName(String name) {
+    private Mono<? extends ServiceBrokerResource> getServiceBrokerResourceByName(String name) {
         IntFunction<ListServiceBrokersRequest> pageRequestSupplier = page -> ListServiceBrokersRequest.builder()
                                                                                                       .page(page)
                                                                                                       .name(name)
@@ -2563,30 +2536,28 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return getServiceBrokerResources(pageRequestSupplier).singleOrEmpty();
     }
 
-    private Flux<? extends Resource<ServiceBrokerEntity>>
-            getServiceBrokerResources(IntFunction<ListServiceBrokersRequest> pageRequestSupplier) {
-        return PaginationUtils.requestClientV2Resources(page -> delegate.serviceBrokers()
+    private Flux<? extends ServiceBrokerResource> getServiceBrokerResources(IntFunction<ListServiceBrokersRequest> pageRequestSupplier) {
+        return PaginationUtils.requestClientV3Resources(page -> delegate.serviceBrokersV3()
                                                                         .list(pageRequestSupplier.apply(page)));
     }
 
     private CloudServicePlan findPlanForService(CloudServiceInstance service, String planName) {
-        List<CloudServiceOffering> offerings = findServiceOfferingsByLabel(service.getLabel());
-        for (CloudServiceOffering offering : offerings) {
-            if (service.getBroker() != null && !service.getBroker()
-                                                       .equals(offering.getBrokerName())) {
-                continue;
-            }
-            if (service.getVersion() == null || service.getVersion()
-                                                       .equals(offering.getVersion())) {
-                for (CloudServicePlan plan : offering.getServicePlans()) {
-                    if (plan.getName()
-                            .equals(planName)) {
-                        return plan;
-                    }
+        List<CloudServiceOffering> offerings = getServiceOfferings(service);
+        for (var offering : offerings) {
+            for (var plan : offering.getServicePlans()) {
+                if (planName.equals(plan.getName())) {
+                    return plan;
                 }
             }
         }
         throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Service plan " + service.getPlan() + " not found.");
+    }
+
+    private List<CloudServiceOffering> getServiceOfferings(CloudServiceInstance service) {
+        if (service.getBroker() == null) {
+            return findServiceOfferingsByLabel(service.getLabel());
+        }
+        return findServiceOfferingsByLabelAndBrokerName(service.getLabel(), service.getBroker());
     }
 
     private UUID getRequiredApplicationGuid(String name) {

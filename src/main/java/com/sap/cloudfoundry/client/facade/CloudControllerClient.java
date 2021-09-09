@@ -434,6 +434,14 @@ public interface CloudControllerClient {
     Map<String, Object> getServiceInstanceParameters(UUID guid);
 
     /**
+     * Get all user-provided service instance parameters
+     * 
+     * @param guid The service instance guid
+     * @return user-provided service instance parameters in key-value pairs
+     */
+    Map<String, Object> getUserProvidedServiceInstanceParameters(UUID guid);
+
+    /**
      * Get all service binding parameters.
      *
      * @param guid The service binding guid

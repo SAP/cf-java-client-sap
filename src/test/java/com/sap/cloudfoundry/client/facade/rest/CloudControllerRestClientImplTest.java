@@ -5,21 +5,21 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Collections;
 import java.util.Set;
-import java.util.UUID;
 import java.util.stream.Stream;
 
 import org.cloudfoundry.client.CloudFoundryClient;
 import org.cloudfoundry.client.v2.ClientV2Exception;
-import org.cloudfoundry.client.v2.Resource;
-import org.cloudfoundry.client.v2.serviceplans.GetServicePlanRequest;
-import org.cloudfoundry.client.v2.serviceplans.GetServicePlanResponse;
-import org.cloudfoundry.client.v2.serviceplans.ServicePlanEntity;
-import org.cloudfoundry.client.v2.serviceplans.ServicePlans;
-import org.cloudfoundry.client.v2.services.GetServiceRequest;
-import org.cloudfoundry.client.v2.services.GetServiceResponse;
-import org.cloudfoundry.client.v2.services.ServiceEntity;
-import org.cloudfoundry.client.v2.services.Services;
+import org.cloudfoundry.client.v3.ClientV3Exception;
+import org.cloudfoundry.client.v3.serviceofferings.GetServiceOfferingRequest;
+import org.cloudfoundry.client.v3.serviceofferings.GetServiceOfferingResponse;
+import org.cloudfoundry.client.v3.serviceofferings.ServiceOffering;
+import org.cloudfoundry.client.v3.serviceofferings.ServiceOfferingsV3;
+import org.cloudfoundry.client.v3.serviceplans.GetServicePlanRequest;
+import org.cloudfoundry.client.v3.serviceplans.GetServicePlanResponse;
+import org.cloudfoundry.client.v3.serviceplans.ServicePlan;
+import org.cloudfoundry.client.v3.serviceplans.ServicePlansV3;
 import org.cloudfoundry.doppler.DopplerClient;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,6 +34,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import com.sap.cloudfoundry.client.facade.CloudCredentials;
+import com.sap.cloudfoundry.client.facade.adapters.RawCloudServiceOfferingTest;
+import com.sap.cloudfoundry.client.facade.adapters.RawCloudServicePlanTest;
 import com.sap.cloudfoundry.client.facade.domain.CloudRouteSummary;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudRouteSummary;
 import com.sap.cloudfoundry.client.facade.oauth2.OAuthClient;
@@ -46,6 +48,7 @@ class CloudControllerRestClientImplTest {
     private static final URL CONTROLLER_URL = createUrl("https://localhost:8080");
 
     private static final String GUID = "1803e5a7-40c7-438e-b2be-e2045c9b7cda";
+    private static final String PLAN_NAME = "test-plan";
 
     private static URL createUrl(String string) {
         try {
@@ -78,42 +81,40 @@ class CloudControllerRestClientImplTest {
     }
 
     @Test
-    void testGetServiceResource() {
-        GetServiceRequest request = GetServiceRequest.builder()
-                                                     .serviceId(GUID)
-                                                     .build();
-        GetServiceResponse response = GetServiceResponse.builder()
-                                                        .entity(ServiceEntity.builder()
-                                                                             .label("postgresql")
-                                                                             .build())
-                                                        .build();
+    void testGetServiceOffering() {
+        GetServiceOfferingRequest request = GetServiceOfferingRequest.builder()
+                                                                     .serviceOfferingId(GUID)
+                                                                     .build();
+        GetServiceOfferingResponse response = GetServiceOfferingResponse.builder()
+                                                                        .from(RawCloudServiceOfferingTest.buildTestServiceOffering())
+                                                                        .build();
 
-        Services services = Mockito.mock(Services.class);
-        Mockito.when(delegate.services())
-               .thenReturn(services);
-        Mockito.when(services.get(request))
+        ServiceOfferingsV3 serviceOfferingsV3 = Mockito.mock(ServiceOfferingsV3.class);
+        Mockito.when(delegate.serviceOfferingsV3())
+               .thenReturn(serviceOfferingsV3);
+        Mockito.when(serviceOfferingsV3.get(request))
                .thenReturn(Mono.just(response));
 
-        Resource<ServiceEntity> serviceResource = controllerClient.getServiceResource(UUID.fromString(GUID))
-                                                                  .block();
+        ServiceOffering serviceOffering = controllerClient.getServiceOffering(GUID)
+                                                          .block();
 
-        assertEquals(response, serviceResource);
+        assertEquals(response, serviceOffering);
     }
 
     @Test
-    void testGetServiceResourceWithForbidden() {
-        GetServiceRequest request = GetServiceRequest.builder()
-                                                     .serviceId(GUID)
-                                                     .build();
+    public void testGetServiceOfferingWithForbidden() {
+        GetServiceOfferingRequest request = GetServiceOfferingRequest.builder()
+                                                                     .serviceOfferingId(GUID)
+                                                                     .build();
 
-        Services services = Mockito.mock(Services.class);
-        Mockito.when(delegate.services())
-               .thenReturn(services);
-        Mockito.when(services.get(request))
-               .thenReturn(Mono.error(clientV2Exception(HttpStatus.FORBIDDEN.value())));
+        ServiceOfferingsV3 serviceOfferingsV3 = Mockito.mock(ServiceOfferingsV3.class);
+        Mockito.when(delegate.serviceOfferingsV3())
+               .thenReturn(serviceOfferingsV3);
+        Mockito.when(serviceOfferingsV3.get(request))
+               .thenReturn(Mono.error(clientV3Exception(HttpStatus.FORBIDDEN.value())));
 
-        Resource<ServiceEntity> serviceResource = controllerClient.getServiceResource(UUID.fromString(GUID))
-                                                                  .block();
+        ServiceOffering serviceResource = controllerClient.getServiceOffering(GUID)
+                                                          .block();
 
         assertNull(serviceResource);
     }
@@ -124,20 +125,17 @@ class CloudControllerRestClientImplTest {
                                                              .servicePlanId(GUID)
                                                              .build();
         GetServicePlanResponse response = GetServicePlanResponse.builder()
-                                                                .entity(ServicePlanEntity.builder()
-                                                                                         .name("v9.4-large")
-                                                                                         .free(false)
-                                                                                         .build())
+                                                                .from(RawCloudServicePlanTest.buildTestServicePlan(PLAN_NAME))
                                                                 .build();
 
-        ServicePlans servicePlans = Mockito.mock(ServicePlans.class);
-        Mockito.when(delegate.servicePlans())
+        ServicePlansV3 servicePlans = Mockito.mock(ServicePlansV3.class);
+        Mockito.when(delegate.servicePlansV3())
                .thenReturn(servicePlans);
         Mockito.when(servicePlans.get(request))
                .thenReturn(Mono.just(response));
 
-        Resource<ServicePlanEntity> servicePlanResource = controllerClient.getServicePlanResource(UUID.fromString(GUID))
-                                                                          .block();
+        ServicePlan servicePlanResource = controllerClient.getServicePlanResource(GUID)
+                                                          .block();
 
         assertEquals(response, servicePlanResource);
     }
@@ -148,20 +146,24 @@ class CloudControllerRestClientImplTest {
                                                              .servicePlanId(GUID)
                                                              .build();
 
-        ServicePlans servicePlans = Mockito.mock(ServicePlans.class);
-        Mockito.when(delegate.servicePlans())
+        ServicePlansV3 servicePlans = Mockito.mock(ServicePlansV3.class);
+        Mockito.when(delegate.servicePlansV3())
                .thenReturn(servicePlans);
         Mockito.when(servicePlans.get(request))
-               .thenReturn(Mono.error(clientV2Exception(HttpStatus.FORBIDDEN.value())));
+               .thenReturn(Mono.error(clientV3Exception(HttpStatus.FORBIDDEN.value())));
 
-        Resource<ServicePlanEntity> servicePlanResource = controllerClient.getServicePlanResource(UUID.fromString(GUID))
-                                                                          .block();
+        ServicePlan servicePlanResource = controllerClient.getServicePlanResource(GUID)
+                                                          .block();
 
         assertNull(servicePlanResource);
     }
 
     private ClientV2Exception clientV2Exception(int statusCode) {
         return new ClientV2Exception(statusCode, 0, "", "");
+    }
+
+    private ClientV3Exception clientV3Exception(int statusCode) {
+        return new ClientV3Exception(statusCode, Collections.emptyList());
     }
 
     // @formatter:off

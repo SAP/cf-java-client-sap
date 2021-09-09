@@ -1,6 +1,7 @@
 package com.sap.cloudfoundry.client.facade.domain;
 
 import java.util.List;
+import java.util.Map;
 
 import org.immutables.value.Value;
 
@@ -14,10 +15,13 @@ import com.sap.cloudfoundry.client.facade.Nullable;
 public abstract class CloudServiceOffering extends CloudEntity implements Derivable<CloudServiceOffering> {
 
     @Nullable
-    public abstract Boolean isActive();
+    public abstract Boolean isAvailable();
 
     @Nullable
     public abstract Boolean isBindable();
+
+    @Nullable
+    public abstract Boolean isShareable();
 
     public abstract List<CloudServicePlan> getServicePlans();
 
@@ -28,25 +32,13 @@ public abstract class CloudServiceOffering extends CloudEntity implements Deriva
     public abstract String getDocUrl();
 
     @Nullable
-    public abstract String getExtra();
+    public abstract Map<String, Object> getExtra();
 
     @Nullable
-    public abstract String getInfoUrl();
-
-    @Nullable
-    public abstract String getProvider();
-    
-    @Nullable
-    public abstract String getBrokerName();
+    public abstract String getBrokerId();
 
     @Nullable
     public abstract String getUniqueId();
-
-    @Nullable
-    public abstract String getUrl();
-
-    @Nullable
-    public abstract String getVersion();
 
     @Override
     public CloudServiceOffering derive() {

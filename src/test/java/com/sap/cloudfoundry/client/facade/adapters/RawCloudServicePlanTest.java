@@ -1,8 +1,19 @@
 package com.sap.cloudfoundry.client.facade.adapters;
 
-import org.cloudfoundry.client.v2.Resource;
-import org.cloudfoundry.client.v2.serviceplans.ServicePlanEntity;
-import org.cloudfoundry.client.v2.serviceplans.ServicePlanResource;
+import java.util.Map;
+import java.util.UUID;
+
+import org.cloudfoundry.client.v3.Relationship;
+import org.cloudfoundry.client.v3.ToOneRelationship;
+import org.cloudfoundry.client.v3.serviceplans.BrokerCatalog;
+import org.cloudfoundry.client.v3.serviceplans.Features;
+import org.cloudfoundry.client.v3.serviceplans.Schema;
+import org.cloudfoundry.client.v3.serviceplans.Schemas;
+import org.cloudfoundry.client.v3.serviceplans.ServiceInstanceSchema;
+import org.cloudfoundry.client.v3.serviceplans.ServicePlan;
+import org.cloudfoundry.client.v3.serviceplans.ServicePlanRelationships;
+import org.cloudfoundry.client.v3.serviceplans.ServicePlanResource;
+import org.cloudfoundry.client.v3.serviceplans.Visibility;
 import org.junit.jupiter.api.Test;
 
 import com.sap.cloudfoundry.client.facade.domain.CloudServicePlan;
@@ -12,10 +23,15 @@ public class RawCloudServicePlanTest {
 
     private static final String NAME = "v9.4-small";
     private static final String DESCRIPTION = "description";
-    private static final String EXTRA = "extra";
+    private static final Map<String, Object> EXTRA = Map.of("extra", "value");
     private static final String UNIQUE_ID = "unique-id";
     private static final boolean PUBLIC = true;
     private static final boolean FREE = false;
+    private static final boolean PLAN_BINDABLE = true;
+    private static final boolean PLAN_UPDATABLE = true;
+    private static final boolean AVAILABLE = true;
+    private static final String SERVICE_OFFERING_ID = UUID.randomUUID()
+                                                          .toString();
 
     @Test
     public void testDerive() {
@@ -24,36 +40,53 @@ public class RawCloudServicePlanTest {
 
     private static CloudServicePlan buildExpectedPlan() {
         return ImmutableCloudServicePlan.builder()
-                                        .metadata(RawCloudEntityTest.EXPECTED_METADATA)
+                                        .metadata(RawCloudEntityTest.EXPECTED_METADATA_PARSED_FROM_V3_RESOURCE)
                                         .name(NAME)
                                         .description(DESCRIPTION)
                                         .extra(EXTRA)
                                         .uniqueId(UNIQUE_ID)
                                         .isPublic(PUBLIC)
                                         .isFree(FREE)
+                                        .serviceOfferingId(SERVICE_OFFERING_ID)
                                         .build();
     }
 
     private static RawCloudServicePlan buildRawServicePlan() {
-        return ImmutableRawCloudServicePlan.of(buildTestResource());
+        return ImmutableRawCloudServicePlan.of(buildTestServicePlan(NAME));
     }
 
-    private static Resource<ServicePlanEntity> buildTestResource() {
+    public static ServicePlan buildTestServicePlan(String planName) {
         return ServicePlanResource.builder()
-                                  .metadata(RawCloudEntityTest.METADATA)
-                                  .entity(buildTestEntity())
+                                  .id(RawCloudEntityTest.GUID_STRING)
+                                  .createdAt(RawCloudEntityTest.CREATED_AT_STRING)
+                                  .updatedAt(RawCloudEntityTest.UPDATED_AT_STRING)
+                                  .available(AVAILABLE)
+                                  .name(planName)
+                                  .description(DESCRIPTION)
+                                  .brokerCatalog(BrokerCatalog.builder()
+                                                              .metadata(EXTRA)
+                                                              .brokerCatalogId(UNIQUE_ID)
+                                                              .features(Features.builder()
+                                                                                .bindable(PLAN_BINDABLE)
+                                                                                .planUpdateable(PLAN_UPDATABLE)
+                                                                                .build())
+                                                              .build())
+                                  .visibilityType(Visibility.PUBLIC)
+                                  .free(FREE)
+                                  .relationships(ServicePlanRelationships.builder()
+                                                                         .serviceOffering(ToOneRelationship.builder()
+                                                                                                           .data(Relationship.builder()
+                                                                                                                             .id(SERVICE_OFFERING_ID)
+                                                                                                                             .build())
+                                                                                                           .build())
+                                                                         .build())
+                                  .schemas(Schemas.builder()
+                                                  .serviceInstance(ServiceInstanceSchema.builder()
+                                                                                        .create(Schema.builder()
+                                                                                                      .build())
+                                                                                        .build())
+                                                  .build())
                                   .build();
-    }
-
-    private static ServicePlanEntity buildTestEntity() {
-        return ServicePlanEntity.builder()
-                                .name(NAME)
-                                .description(DESCRIPTION)
-                                .extra(EXTRA)
-                                .uniqueId(UNIQUE_ID)
-                                .publiclyVisible(PUBLIC)
-                                .free(FREE)
-                                .build();
     }
 
 }

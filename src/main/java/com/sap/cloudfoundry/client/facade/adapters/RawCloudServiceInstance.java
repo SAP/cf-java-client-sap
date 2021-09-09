@@ -2,58 +2,53 @@ package com.sap.cloudfoundry.client.facade.adapters;
 
 import java.util.Optional;
 
-import org.cloudfoundry.client.v2.Resource;
-import org.cloudfoundry.client.v2.serviceinstances.UnionServiceInstanceEntity;
-import org.cloudfoundry.client.v2.serviceplans.ServicePlanEntity;
-import org.cloudfoundry.client.v2.services.ServiceEntity;
+import org.cloudfoundry.client.v3.serviceinstances.ServiceInstanceResource;
+import org.cloudfoundry.client.v3.serviceofferings.ServiceOffering;
+import org.cloudfoundry.client.v3.serviceplans.ServicePlan;
 import org.immutables.value.Value;
 
 import com.sap.cloudfoundry.client.facade.Nullable;
 import com.sap.cloudfoundry.client.facade.domain.CloudServiceInstance;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudServiceInstance;
-import com.sap.cloudfoundry.client.facade.domain.ServiceInstanceType;
 import com.sap.cloudfoundry.client.facade.domain.ServiceOperation;
 
 @Value.Immutable
 public abstract class RawCloudServiceInstance extends RawCloudEntity<CloudServiceInstance> {
 
     @Value.Parameter
-    public abstract Resource<UnionServiceInstanceEntity> getResource();
+    public abstract ServiceInstanceResource getResource();
 
     @Nullable
-    public abstract Resource<ServicePlanEntity> getServicePlanResource();
+    public abstract ServicePlan getServicePlan();
 
     @Nullable
-    public abstract Resource<ServiceEntity> getServiceResource();
+    public abstract ServiceOffering getServiceOffering();
 
     @Override
     public CloudServiceInstance derive() {
-        Resource<UnionServiceInstanceEntity> resource = getResource();
-        UnionServiceInstanceEntity entity = resource.getEntity();
+        ServiceInstanceResource resource = getResource();
         return ImmutableCloudServiceInstance.builder()
                                             .metadata(parseResourceMetadata(resource))
-                                            .name(entity.getName())
-                                            .plan(parsePlan(getServicePlanResource()))
-                                            .label(parseLabel(getServiceResource()))
-                                            .type(ServiceInstanceType.valueOfWithDefault(entity.getType()))
-                                            .tags(entity.getTags())
-                                            .credentials(entity.getCredentials())
-                                            .syslogDrainUrl(entity.getSyslogDrainUrl())
-                                            .lastOperation(ServiceOperation.fromLastOperation(entity.getLastOperation()))
+                                            .v3Metadata(resource.getMetadata())
+                                            .name(resource.getName())
+                                            .plan(getServicePlanName())
+                                            .label(getLabelName())
+                                            .type(resource.getType())
+                                            .tags(resource.getTags())
+                                            .lastOperation(ServiceOperation.fromLastOperation(resource.getLastOperation()))
+                                            .syslogDrainUrl(resource.getSyslogDrainUrl())
                                             .build();
     }
 
-    private static String parsePlan(Resource<ServicePlanEntity> resource) {
-        return Optional.ofNullable(resource)
-                       .map(Resource::getEntity)
-                       .map(ServicePlanEntity::getName)
+    private String getServicePlanName() {
+        return Optional.ofNullable(getServicePlan())
+                       .map(ServicePlan::getName)
                        .orElse(null);
     }
 
-    private static String parseLabel(Resource<ServiceEntity> serviceResource) {
-        return Optional.ofNullable(serviceResource)
-                       .map(Resource::getEntity)
-                       .map(ServiceEntity::getLabel)
+    private String getLabelName() {
+        return Optional.ofNullable(getServiceOffering())
+                       .map(ServiceOffering::getName)
                        .orElse(null);
     }
 

@@ -1,7 +1,11 @@
 package com.sap.cloudfoundry.client.facade.adapters;
 
-import org.cloudfoundry.client.v2.Resource;
-import org.cloudfoundry.client.v2.servicebrokers.ServiceBrokerEntity;
+import java.util.Optional;
+
+import org.cloudfoundry.client.v3.Relationship;
+import org.cloudfoundry.client.v3.ToOneRelationship;
+import org.cloudfoundry.client.v3.servicebrokers.ServiceBroker;
+import org.cloudfoundry.client.v3.servicebrokers.ServiceBrokerRelationships;
 import org.immutables.value.Value;
 
 import com.sap.cloudfoundry.client.facade.domain.CloudServiceBroker;
@@ -11,21 +15,26 @@ import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudServiceBroker;
 public abstract class RawCloudServiceBroker extends RawCloudEntity<CloudServiceBroker> {
 
     @Value.Parameter
-    public abstract Resource<ServiceBrokerEntity> getResource();
+    public abstract ServiceBroker getServiceBroker();
 
     @Override
     public CloudServiceBroker derive() {
-        Resource<ServiceBrokerEntity> resource = getResource();
-        ServiceBrokerEntity entity = resource.getEntity();
+        ServiceBroker serviceBroker = getServiceBroker();
+        String spaceGuid = getSpaceGuid(serviceBroker);
         return ImmutableCloudServiceBroker.builder()
-                                          .metadata(parseResourceMetadata(resource))
-                                          .name(entity.getName())
-                                          // The password is not returned by the CF controller.
-                                          .password(null)
-                                          .username(entity.getAuthenticationUsername())
-                                          .url(entity.getBrokerUrl())
-                                          .spaceGuid(entity.getSpaceId())
+                                          .metadata(parseResourceMetadata(serviceBroker))
+                                          .name(serviceBroker.getName())
+                                          .url(serviceBroker.getUrl())
+                                          .spaceGuid(spaceGuid)
                                           .build();
+    }
+
+    private String getSpaceGuid(ServiceBroker serviceBroker) {
+        return Optional.ofNullable(serviceBroker.getRelationships())
+                       .map(ServiceBrokerRelationships::getSpace)
+                       .map(ToOneRelationship::getData)
+                       .map(Relationship::getId)
+                       .orElse(null);
     }
 
 }
