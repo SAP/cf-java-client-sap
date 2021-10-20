@@ -16,6 +16,11 @@ public abstract class CloudRoute extends CloudEntity implements Derivable<CloudR
         return 0;
     }
 
+    @Value.Default
+    public boolean hasServiceUsingRoute() {
+        return false;
+    }
+
     @Nullable
     public abstract CloudDomain getDomain();
 
@@ -28,6 +33,10 @@ public abstract class CloudRoute extends CloudEntity implements Derivable<CloudR
     @Override
     public String getName() {
         return getHost() + "." + getDomain();
+    }
+
+    public boolean isUsed() {
+        return getAppsUsingRoute() > 0 || hasServiceUsingRoute();
     }
 
     @Override

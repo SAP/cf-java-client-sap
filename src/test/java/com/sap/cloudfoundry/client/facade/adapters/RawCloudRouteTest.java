@@ -1,16 +1,15 @@
 package com.sap.cloudfoundry.client.facade.adapters;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-import org.cloudfoundry.client.v3.Relationship;
-import org.cloudfoundry.client.v3.ToOneRelationship;
-import org.cloudfoundry.client.v3.routes.Application;
-import org.cloudfoundry.client.v3.routes.Destination;
-import org.cloudfoundry.client.v3.routes.Route;
-import org.cloudfoundry.client.v3.routes.RouteRelationships;
-import org.cloudfoundry.client.v3.routes.RouteResource;
+import org.cloudfoundry.client.v2.Resource;
+import org.cloudfoundry.client.v2.routemappings.RouteMappingEntity;
+import org.cloudfoundry.client.v2.routemappings.RouteMappingResource;
+import org.cloudfoundry.client.v2.routes.RouteEntity;
+import org.cloudfoundry.client.v2.routes.RouteResource;
 import org.junit.jupiter.api.Test;
 
 import com.sap.cloudfoundry.client.facade.domain.CloudDomain;
@@ -24,7 +23,7 @@ public class RawCloudRouteTest {
     private static final String DOMAIN_NAME = "example.com";
     private static final CloudDomain DOMAIN = buildTestDomain();
     private static final Integer APPS_USING_ROUTE = 2;
-    private static final List<Destination> DESTINATIONS = buildTestDestinations(APPS_USING_ROUTE);
+    private static final List<Resource<RouteMappingEntity>> ROUTE_MAPPINGS = buildTestRouteMappings(APPS_USING_ROUTE);
 
     @Test
     public void testDerive() {
@@ -33,36 +32,34 @@ public class RawCloudRouteTest {
 
     private static CloudRoute buildExpectedRoute() {
         return ImmutableCloudRoute.builder()
-                                  .metadata(RawCloudEntityTest.EXPECTED_METADATA_V3)
+                                  .metadata(RawCloudEntityTest.EXPECTED_METADATA)
                                   .host(HOST)
                                   .domain(DOMAIN)
-                                  .path("")
                                   .appsUsingRoute(APPS_USING_ROUTE)
+                                  .hasServiceUsingRoute(true)
                                   .build();
     }
 
     private static RawCloudRoute buildRawRoute() {
         return ImmutableRawCloudRoute.builder()
-                                     .route(buildTestRoute())
+                                     .resource(buildTestResource())
                                      .domain(DOMAIN)
+                                     .routeMappingResources(ROUTE_MAPPINGS)
                                      .build();
     }
 
-    private static Route buildTestRoute() {
+    private static Resource<RouteEntity> buildTestResource() {
         return RouteResource.builder()
-                            .id(RawCloudEntityTest.GUID_STRING)
-                            .createdAt(RawCloudEntityTest.CREATED_AT_STRING)
-                            .updatedAt(RawCloudEntityTest.UPDATED_AT_STRING)
-                            .relationships(RouteRelationships.builder()
-                                                             .space(buildToOneRelationship(RawCloudEntityTest.GUID))
-                                                             .domain(buildToOneRelationship(RawCloudEntityTest.GUID))
-                                                             .build())
-                            .metadata(RawCloudEntityTest.V3_METADATA)
-                            .host(HOST)
-                            .path("")
-                            .url(RawCloudEntityTest.URL_STRING)
-                            .addAllDestinations(DESTINATIONS)
+                            .metadata(RawCloudEntityTest.METADATA)
+                            .entity(buildTestEntity())
                             .build();
+    }
+
+    private static RouteEntity buildTestEntity() {
+        return RouteEntity.builder()
+                          .host(HOST)
+                          .serviceInstanceId(UUID.randomUUID().toString())
+                          .build();
     }
 
     private static CloudDomain buildTestDomain() {
@@ -72,24 +69,15 @@ public class RawCloudRouteTest {
                                    .build();
     }
 
-    private static List<Destination> buildTestDestinations(int count) {
-        return Collections.nCopies(count, Destination.builder()
-                                                     .application(Application.builder()
-                                                                             .applicationId("")
-                                                                             .build())
-                                                     .build());
+    private static List<Resource<RouteMappingEntity>> buildTestRouteMappings(int count) {
+        return Stream.generate(RawCloudRouteTest::buildTestRouteMapping)
+                     .limit(count)
+                     .collect(Collectors.toList());
     }
 
-    private static ToOneRelationship buildToOneRelationship(UUID guid) {
-        return ToOneRelationship.builder()
-                                .data(buildRelationship(guid))
-                                .build();
-    }
-
-    private static Relationship buildRelationship(UUID guid) {
-        return Relationship.builder()
-                           .id(guid.toString())
-                           .build();
+    private static Resource<RouteMappingEntity> buildTestRouteMapping() {
+        return RouteMappingResource.builder()
+                                   .build();
     }
 
 }

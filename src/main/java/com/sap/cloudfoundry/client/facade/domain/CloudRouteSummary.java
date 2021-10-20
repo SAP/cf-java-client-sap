@@ -38,7 +38,7 @@ public abstract class CloudRouteSummary implements Derivable<CloudRouteSummary> 
     }
 
     public String toUriString() {
-        StringBuilder uriBuilder = new StringBuilder();
+        StringBuilder uriBuilder = new StringBuilder("");
         if (StringUtils.hasLength(getHost())) {
             uriBuilder.append(getHost())
                       .append(".");
@@ -79,9 +79,9 @@ public abstract class CloudRouteSummary implements Derivable<CloudRouteSummary> 
         return getGuid() != null && getDomainGuid() != null;
     }
 
-    public boolean describesTheSameUri(CloudRouteSummary other) {
-        return areEmptyOrEqual(this.getHost(), other.getHost()) && Objects.equals(this.getDomain(), other.getDomain())
-            && areEmptyOrEqual(this.getPath(), other.getPath()) && Objects.equals(this.getPort(), other.getPort());
+    public boolean describesTheSameUri(CloudRouteSummary another) {
+        return areEmptyOrEqual(this.getHost(), another.getHost()) && Objects.equals(this.getDomain(), another.getDomain())
+            && areEmptyOrEqual(this.getPath(), another.getPath()) && Objects.equals(this.getPort(), another.getPort());
     }
 
     public boolean describesTheSameUri(CloudRoute route) {
@@ -95,6 +95,7 @@ public abstract class CloudRouteSummary implements Derivable<CloudRouteSummary> 
         if (StringUtils.isEmpty(value) && StringUtils.isEmpty(otherValue)) {
             return true;
         }
+
         return Objects.equals(value, otherValue);
     }
 }

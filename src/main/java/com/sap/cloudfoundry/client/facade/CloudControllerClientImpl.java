@@ -156,8 +156,8 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public void deleteOrphanedRoutes() {
-        handleExceptions(() -> delegate.deleteOrphanedRoutes());
+    public List<CloudRoute> deleteOrphanedRoutes() {
+        return handleExceptions(() -> delegate.deleteOrphanedRoutes());
     }
 
     @Override

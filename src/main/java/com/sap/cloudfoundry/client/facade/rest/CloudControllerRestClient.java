@@ -73,7 +73,7 @@ public interface CloudControllerRestClient {
 
     void deleteDomain(String domainName);
 
-    void deleteOrphanedRoutes();
+    List<CloudRoute> deleteOrphanedRoutes();
 
     void deleteRoute(String host, String domainName, String path);
 
