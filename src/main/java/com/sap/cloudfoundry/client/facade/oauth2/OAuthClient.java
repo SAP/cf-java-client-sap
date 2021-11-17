@@ -1,6 +1,7 @@
 package com.sap.cloudfoundry.client.facade.oauth2;
 
 import java.net.URL;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 
@@ -16,12 +17,16 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.sap.cloudfoundry.client.facade.CloudCredentials;
 import com.sap.cloudfoundry.client.facade.adapters.OAuthTokenProvider;
+import reactor.util.retry.Retry;
 
 /**
  * Client that can handle authentication against a UAA instance
  *
  */
 public class OAuthClient {
+
+    private static final long MAX_RETRY_ATTEMPTS = 3;
+    private static final Duration RETRY_INTERVAL = Duration.ofSeconds(3);
 
     private final URL authorizationUrl;
     protected OAuth2AccessTokenWithAdditionalInfo token;
@@ -100,6 +105,7 @@ public class OAuthClient {
                             .body(BodyInserters.fromFormData(formData))
                             .retrieve()
                             .bodyToFlux(Oauth2AccessTokenResponse.class)
+                            .retryWhen(Retry.fixedDelay(MAX_RETRY_ATTEMPTS, RETRY_INTERVAL))
                             .blockFirst();
         } catch (WebClientResponseException e) {
             throw new ResponseStatusException(e.getStatusCode(), e.getMessage(), e);
