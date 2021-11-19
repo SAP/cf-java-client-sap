@@ -18,6 +18,7 @@ import org.springframework.web.server.ResponseStatusException;
 import com.sap.cloudfoundry.client.facade.CloudCredentials;
 import com.sap.cloudfoundry.client.facade.adapters.OAuthTokenProvider;
 import reactor.util.retry.Retry;
+import reactor.util.retry.RetryBackoffSpec;
 
 /**
  * Client that can handle authentication against a UAA instance
@@ -105,11 +106,16 @@ public class OAuthClient {
                             .body(BodyInserters.fromFormData(formData))
                             .retrieve()
                             .bodyToFlux(Oauth2AccessTokenResponse.class)
-                            .retryWhen(Retry.fixedDelay(MAX_RETRY_ATTEMPTS, RETRY_INTERVAL))
+                            .retryWhen(Retry.fixedDelay(MAX_RETRY_ATTEMPTS, RETRY_INTERVAL)
+                                            .onRetryExhaustedThrow(this::throwOriginalError))
                             .blockFirst();
         } catch (WebClientResponseException e) {
             throw new ResponseStatusException(e.getStatusCode(), e.getMessage(), e);
         }
+    }
+
+    private Throwable throwOriginalError(RetryBackoffSpec retrySpec, Retry.RetrySignal signal) {
+        return signal.failure();
     }
 
 }
