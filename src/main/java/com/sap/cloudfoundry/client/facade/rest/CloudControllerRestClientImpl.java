@@ -98,6 +98,7 @@ import org.cloudfoundry.client.v3.domains.Domain;
 import org.cloudfoundry.client.v3.domains.DomainRelationships;
 import org.cloudfoundry.client.v3.domains.DomainResource;
 import org.cloudfoundry.client.v3.domains.ListDomainsRequest;
+import org.cloudfoundry.client.v3.jobs.GetJobRequest;
 import org.cloudfoundry.client.v3.organizations.GetOrganizationDefaultDomainRequest;
 import org.cloudfoundry.client.v3.organizations.GetOrganizationRequest;
 import org.cloudfoundry.client.v3.organizations.ListOrganizationDomainsRequest;
@@ -170,6 +171,7 @@ import com.sap.cloudfoundry.client.facade.Constants;
 import com.sap.cloudfoundry.client.facade.UploadStatusCallback;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawApplicationLog;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudApplication;
+import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudAsyncJob;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudBuild;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudDomain;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudEvent;
@@ -190,6 +192,7 @@ import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawUserRole;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawV3CloudServiceInstance;
 import com.sap.cloudfoundry.client.facade.domain.ApplicationLog;
 import com.sap.cloudfoundry.client.facade.domain.CloudApplication;
+import com.sap.cloudfoundry.client.facade.domain.CloudAsyncJob;
 import com.sap.cloudfoundry.client.facade.domain.CloudBuild;
 import com.sap.cloudfoundry.client.facade.domain.CloudDomain;
 import com.sap.cloudfoundry.client.facade.domain.CloudEntity;
@@ -481,7 +484,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public void createServiceBroker(CloudServiceBroker serviceBroker) {
+    public String createServiceBroker(CloudServiceBroker serviceBroker) {
         Assert.notNull(serviceBroker, "Service broker must not be null.");
 
         ServiceBrokerRelationships serviceBrokerRelationship = Optional.ofNullable(serviceBroker.getSpaceGuid())
@@ -492,17 +495,17 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                                                                            .build())
                                                                        .orElse(null);
 
-        delegate.serviceBrokersV3()
-                .create(CreateServiceBrokerRequest.builder()
-                                                  .name(serviceBroker.getName())
-                                                  .url(serviceBroker.getUrl())
-                                                  .authentication(BasicAuthentication.builder()
-                                                                                     .username(serviceBroker.getUsername())
-                                                                                     .password(serviceBroker.getPassword())
-                                                                                     .build())
-                                                  .relationships(serviceBrokerRelationship)
-                                                  .build())
-                .block();
+        return delegate.serviceBrokersV3()
+                       .create(CreateServiceBrokerRequest.builder()
+                                                         .name(serviceBroker.getName())
+                                                         .url(serviceBroker.getUrl())
+                                                         .authentication(BasicAuthentication.builder()
+                                                                                            .username(serviceBroker.getUsername())
+                                                                                            .password(serviceBroker.getPassword())
+                                                                                            .build())
+                                                         .relationships(serviceBrokerRelationship)
+                                                         .build())
+                       .block();
     }
 
     @Override
@@ -627,15 +630,15 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public void deleteServiceBroker(String name) {
+    public String deleteServiceBroker(String name) {
         CloudServiceBroker broker = getServiceBroker(name);
         UUID guid = broker.getMetadata()
                           .getGuid();
-        delegate.serviceBrokersV3()
-                .delete(DeleteServiceBrokerRequest.builder()
-                                                  .serviceBrokerId(guid.toString())
-                                                  .build())
-                .block();
+        return delegate.serviceBrokersV3()
+                       .delete(DeleteServiceBrokerRequest.builder()
+                                                         .serviceBrokerId(guid.toString())
+                                                         .build())
+                       .block();
     }
 
     @Override
@@ -1338,24 +1341,26 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public void updateServiceBroker(CloudServiceBroker serviceBroker) {
+    public String updateServiceBroker(CloudServiceBroker serviceBroker) {
         Assert.notNull(serviceBroker, "Service broker must not be null.");
 
         CloudServiceBroker existingBroker = getServiceBroker(serviceBroker.getName());
         UUID brokerGuid = existingBroker.getMetadata()
                                         .getGuid();
 
-        delegate.serviceBrokersV3()
-                .update(UpdateServiceBrokerRequest.builder()
-                                                  .serviceBrokerId(brokerGuid.toString())
-                                                  .name(serviceBroker.getName())
-                                                  .authentication(BasicAuthentication.builder()
-                                                                                     .username(serviceBroker.getUsername())
-                                                                                     .password(serviceBroker.getPassword())
-                                                                                     .build())
-                                                  .url(serviceBroker.getUrl())
-                                                  .build())
-                .block();
+        return delegate.serviceBrokersV3()
+                       .update(UpdateServiceBrokerRequest.builder()
+                                                         .serviceBrokerId(brokerGuid.toString())
+                                                         .name(serviceBroker.getName())
+                                                         .authentication(BasicAuthentication.builder()
+                                                                                            .username(serviceBroker.getUsername())
+                                                                                            .password(serviceBroker.getPassword())
+                                                                                            .build())
+                                                         .url(serviceBroker.getUrl())
+                                                         .build())
+                       .map(response -> response.jobId()
+                                                .orElse(null))
+                       .block();
     }
 
     @Override
@@ -1541,6 +1546,15 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                         .create(packageRequest)
                                                         .block();
         return getPackage(UUID.fromString(packageResponse.getId()));
+    }
+
+    @Override
+    public CloudAsyncJob getAsyncJob(String jobId) {
+        return fetch(() -> delegate.jobsV3()
+                                   .get(GetJobRequest.builder()
+                                                     .jobId(jobId)
+                                                     .build()),
+                     ImmutableRawCloudAsyncJob::of);
     }
 
     private void addNonNullDockerCredentials(DockerCredentials dockerCredentials,

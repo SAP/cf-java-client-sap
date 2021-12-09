@@ -18,6 +18,7 @@ import org.springframework.util.Assert;
 
 import com.sap.cloudfoundry.client.facade.domain.ApplicationLog;
 import com.sap.cloudfoundry.client.facade.domain.CloudApplication;
+import com.sap.cloudfoundry.client.facade.domain.CloudAsyncJob;
 import com.sap.cloudfoundry.client.facade.domain.CloudBuild;
 import com.sap.cloudfoundry.client.facade.domain.CloudDomain;
 import com.sap.cloudfoundry.client.facade.domain.CloudEvent;
@@ -115,8 +116,8 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public void createServiceBroker(CloudServiceBroker serviceBroker) {
-        handleExceptions(() -> delegate.createServiceBroker(serviceBroker));
+    public String createServiceBroker(CloudServiceBroker serviceBroker) {
+        return handleExceptions(() -> delegate.createServiceBroker(serviceBroker));
     }
 
     @Override
@@ -176,8 +177,8 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public void deleteServiceBroker(String name) {
-        handleExceptions(() -> delegate.deleteServiceBroker(name));
+    public String deleteServiceBroker(String name) {
+        return handleExceptions(() -> delegate.deleteServiceBroker(name));
     }
 
     @Override
@@ -551,8 +552,8 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public void updateServiceBroker(CloudServiceBroker serviceBroker) {
-        handleExceptions(() -> delegate.updateServiceBroker(serviceBroker));
+    public String updateServiceBroker(CloudServiceBroker serviceBroker) {
+        return handleExceptions(() -> delegate.updateServiceBroker(serviceBroker));
     }
 
     @Override
@@ -685,8 +686,14 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         return handleExceptions(() -> delegate.getUserRolesBySpaceAndUser(spaceGuid, userGuid));
     }
 
+    @Override
     public CloudPackage createDockerPackage(UUID applicationGuid, DockerInfo dockerInfo) {
         return handleExceptions(() -> delegate.createDockerPackage(applicationGuid, dockerInfo));
+    }
+
+    @Override
+    public CloudAsyncJob getAsyncJob(String jobId) {
+        return handleExceptions(() -> delegate.getAsyncJob(jobId));
     }
 
     private void handleExceptions(Runnable runnable) {
