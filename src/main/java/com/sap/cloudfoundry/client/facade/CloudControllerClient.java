@@ -13,6 +13,7 @@ import org.cloudfoundry.client.v3.Metadata;
 
 import com.sap.cloudfoundry.client.facade.domain.ApplicationLog;
 import com.sap.cloudfoundry.client.facade.domain.CloudApplication;
+import com.sap.cloudfoundry.client.facade.domain.CloudAsyncJob;
 import com.sap.cloudfoundry.client.facade.domain.CloudBuild;
 import com.sap.cloudfoundry.client.facade.domain.CloudDomain;
 import com.sap.cloudfoundry.client.facade.domain.CloudEvent;
@@ -98,8 +99,9 @@ public interface CloudControllerClient {
      * Create a service broker.
      *
      * @param serviceBroker cloud service broker info
+     * @return job id for async poll
      */
-    void createServiceBroker(CloudServiceBroker serviceBroker);
+    String createServiceBroker(CloudServiceBroker serviceBroker);
 
     /**
      * Create a service key.
@@ -182,8 +184,9 @@ public interface CloudControllerClient {
      * Delete a service broker.
      *
      * @param name the service broker name
+     * @return async job id
      */
-    void deleteServiceBroker(String name);
+    String deleteServiceBroker(String name);
 
     /**
      * Delete a service key.
@@ -678,8 +681,9 @@ public interface CloudControllerClient {
      * Update a service broker (unchanged forces catalog refresh).
      *
      * @param serviceBroker cloud service broker info
+     * @return async job id
      */
-    void updateServiceBroker(CloudServiceBroker serviceBroker);
+    String updateServiceBroker(CloudServiceBroker serviceBroker);
 
     /**
      * Service plans are private by default when a service broker's catalog is fetched/updated. This method will update the visibility of
@@ -812,5 +816,7 @@ public interface CloudControllerClient {
     List<UserRole> getUserRolesBySpaceAndUser(UUID spaceGuid, UUID userGuid);
 
     CloudPackage createDockerPackage(UUID applicationGuid, DockerInfo dockerInfo);
+
+    CloudAsyncJob getAsyncJob(String jobId);
 
 }

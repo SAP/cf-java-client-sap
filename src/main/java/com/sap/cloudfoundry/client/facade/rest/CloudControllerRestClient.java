@@ -15,6 +15,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import com.sap.cloudfoundry.client.facade.UploadStatusCallback;
 import com.sap.cloudfoundry.client.facade.domain.ApplicationLog;
 import com.sap.cloudfoundry.client.facade.domain.CloudApplication;
+import com.sap.cloudfoundry.client.facade.domain.CloudAsyncJob;
 import com.sap.cloudfoundry.client.facade.domain.CloudBuild;
 import com.sap.cloudfoundry.client.facade.domain.CloudDomain;
 import com.sap.cloudfoundry.client.facade.domain.CloudEvent;
@@ -57,7 +58,7 @@ public interface CloudControllerRestClient {
 
     void createServiceInstance(CloudServiceInstance serviceInstance);
 
-    void createServiceBroker(CloudServiceBroker serviceBroker);
+    String createServiceBroker(CloudServiceBroker serviceBroker);
 
     CloudServiceKey createServiceKey(String serviceInstanceName, String serviceKeyName, Map<String, Object> parameters);
 
@@ -81,7 +82,7 @@ public interface CloudControllerRestClient {
 
     void deleteServiceInstance(CloudServiceInstance serviceInstance);
 
-    void deleteServiceBroker(String name);
+    String deleteServiceBroker(String name);
 
     void deleteServiceKey(String serviceInstanceName, String serviceKeyName);
 
@@ -209,7 +210,7 @@ public interface CloudControllerRestClient {
 
     void updateApplicationRoutes(String applicationName, Set<CloudRouteSummary> routes);
 
-    void updateServiceBroker(CloudServiceBroker serviceBroker);
+    String updateServiceBroker(CloudServiceBroker serviceBroker);
 
     void updateServicePlanVisibilityForBroker(String name, boolean visibility);
 
@@ -278,5 +279,7 @@ public interface CloudControllerRestClient {
     List<UserRole> getUserRolesBySpaceAndUser(UUID spaceGuid, UUID userGuid);
 
     CloudPackage createDockerPackage(UUID applicationGuid, DockerInfo dockerInfo);
+
+    CloudAsyncJob getAsyncJob(String jobId);
 
 }
