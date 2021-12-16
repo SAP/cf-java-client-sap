@@ -194,6 +194,7 @@ import org.cloudfoundry.client.v3.tasks.ListTasksRequest;
 import org.cloudfoundry.client.v3.tasks.Task;
 import org.cloudfoundry.doppler.DopplerClient;
 import org.cloudfoundry.doppler.RecentLogsRequest;
+import org.cloudfoundry.util.JobUtils;
 import org.cloudfoundry.util.PaginationUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -213,6 +214,7 @@ import java.io.InputStream;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -237,6 +239,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CloudControllerRestClientImpl.class);
     private static final long JOB_POLLING_PERIOD = TimeUnit.SECONDS.toMillis(5);
+    private static final Duration DELETE_JOB_TIMEOUT = Duration.ofMinutes(5);
     private static final int MAX_CHAR_LENGTH_FOR_PARAMS_IN_REQUEST = 4000;
     private static final List<String> CHARS_TO_ENCODE = List.of(",");
 
@@ -550,6 +553,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                 .delete(DeleteApplicationRequest.builder()
                                                 .applicationId(applicationGuid.toString())
                                                 .build())
+                .flatMap(jobId -> JobUtils.waitForCompletion(delegate, DELETE_JOB_TIMEOUT, jobId))
                 .block();
     }
 
