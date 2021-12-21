@@ -9,7 +9,8 @@ public enum ITVariable {
     USER_ORIGIN(Constants.USER_ORIGIN_ENV, Constants.USER_ORIGIN_PROPERTY, false),
     ORG(Constants.ORG_ENV, Constants.ORG_PROPERTY),
     SPACE(Constants.SPACE_ENV, Constants.SPACE_PROPERTY),
-    DOMAIN_NAME(Constants.DOMAIN_NAME_ENV, Constants.DOMAIN_NAME_PROPERTY);
+    DOMAIN_NAME(Constants.DOMAIN_NAME_ENV, Constants.DOMAIN_NAME_PROPERTY),
+    PATH_TO_SERVICE_BROKER_APPLICATION(Constants.PATH_TO_SERVICE_BROKER_ENV, Constants.PATH_TO_SERVICE_BROKER_PROPERTY, false);
   // @formatter:on
 
     private String envVariable;
@@ -21,7 +22,7 @@ public enum ITVariable {
         this.property = property;
         this.required = required;
     }
-    
+
     private ITVariable(String envVariable, String property) {
         this.envVariable = envVariable;
         this.property = property;
@@ -35,7 +36,7 @@ public enum ITVariable {
     public String getProperty() {
         return property;
     }
-    
+
     public boolean isRequired() {
         return required;
     }
@@ -54,6 +55,7 @@ public enum ITVariable {
         public static final String ORG_ENV = "CF_ORG";
         public static final String SPACE_ENV = "CF_SPACE";
         public static final String DOMAIN_NAME_ENV = "DOMAIN_NAME";
+        public static final String PATH_TO_SERVICE_BROKER_ENV = "PATH_TO_SERVICE_BROKER";
 
         public static final String CF_API_PROPERTY = "api";
         public static final String USER_EMAIL_PROPERTY = "user.email";
@@ -62,5 +64,6 @@ public enum ITVariable {
         public static final String ORG_PROPERTY = "org";
         public static final String SPACE_PROPERTY = "space";
         public static final String DOMAIN_NAME_PROPERTY = "domain.name";
+        public static final String PATH_TO_SERVICE_BROKER_PROPERTY = "path.servicebroker";
     }
 }

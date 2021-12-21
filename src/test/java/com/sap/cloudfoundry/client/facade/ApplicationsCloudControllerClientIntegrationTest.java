@@ -1,10 +1,27 @@
 package com.sap.cloudfoundry.client.facade;
 
+import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.APPLICATION_HOST;
+import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.DEFAULT_DOMAIN;
+import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.DISK_IN_MB;
+import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.HEALTH_CHECK_ENDPOINT;
+import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.HEALTH_CHECK_TIMEMOUT;
+import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.JAVA_BUILDPACK;
+import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.MEMORY_IN_MB;
+import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.STATICFILE_APPLICATION_CONTENT;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 
 import org.cloudfoundry.client.v3.Metadata;
 import org.cloudfoundry.client.v3.processes.HealthCheckType;
@@ -28,24 +45,6 @@ import com.sap.cloudfoundry.client.facade.domain.ImmutableStaging;
 import com.sap.cloudfoundry.client.facade.domain.InstancesInfo;
 import com.sap.cloudfoundry.client.facade.domain.Staging;
 import com.sap.cloudfoundry.client.facade.domain.Status;
-import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.JAVA_BUILDPACK;
-import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.APPLICATION_HOST;
-import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.DEFAULT_DOMAIN;
-import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.DISK_IN_MB;
-import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.HEALTH_CHECK_ENDPOINT;
-import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.HEALTH_CHECK_TIMEMOUT;
-import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.MEMORY_IN_MB;
-import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.STATICFILE_APPLICATION_CONTENT;
-
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.text.MessageFormat;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
 
 class ApplicationsCloudControllerClientIntegrationTest extends CloudControllerClientIntegrationTest {
 
@@ -86,6 +85,8 @@ class ApplicationsCloudControllerClientIntegrationTest extends CloudControllerCl
                                                                         .build();
         try {
             verifyApplicationWillBeCreated(applicationName, staging, Set.of(cloudRouteSummary));
+        } catch (Exception e) {
+            fail(e);
         } finally {
             client.deleteApplication(applicationName);
         }
@@ -95,11 +96,21 @@ class ApplicationsCloudControllerClientIntegrationTest extends CloudControllerCl
     @DisplayName("Create, delete and verify the application is deleted")
     void deleteApplication() {
         String applicationName = "test-application-2";
-        createAndVerifyDefaultApplication(applicationName);
-        client.deleteApplication(applicationName);
-        Exception exception = assertThrows(CloudOperationException.class, () -> client.getApplication(applicationName));
-        assertTrue(exception.getMessage()
-                            .contains(HttpStatus.NOT_FOUND.getReasonPhrase()));
+
+        try {
+            createAndVerifyDefaultApplication(applicationName);
+            client.deleteApplication(applicationName);
+            Exception exception = assertThrows(CloudOperationException.class, () -> client.getApplication(applicationName));
+            assertTrue(exception.getMessage()
+                                .contains(HttpStatus.NOT_FOUND.getReasonPhrase()));
+        } catch (Exception e) {
+            fail(e);
+        } finally {
+            CloudApplication app = client.getApplication(applicationName, false);
+            if (app != null) {
+                client.deleteApplication(applicationName);
+            }
+        }
     }
 
     @Test
@@ -109,6 +120,8 @@ class ApplicationsCloudControllerClientIntegrationTest extends CloudControllerCl
         try {
             createAndVerifyDefaultApplication(applicationName);
             assertNotNull(client.getApplicationGuid(applicationName));
+        } catch (Exception e) {
+            fail(e);
         } finally {
             client.deleteApplication(applicationName);
         }
@@ -124,6 +137,8 @@ class ApplicationsCloudControllerClientIntegrationTest extends CloudControllerCl
             UUID applicationGuid = client.getApplicationGuid(applicationName);
             Map<String, String> applicationEnvironment = client.getApplicationEnvironment(applicationGuid);
             assertEquals("bar", applicationEnvironment.get("foo"));
+        } catch (Exception e) {
+            fail(e);
         } finally {
             client.deleteApplication(applicationName);
         }
@@ -135,8 +150,10 @@ class ApplicationsCloudControllerClientIntegrationTest extends CloudControllerCl
         String applicationName = "test-application-5";
         try {
             createAndVerifyDefaultApplication(applicationName);
-            CloudPackage cloudPackage = uploadApplication(applicationName);
+            CloudPackage cloudPackage = ApplicationUtil.uploadApplication(client, applicationName, STATICFILE_APPLICATION_PATH);
             assertEquals(Status.READY, cloudPackage.getStatus());
+        } catch (Exception e) {
+            fail(e);
         } finally {
             client.deleteApplication(applicationName);
         }
@@ -148,8 +165,8 @@ class ApplicationsCloudControllerClientIntegrationTest extends CloudControllerCl
         String applicationName = "test-application-6";
         try {
             createAndVerifyDefaultApplication(applicationName);
-            CloudPackage cloudPackage = uploadApplication(applicationName);
-            stageApplication(applicationName, cloudPackage);
+            CloudPackage cloudPackage = ApplicationUtil.uploadApplication(client, applicationName, STATICFILE_APPLICATION_PATH);
+            ApplicationUtil.stageApplication(client, applicationName, cloudPackage);
             client.startApplication(applicationName);
             assertEquals(CloudApplication.State.STARTED, client.getApplication(applicationName)
                                                                .getState());
@@ -159,6 +176,8 @@ class ApplicationsCloudControllerClientIntegrationTest extends CloudControllerCl
             client.startApplication(applicationName);
             assertEquals(CloudApplication.State.STARTED, client.getApplication(applicationName)
                                                                .getState());
+        } catch (Exception e) {
+            fail(e);
         } finally {
             client.deleteApplication(applicationName);
         }
@@ -170,14 +189,16 @@ class ApplicationsCloudControllerClientIntegrationTest extends CloudControllerCl
         String applicationName = "test-application-7";
         try {
             createAndVerifyDefaultApplication(applicationName);
-            CloudPackage cloudPackage = uploadApplication(applicationName);
+            CloudPackage cloudPackage = ApplicationUtil.uploadApplication(client, applicationName, STATICFILE_APPLICATION_PATH);
             client.updateApplicationInstances(applicationName, 3);
-            stageApplication(applicationName, cloudPackage);
+            ApplicationUtil.stageApplication(client, applicationName, cloudPackage);
             client.startApplication(applicationName);
             CloudApplication application = client.getApplication(applicationName);
             InstancesInfo applicationInstances = client.getApplicationInstances(application);
             assertEquals(3, applicationInstances.getInstances()
                                                 .size());
+        } catch (Exception e) {
+            fail(e);
         } finally {
             client.deleteApplication(applicationName);
         }
@@ -194,6 +215,8 @@ class ApplicationsCloudControllerClientIntegrationTest extends CloudControllerCl
             client.rename(applicationName, newApplicationName);
             assertEquals(applicationGuid, client.getApplication(newApplicationName)
                                                 .getGuid());
+        } catch (Exception e) {
+            fail(e);
         } finally {
             client.deleteApplication(newApplicationName);
         }
@@ -208,6 +231,8 @@ class ApplicationsCloudControllerClientIntegrationTest extends CloudControllerCl
             client.updateApplicationMemory(applicationName, 256);
             CloudApplication application = client.getApplication(applicationName);
             assertEquals(256, application.getMemory());
+        } catch (Exception e) {
+            fail(e);
         } finally {
             client.deleteApplication(applicationName);
         }
@@ -225,6 +250,8 @@ class ApplicationsCloudControllerClientIntegrationTest extends CloudControllerCl
             CloudApplication application = client.getApplication(applicationName);
             assertEquals("echo 1", application.getStaging()
                                               .getCommand());
+        } catch (Exception e) {
+            fail(e);
         } finally {
             client.deleteApplication(applicationName);
         }
@@ -248,6 +275,8 @@ class ApplicationsCloudControllerClientIntegrationTest extends CloudControllerCl
             UUID applicationGuid = client.getApplicationGuid(applicationName);
             CloudPackage dockerPackage = client.createDockerPackage(applicationGuid, dockerInfo);
             assertEquals(CloudPackage.Type.DOCKER, dockerPackage.getType());
+        } catch (Exception e) {
+            fail(e);
         } finally {
             client.deleteApplication(applicationName);
         }
@@ -266,6 +295,8 @@ class ApplicationsCloudControllerClientIntegrationTest extends CloudControllerCl
             client.updateApplicationRoutes(applicationName, newRoutes);
             CloudApplication application = client.getApplication(applicationName);
             assertEquals(newRoutes, application.getRoutes());
+        } catch (Exception e) {
+            fail(e);
         } finally {
             client.deleteApplication(applicationName);
         }
@@ -293,6 +324,8 @@ class ApplicationsCloudControllerClientIntegrationTest extends CloudControllerCl
             assertTrue(packagesForApplication.stream()
                                              .map(CloudPackage::getGuid)
                                              .anyMatch(packageGuid -> packageGuid.equals(dockerPackage.getGuid())));
+        } catch (Exception e) {
+            fail(e);
         } finally {
             client.deleteApplication(applicationName);
         }
@@ -304,9 +337,9 @@ class ApplicationsCloudControllerClientIntegrationTest extends CloudControllerCl
         String applicationName = "test-application-14";
         try {
             createAndVerifyDefaultApplication(applicationName);
-            CloudPackage cloudPackage = uploadApplication(applicationName);
+            CloudPackage cloudPackage = ApplicationUtil.uploadApplication(client, applicationName, STATICFILE_APPLICATION_PATH);
             UUID applicationGuid = client.getApplicationGuid(applicationName);
-            CloudBuild build = createBuildForPackage(cloudPackage);
+            CloudBuild build = ApplicationUtil.createBuildForPackage(client, cloudPackage);
             List<CloudBuild> buildsForApplication = client.getBuildsForApplication(applicationGuid);
             assertTrue(buildsForApplication.stream()
                                            .map(CloudBuild::getMetadata)
@@ -317,6 +350,8 @@ class ApplicationsCloudControllerClientIntegrationTest extends CloudControllerCl
                          client.getBuild(build.getMetadata()
                                               .getGuid())
                                .getGuid());
+        } catch (Exception e) {
+            fail(e);
         } finally {
             client.deleteApplication(applicationName);
         }
@@ -337,45 +372,11 @@ class ApplicationsCloudControllerClientIntegrationTest extends CloudControllerCl
             assertEquals(1, applicationsByMetadataLabelSelector.size());
             assertEquals(applicationName, applicationsByMetadataLabelSelector.get(0)
                                                                              .getName());
+        } catch (Exception e) {
+            fail(e);
         } finally {
             client.deleteApplication(applicationName);
         }
-    }
-
-    private CloudPackage uploadApplication(String applicationName) throws URISyntaxException, InterruptedException {
-        CloudPackage cloudPackage = client.asyncUploadApplication(applicationName, STATICFILE_APPLICATION_PATH);
-        while (cloudPackage.getStatus() != Status.READY && !hasFailed(cloudPackage.getStatus())) {
-            cloudPackage = client.asyncUploadApplication(applicationName, STATICFILE_APPLICATION_PATH);
-            Thread.sleep(1000);
-        }
-        if (hasFailed(cloudPackage.getStatus())) {
-            fail(MessageFormat.format("Cloud package is in invalid state: \"{0}\"", cloudPackage.getStatus()));
-        }
-        return cloudPackage;
-    }
-
-    private boolean hasFailed(Status status) {
-        return status == Status.EXPIRED || status == Status.FAILED;
-    }
-
-    private void stageApplication(String applicationName, CloudPackage cloudPackage) throws InterruptedException {
-        UUID applicationGuid = client.getApplicationGuid(applicationName);
-        CloudBuild build = createBuildForPackage(cloudPackage);
-        client.bindDropletToApp(build.getDropletInfo()
-                                     .getGuid(),
-                                applicationGuid);
-    }
-
-    private CloudBuild createBuildForPackage(CloudPackage cloudPackage) throws InterruptedException {
-        CloudBuild build = client.createBuild(cloudPackage.getGuid());
-        while (build.getState() == CloudBuild.State.STAGING) {
-            build = client.getBuild(build.getGuid());
-            Thread.sleep(1000);
-        }
-        if (build.getState() == CloudBuild.State.FAILED) {
-            fail(MessageFormat.format("Cloud build is in invalid state: \"{0}\"", build.getState()));
-        }
-        return build;
     }
 
     private void verifyApplicationWillBeCreated(String applicationName, Staging staging, Set<CloudRouteSummary> cloudRoutesSummary) {

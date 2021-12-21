@@ -20,6 +20,7 @@ abstract class CloudControllerClientIntegrationTest {
 
     private static CloudControllerClient clientWithoutTarget;
     protected static CloudControllerClient client;
+    protected static CloudSpace target;
 
     @BeforeAll
     static void login() throws MalformedURLException {
@@ -28,7 +29,7 @@ abstract class CloudControllerClientIntegrationTest {
         URL apiUrl = URI.create(ITVariable.CF_API.getValue())
                         .toURL();
         clientWithoutTarget = new CloudControllerClientImpl(apiUrl, credentials);
-        CloudSpace target = clientWithoutTarget.getSpace(ITVariable.ORG.getValue(), ITVariable.SPACE.getValue());
+        target = clientWithoutTarget.getSpace(ITVariable.ORG.getValue(), ITVariable.SPACE.getValue());
         client = new CloudControllerClientImpl(apiUrl, credentials, target, true);
     }
 
