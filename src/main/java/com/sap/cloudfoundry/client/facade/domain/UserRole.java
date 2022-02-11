@@ -1,6 +1,5 @@
 package com.sap.cloudfoundry.client.facade.domain;
 
-import java.text.MessageFormat;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.stream.Collectors;

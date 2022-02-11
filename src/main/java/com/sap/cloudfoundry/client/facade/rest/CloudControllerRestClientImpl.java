@@ -177,6 +177,7 @@ import org.cloudfoundry.client.v3.processes.HealthCheckType;
 import org.cloudfoundry.client.v3.processes.UpdateProcessRequest;
 import org.cloudfoundry.client.v3.roles.ListRolesRequest;
 import org.cloudfoundry.client.v3.roles.RoleResource;
+import org.cloudfoundry.client.v3.roles.RoleType;
 import org.cloudfoundry.client.v3.serviceinstances.ListServiceInstancesRequest;
 import org.cloudfoundry.client.v3.serviceinstances.ServiceInstanceResource;
 import org.cloudfoundry.client.v3.serviceinstances.UpdateServiceInstanceRequest;
@@ -1586,6 +1587,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                                     .page(page)
                                                                                     .spaceId(spaceGuid.toString())
                                                                                     .userId(userGuid.toString())
+                                                                                    .types(RoleType.values())
                                                                                     .build();
         return PaginationUtils.requestClientV3Resources(page -> delegate.rolesV3()
                                                                         .list(pageRequestSupplier.apply(page)));
