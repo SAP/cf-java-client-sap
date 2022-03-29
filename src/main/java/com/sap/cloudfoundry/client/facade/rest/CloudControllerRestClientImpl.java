@@ -223,6 +223,7 @@ import com.sap.cloudfoundry.client.facade.domain.ImmutableErrorDetails;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableInstancesInfo;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableUpload;
 import com.sap.cloudfoundry.client.facade.domain.InstancesInfo;
+import com.sap.cloudfoundry.client.facade.domain.ServiceOperation;
 import com.sap.cloudfoundry.client.facade.domain.Staging;
 import com.sap.cloudfoundry.client.facade.domain.Status;
 import com.sap.cloudfoundry.client.facade.domain.Upload;
@@ -1755,7 +1756,13 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                                                           .serviceInstanceName(name)
                                                                                                           .page(page)
                                                                                                           .build();
-        return getServiceInstanceResources(pageRequestSupplier).singleOrEmpty();
+        return getServiceInstanceResources(pageRequestSupplier).singleOrEmpty()
+                                                               .filter(this::hasFailedLastOperation);
+    }
+
+    private boolean hasFailedLastOperation(ServiceInstanceResource service) {
+        return ServiceOperation.State.fromString(service.getLastOperation()
+                                                        .getState()) == ServiceOperation.State.FAILED;
     }
 
     private Flux<ServiceInstanceResource> getServiceInstanceResources(IntFunction<ListServiceInstancesRequest> pageRequestSupplier) {
