@@ -25,12 +25,10 @@ import org.junit.jupiter.params.provider.MethodSource;
 import com.sap.cloudfoundry.client.facade.domain.CloudApplication;
 import com.sap.cloudfoundry.client.facade.domain.CloudRouteSummary;
 import com.sap.cloudfoundry.client.facade.domain.CloudSpace;
-import com.sap.cloudfoundry.client.facade.domain.CloudStack;
 import com.sap.cloudfoundry.client.facade.domain.DockerInfo;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudApplication;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudRouteSummary;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudSpace;
-import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudStack;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableDockerCredentials;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableDockerInfo;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableStaging;
@@ -63,9 +61,6 @@ class RawCloudApplicationTest {
     private static final org.cloudfoundry.client.v2.applications.DockerCredentials DOCKER_CREDENTIALS = buildDockerCredentials();
     private static final String STACK_NAME = "cflinuxfs3";
     private static final String SPACE_NAME = "test";
-    private static final CloudStack STACK = ImmutableCloudStack.builder()
-                                                               .name(STACK_NAME)
-                                                               .build();
     private static final CloudSpace SPACE = ImmutableCloudSpace.builder()
                                                                .name(SPACE_NAME)
                                                                .build();
@@ -124,6 +119,7 @@ class RawCloudApplicationTest {
     private static CloudApplication buildApplication(Staging staging) {
         return ImmutableCloudApplication.builder()
                                         .metadata(RawCloudEntityTest.EXPECTED_METADATA_V3)
+                                        .v3Metadata(RawCloudEntityTest.V3_METADATA)
                                         .name(RawCloudEntityTest.NAME)
                                         .routes(EXPECTED_ROUTES)
                                         .memory(MEMORY)
@@ -202,7 +198,6 @@ class RawCloudApplicationTest {
         return ImmutableRawCloudApplication.builder()
                                            .application(buildApplicationResource())
                                            .summary(summary)
-                                           .stack(STACK)
                                            .space(SPACE)
                                            .build();
     }
@@ -218,6 +213,7 @@ class RawCloudApplicationTest {
                                                       .type(LifecycleType.BUILDPACK)
                                                       .data(BuildpackData.builder()
                                                                          .buildpack("buildpack")
+                                                                         .stack(STACK_NAME)
                                                                          .build())
                                                       .build())
                                   .name("foo")

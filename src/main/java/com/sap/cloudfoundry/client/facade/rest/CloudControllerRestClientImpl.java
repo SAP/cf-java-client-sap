@@ -146,7 +146,6 @@ import org.cloudfoundry.client.v3.spaces.GetSpaceRequest;
 import org.cloudfoundry.client.v3.spaces.ListSpacesRequest;
 import org.cloudfoundry.client.v3.spaces.Space;
 import org.cloudfoundry.client.v3.spaces.SpaceResource;
-import org.cloudfoundry.client.v3.stacks.GetStackRequest;
 import org.cloudfoundry.client.v3.stacks.ListStacksRequest;
 import org.cloudfoundry.client.v3.stacks.Stack;
 import org.cloudfoundry.client.v3.tasks.CancelTaskRequest;
@@ -217,7 +216,6 @@ import com.sap.cloudfoundry.client.facade.domain.DockerCredentials;
 import com.sap.cloudfoundry.client.facade.domain.DockerInfo;
 import com.sap.cloudfoundry.client.facade.domain.DropletInfo;
 import com.sap.cloudfoundry.client.facade.domain.ErrorDetails;
-import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudApplication;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableDropletInfo;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableErrorDetails;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableInstancesInfo;
@@ -230,7 +228,6 @@ import com.sap.cloudfoundry.client.facade.domain.UserRole;
 import com.sap.cloudfoundry.client.facade.oauth2.OAuth2AccessTokenWithAdditionalInfo;
 import com.sap.cloudfoundry.client.facade.oauth2.OAuthClient;
 import com.sap.cloudfoundry.client.facade.util.EnvironmentUtil;
-import com.sap.cloudfoundry.client.facade.util.StacksCache;
 import com.sap.cloudfoundry.client.facade.util.UriUtil;
 
 import reactor.core.publisher.Flux;
@@ -255,7 +252,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     private OAuthClient oAuthClient;
     private WebClient webClient;
     private CloudSpace target;
-    private static final StacksCache stacksCache = new StacksCache();
 
     private CloudFoundryClient delegate;
     private DopplerClient dopplerClient;
@@ -670,14 +666,12 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public CloudApplication getApplication(String applicationName, boolean required) {
-        CloudApplication application = findApplicationByName(applicationName, required);
-        return addMetadataIfNotNull(application);
+        return findApplicationByName(applicationName, required);
     }
 
     @Override
     public CloudApplication getApplication(UUID applicationGuid) {
-        final CloudApplication application = findApplication(applicationGuid);
-        return addMetadataIfNotNull(application);
+        return findApplication(applicationGuid);
     }
 
     @Override
@@ -736,17 +730,14 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public List<CloudApplication> getApplications() {
-        List<CloudApplication> applications = fetchListWithAuxiliaryContent(this::getApplicationResources,
-                                                                            this::zipWithAuxiliaryApplicationContent);
-        return addMetadataIfNotEmpty(applications);
+        return fetchListWithAuxiliaryContent(this::getApplicationResources, this::zipWithAuxiliaryApplicationContent);
     }
 
     @Override
     public List<CloudApplication> getApplicationsByMetadataLabelSelector(String labelSelector) {
         Map<String, Metadata> applicationsMetadata = getApplicationsMetadataByLabelSelector(labelSelector);
-        List<CloudApplication> cloudApplications = fetchListWithAuxiliaryContent(() -> getApplicationResourcesByNamesInBatches(applicationsMetadata.keySet()),
-                                                                                 this::zipWithAuxiliaryApplicationContent);
-        return addMetadata(cloudApplications, applicationsMetadata);
+        return fetchListWithAuxiliaryContent(() -> getApplicationResourcesByNamesInBatches(applicationsMetadata.keySet()),
+                                             this::zipWithAuxiliaryApplicationContent);
     }
 
     private List<UUID> getApplicationIds() {
@@ -1581,67 +1572,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                         .list(pageRequestSupplier.apply(page)));
     }
 
-    private CloudApplication addMetadataIfNotNull(CloudApplication application) {
-        return application == null ? null : addMetadata(application);
-    }
-
-    private CloudApplication addMetadata(CloudApplication application) {
-        UUID appGuid = getGuid(application);
-        Map<String, Metadata> applicationsMetadata = getApplicationsMetadataInBatches(Collections.singletonList(appGuid));
-        return addMetadata(Collections.singletonList(application), applicationsMetadata).get(0);
-    }
-
-    private Map<String, Metadata> getApplicationsMetadataInBatches(List<UUID> appGuids) {
-        Map<String, Metadata> applicationsMetadata = new HashMap<>();
-        for (List<UUID> batchOfAppGuids : toBatches(appGuids, MAX_CHAR_LENGTH_FOR_PARAMS_IN_REQUEST)) {
-            applicationsMetadata.putAll(getApplicationsMetadata(batchOfAppGuids));
-        }
-        return applicationsMetadata;
-    }
-
-    private Map<String, Metadata> getApplicationsMetadata(List<UUID> appGuids) {
-        IntFunction<ListApplicationsRequest> pageRequestSupplier = page -> ListApplicationsRequest.builder()
-                                                                                                  .spaceId(getTargetSpaceGuid().toString())
-                                                                                                  .addAllApplicationIds(toString(appGuids))
-                                                                                                  .page(page)
-                                                                                                  .build();
-        return PaginationUtils.requestClientV3Resources(page -> delegate.applicationsV3()
-                                                                        .list(pageRequestSupplier.apply(page)))
-                              .collectMap(ApplicationResource::getName, ApplicationResource::getMetadata)
-                              .block();
-    }
-
-    private List<String> toString(List<UUID> guids) {
-        return guids.stream()
-                    .map(UUID::toString)
-                    .collect(Collectors.toList());
-    }
-
-    private List<CloudApplication> addMetadataIfNotEmpty(List<CloudApplication> applications) {
-        return applications.isEmpty() ? applications : addMetadata(applications);
-    }
-
-    private List<CloudApplication> addMetadata(List<CloudApplication> applications) {
-        Map<String, Metadata> applicationsMetadata = getApplicationsMetadataInBatches(applications.stream()
-                                                                                                  .map(CloudApplication::getMetadata)
-                                                                                                  .map(CloudMetadata::getGuid)
-                                                                                                  .collect(Collectors.toList()));
-        return addMetadata(applications, applicationsMetadata);
-    }
-
-    private List<CloudApplication> addMetadata(List<CloudApplication> applications, Map<String, Metadata> applicationsMetadata) {
-        return applications.stream()
-                           .map(application -> addMetadata(application, applicationsMetadata))
-                           .collect(Collectors.toList());
-    }
-
-    private CloudApplication addMetadata(CloudApplication application, Map<String, Metadata> applicationsMetadata) {
-        String appName = application.getName();
-        Metadata metadata = applicationsMetadata.get(appName);
-        return ImmutableCloudApplication.copyOf(application)
-                                        .withV3Metadata(metadata);
-    }
-
     private CloudApplication findApplicationByName(String name, boolean required) {
         CloudApplication application = findApplicationByName(name);
         if (application == null && required) {
@@ -1705,16 +1635,11 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     private Mono<Derivable<CloudApplication>> zipWithAuxiliaryApplicationContent(Application application) {
         UUID applicationGuid = getGuid(application);
-        return getApplicationSummary(applicationGuid).zipWhen(this::getApplicationStackResource)
-                                                     .doOnSuccess(tuple -> stacksCache.setStack(UUID.fromString(tuple.getT1()
-                                                                                                                     .getStackId()),
-                                                                                                tuple.getT2()))
-                                                     .map(tuple -> ImmutableRawCloudApplication.builder()
-                                                                                               .application(application)
-                                                                                               .summary(tuple.getT1())
-                                                                                               .stack(ImmutableRawCloudStack.of(tuple.getT2()))
-                                                                                               .space(target)
-                                                                                               .build());
+        return getApplicationSummary(applicationGuid).map(applicationSummary -> ImmutableRawCloudApplication.builder()
+                                                                                                            .application(application)
+                                                                                                            .summary(applicationSummary)
+                                                                                                            .space(target)
+                                                                                                            .build());
     }
 
     // TODO: Use v3 if possible. Currently no summary endpoint, the "include" parameter
@@ -1727,14 +1652,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                      .build();
         return delegate.applicationsV2()
                        .summary(request);
-    }
-
-    private Mono<? extends Stack> getApplicationStackResource(SummaryApplicationResponse summary) {
-        UUID stackGuid = UUID.fromString(summary.getStackId());
-        if (stacksCache.containsStack(stackGuid)) {
-            return Mono.just(stacksCache.getStack(stackGuid));
-        }
-        return getStackResource(stackGuid);
     }
 
     private CloudServiceInstance findServiceInstanceByName(String name) {
@@ -2476,14 +2393,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                                       .page(page)
                                                                                       .build();
         return getStackResources(pageRequestSupplier);
-    }
-
-    private Mono<? extends Stack> getStackResource(UUID guid) {
-        GetStackRequest request = GetStackRequest.builder()
-                                                 .stackId(guid.toString())
-                                                 .build();
-        return delegate.stacksV3()
-                       .get(request);
     }
 
     private Mono<? extends Stack> getStackResourceByName(String name) {
