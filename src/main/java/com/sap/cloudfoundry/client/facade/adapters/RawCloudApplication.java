@@ -6,6 +6,9 @@ import java.util.stream.Collectors;
 
 import org.cloudfoundry.client.v2.applications.SummaryApplicationResponse;
 import org.cloudfoundry.client.v2.serviceinstances.ServiceInstance;
+import org.cloudfoundry.client.v3.BuildpackData;
+import org.cloudfoundry.client.v3.Lifecycle;
+import org.cloudfoundry.client.v3.LifecycleType;
 import org.cloudfoundry.client.v3.applications.Application;
 import org.cloudfoundry.client.v3.applications.ApplicationState;
 import org.immutables.value.Value;
@@ -13,7 +16,6 @@ import org.immutables.value.Value;
 import com.sap.cloudfoundry.client.facade.domain.CloudApplication;
 import com.sap.cloudfoundry.client.facade.domain.CloudRouteSummary;
 import com.sap.cloudfoundry.client.facade.domain.CloudSpace;
-import com.sap.cloudfoundry.client.facade.domain.CloudStack;
 import com.sap.cloudfoundry.client.facade.domain.Derivable;
 import com.sap.cloudfoundry.client.facade.domain.DockerCredentials;
 import com.sap.cloudfoundry.client.facade.domain.DockerInfo;
@@ -33,8 +35,6 @@ public abstract class RawCloudApplication extends RawCloudEntity<CloudApplicatio
 
     public abstract SummaryApplicationResponse getSummary();
 
-    public abstract Derivable<CloudStack> getStack();
-
     public abstract Derivable<CloudSpace> getSpace();
 
     @Override
@@ -42,6 +42,7 @@ public abstract class RawCloudApplication extends RawCloudEntity<CloudApplicatio
         SummaryApplicationResponse summary = getSummary();
         return ImmutableCloudApplication.builder()
                                         .metadata(parseResourceMetadata(getApplication()))
+                                        .v3Metadata(getApplication().getMetadata())
                                         .name(summary.getName())
                                         .memory(summary.getMemory())
                                         .routes(parseRoutes(summary.getRoutes()))
@@ -49,7 +50,7 @@ public abstract class RawCloudApplication extends RawCloudEntity<CloudApplicatio
                                         .instances(summary.getInstances())
                                         .runningInstances(summary.getRunningInstances())
                                         .state(parseState(getApplication().getState()))
-                                        .staging(parseStaging(summary, getStack()))
+                                        .staging(parseStaging(summary, getApplication().getLifecycle()))
                                         .packageState(parsePackageState(summary.getPackageState()))
                                         .stagingError(summary.getStagingFailedDescription())
                                         .services(getNames(summary.getServices()))
@@ -62,7 +63,7 @@ public abstract class RawCloudApplication extends RawCloudEntity<CloudApplicatio
         return CloudApplication.State.valueOf(state.getValue());
     }
 
-    private static Staging parseStaging(SummaryApplicationResponse summary, Derivable<CloudStack> stack) {
+    private static Staging parseStaging(SummaryApplicationResponse summary, Lifecycle lifecycle) {
         return ImmutableStaging.builder()
                                .addBuildpack(summary.getBuildpack())
                                .command(summary.getCommand())
@@ -72,7 +73,7 @@ public abstract class RawCloudApplication extends RawCloudEntity<CloudApplicatio
                                .healthCheckType(summary.getHealthCheckType())
                                .isSshEnabled(summary.getEnableSsh())
                                .dockerInfo(parseDockerInfo(summary))
-                               .stackName(parseStackName(stack))
+                               .stackName(parseStackName(lifecycle))
                                .build();
     }
 
@@ -98,9 +99,12 @@ public abstract class RawCloudApplication extends RawCloudEntity<CloudApplicatio
                                          .build();
     }
 
-    private static String parseStackName(Derivable<CloudStack> derivableStack) {
-        return derivableStack.derive()
-                             .getName();
+    private static String parseStackName(Lifecycle lifecycle) {
+        if (lifecycle.getType() == LifecycleType.BUILDPACK) {
+            BuildpackData buildpackData = (BuildpackData) lifecycle.getData();
+            return buildpackData.getStack();
+        }
+        return null;
     }
 
     private static PackageState parsePackageState(String state) {
