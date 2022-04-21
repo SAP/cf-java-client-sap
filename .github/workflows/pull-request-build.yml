@@ -1,4 +1,4 @@
-name: Multiapps Maven build
+name: SAP Java Client Maven build
 
 on:
   pull_request:
