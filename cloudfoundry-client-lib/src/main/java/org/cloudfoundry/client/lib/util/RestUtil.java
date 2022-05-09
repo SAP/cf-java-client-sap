@@ -20,7 +20,6 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.DefaultProxyRoutePlanner;
 import org.cloudfoundry.client.lib.HttpProxyConfiguration;
-import org.cloudfoundry.client.lib.oauth2.OauthClient;
 import org.cloudfoundry.client.lib.rest.CloudControllerResponseErrorHandler;
 import org.cloudfoundry.client.lib.rest.CloudFoundryFormHttpMessageConverter;
 import org.cloudfoundry.client.lib.rest.LoggingRestTemplate;
@@ -42,12 +41,6 @@ import org.springframework.web.client.RestTemplate;
  * @author Thomas Risberg
  */
 public class RestUtil {
-
-    public OauthClient createOauthClient(URL authorizationUrl, HttpProxyConfiguration httpProxyConfiguration,
-        boolean trustSelfSignedCerts) {
-        return new OauthClient(authorizationUrl, createRestTemplate(httpProxyConfiguration, trustSelfSignedCerts));
-    }
-
     public ClientHttpRequestFactory createRequestFactory(HttpProxyConfiguration httpProxyConfiguration, boolean trustSelfSignedCerts) {
         HttpClientBuilder httpClientBuilder = HttpClients.custom()
             .useSystemProperties();
