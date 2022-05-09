@@ -20,7 +20,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -555,11 +554,6 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     @Override
     public List<ApplicationLog> getRecentLogs(String appName) {
         return cc.getRecentLogs(appName);
-    }
-
-    @Override
-    public List<ApplicationLog> getRecentLogs(String appName, Date since, Date till) {
-        throw new UnsupportedOperationException();
     }
 
     @Override
