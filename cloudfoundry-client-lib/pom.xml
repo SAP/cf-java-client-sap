@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <artifactId>cloudfoundry-client-lib</artifactId>
     <packaging>jar</packaging>
@@ -15,7 +16,8 @@
     <properties>
         <java.version>1.8</java.version>
         <spring.framework.version>4.3.15.RELEASE</spring.framework.version>
-        <spring.security.oauth.version>2.3.3.RELEASE</spring.security.oauth.version>
+        <spring-security.version>5.7.1</spring-security.version>
+        <spring.version>5.3.20</spring.version>
         <jackson.version>2.9.5</jackson.version>
         <tomcat.version>8.0.52</tomcat.version>
         <jetty.version>8.1.12.v20130726</jetty.version>
@@ -88,21 +90,24 @@
                                             <artifactId>non-ascii-file-name</artifactId>
                                             <version>0.1.0.BUILD-SNAPSHOT</version>
                                             <type>war</type>
-                                            <outputDirectory>${project.build.directory}/generated-test-resources</outputDirectory>
+                                            <outputDirectory>${project.build.directory}/generated-test-resources
+                                            </outputDirectory>
                                         </artifactItem>
                                         <artifactItem>
                                             <groupId>org.cloudfoundry.test</groupId>
                                             <artifactId>simple-spring-app</artifactId>
                                             <version>0.1.0.BUILD-SNAPSHOT</version>
                                             <type>war</type>
-                                            <outputDirectory>${project.build.directory}/generated-test-resources</outputDirectory>
+                                            <outputDirectory>${project.build.directory}/generated-test-resources
+                                            </outputDirectory>
                                         </artifactItem>
                                         <artifactItem>
                                             <groupId>org.cloudfoundry.test</groupId>
                                             <artifactId>haash-broker</artifactId>
                                             <version>0.1.0.BUILD-SNAPSHOT</version>
                                             <type>jar</type>
-                                            <outputDirectory>${project.build.directory}/generated-test-resources</outputDirectory>
+                                            <outputDirectory>${project.build.directory}/generated-test-resources
+                                            </outputDirectory>
                                         </artifactItem>
                                     </artifactItems>
                                     <stripVersion>true</stripVersion>
@@ -199,18 +204,6 @@
             <groupId>org.springframework</groupId>
             <artifactId>spring-webmvc</artifactId>
             <version>${spring.framework.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework.security.oauth</groupId>
-            <artifactId>spring-security-oauth2</artifactId>
-            <version>${spring.security.oauth.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.springframework</groupId>
-                    <artifactId>spring-jdbc</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
 
         <dependency>
@@ -311,7 +304,33 @@
             <version>${byteman.version}</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-core</artifactId>
+            <version>${spring-security.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-config</artifactId>
+            <version>${spring-security.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-web</artifactId>
+            <version>${spring-security.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-oauth2-client</artifactId>
+            <version>${spring-security.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-web</artifactId>
+            <version>${spring.version}</version>
+        </dependency>
     </dependencies>
+
 
     <build>
         <plugins>

@@ -52,9 +52,9 @@ import org.cloudfoundry.client.lib.domain.ServiceKey;
 import org.cloudfoundry.client.lib.domain.Staging;
 import org.cloudfoundry.client.lib.domain.Upload;
 import org.cloudfoundry.client.lib.domain.UploadToken;
+import org.cloudfoundry.client.lib.oauth2.OAuth2AccessTokenWithAdditionalInfo;
 import org.cloudfoundry.client.lib.rest.CloudControllerRestClient;
 import org.cloudfoundry.client.lib.rest.CloudControllerRestClientFactory;
-import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.util.Assert;
 import org.springframework.web.client.ResponseErrorHandler;
 
@@ -727,7 +727,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public OAuth2AccessToken login() {
+    public OAuth2AccessTokenWithAdditionalInfo login() {
         return cc.login();
     }
 

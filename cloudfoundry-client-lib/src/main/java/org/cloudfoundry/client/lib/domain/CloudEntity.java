@@ -16,10 +16,10 @@
 
 package org.cloudfoundry.client.lib.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import java.util.Date;
 import java.util.UUID;
-
-import org.codehaus.jackson.annotate.JsonIgnore;
 
 /**
  * @author Thomas Risberg

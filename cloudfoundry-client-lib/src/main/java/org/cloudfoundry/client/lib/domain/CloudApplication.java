@@ -16,6 +16,8 @@
 
 package org.cloudfoundry.client.lib.domain;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+
 import static org.cloudfoundry.client.lib.util.CloudUtil.parse;
 
 import java.util.ArrayList;
@@ -24,10 +26,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.codehaus.jackson.annotate.JsonAutoDetect;
-import org.codehaus.jackson.annotate.JsonAutoDetect.Visibility;
-
-@JsonAutoDetect(fieldVisibility = Visibility.ANY, getterVisibility = Visibility.NONE, creatorVisibility = Visibility.NONE)
+@JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY, getterVisibility = JsonAutoDetect.Visibility.NONE, creatorVisibility = JsonAutoDetect.Visibility.NONE)
 public class CloudApplication extends CloudEntity {
 
     private static final String BUILDPACK_URL_KEY = "buildpack";

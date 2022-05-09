@@ -58,7 +58,7 @@ import org.cloudfoundry.client.lib.domain.ServiceKey;
 import org.cloudfoundry.client.lib.domain.Staging;
 import org.cloudfoundry.client.lib.domain.Upload;
 import org.cloudfoundry.client.lib.domain.UploadToken;
-import org.springframework.security.oauth2.common.OAuth2AccessToken;
+import org.cloudfoundry.client.lib.oauth2.OAuth2AccessTokenWithAdditionalInfo;
 import org.springframework.web.client.ResponseErrorHandler;
 
 /**
@@ -91,7 +91,7 @@ public interface CloudControllerRestClient {
     void createApplication(String appName, Staging staging, Integer memory, List<String> uris, List<String> serviceNames);
 
     void createApplication(String appName, Staging staging, Integer disk, Integer memory, List<String> uris, List<String> serviceNames,
-        DockerInfo dockerInfo);
+                           DockerInfo dockerInfo);
 
     // Service methods
 
@@ -269,7 +269,7 @@ public interface CloudControllerRestClient {
 
     List<CloudSecurityGroup> getStagingSecurityGroups();
 
-    OAuth2AccessToken login();
+    OAuth2AccessTokenWithAdditionalInfo login();
 
     void logout();
 
@@ -362,8 +362,8 @@ public interface CloudControllerRestClient {
     CloudTask cancelTask(UUID taskGuid);
 
     CloudBuild createBuild(UUID packageGuid);
-    
+
     CloudBuild getBuild(UUID packageGuid);
-    
+
     void bindDropletToApp(UUID dropletGuid, UUID appGuid);
 }

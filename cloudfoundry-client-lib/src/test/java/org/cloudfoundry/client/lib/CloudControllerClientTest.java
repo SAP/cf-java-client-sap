@@ -64,7 +64,6 @@ import org.cloudfoundry.client.lib.domain.InstanceStats;
 import org.cloudfoundry.client.lib.domain.InstancesInfo;
 import org.cloudfoundry.client.lib.domain.SecurityGroupRule;
 import org.cloudfoundry.client.lib.domain.Staging;
-import org.cloudfoundry.client.lib.oauth2.OauthClient;
 import org.cloudfoundry.client.lib.rest.CloudControllerRestClient;
 import org.cloudfoundry.client.lib.rest.CloudControllerRestClientFactory;
 import org.cloudfoundry.client.lib.util.RestUtil;
@@ -97,8 +96,6 @@ import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
-import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
-import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.ResponseExtractor;
@@ -1497,29 +1494,6 @@ public class CloudControllerClientTest {
         List<CloudQuota> quotas = connectedClient.getQuotas();
         assertNotNull(quotas);
         assertTrue(quotas.size() > 0);
-    }
-
-    @Test
-    public void refreshTokenOnExpiration() throws Exception {
-        URL cloudControllerUrl = new URL(CCNG_API_URL);
-        CloudCredentials credentials = new CloudCredentials(CCNG_USER_EMAIL, CCNG_USER_PASS);
-
-        CloudControllerRestClientFactory factory = new CloudControllerRestClientFactory(httpProxyConfiguration, CCNG_API_SSL);
-        CloudControllerRestClient client = factory.newCloudController(cloudControllerUrl, credentials, CCNG_USER_ORG, CCNG_USER_SPACE);
-
-        client.login();
-
-        validateClientAccess(client);
-
-        OauthClient oauthClient = factory.getOauthClient();
-        OAuth2AccessToken token = oauthClient.getToken();
-        if (token instanceof DefaultOAuth2AccessToken) {
-            // set the token expiration to "now", forcing the access token to be refreshed
-            ((DefaultOAuth2AccessToken) token).setExpiration(new Date());
-            validateClientAccess(client);
-        } else {
-            fail("Error forcing expiration of access token");
-        }
     }
 
     @Test

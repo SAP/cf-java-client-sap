@@ -30,13 +30,13 @@ import java.util.List;
 import java.util.Set;
 import java.util.zip.ZipFile;
 
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.cloudfoundry.client.lib.archive.ApplicationArchive;
 import org.cloudfoundry.client.lib.archive.ZipApplicationArchive;
 import org.cloudfoundry.client.lib.domain.CloudResource;
 import org.cloudfoundry.client.lib.domain.CloudResources;
-import org.codehaus.jackson.JsonParseException;
-import org.codehaus.jackson.map.JsonMappingException;
-import org.codehaus.jackson.map.ObjectMapper;
 import org.junit.Test;
 
 /**

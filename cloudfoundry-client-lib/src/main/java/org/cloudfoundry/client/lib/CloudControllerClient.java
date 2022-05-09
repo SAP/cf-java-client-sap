@@ -51,7 +51,7 @@ import org.cloudfoundry.client.lib.domain.ServiceKey;
 import org.cloudfoundry.client.lib.domain.Staging;
 import org.cloudfoundry.client.lib.domain.Upload;
 import org.cloudfoundry.client.lib.domain.UploadToken;
-import org.springframework.security.oauth2.common.OAuth2AccessToken;
+import org.cloudfoundry.client.lib.oauth2.OAuth2AccessTokenWithAdditionalInfo;
 import org.springframework.web.client.ResponseErrorHandler;
 
 /**
@@ -951,7 +951,7 @@ public interface CloudControllerClient {
      *
      * @return authentication token
      */
-    OAuth2AccessToken login();
+    OAuth2AccessTokenWithAdditionalInfo login();
 
     /**
      * Logout closing the current session.
