@@ -9,7 +9,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -38,13 +37,17 @@ import org.cloudfoundry.client.v2.servicebindings.ListServiceBindingsRequest;
 import org.cloudfoundry.client.v2.servicebindings.ServiceBindingEntity;
 import org.cloudfoundry.client.v2.serviceinstances.CreateServiceInstanceRequest;
 import org.cloudfoundry.client.v2.serviceinstances.DeleteServiceInstanceRequest;
+import org.cloudfoundry.client.v2.serviceinstances.GetServiceInstanceParametersRequest;
+import org.cloudfoundry.client.v2.serviceinstances.GetServiceInstanceParametersResponse;
 import org.cloudfoundry.client.v2.servicekeys.CreateServiceKeyRequest;
 import org.cloudfoundry.client.v2.servicekeys.DeleteServiceKeyRequest;
 import org.cloudfoundry.client.v2.servicekeys.ListServiceKeysRequest;
 import org.cloudfoundry.client.v2.servicekeys.ServiceKeyEntity;
 import org.cloudfoundry.client.v2.serviceplans.UpdateServicePlanRequest;
 import org.cloudfoundry.client.v2.userprovidedserviceinstances.CreateUserProvidedServiceInstanceRequest;
+import org.cloudfoundry.client.v2.userprovidedserviceinstances.GetUserProvidedServiceInstanceRequest;
 import org.cloudfoundry.client.v2.userprovidedserviceinstances.UpdateUserProvidedServiceInstanceRequest;
+import org.cloudfoundry.client.v2.userprovidedserviceinstances.UserProvidedServiceInstanceEntity;
 import org.cloudfoundry.client.v3.BuildpackData;
 import org.cloudfoundry.client.v3.DockerData;
 import org.cloudfoundry.client.v3.Lifecycle;
@@ -110,17 +113,6 @@ import org.cloudfoundry.client.v3.processes.UpdateProcessRequest;
 import org.cloudfoundry.client.v3.roles.ListRolesRequest;
 import org.cloudfoundry.client.v3.roles.RoleResource;
 import org.cloudfoundry.client.v3.roles.RoleType;
-import org.cloudfoundry.client.v3.servicebrokers.BasicAuthentication;
-import org.cloudfoundry.client.v3.servicebrokers.CreateServiceBrokerRequest;
-import org.cloudfoundry.client.v3.servicebrokers.DeleteServiceBrokerRequest;
-import org.cloudfoundry.client.v3.servicebrokers.ListServiceBrokersRequest;
-import org.cloudfoundry.client.v3.servicebrokers.ServiceBrokerRelationships;
-import org.cloudfoundry.client.v3.servicebrokers.ServiceBrokerResource;
-import org.cloudfoundry.client.v3.servicebrokers.UpdateServiceBrokerRequest;
-import org.cloudfoundry.client.v3.serviceinstances.GetManagedServiceParametersRequest;
-import org.cloudfoundry.client.v3.serviceinstances.GetManagedServiceParametersResponse;
-import org.cloudfoundry.client.v3.serviceinstances.GetUserProvidedCredentialsRequest;
-import org.cloudfoundry.client.v3.serviceinstances.GetUserProvidedCredentialsResponse;
 import org.cloudfoundry.client.v3.routes.CreateRouteRequest;
 import org.cloudfoundry.client.v3.routes.CreateRouteResponse;
 import org.cloudfoundry.client.v3.routes.DeleteRouteRequest;
@@ -130,6 +122,13 @@ import org.cloudfoundry.client.v3.routes.ListRoutesRequest;
 import org.cloudfoundry.client.v3.routes.RemoveRouteDestinationsRequest;
 import org.cloudfoundry.client.v3.routes.RouteRelationships;
 import org.cloudfoundry.client.v3.routes.RouteResource;
+import org.cloudfoundry.client.v3.servicebrokers.BasicAuthentication;
+import org.cloudfoundry.client.v3.servicebrokers.CreateServiceBrokerRequest;
+import org.cloudfoundry.client.v3.servicebrokers.DeleteServiceBrokerRequest;
+import org.cloudfoundry.client.v3.servicebrokers.ListServiceBrokersRequest;
+import org.cloudfoundry.client.v3.servicebrokers.ServiceBrokerRelationships;
+import org.cloudfoundry.client.v3.servicebrokers.ServiceBrokerResource;
+import org.cloudfoundry.client.v3.servicebrokers.UpdateServiceBrokerRequest;
 import org.cloudfoundry.client.v3.serviceinstances.ListServiceInstancesRequest;
 import org.cloudfoundry.client.v3.serviceinstances.ServiceInstanceResource;
 import org.cloudfoundry.client.v3.serviceinstances.ServiceInstanceType;
@@ -905,21 +904,25 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public Map<String, Object> getServiceInstanceParameters(UUID guid) {
-        return delegate.serviceInstancesV3()
-                       .getManagedServiceParameters(GetManagedServiceParametersRequest.builder()
-                                                                                      .serviceInstanceId(guid.toString())
-                                                                                      .build())
-                       .map(GetManagedServiceParametersResponse::getParameters)
+        // TODO: Fix bug in cf-java-client to allow null values in response and then switch to v3
+        return delegate.serviceInstances()
+                       .getParameters(GetServiceInstanceParametersRequest.builder()
+                                                                         .serviceInstanceId(guid.toString())
+                                                                         .build())
+                       .map(GetServiceInstanceParametersResponse::getParameters)
                        .block();
     }
 
     @Override
     public Map<String, Object> getUserProvidedServiceInstanceParameters(UUID guid) {
-        return delegate.serviceInstancesV3()
-                       .getUserProvidedCredentials(GetUserProvidedCredentialsRequest.builder()
-                                                                                    .serviceInstanceId(guid.toString())
-                                                                                    .build())
-                       .map(GetUserProvidedCredentialsResponse::getCredentials)
+        // TODO: Fix bug in cf-java-client to allow null values in response and then switch to v3
+        return delegate.userProvidedServiceInstances()
+                       .get(GetUserProvidedServiceInstanceRequest.builder()
+                                                                 .userProvidedServiceInstanceId(guid.toString())
+                                                                 .build())
+                       .map(response -> Optional.ofNullable(response.getEntity())
+                                                .map(UserProvidedServiceInstanceEntity::getCredentials)
+                                                .orElse(Collections.emptyMap()))
                        .block();
     }
 
@@ -2536,8 +2539,9 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     private UUID getRouteGuid(UUID domainGuid, String host, String path) {
-        List<RouteResource> routeEntitiesResource = getRouteResourcesByDomainGuidHostAndPath(domainGuid, host, path).collect(Collectors.toList())
-                                                                                                                    .block();
+        List<RouteResource> routeEntitiesResource = getRouteResourcesByDomainGuidHostAndPath(domainGuid, host,
+                                                                                             path).collect(Collectors.toList())
+                                                                                                  .block();
         if (CollectionUtils.isEmpty(routeEntitiesResource)) {
             return null;
         }
