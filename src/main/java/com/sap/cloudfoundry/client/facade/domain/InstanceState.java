@@ -1,11 +1,16 @@
 package com.sap.cloudfoundry.client.facade.domain;
 
+import org.cloudfoundry.client.v3.processes.ProcessState;
+
 public enum InstanceState {
     CRASHED, DOWN, RUNNING, STARTING, UNKNOWN;
 
-    public static InstanceState valueOfWithDefault(String s) {
+    public static InstanceState valueOfWithDefault(ProcessState state) {
+        if (state == null) {
+            return UNKNOWN;
+        }
         try {
-            return InstanceState.valueOf(s);
+            return InstanceState.valueOf(state.getValue());
         } catch (IllegalArgumentException e) {
             return InstanceState.UNKNOWN;
         }
