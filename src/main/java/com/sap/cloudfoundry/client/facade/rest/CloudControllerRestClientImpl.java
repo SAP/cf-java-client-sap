@@ -27,20 +27,10 @@ import org.cloudfoundry.client.v2.Resource;
 import org.cloudfoundry.client.v2.applications.ListApplicationServiceBindingsRequest;
 import org.cloudfoundry.client.v2.applications.SummaryApplicationRequest;
 import org.cloudfoundry.client.v2.applications.SummaryApplicationResponse;
-import org.cloudfoundry.client.v2.servicebindings.CreateServiceBindingRequest;
-import org.cloudfoundry.client.v2.servicebindings.DeleteServiceBindingRequest;
-import org.cloudfoundry.client.v2.servicebindings.GetServiceBindingParametersRequest;
-import org.cloudfoundry.client.v2.servicebindings.GetServiceBindingParametersResponse;
-import org.cloudfoundry.client.v2.servicebindings.ListServiceBindingsRequest;
-import org.cloudfoundry.client.v2.servicebindings.ServiceBindingEntity;
 import org.cloudfoundry.client.v2.serviceinstances.CreateServiceInstanceRequest;
 import org.cloudfoundry.client.v2.serviceinstances.DeleteServiceInstanceRequest;
 import org.cloudfoundry.client.v2.serviceinstances.GetServiceInstanceParametersRequest;
 import org.cloudfoundry.client.v2.serviceinstances.GetServiceInstanceParametersResponse;
-import org.cloudfoundry.client.v2.servicekeys.CreateServiceKeyRequest;
-import org.cloudfoundry.client.v2.servicekeys.DeleteServiceKeyRequest;
-import org.cloudfoundry.client.v2.servicekeys.ListServiceKeysRequest;
-import org.cloudfoundry.client.v2.servicekeys.ServiceKeyEntity;
 import org.cloudfoundry.client.v2.serviceplans.UpdateServicePlanRequest;
 import org.cloudfoundry.client.v2.userprovidedserviceinstances.CreateUserProvidedServiceInstanceRequest;
 import org.cloudfoundry.client.v2.userprovidedserviceinstances.GetUserProvidedServiceInstanceRequest;
@@ -122,6 +112,16 @@ import org.cloudfoundry.client.v3.routes.ListRoutesRequest;
 import org.cloudfoundry.client.v3.routes.RemoveRouteDestinationsRequest;
 import org.cloudfoundry.client.v3.routes.RouteRelationships;
 import org.cloudfoundry.client.v3.routes.RouteResource;
+import org.cloudfoundry.client.v3.servicebindings.CreateServiceBindingRequest;
+import org.cloudfoundry.client.v3.servicebindings.DeleteServiceBindingRequest;
+import org.cloudfoundry.client.v3.servicebindings.GetServiceBindingDetailsRequest;
+import org.cloudfoundry.client.v3.servicebindings.GetServiceBindingDetailsResponse;
+import org.cloudfoundry.client.v3.servicebindings.GetServiceBindingParametersRequest;
+import org.cloudfoundry.client.v3.servicebindings.GetServiceBindingParametersResponse;
+import org.cloudfoundry.client.v3.servicebindings.ListServiceBindingsRequest;
+import org.cloudfoundry.client.v3.servicebindings.ServiceBinding;
+import org.cloudfoundry.client.v3.servicebindings.ServiceBindingRelationships;
+import org.cloudfoundry.client.v3.servicebindings.ServiceBindingType;
 import org.cloudfoundry.client.v3.servicebrokers.BasicAuthentication;
 import org.cloudfoundry.client.v3.servicebrokers.CreateServiceBrokerRequest;
 import org.cloudfoundry.client.v3.servicebrokers.DeleteServiceBrokerRequest;
@@ -232,8 +232,6 @@ import com.sap.cloudfoundry.client.facade.util.UriUtil;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.util.function.Tuple2;
-import reactor.util.function.Tuples;
 
 /**
  * Abstract implementation of the CloudControllerClient intended to serve as the base.
@@ -322,13 +320,24 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     @Override
     public void bindServiceInstance(String applicationName, String serviceInstanceName, Map<String, Object> parameters) {
         UUID applicationGuid = getRequiredApplicationGuid(applicationName);
-        UUID serviceInstanceGuid = getRequiredServiceInstanceGuid(serviceInstanceName);
-        delegate.serviceBindingsV2()
+        var serviceResource = getServiceInstanceByName(serviceInstanceName).block();
+        if (serviceResource == null) {
+            throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Service instance " + serviceInstanceName + " not found.");
+        }
+        delegate.serviceBindingsV3()
                 .create(CreateServiceBindingRequest.builder()
-                                                   .applicationId(applicationGuid.toString())
-                                                   .serviceInstanceId(serviceInstanceGuid.toString())
+                                                   .type(ServiceBindingType.APPLICATION)
                                                    .parameters(parameters)
+                                                   .relationships(ServiceBindingRelationships.builder()
+                                                                                             .application(buildToOneRelationship(applicationGuid))
+                                                                                             .serviceInstance(buildToOneRelationship(UUID.fromString(serviceResource.getId())))
+                                                                                             .build())
                                                    .build())
+                .filter(response -> response.getJobId()
+                                            .isPresent())
+                .map(response -> response.getJobId()
+                                         .get())
+                .flatMap(jobId -> JobUtils.waitForCompletion(delegate, Duration.ofMinutes(5), jobId))
                 .block();
     }
 
@@ -506,13 +515,25 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public CloudServiceKey createServiceKey(String serviceInstanceName, String serviceKeyName, Map<String, Object> parameters) {
+    public void createServiceKey(String serviceInstanceName, String serviceKeyName, Map<String, Object> parameters) {
         CloudServiceInstance serviceInstance = getServiceInstance(serviceInstanceName);
-        return fetch(() -> createServiceKeyResource(serviceInstance, serviceKeyName, parameters),
-                     resource -> ImmutableRawCloudServiceKey.builder()
-                                                            .serviceInstance(serviceInstance)
-                                                            .resource(resource)
-                                                            .build());
+        if (serviceInstance.getType() != ServiceInstanceType.MANAGED) {
+            throw new IllegalArgumentException("Service keys can't be created for user-provided service instances");
+        }
+        UUID serviceInstanceGuid = getGuid(serviceInstance);
+        delegate.serviceBindingsV3()
+                .create(CreateServiceBindingRequest.builder()
+                                                   .relationships(ServiceBindingRelationships.builder()
+                                                                                             .serviceInstance(buildToOneRelationship(serviceInstanceGuid))
+                                                                                             .build())
+                                                   .name(serviceKeyName)
+                                                   .parameters(parameters)
+                                                   .type(ServiceBindingType.KEY)
+                                                   .build())
+                .map(response -> response.getJobId()
+                                         .get())
+                .flatMap(jobId -> JobUtils.waitForCompletion(delegate, Duration.ofMinutes(5), jobId))
+                .block();
     }
 
     @Override
@@ -560,7 +581,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     private void deleteApplication(UUID applicationGuid) {
         List<UUID> serviceBindingGuids = getServiceBindingGuids(applicationGuid);
         for (UUID serviceBindingGuid : serviceBindingGuids) {
-            doUnbindServiceInstance(serviceBindingGuid);
+            doDeleteServiceBinding(serviceBindingGuid);
         }
         delegate.applicationsV3()
                 .delete(DeleteApplicationRequest.builder()
@@ -635,19 +656,11 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         for (CloudServiceKey serviceKey : serviceKeys) {
             if (serviceKey.getName()
                           .equals(serviceKeyName)) {
-                doDeleteServiceKey(serviceKey.getMetadata()
-                                             .getGuid());
+                doDeleteServiceBinding(serviceKey.getGuid());
                 return;
             }
         }
         throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Service key " + serviceKeyName + " not found.");
-    }
-
-    @Override
-    public void deleteServiceKey(CloudServiceKey serviceKey) {
-        UUID serviceKeyGuid = serviceKey.getMetadata()
-                                        .getGuid();
-        doDeleteServiceKey(serviceKeyGuid);
     }
 
     @Override
@@ -889,6 +902,13 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
+    public CloudServiceKey getServiceKey(String serviceInstanceName, String serviceKeyName) {
+        CloudServiceInstance serviceInstance = getServiceInstance(serviceInstanceName);
+        return fetchWithAuxiliaryContent(() -> getServiceKeyResourceByNameAndServiceInstanceGuid(serviceKeyName, serviceInstance.getGuid()),
+                                         serviceKey -> zipWithAuxiliaryServiceKeyContent(serviceKey, serviceInstance));
+    }
+
+    @Override
     public List<CloudServiceKey> getServiceKeys(String serviceInstanceName) {
         CloudServiceInstance serviceInstance = getServiceInstance(serviceInstanceName);
         return getServiceKeys(serviceInstance);
@@ -896,10 +916,25 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public List<CloudServiceKey> getServiceKeys(CloudServiceInstance serviceInstance) {
-        return fetchList(() -> getServiceKeyTuple(serviceInstance), tuple -> ImmutableRawCloudServiceKey.builder()
-                                                                                                        .resource(tuple.getT1())
-                                                                                                        .serviceInstance(tuple.getT2())
-                                                                                                        .build());
+        return fetchListWithAuxiliaryContent(() -> getServiceKeyResource(serviceInstance),
+                                             serviceKey -> zipWithAuxiliaryServiceKeyContent(serviceKey, serviceInstance));
+    }
+
+    private Mono<Derivable<CloudServiceKey>> zipWithAuxiliaryServiceKeyContent(ServiceBinding key,
+                                                                               CloudServiceInstance serviceInstance) {
+        return getServiceKeyCredentials(key.getId()).map(credentials -> ImmutableRawCloudServiceKey.builder()
+                                                                                                   .serviceBinding(key)
+                                                                                                   .credentials(credentials)
+                                                                                                   .serviceInstance(serviceInstance)
+                                                                                                   .build());
+    }
+
+    private Mono<Map<String, Object>> getServiceKeyCredentials(String keyGuid) {
+        return delegate.serviceBindingsV3()
+                       .getDetails(GetServiceBindingDetailsRequest.builder()
+                                                                  .serviceBindingId(keyGuid)
+                                                                  .build())
+                       .map(GetServiceBindingDetailsResponse::getCredentials);
     }
 
     @Override
@@ -928,7 +963,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public Map<String, Object> getServiceBindingParameters(UUID guid) {
-        return delegate.serviceBindingsV2()
+        return delegate.serviceBindingsV3()
                        .getParameters(GetServiceBindingParametersRequest.builder()
                                                                         .serviceBindingId(guid.toString())
                                                                         .build())
@@ -1223,6 +1258,11 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
+    public void deleteServiceBinding(UUID serviceBindingGuid) {
+        doDeleteServiceBinding(serviceBindingGuid);
+    }
+
+    @Override
     public void unbindServiceInstance(CloudApplication application, CloudServiceInstance serviceInstance) {
         UUID applicationGuid = getGuid(application);
         UUID serviceInstanceGuid = getGuid(serviceInstance);
@@ -1354,8 +1394,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                                             .build())
                                                          .url(serviceBroker.getUrl())
                                                          .build())
-                       .map(response -> response.jobId()
-                                                .orElse(null))
+                       .flatMap(response -> Mono.justOrEmpty(response.jobId()))
                        .block();
     }
 
@@ -1709,41 +1748,41 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     private List<UUID> getServiceBindingGuids(UUID applicationGuid) {
-        Flux<? extends Resource<ServiceBindingEntity>> bindings = getServiceBindingResourcesByApplicationGuid(applicationGuid);
+        Flux<? extends ServiceBinding> bindings = getServiceBindingResourcesByApplicationGuid(applicationGuid);
         return getGuids(bindings);
     }
 
-    private Flux<? extends Resource<ServiceBindingEntity>> getServiceBindingResourcesByServiceInstanceGuid(UUID serviceInstanceGuid) {
+    private Flux<? extends ServiceBinding> getServiceBindingResourcesByServiceInstanceGuid(UUID serviceInstanceGuid) {
         IntFunction<ListServiceBindingsRequest> pageRequestSupplier = page -> ListServiceBindingsRequest.builder()
                                                                                                         .serviceInstanceId(serviceInstanceGuid.toString())
                                                                                                         .page(page)
                                                                                                         .build();
-        return PaginationUtils.requestClientV2Resources(page -> delegate.serviceBindingsV2()
+        return PaginationUtils.requestClientV3Resources(page -> delegate.serviceBindingsV3()
                                                                         .list(pageRequestSupplier.apply(page)));
     }
 
-    private Mono<? extends Resource<ServiceBindingEntity>>
+    private Mono<? extends ServiceBinding>
             getServiceBindingResourceByApplicationGuidAndServiceInstanceGuid(UUID applicationGuid, UUID serviceInstanceGuid) {
-        IntFunction<ListApplicationServiceBindingsRequest> pageRequestSupplier = page -> ListApplicationServiceBindingsRequest.builder()
-                                                                                                                              .applicationId(applicationGuid.toString())
-                                                                                                                              .serviceInstanceId(serviceInstanceGuid.toString())
-                                                                                                                              .page(page)
-                                                                                                                              .build();
+        IntFunction<ListServiceBindingsRequest> pageRequestSupplier = page -> ListServiceBindingsRequest.builder()
+                                                                                                        .applicationId(applicationGuid.toString())
+                                                                                                        .serviceInstanceId(serviceInstanceGuid.toString())
+                                                                                                        .page(page)
+                                                                                                        .build();
         return getApplicationServiceBindingResources(pageRequestSupplier).singleOrEmpty();
     }
 
-    private Flux<? extends Resource<ServiceBindingEntity>> getServiceBindingResourcesByApplicationGuid(UUID applicationGuid) {
-        IntFunction<ListApplicationServiceBindingsRequest> pageRequestSupplier = page -> ListApplicationServiceBindingsRequest.builder()
-                                                                                                                              .applicationId(applicationGuid.toString())
-                                                                                                                              .page(page)
-                                                                                                                              .build();
+    private Flux<? extends ServiceBinding> getServiceBindingResourcesByApplicationGuid(UUID applicationGuid) {
+        IntFunction<ListServiceBindingsRequest> pageRequestSupplier = page -> ListServiceBindingsRequest.builder()
+                                                                                                        .applicationId(applicationGuid.toString())
+                                                                                                        .page(page)
+                                                                                                        .build();
         return getApplicationServiceBindingResources(pageRequestSupplier);
     }
 
-    private Flux<? extends Resource<ServiceBindingEntity>>
-            getApplicationServiceBindingResources(IntFunction<ListApplicationServiceBindingsRequest> pageRequestSupplier) {
-        return PaginationUtils.requestClientV2Resources(page -> delegate.applicationsV2()
-                                                                        .listServiceBindings(pageRequestSupplier.apply(page)));
+    private Flux<? extends ServiceBinding>
+            getApplicationServiceBindingResources(IntFunction<ListServiceBindingsRequest> pageRequestSupplier) {
+        return PaginationUtils.requestClientV3Resources(page -> delegate.serviceBindingsV3()
+                                                                        .list(pageRequestSupplier.apply(page)));
     }
 
     private List<CloudServicePlan> findServicePlansByBrokerGuid(UUID brokerGuid) {
@@ -1813,18 +1852,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                      .build();
         return delegate.tasks()
                        .cancel(request);
-    }
-
-    private Mono<? extends Resource<ServiceKeyEntity>> createServiceKeyResource(CloudServiceInstance serviceInstance, String serviceKeyName,
-                                                                                Map<String, Object> parameters) {
-        UUID serviceInstanceGuid = getGuid(serviceInstance);
-
-        return delegate.serviceKeys()
-                       .create(CreateServiceKeyRequest.builder()
-                                                      .serviceInstanceId(serviceInstanceGuid.toString())
-                                                      .name(serviceKeyName)
-                                                      .parameters(parameters)
-                                                      .build());
     }
 
     private Path createTemporaryUploadFile(InputStream inputStream) throws IOException {
@@ -2048,22 +2075,14 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                               "Service binding between service with GUID " + serviceInstanceGuid
                                                   + " and application with GUID " + applicationGuid + " not found.");
         }
-        doUnbindServiceInstance(serviceBindingGuid);
+        doDeleteServiceBinding(serviceBindingGuid);
     }
 
-    private void doUnbindServiceInstance(UUID serviceBindingGuid) {
-        delegate.serviceBindingsV2()
+    private void doDeleteServiceBinding(UUID guid) {
+        delegate.serviceBindingsV3()
                 .delete(DeleteServiceBindingRequest.builder()
-                                                   .serviceBindingId(serviceBindingGuid.toString())
+                                                   .serviceBindingId(guid.toString())
                                                    .build())
-                .block();
-    }
-
-    private void doDeleteServiceKey(UUID guid) {
-        delegate.serviceKeys()
-                .delete(DeleteServiceKeyRequest.builder()
-                                               .serviceKeyId(guid.toString())
-                                               .build())
                 .block();
     }
 
@@ -2390,20 +2409,31 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                         .list(pageRequestSupplier.apply(page)));
     }
 
-    private Flux<Tuple2<? extends Resource<ServiceKeyEntity>, CloudServiceInstance>>
-            getServiceKeyTuple(CloudServiceInstance serviceInstance) {
+    private Flux<? extends ServiceBinding> getServiceKeyResource(CloudServiceInstance serviceInstance) {
         UUID serviceInstanceGuid = getGuid(serviceInstance);
-        return getServiceKeyResourcesByServiceInstanceGuid(serviceInstanceGuid).map(serviceKeyResource -> Tuples.of(serviceKeyResource,
-                                                                                                                    serviceInstance));
+        return getServiceKeyResourcesByServiceInstanceGuid(serviceInstanceGuid);
     }
 
-    private Flux<? extends Resource<ServiceKeyEntity>> getServiceKeyResourcesByServiceInstanceGuid(UUID serviceInstanceGuid) {
-        IntFunction<ListServiceKeysRequest> pageRequestSupplier = page -> ListServiceKeysRequest.builder()
-                                                                                                .serviceInstanceId(serviceInstanceGuid.toString())
-                                                                                                .page(page)
-                                                                                                .build();
-        return PaginationUtils.requestClientV2Resources(page -> delegate.serviceKeys()
+    private Flux<? extends ServiceBinding> getServiceKeyResourcesByServiceInstanceGuid(UUID serviceInstanceGuid) {
+        IntFunction<ListServiceBindingsRequest> pageRequestSupplier = page -> ListServiceBindingsRequest.builder()
+                                                                                                        .serviceInstanceId(serviceInstanceGuid.toString())
+                                                                                                        .type(ServiceBindingType.KEY)
+                                                                                                        .page(page)
+                                                                                                        .build();
+        return PaginationUtils.requestClientV3Resources(page -> delegate.serviceBindingsV3()
                                                                         .list(pageRequestSupplier.apply(page)));
+    }
+
+    private Mono<? extends ServiceBinding> getServiceKeyResourceByNameAndServiceInstanceGuid(String name, UUID guid) {
+        IntFunction<ListServiceBindingsRequest> pageRequestSupplier = page -> ListServiceBindingsRequest.builder()
+                                                                                                        .serviceInstanceId(guid.toString())
+                                                                                                        .type(ServiceBindingType.KEY)
+                                                                                                        .name(name)
+                                                                                                        .page(page)
+                                                                                                        .build();
+        return PaginationUtils.requestClientV3Resources(page -> delegate.serviceBindingsV3()
+                                                                        .list(pageRequestSupplier.apply(page)))
+                              .singleOrEmpty();
     }
 
     private CloudStack findStackResource(String name) {
@@ -2560,7 +2590,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                                                                      .block();
     }
 
-    private List<UUID> getGuids(Flux<? extends Resource<?>> resources) {
+    private List<UUID> getGuids(Flux<? extends org.cloudfoundry.client.v3.Resource> resources) {
         return resources.map(this::getGuid)
                         .collectList()
                         .block();
@@ -2622,14 +2652,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     private UUID getTargetSpaceGuid() {
         return getGuid(target);
-    }
-
-    private UUID getGuid(org.cloudfoundry.client.v2.Resource<?> resource) {
-        return Optional.ofNullable(resource)
-                       .map(org.cloudfoundry.client.v2.Resource::getMetadata)
-                       .map(org.cloudfoundry.client.v2.Metadata::getId)
-                       .map(UUID::fromString)
-                       .orElse(null);
     }
 
     private UUID getGuid(CloudEntity entity) {

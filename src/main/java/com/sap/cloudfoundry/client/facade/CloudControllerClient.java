@@ -109,9 +109,8 @@ public interface CloudControllerClient {
      * @param serviceInstanceName name of service instance
      * @param serviceKeyName name of service-key
      * @param parameters parameters of service-key
-     * @return cloudServiceKey
      */
-    CloudServiceKey createServiceKey(String serviceInstanceName, String serviceKeyName, Map<String, Object> parameters);
+    void createServiceKey(String serviceInstanceName, String serviceKeyName, Map<String, Object> parameters);
 
     /**
      * Create a user-provided service instance.
@@ -197,11 +196,11 @@ public interface CloudControllerClient {
     void deleteServiceKey(String serviceInstanceName, String serviceKeyName);
 
     /**
-     * Delete a service key.
+     * Delete a service binding.
      * 
-     * @param serviceKey {@link CloudServiceKey} object
+     * @param bindingGuid The GUID of the binding
      */
-    void deleteServiceKey(CloudServiceKey serviceKey);
+    void deleteServiceBinding(UUID bindingGuid);
 
     /**
      * Get cloud application with the specified name.
@@ -451,6 +450,15 @@ public interface CloudControllerClient {
      * @return service binding parameters in key-value pairs
      */
     Map<String, Object> getServiceBindingParameters(UUID guid);
+
+    /**
+     * Get a service key.
+     *
+     * @param serviceInstanceName The service instance name
+     * @param serviceKeyName The service key name
+     * @return the service key info
+     */
+    CloudServiceKey getServiceKey(String serviceInstanceName, String serviceKeyName);
 
     /**
      * Get service keys for a service instance.
