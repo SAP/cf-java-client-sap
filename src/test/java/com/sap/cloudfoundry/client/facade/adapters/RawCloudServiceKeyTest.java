@@ -3,9 +3,9 @@ package com.sap.cloudfoundry.client.facade.adapters;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.cloudfoundry.client.v2.Resource;
-import org.cloudfoundry.client.v2.servicekeys.ServiceKeyEntity;
-import org.cloudfoundry.client.v2.servicekeys.ServiceKeyResource;
+import org.cloudfoundry.client.v3.servicebindings.ServiceBindingRelationships;
+import org.cloudfoundry.client.v3.servicebindings.ServiceBindingResource;
+import org.cloudfoundry.client.v3.servicebindings.ServiceBindingType;
 import org.junit.jupiter.api.Test;
 
 import com.sap.cloudfoundry.client.facade.domain.CloudServiceInstance;
@@ -29,7 +29,7 @@ public class RawCloudServiceKeyTest {
 
     private static CloudServiceKey buildExpectedServiceKey() {
         return ImmutableCloudServiceKey.builder()
-                                       .metadata(RawCloudEntityTest.EXPECTED_METADATA)
+                                       .metadata(RawCloudEntityTest.EXPECTED_METADATA_V3)
                                        .name(NAME)
                                        .credentials(CREDENTIALS)
                                        .serviceInstance(SERVICE_INSTANCE)
@@ -38,23 +38,24 @@ public class RawCloudServiceKeyTest {
 
     private static RawCloudServiceKey buildRawServiceKey() {
         return ImmutableRawCloudServiceKey.builder()
-                                          .resource(buildTestResource())
+                                          .serviceBinding(buildTestResource())
                                           .serviceInstance(SERVICE_INSTANCE)
+                                          .credentials(CREDENTIALS)
                                           .build();
     }
 
-    private static Resource<ServiceKeyEntity> buildTestResource() {
-        return ServiceKeyResource.builder()
-                                 .metadata(RawCloudEntityTest.METADATA)
-                                 .entity(buildTestEntity())
-                                 .build();
-    }
-
-    private static ServiceKeyEntity buildTestEntity() {
-        return ServiceKeyEntity.builder()
-                               .name(NAME)
-                               .credentials(CREDENTIALS)
-                               .build();
+    private static ServiceBindingResource buildTestResource() {
+        return ServiceBindingResource.builder()
+                                     .id(RawCloudEntityTest.GUID_STRING)
+                                     .createdAt(RawCloudEntityTest.CREATED_AT_STRING)
+                                     .updatedAt(RawCloudEntityTest.UPDATED_AT_STRING)
+                                     .metadata(RawCloudEntityTest.V3_METADATA)
+                                     .name(NAME)
+                                     .type(ServiceBindingType.KEY)
+                                     .relationships(ServiceBindingRelationships.builder()
+                                                                               .serviceInstance(RawCloudEntityTest.buildToOneRelationship(""))
+                                                                               .build())
+                                     .build();
     }
 
     private static Map<String, Object> buildTestCredentials() {

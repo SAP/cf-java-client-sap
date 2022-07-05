@@ -11,6 +11,8 @@ import java.util.List;
 import java.util.UUID;
 
 import org.cloudfoundry.client.v2.Metadata;
+import org.cloudfoundry.client.v3.Relationship;
+import org.cloudfoundry.client.v3.ToOneRelationship;
 import org.cloudfoundry.client.v3.applications.ApplicationState;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -153,6 +155,14 @@ public class RawCloudEntityTest {
 
     static <T> void testDerive(T expected, Derivable<T> derivable) {
         assertEquals(expected, derivable.derive());
+    }
+
+    static ToOneRelationship buildToOneRelationship(String id) {
+        return ToOneRelationship.builder()
+                                .data(Relationship.builder()
+                                                  .id(id)
+                                                  .build())
+                                .build();
     }
 
 }

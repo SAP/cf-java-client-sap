@@ -60,7 +60,7 @@ public interface CloudControllerRestClient {
 
     String createServiceBroker(CloudServiceBroker serviceBroker);
 
-    CloudServiceKey createServiceKey(String serviceInstanceName, String serviceKeyName, Map<String, Object> parameters);
+    void createServiceKey(String serviceInstanceName, String serviceKeyName, Map<String, Object> parameters);
 
     void createUserProvidedServiceInstance(CloudServiceInstance serviceInstance, Map<String, Object> credentials);
 
@@ -86,7 +86,7 @@ public interface CloudControllerRestClient {
 
     void deleteServiceKey(String serviceInstanceName, String serviceKeyName);
 
-    void deleteServiceKey(CloudServiceKey serviceKey);
+    void deleteServiceBinding(UUID bindingGuid);
 
     CloudApplication getApplication(String applicationName);
 
@@ -149,6 +149,8 @@ public interface CloudControllerRestClient {
     CloudServiceBroker getServiceBroker(String name, boolean required);
 
     List<CloudServiceBroker> getServiceBrokers();
+
+    CloudServiceKey getServiceKey(String serviceInstanceName, String serviceKeyName);
 
     List<CloudServiceKey> getServiceKeys(String serviceInstanceName);
 
