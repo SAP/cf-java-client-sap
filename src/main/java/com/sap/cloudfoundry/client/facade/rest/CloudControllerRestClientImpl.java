@@ -2122,7 +2122,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                         .listDomains(pageRequestSupplier.apply(page)));
     }
 
-    private Flux<DomainResource> getDomainResourcesByNames(List<String> names) {
+    private Flux<DomainResource> getDomainResourcesByNames(Set<String> names) {
         IntFunction<ListDomainsRequest> pageRequestSupplier = page -> ListDomainsRequest.builder()
                                                                                         .names(names)
                                                                                         .page(page)
@@ -2530,10 +2530,10 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     private Map<String, UUID> getDomainsFromRoutes(Set<CloudRouteSummary> routes) {
-        List<String> domainNames = routes.stream()
-                                         .map(CloudRouteSummary::getDomain)
-                                         .filter(domain -> !StringUtils.isEmpty(domain))
-                                         .collect(Collectors.toList());
+        Set<String> domainNames = routes.stream()
+                                        .map(CloudRouteSummary::getDomain)
+                                        .filter(StringUtils::hasLength)
+                                        .collect(Collectors.toSet());
         return getDomainResourcesByNames(domainNames).collectMap(DomainResource::getName, domain -> UUID.fromString(domain.getId()))
                                                      .block();
     }
