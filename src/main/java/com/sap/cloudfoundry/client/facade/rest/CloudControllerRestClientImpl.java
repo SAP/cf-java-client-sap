@@ -2155,13 +2155,13 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     private Flux<DomainResource> getSharedDomainResources() {
         return getDomainResources().filter(domain -> domain.getRelationships()
                                                            .getOrganization()
-                                                           .getData() != null);
+                                                           .getData() == null);
     }
 
     private Flux<DomainResource> getPrivateDomainResources() {
         return getDomainResources().filter(domain -> domain.getRelationships()
                                                            .getOrganization()
-                                                           .getData() == null);
+                                                           .getData() != null);
     }
 
     private Flux<DomainResource> getDomainResourcesByOrganizationGuid(UUID organizationGuid) {
