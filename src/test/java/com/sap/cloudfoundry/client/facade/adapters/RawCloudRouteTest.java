@@ -38,13 +38,13 @@ class RawCloudRouteTest {
                                   .domain(DOMAIN)
                                   .path("")
                                   .appsUsingRoute(APPS_USING_ROUTE)
+                                  .url(HOST + "." + DOMAIN_NAME)
                                   .build();
     }
 
     private static RawCloudRoute buildRawRoute() {
         return ImmutableRawCloudRoute.builder()
                                      .route(buildTestRoute())
-                                     .domain(DOMAIN)
                                      .build();
     }
 
@@ -60,14 +60,14 @@ class RawCloudRouteTest {
                             .metadata(RawCloudEntityTest.V3_METADATA)
                             .host(HOST)
                             .path("")
-                            .url(RawCloudEntityTest.URL_STRING)
+                            .url(HOST + "." + DOMAIN_NAME)
                             .addAllDestinations(DESTINATIONS)
                             .build();
     }
 
     private static CloudDomain buildTestDomain() {
         return ImmutableCloudDomain.builder()
-                                   .metadata(RawCloudEntityTest.EXPECTED_METADATA)
+                                   .metadata(RawCloudEntityTest.EXPECTED_METADATA_V3)
                                    .name(DOMAIN_NAME)
                                    .build();
     }

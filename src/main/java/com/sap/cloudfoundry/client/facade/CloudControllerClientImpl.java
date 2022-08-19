@@ -1,10 +1,8 @@
 package com.sap.cloudfoundry.client.facade;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URL;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -24,8 +22,8 @@ import com.sap.cloudfoundry.client.facade.domain.CloudDomain;
 import com.sap.cloudfoundry.client.facade.domain.CloudEvent;
 import com.sap.cloudfoundry.client.facade.domain.CloudOrganization;
 import com.sap.cloudfoundry.client.facade.domain.CloudPackage;
+import com.sap.cloudfoundry.client.facade.domain.CloudProcess;
 import com.sap.cloudfoundry.client.facade.domain.CloudRoute;
-import com.sap.cloudfoundry.client.facade.domain.CloudRouteSummary;
 import com.sap.cloudfoundry.client.facade.domain.CloudServiceBinding;
 import com.sap.cloudfoundry.client.facade.domain.CloudServiceBroker;
 import com.sap.cloudfoundry.client.facade.domain.CloudServiceInstance;
@@ -107,8 +105,9 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public void createApplication(String applicationName, Staging staging, Integer disk, Integer memory, Set<CloudRouteSummary> routes) {
-        handleExceptions(() -> delegate.createApplication(applicationName, staging, disk, memory, routes));
+    public void createApplication(String applicationName, Staging staging, Integer disk, Integer memory, Metadata metadata,
+                                  Set<CloudRoute> routes) {
+        handleExceptions(() -> delegate.createApplication(applicationName, staging, disk, memory, metadata, routes));
     }
 
     @Override
@@ -213,11 +212,6 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public CloudApplication getApplication(UUID applicationGuid) {
-        return handleExceptions(() -> delegate.getApplication(applicationGuid));
-    }
-
-    @Override
     public UUID getApplicationGuid(String applicationName) {
         return handleExceptions(() -> delegate.getApplicationGuid(applicationName));
     }
@@ -250,6 +244,26 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     @Override
     public InstancesInfo getApplicationInstances(CloudApplication app) {
         return handleExceptions(() -> delegate.getApplicationInstances(app));
+    }
+
+    @Override
+    public InstancesInfo getApplicationInstances(UUID applicationGuid) {
+        return handleExceptions(() -> delegate.getApplicationInstances(applicationGuid));
+    }
+
+    @Override
+    public CloudProcess getApplicationProcess(UUID applicationGuid) {
+        return handleExceptions(() -> delegate.getApplicationProcess(applicationGuid));
+    }
+
+    @Override
+    public List<CloudRoute> getApplicationRoutes(UUID applicationGuid) {
+        return handleExceptions(() -> delegate.getApplicationRoutes(applicationGuid));
+    }
+
+    @Override
+    public boolean getApplicationSshEnabled(UUID applicationGuid) {
+        return handleExceptions(() -> delegate.getApplicationSshEnabled(applicationGuid));
     }
 
     @Override
@@ -528,11 +542,6 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public void unbindServiceInstance(CloudApplication application, CloudServiceInstance serviceInstance) {
-        handleExceptions(() -> delegate.unbindServiceInstance(application, serviceInstance));
-    }
-
-    @Override
     public void updateApplicationDiskQuota(String applicationName, int disk) {
         handleExceptions(() -> delegate.updateApplicationDiskQuota(applicationName, disk));
     }
@@ -568,7 +577,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public void updateApplicationRoutes(String applicationName, Set<CloudRouteSummary> routes) {
+    public void updateApplicationRoutes(String applicationName, Set<CloudRoute> routes) {
         handleExceptions(() -> delegate.updateApplicationRoutes(applicationName, routes));
     }
 
@@ -605,31 +614,6 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     @Override
     public void updateServiceSyslogDrainUrl(String serviceName, String syslogDrainUrl) {
         handleExceptions(() -> delegate.updateServiceSyslogDrainUrl(serviceName, syslogDrainUrl));
-    }
-
-    @Override
-    public void uploadApplication(String applicationName, String file) {
-        handleExceptions(() -> delegate.uploadApplication(applicationName, Paths.get(file), null));
-    }
-
-    @Override
-    public void uploadApplication(String applicationName, Path file) {
-        handleExceptions(() -> delegate.uploadApplication(applicationName, file, null));
-    }
-
-    @Override
-    public void uploadApplication(String applicationName, Path file, UploadStatusCallback callback) {
-        handleExceptions(() -> delegate.uploadApplication(applicationName, file, callback));
-    }
-
-    @Override
-    public void uploadApplication(String applicationName, InputStream inputStream) throws IOException {
-        handleUploadExceptions(() -> delegate.uploadApplication(applicationName, inputStream, null));
-    }
-
-    @Override
-    public void uploadApplication(String applicationName, InputStream inputStream, UploadStatusCallback callback) throws IOException {
-        handleUploadExceptions(() -> delegate.uploadApplication(applicationName, inputStream, callback));
     }
 
     @Override

@@ -1,5 +1,7 @@
 package com.sap.cloudfoundry.client.facade;
 
+import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.APPLICATION_HOST;
+import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.DEFAULT_DOMAIN;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -20,6 +22,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudDomain;
+import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudRoute;
 import org.cloudfoundry.client.v3.jobs.JobState;
 import org.cloudfoundry.client.v3.serviceinstances.ServiceInstanceType;
 import org.junit.jupiter.api.AfterAll;
@@ -34,7 +38,6 @@ import com.sap.cloudfoundry.client.facade.domain.CloudAsyncJob;
 import com.sap.cloudfoundry.client.facade.domain.CloudPackage;
 import com.sap.cloudfoundry.client.facade.domain.CloudServiceBroker;
 import com.sap.cloudfoundry.client.facade.domain.CloudServiceInstance;
-import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudRouteSummary;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudServiceBroker;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudServiceInstance;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableStaging;
@@ -410,15 +413,20 @@ class ServicesCloudControllerClientIntegrationTest extends CloudControllerClient
     }
 
     private static void pushServiceBrokerApplication(Path brokerPath) throws InterruptedException {
+        String defaultDomain = client.getDefaultDomain()
+                                     .getName();
         client.createApplication(IntegrationTestConstants.SERVICE_BROKER_APP_NAME, ImmutableStaging.builder()
                                                                                                    .addBuildpack(IntegrationTestConstants.JAVA_BUILDPACK)
                                                                                                    .build(),
                                  IntegrationTestConstants.SERVICE_BROKER_DISK_IN_MB, IntegrationTestConstants.SERVICE_BROKER_MEMORY_IN_MB,
-                                 Set.of(ImmutableCloudRouteSummary.builder()
-                                                                  .host(IntegrationTestConstants.SERVICE_BROKER_HOST)
-                                                                  .domain(client.getDefaultDomain()
-                                                                                .getName())
-                                                                  .build()));
+                                 null,
+                                 Set.of(ImmutableCloudRoute.builder()
+                                                           .host(IntegrationTestConstants.SERVICE_BROKER_HOST)
+                                                           .domain(ImmutableCloudDomain.builder()
+                                                                                       .name(defaultDomain)
+                                                                                       .build())
+                                                           .url(APPLICATION_HOST+"."+defaultDomain)
+                                                           .build()));
 
         Map<String, String> appEnv = getServiceBrokerEnvConfiguration();
         client.updateApplicationEnv(IntegrationTestConstants.SERVICE_BROKER_APP_NAME, appEnv);

@@ -9,7 +9,7 @@ import java.util.Collection;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import org.cloudfoundry.client.v2.Metadata;
+import org.cloudfoundry.client.v3.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,17 +25,7 @@ public abstract class RawCloudEntity<T> implements Derivable<T> {
         // Recommended by Sonar.
     }
 
-    protected static CloudMetadata parseResourceMetadata(org.cloudfoundry.client.v2.Resource<?> resource) {
-        Metadata metadata = resource.getMetadata();
-        return ImmutableCloudMetadata.builder()
-                                     .guid(parseNullableGuid(metadata.getId()))
-                                     .createdAt(parseNullableDate(metadata.getCreatedAt()))
-                                     .updatedAt(parseNullableDate(metadata.getUpdatedAt()))
-                                     .url(metadata.getUrl())
-                                     .build();
-    }
-
-    protected static CloudMetadata parseResourceMetadata(org.cloudfoundry.client.v3.Resource resource) {
+    protected static CloudMetadata parseResourceMetadata(Resource resource) {
         return ImmutableCloudMetadata.builder()
                                      .guid(parseNullableGuid(resource.getId()))
                                      .createdAt(parseNullableDate(resource.getCreatedAt()))

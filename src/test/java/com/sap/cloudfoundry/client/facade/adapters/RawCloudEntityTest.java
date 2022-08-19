@@ -11,10 +11,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import org.cloudfoundry.client.v2.Metadata;
+import org.cloudfoundry.client.v3.Metadata;
 import org.cloudfoundry.client.v3.Relationship;
 import org.cloudfoundry.client.v3.ToOneRelationship;
 import org.cloudfoundry.client.v3.applications.ApplicationState;
+import org.cloudfoundry.client.v3.organizations.Organization;
+import org.cloudfoundry.client.v3.organizations.OrganizationResource;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -29,7 +31,6 @@ class RawCloudEntityTest {
     static final String GUID_STRING = "3725650a-8725-4401-a949-c68f83d54a86";
     static final String CREATED_AT_STRING = "2017-06-22T13:38:41Z";
     static final String UPDATED_AT_STRING = "2019-03-21T12:29:24Z";
-    static final String URL_STRING = "/v2/apps/3725650a-8725-4401-a949-c68f83d54a86";
 
     static final String NAME = "foo";
     static final UUID GUID = UUID.fromString(GUID_STRING);
@@ -38,29 +39,16 @@ class RawCloudEntityTest {
     static final Map<String, String> V3_ANNOTATIONS = Map.of("annotation1", "value1", "annotation2", "value2");
     static final Map<String, String> V3_LABELS = Map.of("label1", "value1", "label2", "value2");
 
-    static final org.cloudfoundry.client.v3.Metadata V3_METADATA = org.cloudfoundry.client.v3.Metadata.builder()
-                                                                                                      .annotations(V3_ANNOTATIONS)
-                                                                                                      .labels(V3_LABELS)
-                                                                                                      .build();
-    static final Metadata METADATA = Metadata.builder()
-                                             .id(GUID_STRING)
-                                             .createdAt(CREATED_AT_STRING)
-                                             .updatedAt(UPDATED_AT_STRING)
-                                             .url(URL_STRING)
-                                             .build();
+    static final Metadata V3_METADATA = Metadata.builder()
+                                                .annotations(V3_ANNOTATIONS)
+                                                .labels(V3_LABELS)
+                                                .build();
 
     static final CloudMetadata EXPECTED_METADATA_PARSED_FROM_V3_RESOURCE = ImmutableCloudMetadata.builder()
                                                                                                  .guid(GUID)
                                                                                                  .createdAt(CREATED_AT)
                                                                                                  .updatedAt(UPDATED_AT)
                                                                                                  .build();
-    static final CloudMetadata EXPECTED_METADATA = ImmutableCloudMetadata.builder()
-                                                                         .guid(GUID)
-                                                                         .createdAt(CREATED_AT)
-                                                                         .updatedAt(UPDATED_AT)
-                                                                         .url(URL_STRING)
-                                                                         .build();
-
     static final CloudMetadata EXPECTED_METADATA_V3 = ImmutableCloudMetadata.builder()
                                                                             .guid(GUID)
                                                                             .createdAt(CREATED_AT)
@@ -72,24 +60,14 @@ class RawCloudEntityTest {
     }
 
     @Test
-    void testParseV2ResourceMetadata() {
-        org.cloudfoundry.client.v2.applications.ApplicationResource resource = org.cloudfoundry.client.v2.applications.ApplicationResource.builder()
-                                                                                                                                          .metadata(METADATA)
-                                                                                                                                          .build();
-
-        CloudMetadata metadata = RawCloudEntity.parseResourceMetadata(resource);
-        assertEquals(EXPECTED_METADATA, metadata);
-    }
-
-    @Test
     void testParseV3ResourceMetadata() {
-        org.cloudfoundry.client.v3.organizations.Organization resource = org.cloudfoundry.client.v3.organizations.OrganizationResource.builder()
-                                                                                                                                      .id(GUID_STRING)
-                                                                                                                                      .createdAt(CREATED_AT_STRING)
-                                                                                                                                      .updatedAt(UPDATED_AT_STRING)
-                                                                                                                                      .name(NAME)
-                                                                                                                                      .metadata(V3_METADATA)
-                                                                                                                                      .build();
+        Organization resource = OrganizationResource.builder()
+                                                    .id(GUID_STRING)
+                                                    .createdAt(CREATED_AT_STRING)
+                                                    .updatedAt(UPDATED_AT_STRING)
+                                                    .name(NAME)
+                                                    .metadata(V3_METADATA)
+                                                    .build();
 
         CloudMetadata metadata = RawCloudEntity.parseResourceMetadata(resource);
         assertEquals(EXPECTED_METADATA_PARSED_FROM_V3_RESOURCE, metadata);

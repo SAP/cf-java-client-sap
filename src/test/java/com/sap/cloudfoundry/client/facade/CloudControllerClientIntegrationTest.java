@@ -5,6 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -12,13 +14,17 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
 
 import com.sap.cloudfoundry.client.facade.domain.CloudSpace;
+import com.sap.cloudfoundry.client.facade.domain.ImmutableLifecycle;
+import com.sap.cloudfoundry.client.facade.domain.Lifecycle;
+import com.sap.cloudfoundry.client.facade.domain.LifecycleType;
+import com.sap.cloudfoundry.client.facade.domain.Staging;
 
 abstract class CloudControllerClientIntegrationTest {
 
     private static final String DEFAULT_CLIENT_ID = "cf";
     private static final String DEFAULT_CLIENT_SECRET = "";
+    private static final String DEFAULT_STACK = "cflinuxfs3";
 
-    private static CloudControllerClient clientWithoutTarget;
     protected static CloudControllerClient client;
     protected static CloudSpace target;
 
@@ -28,7 +34,7 @@ abstract class CloudControllerClientIntegrationTest {
         CloudCredentials credentials = getCloudCredentials();
         URL apiUrl = URI.create(ITVariable.CF_API.getValue())
                         .toURL();
-        clientWithoutTarget = new CloudControllerClientImpl(apiUrl, credentials);
+        CloudControllerClient clientWithoutTarget = new CloudControllerClientImpl(apiUrl, credentials);
         target = clientWithoutTarget.getSpace(ITVariable.ORG.getValue(), ITVariable.SPACE.getValue());
         client = new CloudControllerClientImpl(apiUrl, credentials, target, true);
     }
@@ -36,12 +42,28 @@ abstract class CloudControllerClientIntegrationTest {
     @BeforeEach
     public void setUp(TestInfo testInfo) {
         System.out.println("================================");
-        System.out.println(String.format("Test started: %s", testInfo.getDisplayName()));
+        System.out.printf("Test started: %s%n", testInfo.getDisplayName());
     }
 
     @AfterEach
     public void tearDown(TestInfo testInfo) {
-        System.out.println(String.format("Test finished: %s", testInfo.getDisplayName()));
+        System.out.printf("Test finished: %s%n", testInfo.getDisplayName());
+    }
+
+    protected Lifecycle createLifecycle(Staging staging) {
+        if (staging.getDockerInfo() != null) {
+            return ImmutableLifecycle.builder()
+                                     .type(LifecycleType.DOCKER)
+                                     .data(Map.of())
+                                     .build();
+        }
+        var data = new HashMap<String, Object>();
+        data.put("buildpacks", staging.getBuildpacks());
+        data.put("stack", DEFAULT_STACK);
+        return ImmutableLifecycle.builder()
+                                 .type(LifecycleType.BUILDPACK)
+                                 .data(data)
+                                 .build();
     }
 
     private static void assertAllRequiredVariablesAreDefined() {

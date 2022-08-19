@@ -1,9 +1,6 @@
 package com.sap.cloudfoundry.client.facade.rest;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.net.URL;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -21,34 +18,33 @@ import java.util.function.IntFunction;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import org.apache.commons.io.IOUtils;
 import org.cloudfoundry.AbstractCloudFoundryException;
 import org.cloudfoundry.client.CloudFoundryClient;
-import org.cloudfoundry.client.v2.applications.SummaryApplicationRequest;
-import org.cloudfoundry.client.v2.applications.SummaryApplicationResponse;
 import org.cloudfoundry.client.v3.BuildpackData;
 import org.cloudfoundry.client.v3.DockerData;
 import org.cloudfoundry.client.v3.Lifecycle;
 import org.cloudfoundry.client.v3.LifecycleType;
 import org.cloudfoundry.client.v3.Metadata;
 import org.cloudfoundry.client.v3.Relationship;
+import org.cloudfoundry.client.v3.Resource;
 import org.cloudfoundry.client.v3.ToOneRelationship;
 import org.cloudfoundry.client.v3.applications.Application;
 import org.cloudfoundry.client.v3.applications.ApplicationRelationships;
-import org.cloudfoundry.client.v3.applications.ApplicationResource;
 import org.cloudfoundry.client.v3.applications.ApplicationState;
 import org.cloudfoundry.client.v3.applications.CreateApplicationRequest;
 import org.cloudfoundry.client.v3.applications.CreateApplicationResponse;
 import org.cloudfoundry.client.v3.applications.DeleteApplicationRequest;
 import org.cloudfoundry.client.v3.applications.GetApplicationCurrentDropletRequest;
 import org.cloudfoundry.client.v3.applications.GetApplicationCurrentDropletResponse;
-import org.cloudfoundry.client.v3.applications.GetApplicationEnvironmentRequest;
-import org.cloudfoundry.client.v3.applications.GetApplicationEnvironmentResponse;
+import org.cloudfoundry.client.v3.applications.GetApplicationEnvironmentVariablesRequest;
+import org.cloudfoundry.client.v3.applications.GetApplicationEnvironmentVariablesResponse;
 import org.cloudfoundry.client.v3.applications.GetApplicationProcessRequest;
 import org.cloudfoundry.client.v3.applications.GetApplicationProcessResponse;
 import org.cloudfoundry.client.v3.applications.GetApplicationProcessStatisticsRequest;
 import org.cloudfoundry.client.v3.applications.GetApplicationProcessStatisticsResponse;
 import org.cloudfoundry.client.v3.applications.GetApplicationRequest;
+import org.cloudfoundry.client.v3.applications.GetApplicationSshEnabledRequest;
+import org.cloudfoundry.client.v3.applications.GetApplicationSshEnabledResponse;
 import org.cloudfoundry.client.v3.applications.ListApplicationBuildsRequest;
 import org.cloudfoundry.client.v3.applications.ListApplicationPackagesRequest;
 import org.cloudfoundry.client.v3.applications.ListApplicationRoutesRequest;
@@ -82,6 +78,7 @@ import org.cloudfoundry.client.v3.organizations.OrganizationResource;
 import org.cloudfoundry.client.v3.packages.CreatePackageRequest;
 import org.cloudfoundry.client.v3.packages.CreatePackageResponse;
 import org.cloudfoundry.client.v3.packages.GetPackageRequest;
+import org.cloudfoundry.client.v3.packages.Package;
 import org.cloudfoundry.client.v3.packages.PackageRelationships;
 import org.cloudfoundry.client.v3.packages.PackageResource;
 import org.cloudfoundry.client.v3.packages.PackageType;
@@ -167,6 +164,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import com.sap.cloudfoundry.client.facade.CloudCredentials;
 import com.sap.cloudfoundry.client.facade.CloudOperationException;
 import com.sap.cloudfoundry.client.facade.Constants;
+import com.sap.cloudfoundry.client.facade.Messages;
 import com.sap.cloudfoundry.client.facade.UploadStatusCallback;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawApplicationLog;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudApplication;
@@ -176,6 +174,7 @@ import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudDomain;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudEvent;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudOrganization;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudPackage;
+import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudProcess;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudRoute;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudServiceBinding;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudServiceBroker;
@@ -190,6 +189,7 @@ import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawInstancesInfo;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawUserRole;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawV3CloudServiceInstance;
 import com.sap.cloudfoundry.client.facade.domain.ApplicationLog;
+import com.sap.cloudfoundry.client.facade.domain.BitsData;
 import com.sap.cloudfoundry.client.facade.domain.CloudApplication;
 import com.sap.cloudfoundry.client.facade.domain.CloudAsyncJob;
 import com.sap.cloudfoundry.client.facade.domain.CloudBuild;
@@ -199,8 +199,8 @@ import com.sap.cloudfoundry.client.facade.domain.CloudEvent;
 import com.sap.cloudfoundry.client.facade.domain.CloudMetadata;
 import com.sap.cloudfoundry.client.facade.domain.CloudOrganization;
 import com.sap.cloudfoundry.client.facade.domain.CloudPackage;
+import com.sap.cloudfoundry.client.facade.domain.CloudProcess;
 import com.sap.cloudfoundry.client.facade.domain.CloudRoute;
-import com.sap.cloudfoundry.client.facade.domain.CloudRouteSummary;
 import com.sap.cloudfoundry.client.facade.domain.CloudServiceBinding;
 import com.sap.cloudfoundry.client.facade.domain.CloudServiceBroker;
 import com.sap.cloudfoundry.client.facade.domain.CloudServiceInstance;
@@ -227,7 +227,6 @@ import com.sap.cloudfoundry.client.facade.domain.Upload;
 import com.sap.cloudfoundry.client.facade.domain.UserRole;
 import com.sap.cloudfoundry.client.facade.oauth2.OAuth2AccessTokenWithAdditionalInfo;
 import com.sap.cloudfoundry.client.facade.oauth2.OAuthClient;
-import com.sap.cloudfoundry.client.facade.util.EnvironmentUtil;
 import com.sap.cloudfoundry.client.facade.util.UriUtil;
 
 import reactor.core.publisher.Flux;
@@ -320,16 +319,13 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     @Override
     public void bindServiceInstance(String applicationName, String serviceInstanceName, Map<String, Object> parameters) {
         UUID applicationGuid = getRequiredApplicationGuid(applicationName);
-        var serviceResource = getServiceInstanceByName(serviceInstanceName).block();
-        if (serviceResource == null) {
-            throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Service instance " + serviceInstanceName + " not found.");
-        }
+        UUID serviceInstanceGuid = getRequiredServiceInstanceGuid(serviceInstanceName);
 
         var createBindingRequest = CreateServiceBindingRequest.builder()
                                                               .type(ServiceBindingType.APPLICATION)
                                                               .relationships(ServiceBindingRelationships.builder()
                                                                                                         .application(buildToOneRelationship(applicationGuid))
-                                                                                                        .serviceInstance(buildToOneRelationship(UUID.fromString(serviceResource.getId())))
+                                                                                                        .serviceInstance(buildToOneRelationship(serviceInstanceGuid))
                                                                                                         .build());
         if (parameters != null && !parameters.isEmpty()) {
             createBindingRequest.parameters(parameters);
@@ -346,9 +342,11 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public void createApplication(String name, Staging staging, Integer disk, Integer memory, Set<CloudRouteSummary> routes) {
-        CreateApplicationRequest applicationRequest = createApplicationRequestBuilder(name).lifecycle(buildApplicationLifecycle(staging))
-                                                                                           .build();
+    public void createApplication(String name, Staging staging, Integer disk, Integer memory, Metadata metadata,
+                                  Set<CloudRoute> routes) {
+        assertSpaceProvided("create application");
+        CreateApplicationRequest applicationRequest = createApplicationRequestBuilder(name, metadata).lifecycle(buildApplicationLifecycle(staging))
+                                                                                                     .build();
         doCreateApplication(staging, disk, memory, routes, applicationRequest);
     }
 
@@ -356,7 +354,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return staging.getDockerInfo() != null ? createDockerLifecycle() : createBuildpackLifecycle(staging);
     }
 
-    private void doCreateApplication(Staging staging, Integer disk, Integer memory, Set<CloudRouteSummary> routes,
+    private void doCreateApplication(Staging staging, Integer disk, Integer memory, Set<CloudRoute> routes,
                                      CreateApplicationRequest applicationRequest) {
         CreateApplicationResponse createApplicationResponse = delegate.applicationsV3()
                                                                       .create(applicationRequest)
@@ -364,9 +362,10 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         updateApplicationAttributes(staging, disk, memory, routes, createApplicationResponse);
     }
 
-    private CreateApplicationRequest.Builder createApplicationRequestBuilder(String name) {
+    private CreateApplicationRequest.Builder createApplicationRequestBuilder(String name, Metadata metadata) {
         return CreateApplicationRequest.builder()
                                        .name(name)
+                                       .metadata(metadata)
                                        .relationships(buildApplicationRelationships());
     }
 
@@ -382,10 +381,10 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return buildpackDataBuilder.build();
     }
 
-    private void updateApplicationAttributes(Staging staging, Integer disk, Integer memory, Set<CloudRouteSummary> routes,
+    private void updateApplicationAttributes(Staging staging, Integer disk, Integer memory, Set<CloudRoute> routes,
                                              CreateApplicationResponse createApplicationResponse) {
         UUID createdApplicationGuid = UUID.fromString(createApplicationResponse.getId());
-        GetApplicationProcessResponse applicationProcess = getApplicationProcess(createdApplicationGuid);
+        GetApplicationProcessResponse applicationProcess = getApplicationProcessResource(createdApplicationGuid);
         updateApplicationProcess(createdApplicationGuid, staging, applicationProcess);
         delegate.applicationsV3()
                 .scale(ScaleApplicationRequest.builder()
@@ -422,7 +421,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                        .build();
     }
 
-    private GetApplicationProcessResponse getApplicationProcess(UUID applicationGuid) {
+    private GetApplicationProcessResponse getApplicationProcessResource(UUID applicationGuid) {
         return delegate.applicationsV3()
                        .getProcess(GetApplicationProcessRequest.builder()
                                                                .type("web")
@@ -544,25 +543,27 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     private void doCreateServiceKey(String name, Map<String, Object> parameters, Metadata metadata, CloudServiceInstance serviceInstance) {
         if (serviceInstance.getType() != ServiceInstanceType.MANAGED) {
-            throw new IllegalArgumentException("Service keys can't be created for user-provided service instances");
+            throw new IllegalArgumentException(String.format(Messages.CANT_CREATE_SERVICE_KEY_FOR_USER_PROVIDED_SERVICE, serviceInstance.getName()));
         }
         UUID serviceInstanceGuid = getGuid(serviceInstance);
-        
+
+        var createBindingRequest = CreateServiceBindingRequest.builder()
+                                                              .type(ServiceBindingType.KEY)
+                                                              .name(name)
+                                                              .metadata(metadata)
+                                                              .relationships(ServiceBindingRelationships.builder()
+                                                                                                        .serviceInstance(buildToOneRelationship(serviceInstanceGuid))
+                                                                                                        .build());
+        if (parameters != null && !parameters.isEmpty()) {
+            createBindingRequest.parameters(parameters);
+        }
+
         delegate.serviceBindingsV3()
-                .create(CreateServiceBindingRequest.builder()
-                                                   .relationships(ServiceBindingRelationships.builder()
-                                                                                             .serviceInstance(buildToOneRelationship(serviceInstanceGuid))
-                                                                                             .build())
-                                                   .name(name)
-                                                   .parameters(parameters)
-                                                   .metadata(metadata)
-                                                   .type(ServiceBindingType.KEY)
-                                                   .build())
+                .create(createBindingRequest.build())
                 .map(response -> response.getJobId()
                                          .get())
                 .flatMap(jobId -> JobUtils.waitForCompletion(delegate, Duration.ofMinutes(5), jobId))
                 .block();
-
     }
 
     @Override
@@ -702,11 +703,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public CloudApplication getApplication(UUID applicationGuid) {
-        return findApplication(applicationGuid);
-    }
-
-    @Override
     public UUID getApplicationGuid(String applicationName) {
         return getRequiredApplicationGuid(applicationName);
     }
@@ -720,15 +716,11 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public Map<String, String> getApplicationEnvironment(UUID applicationGuid) {
-        GetApplicationEnvironmentResponse applicationEnvironmentResponse = getApplicationEnvironmentResponse(applicationGuid);
-        return EnvironmentUtil.parse(applicationEnvironmentResponse.getEnvironmentVariables());
-    }
-
-    private GetApplicationEnvironmentResponse getApplicationEnvironmentResponse(UUID applicationGuid) {
         return delegate.applicationsV3()
-                       .getEnvironment(GetApplicationEnvironmentRequest.builder()
-                                                                       .applicationId(applicationGuid.toString())
-                                                                       .build())
+                       .getEnvironmentVariables(GetApplicationEnvironmentVariablesRequest.builder()
+                                                                                         .applicationId(applicationGuid.toString())
+                                                                                         .build())
+                       .map(GetApplicationEnvironmentVariablesResponse::getVars)
                        .block();
     }
 
@@ -761,15 +753,47 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
+    public InstancesInfo getApplicationInstances(UUID applicationGuid) {
+        return findApplicationInstances(applicationGuid);
+    }
+
+    @Override
+    public CloudProcess getApplicationProcess(UUID applicationGuid) {
+        return fetch(() -> Mono.just(getApplicationProcessResource(applicationGuid)), ImmutableRawCloudProcess::of);
+    }
+
+    @Override
+    public List<CloudRoute> getApplicationRoutes(UUID applicationGuid) {
+        return fetchList(() -> getRouteResourcesByAppGuid(applicationGuid), ImmutableRawCloudRoute::of);
+    }
+
+    @Override
+    public boolean getApplicationSshEnabled(UUID applicationGuid) {
+        return delegate.applicationsV3()
+                       .getSshEnabled(GetApplicationSshEnabledRequest.builder()
+                                                                     .applicationId(applicationGuid.toString())
+                                                                     .build())
+                       .map(GetApplicationSshEnabledResponse::getEnabled)
+                       .defaultIfEmpty(false)
+                       .block();
+    }
+
+    @Override
     public List<CloudApplication> getApplications() {
-        return fetchListWithAuxiliaryContent(this::getApplicationResources, this::zipWithAuxiliaryApplicationContent);
+        return fetchList(this::getApplicationResources, application -> ImmutableRawCloudApplication.builder()
+                                                                                                   .application(application)
+                                                                                                   .space(target)
+                                                                                                   .build());
     }
 
     @Override
     public List<CloudApplication> getApplicationsByMetadataLabelSelector(String labelSelector) {
-        Map<String, Metadata> applicationsMetadata = getApplicationsMetadataByLabelSelector(labelSelector);
-        return fetchListWithAuxiliaryContent(() -> getApplicationResourcesByNamesInBatches(applicationsMetadata.keySet()),
-                                             this::zipWithAuxiliaryApplicationContent);
+        assertSpaceProvided("get applications");
+        return fetchList(() -> getApplicationsByLabelSelector(labelSelector),
+                         application -> ImmutableRawCloudApplication.builder()
+                                                                    .application(application)
+                                                                    .space(target)
+                                                                    .build());
     }
 
     private List<UUID> getApplicationIds() {
@@ -783,16 +807,14 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return getV3Guids(serviceInstanceResources);
     }
 
-    private Map<String, Metadata> getApplicationsMetadataByLabelSelector(String labelSelector) {
+    private Flux<? extends Application> getApplicationsByLabelSelector(String labelSelector) {
         IntFunction<ListApplicationsRequest> pageRequestSupplier = page -> ListApplicationsRequest.builder()
                                                                                                   .spaceId(getTargetSpaceGuid().toString())
                                                                                                   .labelSelector(labelSelector)
                                                                                                   .page(page)
                                                                                                   .build();
         return PaginationUtils.requestClientV3Resources(page -> delegate.applicationsV3()
-                                                                        .list(pageRequestSupplier.apply(page)))
-                              .collectMap(ApplicationResource::getName, ApplicationResource::getMetadata)
-                              .block();
+                                                                        .list(pageRequestSupplier.apply(page)));
     }
 
     @Override
@@ -883,7 +905,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public UUID getRequiredServiceInstanceGuid(String name) {
-        org.cloudfoundry.client.v3.Resource serviceInstanceResource = getServiceInstanceByName(name).block();
+        Resource serviceInstanceResource = getServiceInstanceByName(name).block();
         if (serviceInstanceResource == null) {
             throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Service instance " + name + " not found.");
         }
@@ -1290,14 +1312,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public void unbindServiceInstance(CloudApplication application, CloudServiceInstance serviceInstance) {
-        UUID applicationGuid = getGuid(application);
-        UUID serviceInstanceGuid = getGuid(serviceInstance);
-
-        doUnbindServiceInstance(applicationGuid, serviceInstanceGuid);
-    }
-
-    @Override
     public void unbindServiceInstance(UUID applicationGuid, UUID serviceInstanceGuid) {
         doUnbindServiceInstance(applicationGuid, serviceInstanceGuid);
     }
@@ -1368,38 +1382,39 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                 .lifecycle(buildApplicationLifecycle(staging))
                                                 .build())
                 .block();
-        GetApplicationProcessResponse applicationProcess = getApplicationProcess(applicationGuid);
+        GetApplicationProcessResponse applicationProcess = getApplicationProcessResource(applicationGuid);
         updateApplicationProcess(applicationGuid, staging, applicationProcess);
     }
 
     @Override
-    public void updateApplicationRoutes(String applicationName, Set<CloudRouteSummary> updatedRoutes) {
+    public void updateApplicationRoutes(String applicationName, Set<CloudRoute> updatedRoutes) {
         UUID applicationGuid = getApplicationGuid(applicationName);
         List<RouteResource> appRoutes = getRouteResourcesByAppGuid(applicationGuid).collectList()
+                                                                                   .defaultIfEmpty(Collections.emptyList())
                                                                                    .block();
 
         List<RouteResource> outdatedRoutes = getOutdatedRoutes(appRoutes, updatedRoutes);
-        Set<CloudRouteSummary> newRoutes = getNewRoutes(updatedRoutes, appRoutes);
+        Set<CloudRoute> newRoutes = getNewRoutes(updatedRoutes, appRoutes);
 
         removeRoutes(outdatedRoutes, applicationGuid);
         addRoutes(newRoutes, applicationGuid);
     }
 
-    private List<RouteResource> getOutdatedRoutes(List<RouteResource> currentRoutes, Set<CloudRouteSummary> updatedRoutes) {
+    private List<RouteResource> getOutdatedRoutes(List<RouteResource> currentRoutes, Set<CloudRoute> updatedRoutes) {
         Set<String> urls = updatedRoutes.stream()
-                                        .map(CloudRouteSummary::toUriString)
+                                        .map(CloudRoute::getUrl)
                                         .collect(Collectors.toSet());
         return currentRoutes.stream()
                             .filter(routeResource -> !urls.contains(routeResource.getUrl()))
                             .collect(Collectors.toList());
     }
 
-    private Set<CloudRouteSummary> getNewRoutes(Set<CloudRouteSummary> updatedRoutes, List<RouteResource> currentRoutes) {
+    private Set<CloudRoute> getNewRoutes(Set<CloudRoute> updatedRoutes, List<RouteResource> currentRoutes) {
         Set<String> urls = currentRoutes.stream()
                                         .map(RouteResource::getUrl)
                                         .collect(Collectors.toSet());
         return updatedRoutes.stream()
-                            .filter(route -> !urls.contains(route.toUriString()))
+                            .filter(route -> !urls.contains(route.getUrl()))
                             .collect(Collectors.toSet());
     }
 
@@ -1467,28 +1482,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public void uploadApplication(String applicationName, Path file, UploadStatusCallback callback) {
-        CloudPackage cloudPackage = startUpload(applicationName, file);
-        processAsyncUpload(cloudPackage, callback);
-    }
-
-    @Override
-    public void uploadApplication(String applicationName, InputStream inputStream, UploadStatusCallback callback) throws IOException {
-        Assert.notNull(inputStream, "InputStream must not be null");
-
-        Path file = null;
-        try {
-            file = createTemporaryUploadFile(inputStream);
-            uploadApplication(applicationName, file, callback);
-        } finally {
-            IOUtils.closeQuietly(inputStream);
-            if (file != null) {
-                Files.deleteIfExists(file);
-            }
-        }
-    }
-
-    @Override
     public CloudPackage asyncUploadApplication(String applicationName, Path file, UploadStatusCallback callback) {
         CloudPackage cloudPackage = startUpload(applicationName, file);
         processAsyncUploadInBackground(cloudPackage, callback);
@@ -1498,11 +1491,12 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     @Override
     public Upload getUploadStatus(UUID packageGuid) {
         CloudPackage cloudPackage = getPackage(packageGuid);
-        ErrorDetails errorDetails = ImmutableErrorDetails.builder()
-                                                         .description(cloudPackage.getData()
-                                                                                  .getError())
-                                                         .build();
-
+        ErrorDetails errorDetails = null;
+        if (cloudPackage.getType() == CloudPackage.Type.BITS) {
+            errorDetails = ImmutableErrorDetails.builder()
+                                                .description(((BitsData) cloudPackage.getData()).getError())
+                                                .build();
+        }
         return ImmutableUpload.builder()
                               .status(cloudPackage.getStatus())
                               .errorDetails(errorDetails)
@@ -1651,14 +1645,14 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     private CloudApplication findApplicationByName(String name) {
-        return fetchWithAuxiliaryContent(() -> getApplicationByName(name), this::zipWithAuxiliaryApplicationContent);
-    }
-
-    private CloudApplication findApplication(UUID guid) {
-        return fetchWithAuxiliaryContent(() -> getApplicationByGuid(guid), this::zipWithAuxiliaryApplicationContent);
+        return fetch(() -> getApplicationByName(name), application -> ImmutableRawCloudApplication.builder()
+                                                                                                  .application(application)
+                                                                                                  .space(target)
+                                                                                                  .build());
     }
 
     private Flux<? extends Application> getApplicationResources() {
+        assertSpaceProvided("get application");
         IntFunction<ListApplicationsRequest> pageRequestSupplier = page -> ListApplicationsRequest.builder()
                                                                                                   .spaceId(getTargetSpaceGuid().toString())
                                                                                                   .page(page)
@@ -1675,6 +1669,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     private Mono<? extends Application> getApplicationByName(String name) {
+        assertSpaceProvided("get application");
         IntFunction<ListApplicationsRequest> pageRequestSupplier = page -> ListApplicationsRequest.builder()
                                                                                                   .spaceId(getTargetSpaceGuid().toString())
                                                                                                   .name(name)
@@ -1683,45 +1678,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return PaginationUtils.requestClientV3Resources(page -> delegate.applicationsV3()
                                                                         .list(pageRequestSupplier.apply(page)))
                               .singleOrEmpty();
-    }
-
-    private Flux<? extends Application> getApplicationResourcesByNamesInBatches(Collection<String> names) {
-        return Flux.fromIterable(toBatches(names, MAX_CHAR_LENGTH_FOR_PARAMS_IN_REQUEST))
-                   .flatMap(this::getApplicationResourcesByNames);
-    }
-
-    private Flux<? extends Application> getApplicationResourcesByNames(Collection<String> names) {
-        if (names.isEmpty()) {
-            return Flux.empty();
-        }
-        IntFunction<ListApplicationsRequest> pageRequestSupplier = page -> ListApplicationsRequest.builder()
-                                                                                                  .spaceId(getTargetSpaceGuid().toString())
-                                                                                                  .addAllNames(names)
-                                                                                                  .page(page)
-                                                                                                  .build();
-        return PaginationUtils.requestClientV3Resources(page -> delegate.applicationsV3()
-                                                                        .list(pageRequestSupplier.apply(page)));
-    }
-
-    private Mono<Derivable<CloudApplication>> zipWithAuxiliaryApplicationContent(Application application) {
-        UUID applicationGuid = getGuid(application);
-        return getApplicationSummary(applicationGuid).map(applicationSummary -> ImmutableRawCloudApplication.builder()
-                                                                                                            .application(application)
-                                                                                                            .summary(applicationSummary)
-                                                                                                            .space(target)
-                                                                                                            .build());
-    }
-
-    // TODO: Use v3 if possible. Currently no summary endpoint, the "include" parameter
-    // might be used if it supports all of the required resources
-    // https://github.com/cloudfoundry/cloud_controller_ng/issues/1990
-    @Deprecated
-    private Mono<SummaryApplicationResponse> getApplicationSummary(UUID guid) {
-        SummaryApplicationRequest request = SummaryApplicationRequest.builder()
-                                                                     .applicationId(guid.toString())
-                                                                     .build();
-        return delegate.applicationsV2()
-                       .summary(request);
     }
 
     private CloudServiceInstance findServiceInstanceByName(String name) {
@@ -1881,12 +1837,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                        .cancel(request);
     }
 
-    private Path createTemporaryUploadFile(InputStream inputStream) throws IOException {
-        Path file = Files.createTempFile("cfjava", null);
-        Files.copy(inputStream, file);
-        return file;
-    }
-
     private CloudPackage startUpload(String applicationName, Path file) {
         Assert.notNull(applicationName, "AppName must not be null");
         Assert.notNull(file, "File must not be null");
@@ -1991,11 +1941,12 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         }
     }
 
-    private void addRoutes(Set<CloudRouteSummary> routes, UUID applicationGuid) {
+    private void addRoutes(Set<CloudRoute> routes, UUID applicationGuid) {
         Map<String, UUID> domains = getDomainsFromRoutes(routes);
-        for (CloudRouteSummary route : routes) {
+        for (CloudRoute route : routes) {
             validateDomainForRoute(route, domains);
-            UUID domainGuid = domains.get(route.getDomain());
+            UUID domainGuid = domains.get(route.getDomain()
+                                               .getName());
 
             UUID routeGuid = getOrAddRoute(domainGuid, route.getHost(), route.getPath());
 
@@ -2003,11 +1954,13 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         }
     }
 
-    private void validateDomainForRoute(CloudRouteSummary route, Map<String, UUID> existingDomains) {
-        if (StringUtils.isEmpty(route.getDomain()) || !existingDomains.containsKey(route.getDomain())) {
+    private void validateDomainForRoute(CloudRoute route, Map<String, UUID> existingDomains) {
+        String domain = route.getDomain()
+                             .getName();
+        if (!StringUtils.hasLength(domain) || !existingDomains.containsKey(domain)) {
             throw new CloudOperationException(HttpStatus.NOT_FOUND,
                                               HttpStatus.NOT_FOUND.getReasonPhrase(),
-                                              "Domain '" + route.getDomain() + "' not found for URI " + route.toUriString());
+                                              "Domain '" + domain + "' not found for URI " + route.getUrl());
         }
     }
 
@@ -2298,10 +2251,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     private List<CloudRoute> findRoutes(CloudDomain domain) {
         return fetchList(() -> getRouteResourcesByDomainGuidAndSpaceGuid(domain.getGuid(), getTargetSpaceGuid()),
-                         routeResource -> ImmutableRawCloudRoute.builder()
-                                                                .route(routeResource)
-                                                                .domain(domain)
-                                                                .build());
+                         ImmutableRawCloudRoute::of);
     }
 
     private Flux<RouteResource> getRouteResourcesByDomainGuidAndSpaceGuid(UUID domainGuid, UUID spaceGuid) {
@@ -2514,10 +2464,10 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     private InstancesInfo findApplicationInstances(UUID applicationGuid) {
-        return fetch(() -> getApplicationInstancesResource(applicationGuid), ImmutableRawInstancesInfo::of);
+        return fetch(() -> getApplicationProcessStatsResource(applicationGuid), ImmutableRawInstancesInfo::of);
     }
 
-    private Mono<GetApplicationProcessStatisticsResponse> getApplicationInstancesResource(UUID applicationGuid) {
+    private Mono<GetApplicationProcessStatisticsResponse> getApplicationProcessStatsResource(UUID applicationGuid) {
         return delegate.applicationsV3()
                        .getProcessStatistics(GetApplicationProcessStatisticsRequest.builder()
                                                                                    .applicationId(applicationGuid.toString())
@@ -2598,9 +2548,10 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
             : null;
     }
 
-    private Map<String, UUID> getDomainsFromRoutes(Set<CloudRouteSummary> routes) {
+    private Map<String, UUID> getDomainsFromRoutes(Set<CloudRoute> routes) {
         Set<String> domainNames = routes.stream()
-                                        .map(CloudRouteSummary::getDomain)
+                                        .map(route -> route.getDomain()
+                                                           .getName())
                                         .filter(StringUtils::hasLength)
                                         .collect(Collectors.toSet());
         return getDomainResourcesByNamesInBatches(domainNames).collectMap(DomainResource::getName,
@@ -2623,7 +2574,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                                                                      .block();
     }
 
-    private List<UUID> getGuids(Flux<? extends org.cloudfoundry.client.v3.Resource> resources) {
+    private List<UUID> getGuids(Flux<? extends Resource> resources) {
         return resources.map(this::getGuid)
                         .collectList()
                         .block();
@@ -2677,7 +2628,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return fetch(() -> getPackageResource(packageGuid), ImmutableRawCloudPackage::of);
     }
 
-    private Mono<? extends org.cloudfoundry.client.v3.packages.Package> getPackageResource(UUID guid) {
+    private Mono<? extends Package> getPackageResource(UUID guid) {
         GetPackageRequest request = GetPackageRequest.builder()
                                                      .packageId(guid.toString())
                                                      .build();

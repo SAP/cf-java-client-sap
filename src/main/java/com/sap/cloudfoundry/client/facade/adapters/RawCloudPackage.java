@@ -2,12 +2,15 @@ package com.sap.cloudfoundry.client.facade.adapters;
 
 import org.cloudfoundry.client.v3.Checksum;
 import org.cloudfoundry.client.v3.packages.BitsData;
+import org.cloudfoundry.client.v3.packages.DockerData;
 import org.cloudfoundry.client.v3.packages.Package;
 import org.cloudfoundry.client.v3.packages.PackageType;
 import org.immutables.value.Value;
 
 import com.sap.cloudfoundry.client.facade.domain.CloudPackage;
+import com.sap.cloudfoundry.client.facade.domain.ImmutableBitsData;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudPackage;
+import com.sap.cloudfoundry.client.facade.domain.ImmutableDockerData;
 import com.sap.cloudfoundry.client.facade.domain.Status;
 
 @Value.Immutable
@@ -31,26 +34,37 @@ public abstract class RawCloudPackage extends RawCloudEntity<CloudPackage> {
         return parseEnum(resource.getState(), Status.class);
     }
 
-    private static CloudPackage.Data parseData(Package resource) {
+    private static CloudPackage.PackageData parseData(Package resource) {
         if (resource.getType() == PackageType.BITS) {
             return parseBitsData((BitsData) resource.getData());
         }
-        return null;
+        return parseDockerData((DockerData) resource.getData());
     }
 
-    private static CloudPackage.Data parseBitsData(BitsData data) {
-        return ImmutableCloudPackage.ImmutableData.builder()
-                                                  .checksum(parseChecksum(data.getChecksum()))
-                                                  .error(data.getError())
+    private static CloudPackage.PackageData parseBitsData(BitsData data) {
+        return ImmutableBitsData.builder()
+                                .checksum(parseBitsChecksum(data.getChecksum()))
+                                .error(data.getError())
+                                .build();
+    }
+
+    private static com.sap.cloudfoundry.client.facade.domain.BitsData.Checksum parseBitsChecksum(Checksum checksum) {
+        if (checksum == null) {
+            return null;
+        }
+        return ImmutableBitsData.ImmutableChecksum.builder()
+                                                  .algorithm(checksum.getType()
+                                                                     .toString())
+                                                  .value(checksum.getValue())
                                                   .build();
     }
 
-    private static CloudPackage.Checksum parseChecksum(Checksum checksum) {
-        return ImmutableCloudPackage.ImmutableChecksum.builder()
-                                                      .algorithm(checksum.getType()
-                                                                         .toString())
-                                                      .value(checksum.getValue())
-                                                      .build();
+    private static CloudPackage.PackageData parseDockerData(DockerData data) {
+        return ImmutableDockerData.builder()
+                                  .image(data.getImage())
+                                  .username(data.getUsername())
+                                  .password(data.getPassword())
+                                  .build();
     }
 
     private static CloudPackage.Type parseType(Package resource) {

@@ -12,13 +12,16 @@ import org.cloudfoundry.client.v3.packages.PackageType;
 import org.junit.jupiter.api.Test;
 
 import com.sap.cloudfoundry.client.facade.domain.CloudPackage;
+import com.sap.cloudfoundry.client.facade.domain.ImmutableBitsData;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudPackage;
+import com.sap.cloudfoundry.client.facade.domain.ImmutableDockerData;
 import com.sap.cloudfoundry.client.facade.domain.Status;
 
 class RawCloudPackageTest {
 
     private static final PackageState STATE = PackageState.EXPIRED;
     private static final String ERROR = "blabla";
+    private static final String DOCKER_IMAGE = "cloudfoundry/test";
     private static final ChecksumType CHECKSUM_TYPE = ChecksumType.SHA256;
     private static final String CHECKSUM_VALUE = "7251a608605c0f45710f8415bba0d117c90598824697a2a5d00850ea9b179112";
 
@@ -44,21 +47,23 @@ class RawCloudPackageTest {
                                     .build();
     }
 
-    private static CloudPackage.Data buildExpectedData(CloudPackage.Type type) {
+    private static CloudPackage.PackageData buildExpectedData(CloudPackage.Type type) {
         if (type == CloudPackage.Type.DOCKER) {
-            return null;
+            return ImmutableDockerData.builder()
+                                      .image(DOCKER_IMAGE)
+                                      .build();
         }
-        return ImmutableCloudPackage.ImmutableData.builder()
-                                                  .checksum(buildExpectedChecksum())
-                                                  .error(ERROR)
-                                                  .build();
+        return ImmutableBitsData.builder()
+                                .checksum(buildExpectedChecksum())
+                                .error(ERROR)
+                                .build();
     }
 
-    private static CloudPackage.Checksum buildExpectedChecksum() {
-        return ImmutableCloudPackage.ImmutableChecksum.builder()
-                                                      .algorithm(EXPECTED_CHECKSUM_ALGORITHM)
-                                                      .value(CHECKSUM_VALUE)
-                                                      .build();
+    private static com.sap.cloudfoundry.client.facade.domain.BitsData.Checksum buildExpectedChecksum() {
+        return ImmutableBitsData.ImmutableChecksum.builder()
+                                                  .algorithm(EXPECTED_CHECKSUM_ALGORITHM)
+                                                  .value(CHECKSUM_VALUE)
+                                                  .build();
     }
 
     private static RawCloudPackage buildRawPackage(PackageType type) {
@@ -87,9 +92,7 @@ class RawCloudPackageTest {
 
     private static DockerData buildDockerData() {
         return DockerData.builder()
-                         .image("")
-                         .username("")
-                         .password("")
+                         .image(DOCKER_IMAGE)
                          .build();
     }
 

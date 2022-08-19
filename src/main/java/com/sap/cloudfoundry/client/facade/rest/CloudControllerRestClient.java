@@ -1,7 +1,5 @@
 package com.sap.cloudfoundry.client.facade.rest;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.List;
@@ -21,8 +19,8 @@ import com.sap.cloudfoundry.client.facade.domain.CloudDomain;
 import com.sap.cloudfoundry.client.facade.domain.CloudEvent;
 import com.sap.cloudfoundry.client.facade.domain.CloudOrganization;
 import com.sap.cloudfoundry.client.facade.domain.CloudPackage;
+import com.sap.cloudfoundry.client.facade.domain.CloudProcess;
 import com.sap.cloudfoundry.client.facade.domain.CloudRoute;
-import com.sap.cloudfoundry.client.facade.domain.CloudRouteSummary;
 import com.sap.cloudfoundry.client.facade.domain.CloudServiceBinding;
 import com.sap.cloudfoundry.client.facade.domain.CloudServiceBroker;
 import com.sap.cloudfoundry.client.facade.domain.CloudServiceInstance;
@@ -55,7 +53,7 @@ public interface CloudControllerRestClient {
 
     void bindServiceInstance(String applicationName, String serviceInstanceName, Map<String, Object> parameters);
 
-    void createApplication(String applicationName, Staging staging, Integer disk, Integer memory, Set<CloudRouteSummary> routes);
+    void createApplication(String applicationName, Staging staging, Integer disk, Integer memory, Metadata metadata, Set<CloudRoute> routes);
 
     void createServiceInstance(CloudServiceInstance serviceInstance);
 
@@ -97,8 +95,6 @@ public interface CloudControllerRestClient {
 
     CloudApplication getApplication(String applicationName, boolean required);
 
-    CloudApplication getApplication(UUID applicationGuid);
-
     UUID getApplicationGuid(String applicationName);
 
     String getApplicationName(UUID applicationGuid);
@@ -112,6 +108,14 @@ public interface CloudControllerRestClient {
     List<CloudEvent> getEventsByTarget(UUID uuid);
 
     InstancesInfo getApplicationInstances(CloudApplication app);
+
+    InstancesInfo getApplicationInstances(UUID applicationGuid);
+
+    CloudProcess getApplicationProcess(UUID applicationGuid);
+
+    List<CloudRoute> getApplicationRoutes(UUID applicationGuid);
+
+    boolean getApplicationSshEnabled(UUID applicationGuid);
 
     List<CloudApplication> getApplications();
 
@@ -205,8 +209,6 @@ public interface CloudControllerRestClient {
 
     void unbindServiceInstance(String applicationName, String serviceInstanceName);
 
-    void unbindServiceInstance(CloudApplication application, CloudServiceInstance serviceInstance);
-
     void unbindServiceInstance(UUID applicationGuid, UUID serviceInstanceGuid);
 
     void updateApplicationDiskQuota(String applicationName, int disk);
@@ -219,7 +221,7 @@ public interface CloudControllerRestClient {
 
     void updateApplicationStaging(String applicationName, Staging staging);
 
-    void updateApplicationRoutes(String applicationName, Set<CloudRouteSummary> routes);
+    void updateApplicationRoutes(String applicationName, Set<CloudRoute> routes);
 
     String updateServiceBroker(CloudServiceBroker serviceBroker);
 
@@ -232,10 +234,6 @@ public interface CloudControllerRestClient {
     void updateServiceSyslogDrainUrl(String serviceName, String syslogDrainUrl);
 
     void updateServiceTags(String serviceName, List<String> tags);
-
-    void uploadApplication(String applicationName, Path file, UploadStatusCallback callback);
-
-    void uploadApplication(String applicationName, InputStream inputStream, UploadStatusCallback callback) throws IOException;
 
     CloudPackage asyncUploadApplication(String applicationName, Path file, UploadStatusCallback callback);
 
