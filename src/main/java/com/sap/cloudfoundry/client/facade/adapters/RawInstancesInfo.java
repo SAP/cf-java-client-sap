@@ -1,5 +1,6 @@
 package com.sap.cloudfoundry.client.facade.adapters;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -28,6 +29,9 @@ public abstract class RawInstancesInfo extends RawCloudEntity<InstancesInfo> {
     }
 
     private static List<InstanceInfo> parseProcessStatistics(List<ProcessStatisticsResource> stats) {
+        if (stats == null) {
+            return Collections.emptyList();
+        }
         return stats.stream()
                     .map(RawInstancesInfo::parseProcessStatistic)
                     .collect(Collectors.toList());

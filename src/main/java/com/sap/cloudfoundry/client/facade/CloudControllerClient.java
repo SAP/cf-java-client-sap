@@ -1,7 +1,5 @@
 package com.sap.cloudfoundry.client.facade;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.List;
@@ -19,8 +17,8 @@ import com.sap.cloudfoundry.client.facade.domain.CloudDomain;
 import com.sap.cloudfoundry.client.facade.domain.CloudEvent;
 import com.sap.cloudfoundry.client.facade.domain.CloudOrganization;
 import com.sap.cloudfoundry.client.facade.domain.CloudPackage;
+import com.sap.cloudfoundry.client.facade.domain.CloudProcess;
 import com.sap.cloudfoundry.client.facade.domain.CloudRoute;
-import com.sap.cloudfoundry.client.facade.domain.CloudRouteSummary;
 import com.sap.cloudfoundry.client.facade.domain.CloudServiceBinding;
 import com.sap.cloudfoundry.client.facade.domain.CloudServiceBroker;
 import com.sap.cloudfoundry.client.facade.domain.CloudServiceInstance;
@@ -87,7 +85,7 @@ public interface CloudControllerClient {
      * @param memory memory to use in MB
      * @param routes list of route summary info for the app
      */
-    void createApplication(String applicationName, Staging staging, Integer disk, Integer memory, Set<CloudRouteSummary> routes);
+    void createApplication(String applicationName, Staging staging, Integer disk, Integer memory, Metadata metadata, Set<CloudRoute> routes);
 
     /**
      * Create a service instance.
@@ -236,14 +234,6 @@ public interface CloudControllerClient {
     CloudApplication getApplication(String applicationName, boolean required);
 
     /**
-     * Get cloud application with the specified GUID.
-     *
-     * @param guid GUID of the app
-     * @return the cloud application
-     */
-    CloudApplication getApplication(UUID guid);
-
-    /**
      * Get the GUID of the cloud application with the specified name.
      *
      * @param applicationName name of the app
@@ -286,6 +276,14 @@ public interface CloudControllerClient {
      * @return instances info
      */
     InstancesInfo getApplicationInstances(CloudApplication app);
+
+    InstancesInfo getApplicationInstances(UUID applicationGuid);
+
+    CloudProcess getApplicationProcess(UUID applicationGuid);
+
+    List<CloudRoute> getApplicationRoutes(UUID applicationGuid);
+
+    boolean getApplicationSshEnabled(UUID applicationGuid);
 
     /**
      * Get all applications in the currently targeted space. This method has EXTREMELY poor performance for spaces with a lot of
@@ -649,11 +647,9 @@ public interface CloudControllerClient {
     /**
      * Un-associate (unprovision) a service from an application.
      *
-     * @param application the application instance
-     * @param serviceInstance the service instance
+     * @param applicationGuid the application guid
+     * @param serviceInstanceGuid the service instance guid
      */
-    void unbindServiceInstance(CloudApplication application, CloudServiceInstance serviceInstance);
-
     void unbindServiceInstance(UUID applicationGuid, UUID serviceInstanceGuid);
 
     /**
@@ -703,7 +699,7 @@ public interface CloudControllerClient {
      * @param applicationName name of application
      * @param routes list of route summary info for the routes the app should use
      */
-    void updateApplicationRoutes(String applicationName, Set<CloudRouteSummary> routes);
+    void updateApplicationRoutes(String applicationName, Set<CloudRoute> routes);
 
     /**
      * Update a service broker (unchanged forces catalog refresh).
@@ -729,54 +725,6 @@ public interface CloudControllerClient {
     void updateServiceTags(String serviceName, List<String> tags);
 
     void updateServiceSyslogDrainUrl(String serviceName, String syslogDrainUrl);
-
-    /**
-     * Upload an application to Cloud Foundry.
-     *
-     * @param applicationName application name
-     * @param file path to the application archive or folder
-     */
-    void uploadApplication(String applicationName, String file);
-
-    /**
-     * Upload an application to Cloud Foundry.
-     *
-     * @param applicationName the application name
-     * @param file the application archive or folder
-     */
-    void uploadApplication(String applicationName, Path file);
-
-    /**
-     * Upload an application to Cloud Foundry.
-     *
-     * @param applicationName the application name
-     * @param file the application archive
-     * @param callback a callback interface used to provide progress information or {@code null}
-     */
-    void uploadApplication(String applicationName, Path file, UploadStatusCallback callback);
-
-    /**
-     * Upload an application to Cloud Foundry.
-     *
-     * This form of {@code uploadApplication} will read the passed {@code InputStream} and copy the contents to a temporary file for upload.
-     *
-     * @param applicationName the application name
-     * @param inputStream the InputStream to read from
-     * @throws java.io.IOException
-     */
-    void uploadApplication(String applicationName, InputStream inputStream) throws IOException;
-
-    /**
-     * Upload an application to Cloud Foundry.
-     *
-     * This form of {@code uploadApplication} will read the passed {@code InputStream} and copy the contents to a temporary file for upload.
-     *
-     * @param applicationName the application name
-     * @param inputStream the InputStream to read from
-     * @param callback a callback interface used to provide progress information or {@code null}
-     * @throws java.io.IOException
-     */
-    void uploadApplication(String applicationName, InputStream inputStream, UploadStatusCallback callback) throws IOException;
 
     CloudPackage asyncUploadApplication(String applicationName, Path file);
 

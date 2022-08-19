@@ -19,9 +19,9 @@ import org.junit.jupiter.api.Test;
 
 import com.sap.cloudfoundry.client.facade.domain.CloudApplication;
 import com.sap.cloudfoundry.client.facade.domain.CloudRoute;
-import com.sap.cloudfoundry.client.facade.domain.CloudRouteSummary;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudApplication;
-import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudRouteSummary;
+import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudDomain;
+import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudRoute;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableStaging;
 import com.sap.cloudfoundry.client.facade.domain.Staging;
 
@@ -29,10 +29,13 @@ class CloudStackIntegrationTest extends CloudControllerClientIntegrationTest {
 
     private static final String DEFAULT_STACK_NAME = "cflinuxfs3";
     private static final String INCORRECT_STACK_NAME = "Non-existent-stack-name";
-    private static final CloudRouteSummary DEFAULT_ROUTE_SUMMARY = ImmutableCloudRouteSummary.builder()
-                                                                                             .host(APPLICATION_HOST)
-                                                                                             .domain(DEFAULT_DOMAIN)
-                                                                                             .build();
+    private static final CloudRoute DEFAULT_ROUTE = ImmutableCloudRoute.builder()
+                                                                       .host(APPLICATION_HOST)
+                                                                       .domain(ImmutableCloudDomain.builder()
+                                                                                                   .name(DEFAULT_DOMAIN)
+                                                                                                   .build())
+                                                                       .url(APPLICATION_HOST+"."+DEFAULT_DOMAIN)
+                                                                       .build();
 
     @BeforeAll
     static void createDefaultDomain() {
@@ -56,35 +59,29 @@ class CloudStackIntegrationTest extends CloudControllerClientIntegrationTest {
                                           .addBuildpack(IntegrationTestConstants.JAVA_BUILDPACK)
                                           .build();
         try {
-            verifyExistenceOfDefaultStack(applicationName, staging, Set.of(DEFAULT_ROUTE_SUMMARY));
+            verifyExistenceOfDefaultStack(applicationName, staging, Set.of(DEFAULT_ROUTE));
         } finally {
             client.deleteApplication(applicationName);
         }
     }
 
-    private void verifyExistenceOfDefaultStack(String applicationName, Staging staging, Set<CloudRouteSummary> routeSummaries) {
-        client.createApplication(applicationName, staging, DISK_IN_MB, MEMORY_IN_MB, routeSummaries);
+    private void verifyExistenceOfDefaultStack(String applicationName, Staging staging, Set<CloudRoute> routes) {
+        client.createApplication(applicationName, staging, DISK_IN_MB, MEMORY_IN_MB, null, routes);
         assertDefaultCloudStack(ImmutableCloudApplication.builder()
                                                          .name(applicationName)
-                                                         .diskQuota(DISK_IN_MB)
-                                                         .memory(MEMORY_IN_MB)
-                                                         .instances(1)
-                                                         .routes(routeSummaries)
+                                                         .state(CloudApplication.State.STARTED)
+                                                         .lifecycle(createLifecycle(staging))
                                                          .build());
 
     }
 
     private void assertDefaultCloudStack(CloudApplication application) {
-        CloudApplication app = client.getApplication(application.getName(), true);
-        assertNotNull(app.getStaging()
-                         .getStackName());
-        assertEquals(DEFAULT_STACK_NAME, app.getStaging()
-                                            .getStackName());
-        assertEquals(app.getStaging()
-                        .getStackName(),
-                     client.getStack(app.getStaging()
-                                        .getStackName())
-                           .getName());
+        CloudApplication app = client.getApplication(application.getName());
+        var appStack = app.getLifecycle()
+                          .getData()
+                          .get("stack");
+        assertNotNull(appStack);
+        assertEquals(DEFAULT_STACK_NAME, appStack);
     }
 
     @Test
@@ -95,26 +92,19 @@ class CloudStackIntegrationTest extends CloudControllerClientIntegrationTest {
                                           .addBuildpack(IntegrationTestConstants.JAVA_BUILDPACK)
                                           .build();
         try {
-            verifyIncorrectStack(applicationName, staging, Set.of(DEFAULT_ROUTE_SUMMARY));
+            verifyIncorrectStack(applicationName, staging, Set.of(DEFAULT_ROUTE));
         } finally {
             client.deleteApplication(applicationName);
         }
     }
 
-    private void verifyIncorrectStack(String applicationName, Staging staging, Set<CloudRouteSummary> routeSummaries) {
-        CloudApplication app = ImmutableCloudApplication.builder()
-                                                        .name(applicationName)
-                                                        .diskQuota(DISK_IN_MB)
-                                                        .memory(MEMORY_IN_MB)
-                                                        .instances(1)
-                                                        .routes(routeSummaries)
-                                                        .build();
-        client.createApplication(app.getName(), staging, DISK_IN_MB, MEMORY_IN_MB, routeSummaries);
+    private void verifyIncorrectStack(String applicationName, Staging staging, Set<CloudRoute> routes) {
+        client.createApplication(applicationName, staging, DISK_IN_MB, MEMORY_IN_MB, null, routes);
         assertThrows(CloudOperationException.class, () -> client.getStack(INCORRECT_STACK_NAME, true));
     }
 
     @Test
-    @DisplayName("Verify existance of at least one valid Cloud Stack")
+    @DisplayName("Verify existence of at least one valid Cloud Stack")
     void getStackList() {
         assertNotNull(client.getStacks());
         assertFalse(client.getStacks()
