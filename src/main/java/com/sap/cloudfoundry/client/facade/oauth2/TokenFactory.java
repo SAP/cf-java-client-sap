@@ -24,9 +24,6 @@ public class TokenFactory {
     public static final String SCOPE_CC_READ = "cloud_controller.read";
     public static final String SCOPE_CC_WRITE = "cloud_controller.write";
     public static final String SCOPE_CC_ADMIN = "cloud_controller.admin";
-    public static final String SCOPE_SCIM_USERIDS = "scim.userids";
-    public static final String SCOPE_PASSWORD_WRITE = "password.write";
-    public static final String SCOPE_OPENID = "openid";
 
     // Token Body elements:
     public static final String SCOPE = "scope";

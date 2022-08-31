@@ -16,6 +16,7 @@ import java.text.MessageFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -37,11 +38,12 @@ import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudRouteSummary;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudServiceBroker;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudServiceInstance;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableStaging;
+import com.sap.cloudfoundry.client.facade.domain.ServiceOperation;
 import com.sap.cloudfoundry.client.facade.util.JsonUtil;
 
 class ServicesCloudControllerClientIntegrationTest extends CloudControllerClientIntegrationTest {
 
-    private static final String SYSLOG_DRAIN_URL = "syslogDrain";
+    private static final String SYSLOG_DRAIN_URL = "https://syslogDrain.com";
     private static final Map<String, Object> USER_SERVICE_CREDENTIALS = Map.of("testCredentialsKey", "testCredentialsValue");
 
     private static boolean pushedServiceBroker = false;
@@ -96,7 +98,7 @@ class ServicesCloudControllerClientIntegrationTest extends CloudControllerClient
     void updateUserProvidedServiceTest() {
         String serviceName = "test-service-2";
         Map<String, Object> updatedServiceCredentials = Map.of("newTestCredentialsKey", "newTestCredentialsValue");
-        String updatedSyslogDrainUrl = "newSyslogDrain";
+        String updatedSyslogDrainUrl = "https://newSyslogDrain.com";
         List<String> updatedTags = List.of("tag1", "tag2");
         try {
             client.createUserProvidedServiceInstance(buildUserProvidedService(serviceName), USER_SERVICE_CREDENTIALS, SYSLOG_DRAIN_URL);
@@ -134,7 +136,7 @@ class ServicesCloudControllerClientIntegrationTest extends CloudControllerClient
     @ParameterizedTest
     @MethodSource
     @DisplayName("Create a managed service")
-    void createManagedService(String serviceName, String brokerName) {
+    void createManagedService(String serviceName, String brokerName) throws InterruptedException {
         if (!pushedServiceBroker) {
             return;
         }
@@ -146,6 +148,7 @@ class ServicesCloudControllerClientIntegrationTest extends CloudControllerClient
                                                                       .plan(IntegrationTestConstants.SERVICE_PLAN)
                                                                       .broker(brokerName)
                                                                       .build());
+            pollLastOperationServiceInstanceState(serviceName);
             CloudServiceInstance service = client.getServiceInstance(serviceName);
             assertEquals(serviceName, service.getName());
             assertEquals(IntegrationTestConstants.SERVICE_OFFERING, service.getLabel());
@@ -154,13 +157,14 @@ class ServicesCloudControllerClientIntegrationTest extends CloudControllerClient
             fail(e);
         } finally {
             client.deleteServiceInstance(serviceName);
+            verifyServiceIsOrBeingDeleted(serviceName);
         }
 
     }
 
     @Test
     @DisplayName("Update managed service")
-    void updateManagedService() {
+    void updateManagedService() throws InterruptedException {
         if (!pushedServiceBroker) {
             return;
         }
@@ -174,12 +178,16 @@ class ServicesCloudControllerClientIntegrationTest extends CloudControllerClient
                                                                       .label(IntegrationTestConstants.SERVICE_OFFERING)
                                                                       .plan(IntegrationTestConstants.SERVICE_PLAN)
                                                                       .build());
+            pollLastOperationServiceInstanceState(serviceName);
 
             client.updateServicePlan(serviceName, IntegrationTestConstants.SERVICE_PLAN_2);
+            pollLastOperationServiceInstanceState(serviceName);
 
             client.updateServiceParameters(serviceName, parameters);
+            pollLastOperationServiceInstanceState(serviceName);
 
             client.updateServiceTags(serviceName, serviceTags);
+            pollLastOperationServiceInstanceState(serviceName);
 
             CloudServiceInstance service = client.getServiceInstance(serviceName);
             Map<String, Object> resultParameters = client.getServiceInstanceParameters(service.getGuid());
@@ -195,8 +203,29 @@ class ServicesCloudControllerClientIntegrationTest extends CloudControllerClient
             fail(e);
         } finally {
             client.deleteServiceInstance(serviceName);
+            verifyServiceIsOrBeingDeleted(serviceName);
         }
+    }
 
+    private void pollLastOperationServiceInstanceState(String serviceInstanceName) throws InterruptedException {
+        int times = 0;
+        ServiceOperation lastOperation = client.getServiceInstance(serviceInstanceName)
+                                               .getLastOperation();
+        while (!lastOperation.getState()
+                             .equals(ServiceOperation.State.SUCCEEDED)) {
+            Thread.sleep(TimeUnit.SECONDS.toMillis(1));
+            lastOperation = client.getServiceInstance(serviceInstanceName)
+                                  .getLastOperation();
+            if (lastOperation.getState()
+                             .equals(ServiceOperation.State.FAILED)) {
+                System.err.println(JsonUtil.convertToJson(lastOperation));
+                throw new IllegalStateException(String.format("Service operation failed for service: %s", serviceInstanceName));
+            }
+            if (times++ > 60) {
+                System.err.println(JsonUtil.convertToJson(lastOperation));
+                throw new IllegalStateException(String.format("Service operation timeout exceeded for service: %s", serviceInstanceName));
+            }
+        }
     }
 
     static Stream<Arguments> getServiceInstance() {
@@ -208,7 +237,8 @@ class ServicesCloudControllerClientIntegrationTest extends CloudControllerClient
     @ParameterizedTest
     @MethodSource
     @DisplayName("Get service instance")
-    void getServiceInstance(String serviceName, boolean required, Class<? extends Exception> expectedException, boolean expectedService) {
+    void getServiceInstance(String serviceName, boolean required, Class<? extends Exception> expectedException, boolean expectedService)
+        throws InterruptedException {
         if (!pushedServiceBroker) {
             return;
         }
@@ -220,12 +250,11 @@ class ServicesCloudControllerClientIntegrationTest extends CloudControllerClient
                                                                       .label(IntegrationTestConstants.SERVICE_OFFERING)
                                                                       .plan(IntegrationTestConstants.SERVICE_PLAN)
                                                                       .build());
-
+            pollLastOperationServiceInstanceState(serviceNameToCreate);
             if (expectedException != null) {
                 assertThrows(expectedException, () -> client.getServiceInstance(serviceName, required));
                 return;
             }
-
             CloudServiceInstance service = client.getServiceInstance(serviceName, required);
             if (expectedService) {
                 assertEquals(serviceName, service.getName());
@@ -236,6 +265,7 @@ class ServicesCloudControllerClientIntegrationTest extends CloudControllerClient
             fail(e);
         } finally {
             client.deleteServiceInstance(serviceNameToCreate);
+            verifyServiceIsOrBeingDeleted(serviceNameToCreate);
         }
     }
 
@@ -253,9 +283,9 @@ class ServicesCloudControllerClientIntegrationTest extends CloudControllerClient
                                                                       .label(IntegrationTestConstants.SERVICE_OFFERING)
                                                                       .plan(IntegrationTestConstants.SERVICE_PLAN)
                                                                       .build());
-
+            pollLastOperationServiceInstanceState(serviceName);
             client.deleteServiceInstance(serviceName);
-            assertThrows(CloudOperationException.class, () -> client.getServiceInstance(serviceName));
+            verifyServiceIsOrBeingDeleted(serviceName);
         } catch (Exception e) {
             fail(e);
         } finally {
@@ -263,6 +293,18 @@ class ServicesCloudControllerClientIntegrationTest extends CloudControllerClient
             if (service != null) {
                 client.deleteServiceInstance(service);
             }
+        }
+    }
+
+    private void verifyServiceIsOrBeingDeleted(String serviceName) throws InterruptedException {
+        CloudServiceInstance serviceInstance = client.getServiceInstance(serviceName, false);
+        int times = 0;
+        while (serviceInstance != null) {
+            if (times++ > 30) {
+                throw new AssertionError("Timeout when waiting for service deletion...");
+            }
+            Thread.sleep(TimeUnit.SECONDS.toMillis(1));
+            serviceInstance = client.getServiceInstance(serviceName, false);
         }
     }
 
@@ -432,7 +474,7 @@ class ServicesCloudControllerClientIntegrationTest extends CloudControllerClient
     private static void pollServiceBrokerOperation(String jobId, String serviceBrokerName) throws InterruptedException {
         CloudAsyncJob job = client.getAsyncJob(jobId);
         while (job.getState() != JobState.COMPLETE && !hasAsyncJobFailed(job)) {
-            Thread.sleep(1000);
+            Thread.sleep(TimeUnit.SECONDS.toMillis(1));
             job = client.getAsyncJob(jobId);
         }
         if (hasAsyncJobFailed(job)) {

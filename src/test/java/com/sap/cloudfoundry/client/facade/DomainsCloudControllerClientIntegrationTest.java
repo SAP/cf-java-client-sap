@@ -1,11 +1,10 @@
 package com.sap.cloudfoundry.client.facade;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.IOException;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
@@ -68,6 +67,6 @@ class DomainsCloudControllerClientIntegrationTest extends CloudControllerClientI
                                            .stream()
                                            .map(CloudDomain::getName)
                                            .anyMatch(domainName::equals);
-        Assertions.assertEquals(domainExists, actualDomainExists);
+        assertEquals(domainExists, actualDomainExists);
     }
 }

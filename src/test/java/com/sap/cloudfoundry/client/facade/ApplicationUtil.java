@@ -6,6 +6,7 @@ import java.nio.file.Path;
 import java.text.MessageFormat;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 import com.sap.cloudfoundry.client.facade.domain.CloudApplication;
 import com.sap.cloudfoundry.client.facade.domain.CloudBuild;
@@ -20,7 +21,7 @@ public class ApplicationUtil {
         throws InterruptedException {
         CloudPackage cloudPackage = client.asyncUploadApplication(applicationName, pathToFile);
         while (cloudPackage.getStatus() != Status.READY && !hasUploadFailed(cloudPackage.getStatus())) {
-            Thread.sleep(1000);
+            Thread.sleep(TimeUnit.SECONDS.toMillis(1));
             cloudPackage = client.getPackage(cloudPackage.getGuid());
         }
         if (hasUploadFailed(cloudPackage.getStatus())) {
@@ -45,7 +46,7 @@ public class ApplicationUtil {
     public static CloudBuild createBuildForPackage(CloudControllerClient client, CloudPackage cloudPackage) throws InterruptedException {
         CloudBuild build = client.createBuild(cloudPackage.getGuid());
         while (build.getState() == CloudBuild.State.STAGING) {
-            Thread.sleep(1000);
+            Thread.sleep(TimeUnit.SECONDS.toMillis(1));
             build = client.getBuild(build.getGuid());
         }
         if (build.getState() == CloudBuild.State.FAILED) {
@@ -61,7 +62,7 @@ public class ApplicationUtil {
         List<InstanceInfo> appInstances = client.getApplicationInstances(app)
                                                 .getInstances();
         while (!hasAppInstancesStarted(appInstances) && !hasAppInstancesFailed(appInstances)) {
-            Thread.sleep(1000);
+            Thread.sleep(TimeUnit.SECONDS.toMillis(1));
             appInstances = client.getApplicationInstances(app)
                                  .getInstances();
         }

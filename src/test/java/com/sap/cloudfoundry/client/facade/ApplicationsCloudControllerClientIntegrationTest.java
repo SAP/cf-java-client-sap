@@ -8,9 +8,9 @@ import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.HEALTH
 import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.JAVA_BUILDPACK;
 import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.MEMORY_IN_MB;
 import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.STATICFILE_APPLICATION_CONTENT;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -146,7 +146,7 @@ class ApplicationsCloudControllerClientIntegrationTest extends CloudControllerCl
 
     @Test
     @DisplayName("Create application, upload a package, verify package exists")
-    void uploadApplication() throws URISyntaxException, InterruptedException {
+    void uploadApplication() {
         String applicationName = "test-application-5";
         try {
             createAndVerifyDefaultApplication(applicationName);
@@ -161,7 +161,7 @@ class ApplicationsCloudControllerClientIntegrationTest extends CloudControllerCl
 
     @Test
     @DisplayName("Create application, upload a package, create a build and restart the application")
-    void restartApplication() throws URISyntaxException, InterruptedException {
+    void restartApplication() {
         String applicationName = "test-application-6";
         try {
             createAndVerifyDefaultApplication(applicationName);
@@ -185,7 +185,7 @@ class ApplicationsCloudControllerClientIntegrationTest extends CloudControllerCl
 
     @Test
     @DisplayName("Create, upload, stage start and get instances")
-    void getAppInstances() throws URISyntaxException, InterruptedException {
+    void getAppInstances() {
         String applicationName = "test-application-7";
         try {
             createAndVerifyDefaultApplication(applicationName);
@@ -333,7 +333,7 @@ class ApplicationsCloudControllerClientIntegrationTest extends CloudControllerCl
 
     @Test
     @DisplayName("Create application, upload a package, create a build and test its builds")
-    void getBuildsForApplication() throws URISyntaxException, InterruptedException {
+    void getBuildsForApplication() {
         String applicationName = "test-application-14";
         try {
             createAndVerifyDefaultApplication(applicationName);

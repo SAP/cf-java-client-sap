@@ -26,15 +26,6 @@ import org.cloudfoundry.AbstractCloudFoundryException;
 import org.cloudfoundry.client.CloudFoundryClient;
 import org.cloudfoundry.client.v2.applications.SummaryApplicationRequest;
 import org.cloudfoundry.client.v2.applications.SummaryApplicationResponse;
-import org.cloudfoundry.client.v2.serviceinstances.CreateServiceInstanceRequest;
-import org.cloudfoundry.client.v2.serviceinstances.DeleteServiceInstanceRequest;
-import org.cloudfoundry.client.v2.serviceinstances.GetServiceInstanceParametersRequest;
-import org.cloudfoundry.client.v2.serviceinstances.GetServiceInstanceParametersResponse;
-import org.cloudfoundry.client.v2.serviceplans.UpdateServicePlanRequest;
-import org.cloudfoundry.client.v2.userprovidedserviceinstances.CreateUserProvidedServiceInstanceRequest;
-import org.cloudfoundry.client.v2.userprovidedserviceinstances.GetUserProvidedServiceInstanceRequest;
-import org.cloudfoundry.client.v2.userprovidedserviceinstances.UpdateUserProvidedServiceInstanceRequest;
-import org.cloudfoundry.client.v2.userprovidedserviceinstances.UserProvidedServiceInstanceEntity;
 import org.cloudfoundry.client.v3.BuildpackData;
 import org.cloudfoundry.client.v3.DockerData;
 import org.cloudfoundry.client.v3.Lifecycle;
@@ -128,7 +119,14 @@ import org.cloudfoundry.client.v3.servicebrokers.ListServiceBrokersRequest;
 import org.cloudfoundry.client.v3.servicebrokers.ServiceBrokerRelationships;
 import org.cloudfoundry.client.v3.servicebrokers.ServiceBrokerResource;
 import org.cloudfoundry.client.v3.servicebrokers.UpdateServiceBrokerRequest;
+import org.cloudfoundry.client.v3.serviceinstances.CreateServiceInstanceRequest;
+import org.cloudfoundry.client.v3.serviceinstances.DeleteServiceInstanceRequest;
+import org.cloudfoundry.client.v3.serviceinstances.GetManagedServiceParametersRequest;
+import org.cloudfoundry.client.v3.serviceinstances.GetManagedServiceParametersResponse;
+import org.cloudfoundry.client.v3.serviceinstances.GetUserProvidedCredentialsRequest;
+import org.cloudfoundry.client.v3.serviceinstances.GetUserProvidedCredentialsResponse;
 import org.cloudfoundry.client.v3.serviceinstances.ListServiceInstancesRequest;
+import org.cloudfoundry.client.v3.serviceinstances.ServiceInstanceRelationships;
 import org.cloudfoundry.client.v3.serviceinstances.ServiceInstanceResource;
 import org.cloudfoundry.client.v3.serviceinstances.ServiceInstanceType;
 import org.cloudfoundry.client.v3.serviceinstances.UpdateServiceInstanceRequest;
@@ -140,6 +138,8 @@ import org.cloudfoundry.client.v3.serviceplans.GetServicePlanRequest;
 import org.cloudfoundry.client.v3.serviceplans.ListServicePlansRequest;
 import org.cloudfoundry.client.v3.serviceplans.ServicePlan;
 import org.cloudfoundry.client.v3.serviceplans.ServicePlanResource;
+import org.cloudfoundry.client.v3.serviceplans.UpdateServicePlanVisibilityRequest;
+import org.cloudfoundry.client.v3.serviceplans.Visibility;
 import org.cloudfoundry.client.v3.spaces.DeleteUnmappedRoutesRequest;
 import org.cloudfoundry.client.v3.spaces.GetSpaceRequest;
 import org.cloudfoundry.client.v3.spaces.ListSpacesRequest;
@@ -220,6 +220,7 @@ import com.sap.cloudfoundry.client.facade.domain.ImmutableErrorDetails;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableInstancesInfo;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableUpload;
 import com.sap.cloudfoundry.client.facade.domain.InstancesInfo;
+import com.sap.cloudfoundry.client.facade.domain.ServicePlanVisibility;
 import com.sap.cloudfoundry.client.facade.domain.Staging;
 import com.sap.cloudfoundry.client.facade.domain.Status;
 import com.sap.cloudfoundry.client.facade.domain.Upload;
@@ -476,18 +477,20 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     public void createServiceInstance(CloudServiceInstance serviceInstance) {
         assertSpaceProvided("create service instance");
         Assert.notNull(serviceInstance, "Service instance must not be null.");
-
         CloudServicePlan servicePlan = findPlanForService(serviceInstance, serviceInstance.getPlan());
         UUID servicePlanGuid = servicePlan.getMetadata()
                                           .getGuid();
-        delegate.serviceInstances()
+
+        delegate.serviceInstancesV3()
                 .create(CreateServiceInstanceRequest.builder()
-                                                    .spaceId(getTargetSpaceGuid().toString())
+                                                    .type(ServiceInstanceType.MANAGED)
                                                     .name(serviceInstance.getName())
-                                                    .servicePlanId(servicePlanGuid.toString())
-                                                    .addAllTags(serviceInstance.getTags())
+                                                    .relationships(ServiceInstanceRelationships.builder()
+                                                                                               .servicePlan(buildToOneRelationship(servicePlanGuid.toString()))
+                                                                                               .space(buildToOneRelationship(getTargetSpaceGuid().toString()))
+                                                                                               .build())
+                                                    .tags(serviceInstance.getTags())
                                                     .parameters(serviceInstance.getCredentials())
-                                                    .acceptsIncomplete(true)
                                                     .build())
                 .block();
     }
@@ -549,13 +552,16 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                   String syslogDrainUrl) {
         assertSpaceProvided("create service instance");
         Assert.notNull(serviceInstance, "Service instance must not be null.");
-        delegate.userProvidedServiceInstances()
-                .create(CreateUserProvidedServiceInstanceRequest.builder()
-                                                                .spaceId(getTargetSpaceGuid().toString())
-                                                                .name(serviceInstance.getName())
-                                                                .credentials(credentials)
-                                                                .syslogDrainUrl(syslogDrainUrl)
-                                                                .build())
+        delegate.serviceInstancesV3()
+                .create(CreateServiceInstanceRequest.builder()
+                                                    .name(serviceInstance.getName())
+                                                    .type(ServiceInstanceType.USER_PROVIDED)
+                                                    .credentials(credentials)
+                                                    .syslogDrainUrl(syslogDrainUrl)
+                                                    .relationships(ServiceInstanceRelationships.builder()
+                                                                                               .space(buildToOneRelationship(getTargetSpaceGuid().toString()))
+                                                                                               .build())
+                                                    .build())
                 .block();
     }
 
@@ -569,9 +575,9 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public void deleteAllServiceInstances() {
-        List<CloudServiceInstance> serviceInstances = getServiceInstances();
-        for (CloudServiceInstance serviceInstance : serviceInstances) {
-            doDeleteServiceInstance(serviceInstance);
+        List<UUID> serviceInstanceIds = getServiceInstancesIds();
+        for (UUID serviceInstanceId : serviceInstanceIds) {
+            doDeleteServiceInstance(serviceInstanceId);
         }
     }
 
@@ -632,13 +638,13 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public void deleteServiceInstance(String serviceInstanceName) {
-        CloudServiceInstance serviceInstance = getServiceInstance(serviceInstanceName);
-        doDeleteServiceInstance(serviceInstance);
+        CloudServiceInstance serviceInstance = getServiceInstanceWithoutAuxiliaryContent(serviceInstanceName);
+        doDeleteServiceInstance(serviceInstance.getGuid());
     }
 
     @Override
     public void deleteServiceInstance(CloudServiceInstance serviceInstance) {
-        doDeleteServiceInstance(serviceInstance);
+        doDeleteServiceInstance(serviceInstance.getGuid());
     }
 
     @Override
@@ -747,6 +753,11 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return getApplicationResources().map(this::getGuid)
                                         .collectList()
                                         .block();
+    }
+
+    private List<UUID> getServiceInstancesIds() {
+        Flux<ServiceInstanceResource> serviceInstanceResources = getServiceInstanceResources();
+        return getV3Guids(serviceInstanceResources);
     }
 
     private Map<String, Metadata> getApplicationsMetadataByLabelSelector(String labelSelector) {
@@ -864,6 +875,11 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     @Override
     public CloudServiceInstance getServiceInstance(String serviceInstanceName, boolean required) {
         CloudServiceInstance serviceInstance = findServiceInstanceByName(serviceInstanceName);
+        return getServiceInstanceIfRequired(serviceInstanceName, serviceInstance, required);
+    }
+
+    private CloudServiceInstance getServiceInstanceIfRequired(String serviceInstanceName, CloudServiceInstance serviceInstance,
+                                                              boolean required) {
         if (serviceInstance == null && required) {
             throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Service instance " + serviceInstanceName + " not found.");
         }
@@ -933,8 +949,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                              serviceKey -> zipWithAuxiliaryServiceKeyContent(serviceKey, serviceInstance));
     }
 
-    private Mono<Derivable<CloudServiceKey>> zipWithAuxiliaryServiceKeyContent(ServiceBinding key,
-                                                                               CloudServiceInstance serviceInstance) {
+    private Mono<Derivable<CloudServiceKey>> zipWithAuxiliaryServiceKeyContent(ServiceBinding key, CloudServiceInstance serviceInstance) {
         return getServiceKeyCredentials(key.getId()).map(credentials -> ImmutableRawCloudServiceKey.builder()
                                                                                                    .serviceBinding(key)
                                                                                                    .credentials(credentials)
@@ -952,25 +967,21 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public Map<String, Object> getServiceInstanceParameters(UUID guid) {
-        // TODO: Fix bug in cf-java-client to allow null values in response and then switch to v3
-        return delegate.serviceInstances()
-                       .getParameters(GetServiceInstanceParametersRequest.builder()
-                                                                         .serviceInstanceId(guid.toString())
-                                                                         .build())
-                       .map(GetServiceInstanceParametersResponse::getParameters)
+        return delegate.serviceInstancesV3()
+                       .getManagedServiceParameters(GetManagedServiceParametersRequest.builder()
+                                                                                      .serviceInstanceId(guid.toString())
+                                                                                      .build())
+                       .map(GetManagedServiceParametersResponse::getParameters)
                        .block();
     }
 
     @Override
     public Map<String, Object> getUserProvidedServiceInstanceParameters(UUID guid) {
-        // TODO: Fix bug in cf-java-client to allow null values in response and then switch to v3
-        return delegate.userProvidedServiceInstances()
-                       .get(GetUserProvidedServiceInstanceRequest.builder()
-                                                                 .userProvidedServiceInstanceId(guid.toString())
-                                                                 .build())
-                       .map(response -> Optional.ofNullable(response.getEntity())
-                                                .map(UserProvidedServiceInstanceEntity::getCredentials)
-                                                .orElse(Collections.emptyMap()))
+        return delegate.serviceInstancesV3()
+                       .getUserProvidedCredentials(GetUserProvidedCredentialsRequest.builder()
+                                                                                    .serviceInstanceId(guid.toString())
+                                                                                    .build())
+                       .map(GetUserProvidedCredentialsResponse::getCredentials)
                        .block();
     }
 
@@ -996,83 +1007,63 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
             return;
         }
         CloudServicePlan plan = findPlanForService(service, planName);
-        delegate.serviceInstances()
-                .update(org.cloudfoundry.client.v2.serviceinstances.UpdateServiceInstanceRequest.builder()
-                                                                                                .serviceInstanceId(service.getGuid()
-                                                                                                                          .toString())
-                                                                                                .servicePlanId(plan.getGuid()
-                                                                                                                   .toString())
-                                                                                                .acceptsIncomplete(true)
-                                                                                                .build())
+        delegate.serviceInstancesV3()
+                .update(UpdateServiceInstanceRequest.builder()
+                                                    .serviceInstanceId(service.getGuid()
+                                                                              .toString())
+                                                    .relationships(ServiceInstanceRelationships.builder()
+                                                                                               .servicePlan(buildToOneRelationship(plan.getGuid()))
+                                                                                               .build())
+                                                    .build())
                 .block();
+    }
+
+    private CloudServiceInstance getServiceInstanceWithoutAuxiliaryContent(String serviceInstanceName) {
+        var serviceInstance = fetch(() -> getServiceInstanceResourceByName(serviceInstanceName), ImmutableRawCloudServiceInstance::of);
+        return getServiceInstanceIfRequired(serviceInstanceName, serviceInstance, true);
     }
 
     @Override
     public void updateServiceParameters(String serviceName, Map<String, Object> parameters) {
-        CloudServiceInstance service = getServiceInstance(serviceName);
+        CloudServiceInstance service = getServiceInstanceWithoutAuxiliaryContent(serviceName);
+        var updateServiceInstanceRequest = UpdateServiceInstanceRequest.builder()
+                                                                       .serviceInstanceId(service.getGuid()
+                                                                                                 .toString());
         if (service.isUserProvided()) {
-            updateUserProvidedServiceParameters(service, parameters);
-            return;
+            updateServiceInstanceRequest.credentials(parameters);
+        } else {
+            updateServiceInstanceRequest.parameters(parameters);
         }
-        delegate.serviceInstances()
-                .update(org.cloudfoundry.client.v2.serviceinstances.UpdateServiceInstanceRequest.builder()
-                                                                                                .serviceInstanceId(service.getGuid()
-                                                                                                                          .toString())
-                                                                                                .parameters(parameters)
-                                                                                                .acceptsIncomplete(true)
-                                                                                                .build())
-                .block();
-    }
-
-    private void updateUserProvidedServiceParameters(CloudServiceInstance service, Map<String, Object> parameters) {
-        delegate.userProvidedServiceInstances()
-                .update(UpdateUserProvidedServiceInstanceRequest.builder()
-                                                                .userProvidedServiceInstanceId(service.getGuid()
-                                                                                                      .toString())
-                                                                .credentials(parameters)
-                                                                .build())
+        delegate.serviceInstancesV3()
+                .update(updateServiceInstanceRequest.build())
                 .block();
     }
 
     @Override
     public void updateServiceTags(String serviceName, List<String> tags) {
-        CloudServiceInstance service = getServiceInstance(serviceName);
-        if (service.isUserProvided()) {
-            delegate.userProvidedServiceInstances()
-                    .update(UpdateUserProvidedServiceInstanceRequest.builder()
-                                                                    .userProvidedServiceInstanceId(service.getGuid()
-                                                                                                          .toString())
-                                                                    .tags(tags)
-                                                                    .build())
-                    .block();
-            return;
-        }
-        delegate.serviceInstances()
-                .update(org.cloudfoundry.client.v2.serviceinstances.UpdateServiceInstanceRequest.builder()
-                                                                                                .serviceInstanceId(service.getGuid()
-                                                                                                                          .toString())
-                                                                                                .tags(tags)
-                                                                                                .acceptsIncomplete(true)
-                                                                                                .build())
+        UUID serviceInstanceGuid = getRequiredServiceInstanceGuid(serviceName);
+        delegate.serviceInstancesV3()
+                .update(UpdateServiceInstanceRequest.builder()
+                                                    .serviceInstanceId(serviceInstanceGuid.toString())
+                                                    .tags(tags)
+                                                    .build())
                 .block();
     }
 
     @Override
     public void updateServiceSyslogDrainUrl(String serviceName, String syslogDrainUrl) {
-        CloudServiceInstance service = getServiceInstance(serviceName);
+        CloudServiceInstance service = getServiceInstanceWithoutAuxiliaryContent(serviceName);
         if (!service.isUserProvided()) {
             return;
         }
-
         String updatedSyslogDrain = StringUtils.hasText(syslogDrainUrl) ? syslogDrainUrl : "";
-        delegate.userProvidedServiceInstances()
-                .update(UpdateUserProvidedServiceInstanceRequest.builder()
-                                                                .userProvidedServiceInstanceId(service.getGuid()
-                                                                                                      .toString())
-                                                                .syslogDrainUrl(updatedSyslogDrain)
-                                                                .build())
+        delegate.serviceInstancesV3()
+                .update(UpdateServiceInstanceRequest.builder()
+                                                    .serviceInstanceId(service.getGuid()
+                                                                              .toString())
+                                                    .syslogDrainUrl(updatedSyslogDrain)
+                                                    .build())
                 .block();
-
     }
 
     @Override
@@ -1422,7 +1413,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public void updateServicePlanVisibilityForBroker(String name, boolean visibility) {
+    public void updateServicePlanVisibilityForBroker(String name, ServicePlanVisibility visibility) {
         CloudServiceBroker broker = getServiceBroker(name);
         List<CloudServicePlan> servicePlans = findServicePlansByBrokerGuid(getGuid(broker));
         for (CloudServicePlan servicePlan : servicePlans) {
@@ -1775,8 +1766,8 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                         .list(pageRequestSupplier.apply(page)));
     }
 
-    private Mono<? extends ServiceBinding>
-            getServiceBindingResourceByApplicationGuidAndServiceInstanceGuid(UUID applicationGuid, UUID serviceInstanceGuid) {
+    private Mono<? extends ServiceBinding> getServiceBindingResourceByApplicationGuidAndServiceInstanceGuid(UUID applicationGuid,
+                                                                                                            UUID serviceInstanceGuid) {
         IntFunction<ListServiceBindingsRequest> pageRequestSupplier = page -> ListServiceBindingsRequest.builder()
                                                                                                         .applicationId(applicationGuid.toString())
                                                                                                         .serviceInstanceId(serviceInstanceGuid.toString())
@@ -1811,17 +1802,16 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                         .collect(Collectors.toList());
     }
 
-    private void updateServicePlanVisibility(CloudServicePlan servicePlan, boolean visibility) {
+    private void updateServicePlanVisibility(CloudServicePlan servicePlan, ServicePlanVisibility visibility) {
         updateServicePlanVisibility(getGuid(servicePlan), visibility);
     }
 
-    private void updateServicePlanVisibility(UUID servicePlanGuid, boolean visibility) {
-        UpdateServicePlanRequest request = UpdateServicePlanRequest.builder()
-                                                                   .servicePlanId(servicePlanGuid.toString())
-                                                                   .publiclyVisible(visibility)
-                                                                   .build();
-        delegate.servicePlans()
-                .update(request)
+    private void updateServicePlanVisibility(UUID servicePlanGuid, ServicePlanVisibility visibility) {
+        delegate.servicePlansV3()
+                .updateVisibility(UpdateServicePlanVisibilityRequest.builder()
+                                                                    .servicePlanId(servicePlanGuid.toString())
+                                                                    .type(Visibility.from(visibility.toString()))
+                                                                    .build())
                 .block();
     }
 
@@ -1912,19 +1902,25 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     private ToOneRelationship buildToOneRelationship(UUID guid) {
         return ToOneRelationship.builder()
+                                .data(buildRelationship(guid.toString()))
+                                .build();
+    }
+
+    private ToOneRelationship buildToOneRelationship(String guid) {
+        return ToOneRelationship.builder()
                                 .data(buildRelationship(guid))
                                 .build();
     }
 
-    private Relationship buildRelationship(UUID guid) {
+    private Relationship buildRelationship(String guid) {
         return Relationship.builder()
-                           .id(guid.toString())
+                           .id(guid)
                            .build();
     }
 
     private Mono<? extends Build> createBuildResource(UUID packageGuid) {
         CreateBuildRequest request = CreateBuildRequest.builder()
-                                                       .getPackage(buildRelationship(packageGuid))
+                                                       .getPackage(buildRelationship(packageGuid.toString()))
                                                        .build();
         return delegate.builds()
                        .create(request);
@@ -2070,12 +2066,9 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                 .block();
     }
 
-    private void doDeleteServiceInstance(CloudServiceInstance serviceInstance) {
-        UUID serviceInstanceGuid = serviceInstance.getMetadata()
-                                                  .getGuid();
-        delegate.serviceInstances()
+    private void doDeleteServiceInstance(UUID serviceInstanceGuid) {
+        delegate.serviceInstancesV3()
                 .delete(DeleteServiceInstanceRequest.builder()
-                                                    .acceptsIncomplete(true)
                                                     .serviceInstanceId(serviceInstanceGuid.toString())
                                                     .build())
                 .block();
@@ -2161,7 +2154,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return Flux.fromIterable(toBatches(names, MAX_CHAR_LENGTH_FOR_PARAMS_IN_REQUEST))
                    .flatMap(this::getDomainResourcesByNames);
     }
-    
+
     private Flux<DomainResource> getDomainResourcesByNames(Collection<String> names) {
         if (names.isEmpty()) {
             return Flux.empty();
@@ -2587,7 +2580,8 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                         .map(CloudRouteSummary::getDomain)
                                         .filter(StringUtils::hasLength)
                                         .collect(Collectors.toSet());
-        return getDomainResourcesByNamesInBatches(domainNames).collectMap(DomainResource::getName, domain -> UUID.fromString(domain.getId()))
+        return getDomainResourcesByNamesInBatches(domainNames).collectMap(DomainResource::getName,
+                                                                          domain -> UUID.fromString(domain.getId()))
                                                               .block();
     }
 
@@ -2607,6 +2601,12 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     private List<UUID> getGuids(Flux<? extends org.cloudfoundry.client.v3.Resource> resources) {
+        return resources.map(this::getGuid)
+                        .collectList()
+                        .block();
+    }
+
+    private List<UUID> getV3Guids(Flux<? extends org.cloudfoundry.client.v3.Resource> resources) {
         return resources.map(this::getGuid)
                         .collectList()
                         .block();

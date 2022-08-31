@@ -1,5 +1,22 @@
 package com.sap.cloudfoundry.client.facade;
 
+import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.APPLICATION_HOST;
+import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.DEFAULT_DOMAIN;
+import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.DISK_IN_MB;
+import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.MEMORY_IN_MB;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import java.util.List;
+import java.util.Set;
+
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
 import com.sap.cloudfoundry.client.facade.domain.CloudApplication;
 import com.sap.cloudfoundry.client.facade.domain.CloudRoute;
 import com.sap.cloudfoundry.client.facade.domain.CloudRouteSummary;
@@ -7,22 +24,6 @@ import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudApplication;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudRouteSummary;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableStaging;
 import com.sap.cloudfoundry.client.facade.domain.Staging;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-
-import java.util.List;
-import java.util.Set;
-
-import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.APPLICATION_HOST;
-import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.DEFAULT_DOMAIN;
-import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.DISK_IN_MB;
-import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.MEMORY_IN_MB;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
 
 class CloudStackIntegrationTest extends CloudControllerClientIntegrationTest {
 
@@ -115,7 +116,8 @@ class CloudStackIntegrationTest extends CloudControllerClientIntegrationTest {
     @Test
     @DisplayName("Verify existance of at least one valid Cloud Stack")
     void getStackList() {
-        assertTrue(client.getStacks() != null);
-        assertTrue(!client.getStacks().isEmpty());
+        assertNotNull(client.getStacks());
+        assertFalse(client.getStacks()
+                          .isEmpty());
     }
 }
