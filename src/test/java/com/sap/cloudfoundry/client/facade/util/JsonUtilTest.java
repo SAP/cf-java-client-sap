@@ -1,8 +1,8 @@
 package com.sap.cloudfoundry.client.facade.util;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -12,19 +12,19 @@ import java.util.TreeMap;
 
 import org.junit.jupiter.api.Test;
 
-public class JsonUtilTest {
+class JsonUtilTest {
 
     @Test
-    public void testUsingPrettyPrint() throws Exception {
-        testWithCustomPrinting(true);
+    void testUsingPrettyPrint() {
+        testWithCustomPrinting();
     }
 
     @Test
-    public void testWithNoPrettyPrint() throws Exception {
-        testWithCustomPrinting(false);
+    void testWithNoPrettyPrint() {
+        testWithCustomPrinting();
     }
 
-    private void testWithCustomPrinting(boolean shouldPrettyPrint) {
+    private void testWithCustomPrinting() {
         Map<String, Object> fooMap = createTestProperties();
 
         String json = JsonUtil.convertToJson(fooMap, true);
@@ -32,7 +32,7 @@ public class JsonUtilTest {
     }
 
     @Test
-    public void testUsingTheMethodWithNoPrettyPrint() {
+    void testUsingTheMethodWithNoPrettyPrint() {
         Map<String, Object> fooMap = createTestProperties();
 
         String json = JsonUtil.convertToJson(fooMap);
@@ -49,7 +49,7 @@ public class JsonUtilTest {
     }
 
     @Test
-    public void testConvertListToJsonAndBack() {
+    void testConvertListToJsonAndBack() {
         List<String> testingList = Arrays.asList("foo", "bar", "baz");
         String jsonList = JsonUtil.convertToJson(testingList);
 
@@ -62,7 +62,7 @@ public class JsonUtilTest {
     }
 
     @Test
-    public void testWithNullMap() {
+    void testWithNullMap() {
 
         Map<String, Object> foo = Collections.emptyMap();
         String fooJson = JsonUtil.convertToJson(foo);

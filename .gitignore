@@ -6,4 +6,5 @@ target
 *.log
 **/.factorypath
 *.iml
+.DS_Store
 

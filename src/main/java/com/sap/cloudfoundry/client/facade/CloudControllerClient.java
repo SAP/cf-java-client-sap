@@ -32,6 +32,7 @@ import com.sap.cloudfoundry.client.facade.domain.CloudTask;
 import com.sap.cloudfoundry.client.facade.domain.DockerInfo;
 import com.sap.cloudfoundry.client.facade.domain.DropletInfo;
 import com.sap.cloudfoundry.client.facade.domain.InstancesInfo;
+import com.sap.cloudfoundry.client.facade.domain.ServicePlanVisibility;
 import com.sap.cloudfoundry.client.facade.domain.Staging;
 import com.sap.cloudfoundry.client.facade.domain.Upload;
 import com.sap.cloudfoundry.client.facade.domain.UserRole;
@@ -704,7 +705,7 @@ public interface CloudControllerClient {
      * @param name the service broker name
      * @param visibility true for public, false for private
      */
-    void updateServicePlanVisibilityForBroker(String name, boolean visibility);
+    void updateServicePlanVisibilityForBroker(String name, ServicePlanVisibility visibility);
 
     void updateServicePlan(String serviceName, String planName);
 

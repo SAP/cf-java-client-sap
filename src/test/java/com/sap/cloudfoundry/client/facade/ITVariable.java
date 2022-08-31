@@ -13,17 +13,17 @@ public enum ITVariable {
     PATH_TO_SERVICE_BROKER_APPLICATION(Constants.PATH_TO_SERVICE_BROKER_ENV, Constants.PATH_TO_SERVICE_BROKER_PROPERTY, false);
   // @formatter:on
 
-    private String envVariable;
-    private String property;
-    private boolean required;
+    private final String envVariable;
+    private final String property;
+    private final boolean required;
 
-    private ITVariable(String envVariable, String property, boolean required) {
+    ITVariable(String envVariable, String property, boolean required) {
         this.envVariable = envVariable;
         this.property = property;
         this.required = required;
     }
 
-    private ITVariable(String envVariable, String property) {
+    ITVariable(String envVariable, String property) {
         this.envVariable = envVariable;
         this.property = property;
         this.required = true;

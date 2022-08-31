@@ -30,7 +30,7 @@ public class ServiceOperation {
 
     public enum State {
 
-        SUCCEEDED("succeeded"), FAILED("failed"), IN_PROGRESS("in progress");
+        SUCCEEDED("succeeded"), FAILED("failed"), IN_PROGRESS("in progress"), INITIAL("initial");
 
         private final String name;
 

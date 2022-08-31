@@ -1,6 +1,7 @@
 package com.sap.cloudfoundry.client.facade;
 
 public class IntegrationTestConstants {
+
     private IntegrationTestConstants() {
     }
 

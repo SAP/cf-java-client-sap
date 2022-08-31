@@ -26,6 +26,7 @@
         <micrometer.version>1.5.5</micrometer.version>
         <immutables.version>2.8.8</immutables.version>
         <cloudfoundry-client.version>5.9.0.RELEASE</cloudfoundry-client.version>
+        <reactor-netty.version>1.0.23</reactor-netty.version>
     </properties>
 
     <organization>
@@ -257,6 +258,13 @@
             <groupId>org.cloudfoundry</groupId>
             <artifactId>cloudfoundry-client-reactor</artifactId>
             <version>${cloudfoundry-client.version}</version>
+        </dependency>
+        <!-- Transitive dependency from cloudfoundry-client. Pin the version, because the one they're using (1.0.3) contains vulnerabilities -->
+        <!-- https://mvnrepository.com/artifact/io.projectreactor.netty/reactor-netty -->
+        <dependency>
+            <groupId>io.projectreactor.netty</groupId>
+            <artifactId>reactor-netty</artifactId>
+            <version>${reactor-netty.version}</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/io.micrometer/micrometer-core -->
         <dependency>
