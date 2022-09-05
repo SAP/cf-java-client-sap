@@ -2,6 +2,7 @@ package com.sap.cloudfoundry.client.facade.domain;
 
 import java.util.Map;
 
+import org.cloudfoundry.AllowNulls;
 import org.immutables.value.Value;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -13,6 +14,8 @@ import com.sap.cloudfoundry.client.facade.Nullable;
 @JsonDeserialize(as = ImmutableCloudServiceKey.class)
 public abstract class CloudServiceKey extends CloudEntity implements Derivable<CloudServiceKey> {
 
+    @Nullable
+    @AllowNulls
     public abstract Map<String, Object> getCredentials();
 
     @Nullable
