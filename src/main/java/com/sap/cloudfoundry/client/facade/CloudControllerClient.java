@@ -188,12 +188,12 @@ public interface CloudControllerClient {
     String deleteServiceBroker(String name);
 
     /**
-     * Delete a service key.
+     * Delete a service binding.
      * 
      * @param serviceInstanceName name of service instance
      * @param serviceKeyName name of service key
      */
-    void deleteServiceKey(String serviceInstanceName, String serviceKeyName);
+    void deleteServiceBinding(String serviceInstanceName, String serviceKeyName);
 
     /**
      * Delete a service binding.
@@ -423,7 +423,7 @@ public interface CloudControllerClient {
      * @param serviceInstanceGuid the GUID of the service instance
      * @return the bindings
      */
-    List<CloudServiceBinding> getServiceBindings(UUID serviceInstanceGuid);
+    List<CloudServiceBinding> getServiceAppBindings(UUID serviceInstanceGuid);
 
     CloudServiceBinding getServiceBindingForApplication(UUID applicationId, UUID serviceInstanceGuid);
 
@@ -468,6 +468,8 @@ public interface CloudControllerClient {
      */
     List<CloudServiceKey> getServiceKeys(String serviceInstanceName);
 
+    List<CloudServiceKey> getServiceKeysWithCredentials(String serviceInstanceName);
+
     /**
      * Get service keys for a service instance.
      *
@@ -475,6 +477,8 @@ public interface CloudControllerClient {
      * @return the service keys info
      */
     List<CloudServiceKey> getServiceKeys(CloudServiceInstance serviceInstance);
+
+    List<CloudServiceKey> getServiceKeysWithCredentials(CloudServiceInstance serviceInstance);
 
     /**
      * Get all service offerings.

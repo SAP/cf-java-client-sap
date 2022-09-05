@@ -182,8 +182,8 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public void deleteServiceKey(String serviceInstanceName, String serviceKeyName) {
-        handleExceptions(() -> delegate.deleteServiceKey(serviceInstanceName, serviceKeyName));
+    public void deleteServiceBinding(String serviceInstanceName, String serviceKeyName) {
+        handleExceptions(() -> delegate.deleteServiceBinding(serviceInstanceName, serviceKeyName));
     }
 
     @Override
@@ -342,8 +342,8 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public List<CloudServiceBinding> getServiceBindings(UUID serviceInstanceGuid) {
-        return handleExceptions(() -> delegate.getServiceBindings(serviceInstanceGuid));
+    public List<CloudServiceBinding> getServiceAppBindings(UUID serviceInstanceGuid) {
+        return handleExceptions(() -> delegate.getServiceAppBindings(serviceInstanceGuid));
     }
 
     @Override
@@ -377,8 +377,18 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
+    public List<CloudServiceKey> getServiceKeysWithCredentials(String serviceInstanceName) {
+        return handleExceptions(() -> delegate.getServiceKeysWithCredentials(serviceInstanceName));
+    }
+
+    @Override
     public List<CloudServiceKey> getServiceKeys(CloudServiceInstance serviceInstance) {
         return handleExceptions(() -> delegate.getServiceKeys(serviceInstance));
+    }
+
+    @Override
+    public List<CloudServiceKey> getServiceKeysWithCredentials(CloudServiceInstance serviceInstance) {
+        return handleExceptions(() -> delegate.getServiceKeysWithCredentials(serviceInstance));
     }
 
     @Override
