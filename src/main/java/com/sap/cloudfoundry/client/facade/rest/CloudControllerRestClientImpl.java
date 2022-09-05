@@ -651,16 +651,12 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public void deleteServiceKey(String serviceInstanceName, String serviceKeyName) {
-        List<CloudServiceKey> serviceKeys = getServiceKeys(serviceInstanceName);
-        for (CloudServiceKey serviceKey : serviceKeys) {
-            if (serviceKey.getName()
-                          .equals(serviceKeyName)) {
-                doDeleteServiceBinding(serviceKey.getGuid());
-                return;
-            }
+    public void deleteServiceBinding(String serviceInstanceName, String serviceKeyName) {
+        CloudServiceKey serviceKey = getServiceKey(serviceInstanceName, serviceKeyName);
+        if (serviceKey == null) {
+            throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Service key " + serviceKeyName + " not found.");
         }
-        throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Service key " + serviceKeyName + " not found.");
+        doDeleteServiceBinding(serviceKey.getGuid());
     }
 
     @Override
@@ -872,7 +868,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public List<CloudServiceBinding> getServiceBindings(UUID serviceInstanceGuid) {
+    public List<CloudServiceBinding> getServiceAppBindings(UUID serviceInstanceGuid) {
         return fetchList(() -> getServiceBindingResourcesByServiceInstanceGuid(serviceInstanceGuid), ImmutableRawCloudServiceBinding::of);
     }
 
@@ -915,7 +911,21 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
+    public List<CloudServiceKey> getServiceKeysWithCredentials(String serviceInstanceName) {
+        CloudServiceInstance serviceInstance = getServiceInstance(serviceInstanceName);
+        return getServiceKeysWithCredentials(serviceInstance);
+    }
+
+    @Override
     public List<CloudServiceKey> getServiceKeys(CloudServiceInstance serviceInstance) {
+        return fetchList(() -> getServiceKeyResource(serviceInstance), serviceKey -> ImmutableRawCloudServiceKey.builder()
+                                                                                                                .serviceInstance(serviceInstance)
+                                                                                                                .serviceBinding(serviceKey)
+                                                                                                                .build());
+    }
+
+    @Override
+    public List<CloudServiceKey> getServiceKeysWithCredentials(CloudServiceInstance serviceInstance) {
         return fetchListWithAuxiliaryContent(() -> getServiceKeyResource(serviceInstance),
                                              serviceKey -> zipWithAuxiliaryServiceKeyContent(serviceKey, serviceInstance));
     }
@@ -1755,6 +1765,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     private Flux<? extends ServiceBinding> getServiceBindingResourcesByServiceInstanceGuid(UUID serviceInstanceGuid) {
         IntFunction<ListServiceBindingsRequest> pageRequestSupplier = page -> ListServiceBindingsRequest.builder()
                                                                                                         .serviceInstanceId(serviceInstanceGuid.toString())
+                                                                                                        .type(ServiceBindingType.APPLICATION)
                                                                                                         .page(page)
                                                                                                         .build();
         return PaginationUtils.requestClientV3Resources(page -> delegate.serviceBindingsV3()

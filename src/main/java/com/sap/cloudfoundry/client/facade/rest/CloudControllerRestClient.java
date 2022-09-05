@@ -84,7 +84,7 @@ public interface CloudControllerRestClient {
 
     String deleteServiceBroker(String name);
 
-    void deleteServiceKey(String serviceInstanceName, String serviceKeyName);
+    void deleteServiceBinding(String serviceInstanceName, String serviceKeyName);
 
     void deleteServiceBinding(UUID bindingGuid);
 
@@ -140,7 +140,7 @@ public interface CloudControllerRestClient {
 
     CloudServiceInstance getServiceInstance(String serviceInstanceName, boolean required);
 
-    List<CloudServiceBinding> getServiceBindings(UUID serviceInstanceGuid);
+    List<CloudServiceBinding> getServiceAppBindings(UUID serviceInstanceGuid);
 
     CloudServiceBinding getServiceBindingForApplication(UUID applicationId, UUID serviceInstanceGuid);
 
@@ -154,7 +154,11 @@ public interface CloudControllerRestClient {
 
     List<CloudServiceKey> getServiceKeys(String serviceInstanceName);
 
+    List<CloudServiceKey> getServiceKeysWithCredentials(String serviceInstanceName);
+
     List<CloudServiceKey> getServiceKeys(CloudServiceInstance serviceInstance);
+
+    List<CloudServiceKey> getServiceKeysWithCredentials(CloudServiceInstance serviceInstance);
 
     List<CloudServiceOffering> getServiceOfferings();
 
