@@ -69,7 +69,6 @@ public abstract class CloudFoundryClientFactory {
         if (getResponseTimeout().isPresent()) {
             clientWithOptions = clientWithOptions.responseTimeout(getResponseTimeout().get());
         }
-        clientWithOptions = clientWithOptions.metrics(true);
         return clientWithOptions;
     }
 
