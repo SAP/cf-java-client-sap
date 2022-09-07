@@ -324,15 +324,19 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         if (serviceResource == null) {
             throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Service instance " + serviceInstanceName + " not found.");
         }
+
+        var createBindingRequest = CreateServiceBindingRequest.builder()
+                                                              .type(ServiceBindingType.APPLICATION)
+                                                              .relationships(ServiceBindingRelationships.builder()
+                                                                                                        .application(buildToOneRelationship(applicationGuid))
+                                                                                                        .serviceInstance(buildToOneRelationship(UUID.fromString(serviceResource.getId())))
+                                                                                                        .build());
+        if (parameters != null && !parameters.isEmpty()) {
+            createBindingRequest.parameters(parameters);
+        }
+
         delegate.serviceBindingsV3()
-                .create(CreateServiceBindingRequest.builder()
-                                                   .type(ServiceBindingType.APPLICATION)
-                                                   .parameters(parameters)
-                                                   .relationships(ServiceBindingRelationships.builder()
-                                                                                             .application(buildToOneRelationship(applicationGuid))
-                                                                                             .serviceInstance(buildToOneRelationship(UUID.fromString(serviceResource.getId())))
-                                                                                             .build())
-                                                   .build())
+                .create(createBindingRequest.build())
                 .filter(response -> response.getJobId()
                                             .isPresent())
                 .map(response -> response.getJobId()
