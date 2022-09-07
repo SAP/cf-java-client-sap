@@ -15,7 +15,8 @@ open module com.sap.cloudfoundry.client.facade {
     requires spring.webflux;
     requires reactor.core;
     requires io.netty.handler;
-    requires reactor.netty;
+    requires reactor.netty.core;
+    requires reactor.netty.http;
     requires org.apache.commons.logging;
     requires org.reactivestreams;
 
