@@ -11,6 +11,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -23,8 +24,6 @@ import java.util.stream.Collectors;
 import org.apache.commons.io.IOUtils;
 import org.cloudfoundry.AbstractCloudFoundryException;
 import org.cloudfoundry.client.CloudFoundryClient;
-import org.cloudfoundry.client.v2.Resource;
-import org.cloudfoundry.client.v2.applications.ListApplicationServiceBindingsRequest;
 import org.cloudfoundry.client.v2.applications.SummaryApplicationRequest;
 import org.cloudfoundry.client.v2.applications.SummaryApplicationResponse;
 import org.cloudfoundry.client.v2.serviceinstances.CreateServiceInstanceRequest;
@@ -2098,6 +2097,8 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                 .delete(DeleteServiceBindingRequest.builder()
                                                    .serviceBindingId(guid.toString())
                                                    .build())
+                .filter(Objects::nonNull)
+                .flatMap(jobId -> JobUtils.waitForCompletion(delegate, DELETE_JOB_TIMEOUT, jobId))
                 .block();
     }
 
