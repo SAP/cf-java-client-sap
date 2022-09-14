@@ -6,12 +6,12 @@ import org.junit.jupiter.api.Test;
 import com.sap.cloudfoundry.client.facade.domain.CloudSpace;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudSpace;
 
-public class RawCloudSpaceTest {
+class RawCloudSpaceTest {
 
     private static final String NAME = "test";
 
     @Test
-    public void testDerive() {
+    void testDerive() {
         RawCloudEntityTest.testDerive(buildExpectedSpace(), buildRawSpace());
     }
 

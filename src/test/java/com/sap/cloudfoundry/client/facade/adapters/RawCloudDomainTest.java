@@ -10,12 +10,12 @@ import org.junit.jupiter.api.Test;
 import com.sap.cloudfoundry.client.facade.domain.CloudDomain;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudDomain;
 
-public class RawCloudDomainTest {
+class RawCloudDomainTest {
 
     private static final String DOMAIN_NAME = "example.com";
 
     @Test
-    public void testDerive() {
+    void testDerive() {
         RawCloudEntityTest.testDerive(buildExpectedDomain(), buildRawDomain());
     }
 

@@ -64,11 +64,7 @@ class CloudControllerRestClientImplTest {
     public void setUp() throws Exception {
         MockitoAnnotations.openMocks(this)
                           .close();
-        controllerClient = new CloudControllerRestClientImpl(CONTROLLER_URL,
-                                                             CREDENTIALS,
-                                                             webClient,
-                                                             oAuthClient,
-                                                             delegate);
+        controllerClient = new CloudControllerRestClientImpl(CONTROLLER_URL, CREDENTIALS, webClient, oAuthClient, delegate);
     }
 
     @Test
@@ -93,7 +89,7 @@ class CloudControllerRestClientImplTest {
     }
 
     @Test
-    public void testGetServiceOfferingWithForbidden() {
+    void testGetServiceOfferingWithForbidden() {
         GetServiceOfferingRequest request = GetServiceOfferingRequest.builder()
                                                                      .serviceOfferingId(GUID)
                                                                      .build();

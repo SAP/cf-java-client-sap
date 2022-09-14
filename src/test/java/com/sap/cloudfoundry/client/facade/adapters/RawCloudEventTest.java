@@ -5,7 +5,6 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.UUID;
 
-import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudMetadata;
 import org.cloudfoundry.client.v3.auditevents.AuditEventActor;
 import org.cloudfoundry.client.v3.auditevents.AuditEventResource;
 import org.cloudfoundry.client.v3.auditevents.AuditEventTarget;
@@ -15,8 +14,9 @@ import com.sap.cloudfoundry.client.facade.domain.CloudEvent;
 import com.sap.cloudfoundry.client.facade.domain.CloudEvent.Participant;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudEvent;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudEvent.ImmutableParticipant;
+import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudMetadata;
 
-public class RawCloudEventTest {
+class RawCloudEventTest {
 
     private static final String TARGET_GUID_STRING = "b7c57058-afc0-43c9-afee-64019e850bef";
     private static final String TARGET_NAME = "foo";
@@ -29,15 +29,16 @@ public class RawCloudEventTest {
 
     private static final UUID TARGET_GUID = UUID.fromString(TARGET_GUID_STRING);
     private static final UUID ACTOR_GUID = UUID.fromString(ACTOR_GUID_STRING);
-    private static final LocalDateTime TIMESTAMP = RawCloudEntityTest.fromZonedDateTime(ZonedDateTime.of(2019, 7, 3, 20, 0, 46, 0, ZoneId.of("Z")));
+    private static final LocalDateTime TIMESTAMP = RawCloudEntityTest.fromZonedDateTime(ZonedDateTime.of(2019, 7, 3, 20, 0, 46, 0,
+                                                                                                         ZoneId.of("Z")));
 
     @Test
-    public void testDerive() {
+    void testDerive() {
         RawCloudEntityTest.testDerive(buildExpectedEvent(), buildRawEvent());
     }
 
     @Test
-    public void testDeriveWithEmptyResponse() {
+    void testDeriveWithEmptyResponse() {
         RawCloudEntityTest.testDerive(buildEmptyExpectedEvent(), buildEmptyRawEvent());
     }
 
@@ -98,10 +99,10 @@ public class RawCloudEventTest {
                                  .updatedAt(RawCloudEntityTest.UPDATED_AT_STRING)
                                  .type(TYPE)
                                  .auditEventActor(AuditEventActor.builder()
-                                                                .id(ACTOR_GUID_STRING)
-                                                                .name(ACTOR_NAME)
-                                                                .type(ACTOR_TYPE)
-                                                                .build())
+                                                                 .id(ACTOR_GUID_STRING)
+                                                                 .name(ACTOR_NAME)
+                                                                 .type(ACTOR_TYPE)
+                                                                 .build())
                                  .auditEventTarget(AuditEventTarget.builder()
                                                                    .id(TARGET_GUID_STRING)
                                                                    .type(TARGET_TYPE)

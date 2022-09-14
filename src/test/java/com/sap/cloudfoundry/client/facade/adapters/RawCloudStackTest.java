@@ -7,12 +7,12 @@ import org.junit.jupiter.api.Test;
 import com.sap.cloudfoundry.client.facade.domain.CloudStack;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudStack;
 
-public class RawCloudStackTest {
+class RawCloudStackTest {
 
     private static final String NAME = "cflinuxfs3";
 
     @Test
-    public void testDerive() {
+    void testDerive() {
         RawCloudEntityTest.testDerive(buildExpectedStack(), buildRawStack());
     }
 

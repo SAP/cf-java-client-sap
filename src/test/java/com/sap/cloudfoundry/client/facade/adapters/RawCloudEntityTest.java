@@ -1,7 +1,7 @@
 package com.sap.cloudfoundry.client.facade.adapters;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -23,7 +23,7 @@ import com.sap.cloudfoundry.client.facade.domain.CloudMetadata;
 import com.sap.cloudfoundry.client.facade.domain.Derivable;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudMetadata;
 
-public class RawCloudEntityTest {
+class RawCloudEntityTest {
 
     static final String GUID_STRING = "3725650a-8725-4401-a949-c68f83d54a86";
     static final String CREATED_AT_STRING = "2017-06-22T13:38:41Z";
@@ -67,7 +67,7 @@ public class RawCloudEntityTest {
     }
 
     @Test
-    public void testParseV2ResourceMetadata() {
+    void testParseV2ResourceMetadata() {
         org.cloudfoundry.client.v2.applications.ApplicationResource resource = org.cloudfoundry.client.v2.applications.ApplicationResource.builder()
                                                                                                                                           .metadata(METADATA)
                                                                                                                                           .build();
@@ -77,7 +77,7 @@ public class RawCloudEntityTest {
     }
 
     @Test
-    public void testParseV3ResourceMetadata() {
+    void testParseV3ResourceMetadata() {
         org.cloudfoundry.client.v3.organizations.Organization resource = org.cloudfoundry.client.v3.organizations.OrganizationResource.builder()
                                                                                                                                       .id(GUID_STRING)
                                                                                                                                       .createdAt(CREATED_AT_STRING)
@@ -91,64 +91,64 @@ public class RawCloudEntityTest {
     }
 
     @Test
-    public void testParseNullableGuid() {
+    void testParseNullableGuid() {
         assertNull(RawCloudEntity.parseNullableGuid(null));
     }
 
     @Test
-    public void testParseNullableDate() {
+    void testParseNullableDate() {
         assertNull(RawCloudEntity.parseNullableDate(null));
     }
 
     @Test
-    public void testParseGuid() {
+    void testParseGuid() {
         assertEquals(GUID, RawCloudEntity.parseGuid(GUID_STRING));
     }
 
     @Test
-    public void testParseGuidWithInvalidGuid() {
+    void testParseGuidWithInvalidGuid() {
         assertNull(RawCloudEntity.parseGuid("foo"));
     }
 
     @Test
-    public void testParseDateWithInvalidDate() {
+    void testParseDateWithInvalidDate() {
         assertNull(RawCloudEntity.parseDate("foo"));
     }
 
     @Test
-    public void testParseDateWithInvalidFormat() {
+    void testParseDateWithInvalidFormat() {
         assertNull(RawCloudEntity.parseDate("16.07.2019 15:30:25"));
     }
 
     @Test
-    public void testParseDate() {
+    void testParseDate() {
         assertEquals(CREATED_AT, RawCloudEntity.parseDate(CREATED_AT_STRING));
     }
 
     @Test
-    public void testParseEnum() {
+    void testParseEnum() {
         CloudApplication.State state = RawCloudEntity.parseEnum(ApplicationState.STARTED, CloudApplication.State.class);
         assertEquals(CloudApplication.State.STARTED, state);
     }
 
     @Test
-    public void testParseEnumWithIncompatibleEnumTypes() {
+    void testParseEnumWithIncompatibleEnumTypes() {
         Assertions.assertThrows(IllegalArgumentException.class,
                                 () -> RawCloudEntity.parseEnum(ApplicationState.STARTED, CloudBuild.State.class));
     }
 
     @Test
-    public void testDeriveFromNullable() {
+    void testDeriveFromNullable() {
         assertEquals(NAME, RawCloudEntity.deriveFromNullable(() -> NAME));
     }
 
     @Test
-    public void testDeriveFromNullableWithNull() {
+    void testDeriveFromNullableWithNull() {
         assertNull(RawCloudEntity.deriveFromNullable(null));
     }
 
     @Test
-    public void testDerive() {
+    void testDerive() {
         List<Derivable<String>> derivables = Arrays.asList(() -> NAME, () -> GUID_STRING);
         assertEquals(Arrays.asList(NAME, GUID_STRING), RawCloudEntity.derive(derivables));
     }

@@ -18,7 +18,7 @@ import com.sap.cloudfoundry.client.facade.domain.CloudRoute;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudDomain;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudRoute;
 
-public class RawCloudRouteTest {
+class RawCloudRouteTest {
 
     private static final String HOST = "foo";
     private static final String DOMAIN_NAME = "example.com";
@@ -27,7 +27,7 @@ public class RawCloudRouteTest {
     private static final List<Destination> DESTINATIONS = buildTestDestinations(APPS_USING_ROUTE);
 
     @Test
-    public void testDerive() {
+    void testDerive() {
         RawCloudEntityTest.testDerive(buildExpectedRoute(), buildRawRoute());
     }
 

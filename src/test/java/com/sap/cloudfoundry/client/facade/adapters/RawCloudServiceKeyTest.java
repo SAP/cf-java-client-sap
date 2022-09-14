@@ -13,7 +13,7 @@ import com.sap.cloudfoundry.client.facade.domain.CloudServiceKey;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudServiceInstance;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudServiceKey;
 
-public class RawCloudServiceKeyTest {
+class RawCloudServiceKeyTest {
 
     private static final String SERVICE_NAME = "foo";
     private static final String NAME = "bar";
@@ -23,7 +23,7 @@ public class RawCloudServiceKeyTest {
                                                                                               .build();
 
     @Test
-    public void testDerive() {
+    void testDerive() {
         RawCloudEntityTest.testDerive(buildExpectedServiceKey(), buildRawServiceKey());
     }
 

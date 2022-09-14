@@ -6,12 +6,12 @@ import org.junit.jupiter.api.Test;
 import com.sap.cloudfoundry.client.facade.domain.CloudOrganization;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudOrganization;
 
-public class RawCloudOrganizationTest {
+class RawCloudOrganizationTest {
 
     private static final String ORGANIZATION_NAME = "example";
 
     @Test
-    public void testDerive() {
+    void testDerive() {
         RawCloudEntityTest.testDerive(buildExpectedOrganization(), buildRawOrganization());
     }
 

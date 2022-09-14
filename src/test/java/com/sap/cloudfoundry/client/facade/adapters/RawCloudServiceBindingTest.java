@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test;
 import com.sap.cloudfoundry.client.facade.domain.CloudServiceBinding;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudServiceBinding;
 
-public class RawCloudServiceBindingTest {
+class RawCloudServiceBindingTest {
 
     private static final String APPLICATION_GUID_STRING = "3725650a-8725-4401-a949-c68f83d54a86";
     private static final String SERVICE_INSTANCE_GUID_STRING = "3725650a-8725-4401-a949-c68f83d54a86";
@@ -19,7 +19,7 @@ public class RawCloudServiceBindingTest {
     private static final UUID SERVICE_INSTANCE_GUID = UUID.fromString(SERVICE_INSTANCE_GUID_STRING);
 
     @Test
-    public void testDerive() {
+    void testDerive() {
         RawCloudEntityTest.testDerive(buildExpectedServiceBinding(), buildRawServiceBinding());
     }
 
