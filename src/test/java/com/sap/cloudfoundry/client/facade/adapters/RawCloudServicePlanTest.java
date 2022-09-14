@@ -34,7 +34,7 @@ public class RawCloudServicePlanTest {
                                                           .toString();
 
     @Test
-    public void testDerive() {
+    void testDerive() {
         RawCloudEntityTest.testDerive(buildExpectedPlan(), buildRawServicePlan());
     }
 

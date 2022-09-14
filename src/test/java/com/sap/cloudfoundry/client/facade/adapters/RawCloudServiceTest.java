@@ -20,7 +20,7 @@ import com.sap.cloudfoundry.client.facade.domain.ServiceOperation;
 import com.sap.cloudfoundry.client.facade.domain.ServiceOperation.State;
 import com.sap.cloudfoundry.client.facade.domain.ServiceOperation.Type;
 
-public class RawCloudServiceTest {
+class RawCloudServiceTest {
 
     private static final String NAME = "my-db";
     private static final String OFFERING_NAME = "postgresql";
@@ -31,12 +31,12 @@ public class RawCloudServiceTest {
     private static final String LAST_OPERATION_STATE_SUCCEEDED = "succeeded";
 
     @Test
-    public void testDerive() {
+    void testDerive() {
         RawCloudEntityTest.testDerive(buildExpectedService(), buildRawService());
     }
 
     @Test
-    public void testDeriveWithUserProvidedService() {
+    void testDeriveWithUserProvidedService() {
         RawCloudEntityTest.testDerive(buildExpectedUserProvidedService(), buildRawUserProvidedService());
     }
 

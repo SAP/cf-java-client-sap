@@ -1,7 +1,7 @@
 package com.sap.cloudfoundry.client.facade.rest;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -16,12 +16,12 @@ import org.springframework.web.client.RestClientException;
 
 import com.sap.cloudfoundry.client.facade.CloudOperationException;
 
-public class CloudControllerResponseErrorHandlerTest {
+class CloudControllerResponseErrorHandlerTest {
 
     private final CloudControllerResponseErrorHandler handler = new CloudControllerResponseErrorHandler();
 
     @Test
-    public void testWithV2Error() throws IOException {
+    void testWithV2Error() throws IOException {
         HttpStatus statusCode = HttpStatus.UNPROCESSABLE_ENTITY;
         ClientHttpResponseMock response = new ClientHttpResponseMock(statusCode, getClass().getResourceAsStream("v2-error.json"));
         CloudOperationException expectedException = new CloudOperationException(statusCode,
@@ -31,7 +31,7 @@ public class CloudControllerResponseErrorHandlerTest {
     }
 
     @Test
-    public void testWithV3Error() throws IOException {
+    void testWithV3Error() throws IOException {
         HttpStatus statusCode = HttpStatus.BAD_REQUEST;
         ClientHttpResponseMock response = new ClientHttpResponseMock(statusCode, getClass().getResourceAsStream("v3-error.json"));
         CloudOperationException expectedException = new CloudOperationException(statusCode,
@@ -41,7 +41,7 @@ public class CloudControllerResponseErrorHandlerTest {
     }
 
     @Test
-    public void testWithInvalidError() throws IOException {
+    void testWithInvalidError() throws IOException {
         HttpStatus statusCode = HttpStatus.BAD_REQUEST;
         ClientHttpResponseMock response = new ClientHttpResponseMock(statusCode, toInputStream("blabla"));
         CloudOperationException expectedException = new CloudOperationException(statusCode, statusCode.getReasonPhrase());
@@ -49,7 +49,7 @@ public class CloudControllerResponseErrorHandlerTest {
     }
 
     @Test
-    public void testWithEmptyResponse() throws IOException {
+    void testWithEmptyResponse() throws IOException {
         HttpStatus statusCode = HttpStatus.BAD_REQUEST;
         ClientHttpResponseMock response = new ClientHttpResponseMock(statusCode, toInputStream("{    }"));
         CloudOperationException expectedException = new CloudOperationException(statusCode, statusCode.getReasonPhrase());
@@ -68,7 +68,7 @@ public class CloudControllerResponseErrorHandlerTest {
     }
 
     @Test
-    public void testWithNonClientOrServerError() throws IOException {
+    void testWithNonClientOrServerError() throws IOException {
         HttpStatus statusCode = HttpStatus.PERMANENT_REDIRECT;
         ClientHttpResponseMock response = new ClientHttpResponseMock(HttpStatus.PERMANENT_REDIRECT, null);
         try {

@@ -15,7 +15,7 @@ import com.sap.cloudfoundry.client.facade.domain.CloudPackage;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudPackage;
 import com.sap.cloudfoundry.client.facade.domain.Status;
 
-public class RawCloudPackageTest {
+class RawCloudPackageTest {
 
     private static final PackageState STATE = PackageState.EXPIRED;
     private static final String ERROR = "blabla";
@@ -26,12 +26,12 @@ public class RawCloudPackageTest {
     private static final String EXPECTED_CHECKSUM_ALGORITHM = CHECKSUM_TYPE.toString();
 
     @Test
-    public void testDeriveWithBitsData() {
+    void testDeriveWithBitsData() {
         RawCloudEntityTest.testDerive(buildExpectedPackage(CloudPackage.Type.BITS), buildRawPackage(PackageType.BITS));
     }
 
     @Test
-    public void testDeriveWithDockerData() {
+    void testDeriveWithDockerData() {
         RawCloudEntityTest.testDerive(buildExpectedPackage(CloudPackage.Type.DOCKER), buildRawPackage(PackageType.DOCKER));
     }
 

@@ -8,7 +8,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-public class CloudRouteSummaryTest {
+class CloudRouteSummaryTest {
 
     private static Stream<Arguments> testToUriString() {
         return Stream.of(
@@ -37,7 +37,7 @@ public class CloudRouteSummaryTest {
 
     @MethodSource
     @ParameterizedTest
-    public void testToUriString(CloudRouteSummary route, String expectedUri) {
+    void testToUriString(CloudRouteSummary route, String expectedUri) {
         Assertions.assertEquals(route.toUriString(), expectedUri);
     }
 
@@ -78,7 +78,7 @@ public class CloudRouteSummaryTest {
 
     @MethodSource
     @ParameterizedTest
-    public void testDescribesTheSameUri(CloudRouteSummary route, CloudRouteSummary otherRoute, boolean expectedResult) {
+    void testDescribesTheSameUri(CloudRouteSummary route, CloudRouteSummary otherRoute, boolean expectedResult) {
         Assertions.assertEquals(route.describesTheSameUri(otherRoute), expectedResult);
 
         Assertions.assertEquals(route.describesTheSameUri(otherRoute), expectedResult);
@@ -172,7 +172,6 @@ public class CloudRouteSummaryTest {
         Assertions.assertEquals(shouldBeEqual, firstRoute.equals(secondRoute));
         Assertions.assertEquals(shouldBeEqual, secondRoute.equals(firstRoute));
     }
-
 
     @ParameterizedTest
     @MethodSource("testEqualsHashcodeContract")

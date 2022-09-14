@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 import com.sap.cloudfoundry.client.facade.domain.CloudTask;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudTask;
 
-public class RawCloudTaskTest {
+class RawCloudTaskTest {
 
     private static final String NAME = "echo";
     private static final String COMMAND = "echo \"Hello!\"";
@@ -23,7 +23,7 @@ public class RawCloudTaskTest {
     private static final CloudTask.State EXPECTED_STATE = CloudTask.State.FAILED;
 
     @Test
-    public void testDerive() {
+    void testDerive() {
         RawCloudEntityTest.testDerive(buildExpectedTask(), buildRawTask());
     }
 

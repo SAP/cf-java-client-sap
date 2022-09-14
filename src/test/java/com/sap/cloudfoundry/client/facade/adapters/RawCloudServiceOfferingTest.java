@@ -1,6 +1,5 @@
 package com.sap.cloudfoundry.client.facade.adapters;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -37,7 +36,7 @@ public class RawCloudServiceOfferingTest {
     private static final List<CloudServicePlan> PLANS = buildTestServiceBindings();
 
     @Test
-    public void testDerive() {
+    void testDerive() {
         RawCloudEntityTest.testDerive(buildExpectedServiceOffering(), buildRawServiceOffering());
     }
 
@@ -96,7 +95,7 @@ public class RawCloudServiceOfferingTest {
     }
 
     private static List<CloudServicePlan> buildTestServiceBindings() {
-        return Arrays.asList(buildTestServiceBinding());
+        return List.of(buildTestServiceBinding());
     }
 
     private static CloudServicePlan buildTestServiceBinding() {
