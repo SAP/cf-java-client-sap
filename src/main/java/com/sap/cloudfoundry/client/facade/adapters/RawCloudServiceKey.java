@@ -28,6 +28,7 @@ public abstract class RawCloudServiceKey extends RawCloudEntity<CloudServiceKey>
         ServiceBinding serviceBinding = getServiceBinding();
         return ImmutableCloudServiceKey.builder()
                                        .metadata(parseResourceMetadata(serviceBinding))
+                                       .v3Metadata(serviceBinding.getMetadata())
                                        .name(serviceBinding.getName())
                                        .credentials(getCredentials())
                                        .serviceInstance(getServiceInstance().derive())
