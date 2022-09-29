@@ -122,6 +122,16 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
+    public CloudServiceKey createAndFetchServiceKey(CloudServiceKey keyModel, String serviceInstanceName) {
+        return handleExceptions(() -> delegate.createAndFetchServiceKey(keyModel, serviceInstanceName));
+    }
+
+    @Override
+    public void createServiceKey(CloudServiceKey keyModel, String serviceInstanceName) {
+        handleExceptions(() -> delegate.createServiceKey(keyModel, serviceInstanceName));
+    }
+
+    @Override
     public void createServiceKey(String serviceInstanceName, String serviceKeyName, Map<String, Object> parameters) {
         handleExceptions(() -> delegate.createServiceKey(serviceInstanceName, serviceKeyName, parameters));
     }

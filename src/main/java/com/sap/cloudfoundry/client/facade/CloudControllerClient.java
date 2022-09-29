@@ -105,6 +105,21 @@ public interface CloudControllerClient {
     String createServiceBroker(CloudServiceBroker serviceBroker);
 
     /**
+     * 
+     * @param keyModel service-key cloud object
+     * @param serviceInstanceName name of related service instance
+     * @return the service-key object populated with new guid
+     */
+    CloudServiceKey createAndFetchServiceKey(CloudServiceKey keyModel, String serviceInstanceName);
+
+    /**
+     * 
+     * @param keyModel service-key cloud object
+     * @param serviceInstanceName name of related service instance
+     */
+    void createServiceKey(CloudServiceKey keyModel, String serviceInstanceName);
+
+    /**
      * Create a service key.
      * 
      * @param serviceInstanceName name of service instance
