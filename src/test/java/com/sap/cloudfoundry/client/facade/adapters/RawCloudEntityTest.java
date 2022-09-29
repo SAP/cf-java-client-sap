@@ -8,6 +8,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.cloudfoundry.client.v2.Metadata;
@@ -34,8 +35,12 @@ class RawCloudEntityTest {
     static final UUID GUID = UUID.fromString(GUID_STRING);
     static final LocalDateTime CREATED_AT = fromZonedDateTime(ZonedDateTime.of(2017, 6, 22, 13, 38, 41, 0, ZoneId.of("Z")));
     static final LocalDateTime UPDATED_AT = fromZonedDateTime(ZonedDateTime.of(2019, 3, 21, 12, 29, 24, 0, ZoneId.of("Z")));
+    static final Map<String, String> V3_ANNOTATIONS = Map.of("annotation1", "value1", "annotation2", "value2");
+    static final Map<String, String> V3_LABELS = Map.of("label1", "value1", "label2", "value2");
 
     static final org.cloudfoundry.client.v3.Metadata V3_METADATA = org.cloudfoundry.client.v3.Metadata.builder()
+                                                                                                      .annotations(V3_ANNOTATIONS)
+                                                                                                      .labels(V3_LABELS)
                                                                                                       .build();
     static final Metadata METADATA = Metadata.builder()
                                              .id(GUID_STRING)

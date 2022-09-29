@@ -30,6 +30,7 @@ class RawCloudServiceKeyTest {
     private static CloudServiceKey buildExpectedServiceKey() {
         return ImmutableCloudServiceKey.builder()
                                        .metadata(RawCloudEntityTest.EXPECTED_METADATA_V3)
+                                       .v3Metadata(RawCloudEntityTest.V3_METADATA)
                                        .name(NAME)
                                        .credentials(CREDENTIALS)
                                        .serviceInstance(SERVICE_INSTANCE)
