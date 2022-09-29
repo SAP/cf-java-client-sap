@@ -61,6 +61,10 @@ public interface CloudControllerRestClient {
 
     String createServiceBroker(CloudServiceBroker serviceBroker);
 
+    CloudServiceKey createAndFetchServiceKey(CloudServiceKey keyModel, String serviceInstanceName);
+
+    void createServiceKey(CloudServiceKey keyModel, String serviceInstanceName);
+
     void createServiceKey(String serviceInstanceName, String serviceKeyName, Map<String, Object> parameters);
 
     void createUserProvidedServiceInstance(CloudServiceInstance serviceInstance, Map<String, Object> credentials);

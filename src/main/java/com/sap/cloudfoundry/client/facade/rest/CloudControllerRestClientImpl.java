@@ -521,25 +521,48 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
+    public CloudServiceKey createAndFetchServiceKey(CloudServiceKey keyModel, String serviceInstanceName) {
+        CloudServiceInstance serviceInstance = getServiceInstance(serviceInstanceName);
+        doCreateServiceKey(keyModel.getName(), keyModel.getCredentials(), keyModel.getV3Metadata(), serviceInstance);
+
+        return fetchWithAuxiliaryContent(() -> getServiceKeyResourceByNameAndServiceInstanceGuid(keyModel.getName(),
+                                                                                                 getGuid(serviceInstance)),
+                                         fetchedKey -> zipWithAuxiliaryServiceKeyContent(fetchedKey, serviceInstance));
+    }
+
+    @Override
+    public void createServiceKey(CloudServiceKey keyModel, String serviceInstanceName) {
+        CloudServiceInstance serviceInstance = getServiceInstance(serviceInstanceName);
+        doCreateServiceKey(keyModel.getName(), keyModel.getCredentials(), keyModel.getV3Metadata(), serviceInstance);
+    }
+
+    @Override
     public void createServiceKey(String serviceInstanceName, String serviceKeyName, Map<String, Object> parameters) {
         CloudServiceInstance serviceInstance = getServiceInstance(serviceInstanceName);
+        doCreateServiceKey(serviceKeyName, parameters, null, serviceInstance);
+    }
+
+    private void doCreateServiceKey(String name, Map<String, Object> parameters, Metadata metadata, CloudServiceInstance serviceInstance) {
         if (serviceInstance.getType() != ServiceInstanceType.MANAGED) {
             throw new IllegalArgumentException("Service keys can't be created for user-provided service instances");
         }
         UUID serviceInstanceGuid = getGuid(serviceInstance);
+        
         delegate.serviceBindingsV3()
                 .create(CreateServiceBindingRequest.builder()
                                                    .relationships(ServiceBindingRelationships.builder()
                                                                                              .serviceInstance(buildToOneRelationship(serviceInstanceGuid))
                                                                                              .build())
-                                                   .name(serviceKeyName)
+                                                   .name(name)
                                                    .parameters(parameters)
+                                                   .metadata(metadata)
                                                    .type(ServiceBindingType.KEY)
                                                    .build())
                 .map(response -> response.getJobId()
                                          .get())
                 .flatMap(jobId -> JobUtils.waitForCompletion(delegate, Duration.ofMinutes(5), jobId))
                 .block();
+
     }
 
     @Override
