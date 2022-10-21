@@ -1,6 +1,8 @@
 package org.cloudfoundry.client.lib.oauth2;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Map;
 import java.util.Set;
 
@@ -35,6 +37,22 @@ public class OAuth2AccessTokenWithAdditionalInfo {
 
     public String getDefaultValue() {
         return oAuth2AccessToken.getTokenValue();
+    }
+
+    public String getUserName() {
+        return (String) additionalInfo.get("user_name");
+    }
+
+    public boolean expiresBefore(Instant instant) {
+        return oAuth2AccessToken.getExpiresAt()
+                                .isBefore(instant);
+    }
+
+    public LocalDateTime calculateExpirationDate() {
+        long expirationInSeconds = ((Number) getAdditionalInfo().get("exp")).longValue();
+        return Instant.ofEpochSecond(expirationInSeconds)
+                      .atZone(ZoneId.systemDefault())
+                      .toLocalDateTime();
     }
 
     public String getValue() {
