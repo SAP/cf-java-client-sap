@@ -2,6 +2,7 @@ package com.sap.cloudfoundry.client.facade.rest;
 
 import java.net.URL;
 import java.nio.file.Path;
+import java.text.MessageFormat;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -342,11 +343,11 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public void createApplication(String name, Staging staging, Integer disk, Integer memory, Metadata metadata,
-                                  Set<CloudRoute> routes) {
+    public void createApplication(String name, Staging staging, Integer disk, Integer memory, Metadata metadata, Set<CloudRoute> routes) {
         assertSpaceProvided("create application");
-        CreateApplicationRequest applicationRequest = createApplicationRequestBuilder(name, metadata).lifecycle(buildApplicationLifecycle(staging))
-                                                                                                     .build();
+        CreateApplicationRequest applicationRequest = createApplicationRequestBuilder(name,
+                                                                                      metadata).lifecycle(buildApplicationLifecycle(staging))
+                                                                                               .build();
         doCreateApplication(staging, disk, memory, routes, applicationRequest);
     }
 
@@ -543,7 +544,8 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     private void doCreateServiceKey(String name, Map<String, Object> parameters, Metadata metadata, CloudServiceInstance serviceInstance) {
         if (serviceInstance.getType() != ServiceInstanceType.MANAGED) {
-            throw new IllegalArgumentException(String.format(Messages.CANT_CREATE_SERVICE_KEY_FOR_USER_PROVIDED_SERVICE, serviceInstance.getName()));
+            throw new IllegalArgumentException(String.format(Messages.CANT_CREATE_SERVICE_KEY_FOR_USER_PROVIDED_SERVICE,
+                                                             serviceInstance.getName()));
         }
         UUID serviceInstanceGuid = getGuid(serviceInstance);
 
@@ -789,11 +791,10 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     @Override
     public List<CloudApplication> getApplicationsByMetadataLabelSelector(String labelSelector) {
         assertSpaceProvided("get applications");
-        return fetchList(() -> getApplicationsByLabelSelector(labelSelector),
-                         application -> ImmutableRawCloudApplication.builder()
-                                                                    .application(application)
-                                                                    .space(target)
-                                                                    .build());
+        return fetchList(() -> getApplicationsByLabelSelector(labelSelector), application -> ImmutableRawCloudApplication.builder()
+                                                                                                                         .application(application)
+                                                                                                                         .space(target)
+                                                                                                                         .build());
     }
 
     private List<UUID> getApplicationIds() {
@@ -1715,15 +1716,16 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                         .getData()
                                                         .getId();
 
-        return getServicePlanResource(servicePlanGuid).zipWhen(servicePlan -> getServiceOffering(servicePlan.getRelationships()
-                                                                                                            .getServiceOffering()
-                                                                                                            .getData()
-                                                                                                            .getId()))
-                                                      .map(tuple -> ImmutableRawCloudServiceInstance.builder()
-                                                                                                    .resource(serviceInstanceResource)
-                                                                                                    .servicePlan(tuple.getT1())
-                                                                                                    .serviceOffering(tuple.getT2())
-                                                                                                    .build());
+        return getServicePlanResource(servicePlanGuid,
+                                      serviceInstanceResource.getName()).zipWhen(servicePlan -> getServiceOffering(servicePlan.getRelationships()
+                                                                                                                              .getServiceOffering()
+                                                                                                                              .getData()
+                                                                                                                              .getId()))
+                                                                        .map(tuple -> ImmutableRawCloudServiceInstance.builder()
+                                                                                                                      .resource(serviceInstanceResource)
+                                                                                                                      .servicePlan(tuple.getT1())
+                                                                                                                      .serviceOffering(tuple.getT2())
+                                                                                                                      .build());
     }
 
     private boolean isUserProvided(ServiceInstanceResource serviceInstanceResource) {
@@ -2371,15 +2373,22 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return fetchFlux(() -> getServicePlanResourcesByServiceOfferingGuid(serviceOfferingGuid), ImmutableRawCloudServicePlan::of);
     }
 
-    protected Mono<? extends ServicePlan> getServicePlanResource(String servicePlanGuid) {
+    protected Mono<? extends ServicePlan> getServicePlanResource(String servicePlanGuid, String serviceInstanceName) {
         GetServicePlanRequest request = GetServicePlanRequest.builder()
                                                              .servicePlanId(servicePlanGuid)
                                                              .build();
+
         return delegate.servicePlansV3()
                        .get(request)
                        // The user may not be able to see this service plan, even though he created an instance from it, at some point in
                        // the past.
-                       .onErrorResume(this::isForbidden, t -> Mono.empty());
+                       .onErrorResume(this::isForbidden, t -> Mono.empty())
+                       .onErrorMap(this::isNotFound,
+                                   t -> new CloudOperationException(HttpStatus.NOT_FOUND,
+                                                                    MessageFormat.format(Constants.NO_SERVICE_PLAN_FOUND, servicePlanGuid,
+                                                                                         serviceInstanceName),
+                                                                    t.getMessage(),
+                                                                    t));
     }
 
     private Flux<? extends ServicePlanResource> getServicePlanResourcesByServiceOfferingGuid(UUID serviceOfferingGuid) {
@@ -2661,13 +2670,17 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     private boolean isForbidden(Throwable t) {
         if (t instanceof AbstractCloudFoundryException) {
             AbstractCloudFoundryException e = (AbstractCloudFoundryException) t;
-            return isForbidden(e);
+            return e.getStatusCode() == HttpStatus.FORBIDDEN.value();
         }
         return false;
     }
 
-    private boolean isForbidden(AbstractCloudFoundryException e) {
-        return e.getStatusCode() == HttpStatus.FORBIDDEN.value();
+    private boolean isNotFound(Throwable t) {
+        if (t instanceof AbstractCloudFoundryException) {
+            AbstractCloudFoundryException e = (AbstractCloudFoundryException) t;
+            return e.getStatusCode() == HttpStatus.NOT_FOUND.value();
+        }
+        return false;
     }
 
     private String encodeAsQueryParam(String param) {
