@@ -38,7 +38,8 @@ class CloudControllerRestClientImplTest {
     private static final CloudCredentials CREDENTIALS = new CloudCredentials("admin", "admin");
     private static final URL CONTROLLER_URL = createUrl("https://localhost:8080");
 
-    private static final String GUID = "1803e5a7-40c7-438e-b2be-e2045c9b7cda";
+    private static final String SERVICE_PLAN_GUID = "1803e5a7-40c7-438e-b2be-e2045c9b7cda";
+    private static final String SERVICE_INSTANCE_GUID = "26949ebb-a624-35c0-000-1110a01f1880";
     private static final String PLAN_NAME = "test-plan";
 
     private static URL createUrl(String string) {
@@ -70,7 +71,7 @@ class CloudControllerRestClientImplTest {
     @Test
     void testGetServiceOffering() {
         GetServiceOfferingRequest request = GetServiceOfferingRequest.builder()
-                                                                     .serviceOfferingId(GUID)
+                                                                     .serviceOfferingId(SERVICE_PLAN_GUID)
                                                                      .build();
         GetServiceOfferingResponse response = GetServiceOfferingResponse.builder()
                                                                         .from(RawCloudServiceOfferingTest.buildTestServiceOffering())
@@ -82,7 +83,7 @@ class CloudControllerRestClientImplTest {
         Mockito.when(serviceOfferingsV3.get(request))
                .thenReturn(Mono.just(response));
 
-        ServiceOffering serviceOffering = controllerClient.getServiceOffering(GUID)
+        ServiceOffering serviceOffering = controllerClient.getServiceOffering(SERVICE_PLAN_GUID)
                                                           .block();
 
         assertEquals(response, serviceOffering);
@@ -91,7 +92,7 @@ class CloudControllerRestClientImplTest {
     @Test
     void testGetServiceOfferingWithForbidden() {
         GetServiceOfferingRequest request = GetServiceOfferingRequest.builder()
-                                                                     .serviceOfferingId(GUID)
+                                                                     .serviceOfferingId(SERVICE_PLAN_GUID)
                                                                      .build();
 
         ServiceOfferingsV3 serviceOfferingsV3 = Mockito.mock(ServiceOfferingsV3.class);
@@ -100,7 +101,7 @@ class CloudControllerRestClientImplTest {
         Mockito.when(serviceOfferingsV3.get(request))
                .thenReturn(Mono.error(clientV3Exception(HttpStatus.FORBIDDEN.value())));
 
-        ServiceOffering serviceResource = controllerClient.getServiceOffering(GUID)
+        ServiceOffering serviceResource = controllerClient.getServiceOffering(SERVICE_PLAN_GUID)
                                                           .block();
 
         assertNull(serviceResource);
@@ -109,7 +110,7 @@ class CloudControllerRestClientImplTest {
     @Test
     void testGetServicePlanResource() {
         GetServicePlanRequest request = GetServicePlanRequest.builder()
-                                                             .servicePlanId(GUID)
+                                                             .servicePlanId(SERVICE_PLAN_GUID)
                                                              .build();
         GetServicePlanResponse response = GetServicePlanResponse.builder()
                                                                 .from(RawCloudServicePlanTest.buildTestServicePlan(PLAN_NAME))
@@ -121,7 +122,7 @@ class CloudControllerRestClientImplTest {
         Mockito.when(servicePlans.get(request))
                .thenReturn(Mono.just(response));
 
-        ServicePlan servicePlanResource = controllerClient.getServicePlanResource(GUID)
+        ServicePlan servicePlanResource = controllerClient.getServicePlanResource(SERVICE_PLAN_GUID, SERVICE_INSTANCE_GUID)
                                                           .block();
 
         assertEquals(response, servicePlanResource);
@@ -130,7 +131,7 @@ class CloudControllerRestClientImplTest {
     @Test
     void testGetServicePlanResourceWithForbidden() {
         GetServicePlanRequest request = GetServicePlanRequest.builder()
-                                                             .servicePlanId(GUID)
+                                                             .servicePlanId(SERVICE_PLAN_GUID)
                                                              .build();
 
         ServicePlansV3 servicePlans = Mockito.mock(ServicePlansV3.class);
@@ -139,7 +140,7 @@ class CloudControllerRestClientImplTest {
         Mockito.when(servicePlans.get(request))
                .thenReturn(Mono.error(clientV3Exception(HttpStatus.FORBIDDEN.value())));
 
-        ServicePlan servicePlanResource = controllerClient.getServicePlanResource(GUID)
+        ServicePlan servicePlanResource = controllerClient.getServicePlanResource(SERVICE_PLAN_GUID, SERVICE_INSTANCE_GUID)
                                                           .block();
 
         assertNull(servicePlanResource);
