@@ -1008,6 +1008,11 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                        .getDetails(GetServiceBindingDetailsRequest.builder()
                                                                   .serviceBindingId(keyGuid)
                                                                   .build())
+                       // CF V3 API returns 404 when fetching credentials of a service key which creation failed
+                       .onErrorResume(this::isNotFound, t -> Mono.just(GetServiceBindingDetailsResponse.builder()
+                                                                                                       .volumeMounts(Collections.emptyList())
+                                                                                                       .credentials(Collections.emptyMap())
+                                                                                                       .build()))
                        .map(GetServiceBindingDetailsResponse::getCredentials);
     }
 
