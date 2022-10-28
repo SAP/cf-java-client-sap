@@ -2322,9 +2322,18 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                      .build();
         return delegate.serviceOfferingsV3()
                        .get(request)
-                       // The user may not be able to see this service, even though he created an instance from it, at some point in
-                       // the past.
-                       .onErrorResume(this::isForbidden, t -> Mono.empty());
+                       .onErrorMap(this::isForbidden,
+                                   t -> new CloudOperationException(HttpStatus.FORBIDDEN,
+                                                                    HttpStatus.FORBIDDEN.getReasonPhrase(),
+                                                                    MessageFormat.format(Messages.SERVICE_OFFERING_WITH_GUID_0_IS_NOT_AVAILABLE,
+                                                                                         offeringId),
+                                                                    t))
+                       .onErrorMap(this::isNotFound,
+                                   t -> new CloudOperationException(HttpStatus.NOT_FOUND,
+                                                                    HttpStatus.NOT_FOUND.getReasonPhrase(),
+                                                                    MessageFormat.format(Messages.SERVICE_OFFERING_WITH_GUID_0_NOT_FOUND,
+                                                                                         offeringId),
+                                                                    t));
     }
 
     private Flux<? extends ServiceOfferingResource> getServiceResourcesByBrokerGuid(UUID brokerGuid) {
@@ -2380,14 +2389,17 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
         return delegate.servicePlansV3()
                        .get(request)
-                       // The user may not be able to see this service plan, even though he created an instance from it, at some point in
-                       // the past.
-                       .onErrorResume(this::isForbidden, t -> Mono.empty())
+                       .onErrorMap(this::isForbidden,
+                                   t -> new CloudOperationException(HttpStatus.FORBIDDEN,
+                                                                    HttpStatus.FORBIDDEN.getReasonPhrase(),
+                                                                    MessageFormat.format(Messages.SERVICE_PLAN_WITH_GUID_0_NOT_AVAILABLE_FOR_SERVICE_INSTANCE_1,
+                                                                                         servicePlanGuid, serviceInstanceName),
+                                                                    t))
                        .onErrorMap(this::isNotFound,
                                    t -> new CloudOperationException(HttpStatus.NOT_FOUND,
-                                                                    MessageFormat.format(Constants.NO_SERVICE_PLAN_FOUND, servicePlanGuid,
+                                                                    HttpStatus.NOT_FOUND.getReasonPhrase(),
+                                                                    MessageFormat.format(Messages.NO_SERVICE_PLAN_FOUND, servicePlanGuid,
                                                                                          serviceInstanceName),
-                                                                    t.getMessage(),
                                                                     t));
     }
 
