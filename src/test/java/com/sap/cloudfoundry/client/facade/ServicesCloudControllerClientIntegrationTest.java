@@ -1,7 +1,6 @@
 package com.sap.cloudfoundry.client.facade;
 
 import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.APPLICATION_HOST;
-import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.DEFAULT_DOMAIN;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -15,6 +14,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.MessageFormat;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -22,8 +22,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudDomain;
-import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudRoute;
 import org.cloudfoundry.client.v3.jobs.JobState;
 import org.cloudfoundry.client.v3.serviceinstances.ServiceInstanceType;
 import org.junit.jupiter.api.AfterAll;
@@ -33,11 +31,23 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.web.reactive.function.BodyInserters;
+import org.springframework.web.reactive.function.client.WebClient;
 
+import com.sap.cloudfoundry.client.facade.broker.FailConfiguration;
+import com.sap.cloudfoundry.client.facade.broker.ImmutableFailConfiguration;
+import com.sap.cloudfoundry.client.facade.broker.ImmutableServiceBrokerConfiguration;
+import com.sap.cloudfoundry.client.facade.broker.ServiceBrokerConfiguration;
 import com.sap.cloudfoundry.client.facade.domain.CloudAsyncJob;
 import com.sap.cloudfoundry.client.facade.domain.CloudPackage;
 import com.sap.cloudfoundry.client.facade.domain.CloudServiceBroker;
 import com.sap.cloudfoundry.client.facade.domain.CloudServiceInstance;
+import com.sap.cloudfoundry.client.facade.domain.CloudServiceKey;
+import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudDomain;
+import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudRoute;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudServiceBroker;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudServiceInstance;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableStaging;
@@ -48,6 +58,7 @@ class ServicesCloudControllerClientIntegrationTest extends CloudControllerClient
 
     private static final String SYSLOG_DRAIN_URL = "https://syslogDrain.com";
     private static final Map<String, Object> USER_SERVICE_CREDENTIALS = Map.of("testCredentialsKey", "testCredentialsValue");
+    private static final String SERVICE_BROKER_ENDPOINT = "configurations/1";
 
     private static boolean pushedServiceBroker = false;
 
@@ -62,7 +73,7 @@ class ServicesCloudControllerClientIntegrationTest extends CloudControllerClient
             fail(MessageFormat.format("Specified service broker path \"{0}\" not exists", brokerPathString));
         }
         pushServiceBrokerApplication(brokerPath);
-        createServiceBroker(IntegrationTestConstants.SERVICE_BROKER_NAME, "configurations/1");
+        createServiceBroker(IntegrationTestConstants.SERVICE_BROKER_NAME, SERVICE_BROKER_ENDPOINT);
         pushedServiceBroker = true;
     }
 
@@ -125,7 +136,6 @@ class ServicesCloudControllerClientIntegrationTest extends CloudControllerClient
         } finally {
             client.deleteServiceInstance(serviceName);
         }
-
     }
 
     static Stream<Arguments> createManagedService() {
@@ -143,7 +153,6 @@ class ServicesCloudControllerClientIntegrationTest extends CloudControllerClient
         if (!pushedServiceBroker) {
             return;
         }
-
         try {
             client.createServiceInstance(ImmutableCloudServiceInstance.builder()
                                                                       .name(serviceName)
@@ -162,7 +171,6 @@ class ServicesCloudControllerClientIntegrationTest extends CloudControllerClient
             client.deleteServiceInstance(serviceName);
             verifyServiceIsOrBeingDeleted(serviceName);
         }
-
     }
 
     @Test
@@ -412,6 +420,74 @@ class ServicesCloudControllerClientIntegrationTest extends CloudControllerClient
         }
     }
 
+    @Test
+    void testFetchingOfFailedServiceKey() throws InterruptedException {
+        if (!pushedServiceBroker) {
+            return;
+        }
+        String testServiceInstanceName = "service-instance-with-failed-service-keys";
+        try {
+            client.createServiceInstance(ImmutableCloudServiceInstance.builder()
+                                                                      .name(testServiceInstanceName)
+                                                                      .label(IntegrationTestConstants.SERVICE_OFFERING)
+                                                                      .plan(IntegrationTestConstants.SERVICE_PLAN)
+                                                                      .build());
+            pollLastOperationServiceInstanceState(testServiceInstanceName);
+            CloudServiceInstance serviceInstance = client.getServiceInstance(testServiceInstanceName);
+            client.createServiceKey(testServiceInstanceName, "successful-key", Map.of("test-key", "test-value"));
+            FailConfiguration failConfiguration = ImmutableFailConfiguration.builder()
+                                                                            .operationType(FailConfiguration.OperationType.CREATE_SERVICE_KEY.toString())
+                                                                            .addInstanceId(serviceInstance.getGuid())
+                                                                            .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                                                                            .build();
+            configureServiceBroker(List.of(failConfiguration));
+            createServiceKeySilently(testServiceInstanceName, "failed-key", Collections.emptyMap());
+            List<CloudServiceKey> serviceKeys = client.getServiceKeysWithCredentials(testServiceInstanceName);
+            assertEquals(2, serviceKeys.size());
+            assertEquals(Map.of("test-key", "test-value"), findServiceKeyByName("successful-key", serviceKeys).getCredentials());
+            assertEquals(Collections.emptyMap(), findServiceKeyByName("failed-key", serviceKeys).getCredentials());
+            serviceKeys.forEach(serviceKey -> client.deleteServiceBinding(serviceKey.getGuid()));
+        } catch (Exception e) {
+            fail(e);
+        } finally {
+            client.deleteServiceInstance(testServiceInstanceName);
+            verifyServiceIsOrBeingDeleted(testServiceInstanceName);
+        }
+    }
+
+    private void configureServiceBroker(List<FailConfiguration> failConfigurations) {
+        ServiceBrokerConfiguration serviceBrokerConfiguration = ImmutableServiceBrokerConfiguration.builder()
+                                                                                                   .asyncDurationInMillis(100)
+                                                                                                   .failConfigurations(failConfigurations)
+                                                                                                   .build();
+        String serviceBrokerUrl = getServiceBrokerUrl(SERVICE_BROKER_ENDPOINT, client.getDefaultDomain()
+                                                                                     .getName());
+        WebClient.create()
+                 .put()
+                 .uri(serviceBrokerUrl)
+                 .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                 .body(BodyInserters.fromValue(serviceBrokerConfiguration))
+                 .retrieve()
+                 .toBodilessEntity()
+                 .block();
+    }
+
+    private void createServiceKeySilently(String serviceInstanceName, String serviceKeyName, Map<String, Object> serviceKeyCredentials) {
+        try {
+            client.createServiceKey(serviceInstanceName, serviceKeyName, serviceKeyCredentials);
+        } catch (CloudOperationException e) {
+            // Do nothing
+        }
+    }
+
+    private CloudServiceKey findServiceKeyByName(String keyName, List<CloudServiceKey> serviceKeys) {
+        return serviceKeys.stream()
+                          .filter(serviceKey -> keyName.equals(serviceKey.getName()))
+                          .findFirst()
+                          .orElseThrow(() -> new IllegalStateException(MessageFormat.format("Service key with name: \"{0}\" not found!",
+                                                                                            keyName)));
+    }
+
     private static void pushServiceBrokerApplication(Path brokerPath) throws InterruptedException {
         String defaultDomain = client.getDefaultDomain()
                                      .getName();
@@ -419,14 +495,13 @@ class ServicesCloudControllerClientIntegrationTest extends CloudControllerClient
                                                                                                    .addBuildpack(IntegrationTestConstants.JAVA_BUILDPACK)
                                                                                                    .build(),
                                  IntegrationTestConstants.SERVICE_BROKER_DISK_IN_MB, IntegrationTestConstants.SERVICE_BROKER_MEMORY_IN_MB,
-                                 null,
-                                 Set.of(ImmutableCloudRoute.builder()
-                                                           .host(IntegrationTestConstants.SERVICE_BROKER_HOST)
-                                                           .domain(ImmutableCloudDomain.builder()
-                                                                                       .name(defaultDomain)
-                                                                                       .build())
-                                                           .url(APPLICATION_HOST+"."+defaultDomain)
-                                                           .build()));
+                                 null, Set.of(ImmutableCloudRoute.builder()
+                                                                 .host(IntegrationTestConstants.SERVICE_BROKER_HOST)
+                                                                 .domain(ImmutableCloudDomain.builder()
+                                                                                             .name(defaultDomain)
+                                                                                             .build())
+                                                                 .url(APPLICATION_HOST + "." + defaultDomain)
+                                                                 .build()));
 
         Map<String, String> appEnv = getServiceBrokerEnvConfiguration();
         client.updateApplicationEnv(IntegrationTestConstants.SERVICE_BROKER_APP_NAME, appEnv);
@@ -470,13 +545,14 @@ class ServicesCloudControllerClientIntegrationTest extends CloudControllerClient
                                                                              .name(serviceBrokerName)
                                                                              .username(IntegrationTestConstants.SERVICE_BROKER_USERNAME)
                                                                              .password(IntegrationTestConstants.SERVICE_BROKER_PASSWORD)
-                                                                             .url(MessageFormat.format("https://{0}.{1}/{2}",
-                                                                                                       IntegrationTestConstants.SERVICE_BROKER_HOST,
-                                                                                                       defaultDomain,
-                                                                                                       serviceBrokerEndpoint))
+                                                                             .url(getServiceBrokerUrl(serviceBrokerEndpoint, defaultDomain))
                                                                              .spaceGuid(targetSpaceGuid)
                                                                              .build());
         pollServiceBrokerOperation(jobId, serviceBrokerName);
+    }
+
+    private static String getServiceBrokerUrl(String serviceBrokerEndpoint, String domain) {
+        return MessageFormat.format("https://{0}.{1}/{2}", IntegrationTestConstants.SERVICE_BROKER_HOST, domain, serviceBrokerEndpoint);
     }
 
     private static void pollServiceBrokerOperation(String jobId, String serviceBrokerName) throws InterruptedException {
