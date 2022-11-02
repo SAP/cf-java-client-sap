@@ -12,7 +12,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.net.URISyntaxException;
@@ -85,7 +84,7 @@ class ApplicationsCloudControllerClientIntegrationTest extends CloudControllerCl
                                               .domain(ImmutableCloudDomain.builder()
                                                                           .name(DEFAULT_DOMAIN)
                                                                           .build())
-                                              .url(APPLICATION_HOST+"."+DEFAULT_DOMAIN)
+                                              .url(APPLICATION_HOST + "." + DEFAULT_DOMAIN)
                                               .build();
         try {
             verifyApplicationWillBeCreated(applicationName, staging, Set.of(route));
@@ -278,7 +277,7 @@ class ApplicationsCloudControllerClientIntegrationTest extends CloudControllerCl
                                                                      .domain(ImmutableCloudDomain.builder()
                                                                                                  .name(DEFAULT_DOMAIN)
                                                                                                  .build())
-                                                                     .url(APPLICATION_HOST+"."+DEFAULT_DOMAIN)
+                                                                     .url(APPLICATION_HOST + "." + DEFAULT_DOMAIN)
                                                                      .build()));
             UUID applicationGuid = client.getApplicationGuid(applicationName);
             CloudPackage dockerPackage = client.createDockerPackage(applicationGuid, dockerInfo);
@@ -296,7 +295,7 @@ class ApplicationsCloudControllerClientIntegrationTest extends CloudControllerCl
         String applicationName = "test-application-12";
         Set<CloudRoute> newRoutes = Set.of(ImmutableCloudRoute.builder()
                                                               .host("test-application-hostname-modified")
-                                                              .url("test-application-hostname-modified."+DEFAULT_DOMAIN)
+                                                              .url("test-application-hostname-modified." + DEFAULT_DOMAIN)
                                                               .domain(ImmutableCloudDomain.builder()
                                                                                           .name(DEFAULT_DOMAIN)
                                                                                           .build())
@@ -330,7 +329,7 @@ class ApplicationsCloudControllerClientIntegrationTest extends CloudControllerCl
                                                                      .domain(ImmutableCloudDomain.builder()
                                                                                                  .name(DEFAULT_DOMAIN)
                                                                                                  .build())
-                                                                     .url(APPLICATION_HOST+"."+DEFAULT_DOMAIN)
+                                                                     .url(APPLICATION_HOST + "." + DEFAULT_DOMAIN)
                                                                      .build()));
             UUID applicationGuid = client.getApplicationGuid(applicationName);
             CloudPackage dockerPackage = client.createDockerPackage(applicationGuid, dockerInfo);
@@ -399,11 +398,11 @@ class ApplicationsCloudControllerClientIntegrationTest extends CloudControllerCl
                                                          .name(applicationName)
                                                          .state(CloudApplication.State.STOPPED)
                                                          .lifecycle(createLifecycle(staging))
-                                                         .build(), staging, routes);
+                                                         .build(),
+                                staging, routes);
     }
 
-    private static void assertApplicationExists(CloudApplication cloudApplication, Staging staging,
-                                                Set<CloudRoute> routes) {
+    private static void assertApplicationExists(CloudApplication cloudApplication, Staging staging, Set<CloudRoute> routes) {
         CloudApplication application = client.getApplication(cloudApplication.getName());
         var realRoutes = client.getApplicationRoutes(application.getGuid());
         var process = client.getApplicationProcess(application.getGuid());
@@ -425,7 +424,7 @@ class ApplicationsCloudControllerClientIntegrationTest extends CloudControllerCl
                                                                  .domain(ImmutableCloudDomain.builder()
                                                                                              .name(DEFAULT_DOMAIN)
                                                                                              .build())
-                                                                 .url(APPLICATION_HOST+"."+DEFAULT_DOMAIN)
+                                                                 .url(APPLICATION_HOST + "." + DEFAULT_DOMAIN)
                                                                  .build()));
     }
 
