@@ -59,6 +59,7 @@ class ServicesCloudControllerClientIntegrationTest extends CloudControllerClient
     private static final String SYSLOG_DRAIN_URL = "https://syslogDrain.com";
     private static final Map<String, Object> USER_SERVICE_CREDENTIALS = Map.of("testCredentialsKey", "testCredentialsValue");
     private static final String SERVICE_BROKER_ENDPOINT = "configurations/1";
+    private static final List<String> SERVICE_TAGS = List.of("custom-tag-1", "custom-tag-2");
 
     private static boolean pushedServiceBroker = false;
 
@@ -94,11 +95,12 @@ class ServicesCloudControllerClientIntegrationTest extends CloudControllerClient
     void createUserProvidedServiceTest() {
         String serviceName = "test-service-1";
         try {
-            client.createUserProvidedServiceInstance(buildUserProvidedService(serviceName), USER_SERVICE_CREDENTIALS, SYSLOG_DRAIN_URL);
+            client.createUserProvidedServiceInstance(buildUserProvidedService(serviceName));
             CloudServiceInstance service = client.getServiceInstance(serviceName);
             Map<String, Object> serviceCredentials = client.getUserProvidedServiceInstanceParameters(service.getGuid());
             assertEquals(SYSLOG_DRAIN_URL, service.getSyslogDrainUrl());
             assertEquals(USER_SERVICE_CREDENTIALS, serviceCredentials);
+            assertEquals(SERVICE_TAGS, service.getTags());
             assertTrue(service.isUserProvided());
         } catch (Exception e) {
             fail(e);
@@ -115,7 +117,7 @@ class ServicesCloudControllerClientIntegrationTest extends CloudControllerClient
         String updatedSyslogDrainUrl = "https://newSyslogDrain.com";
         List<String> updatedTags = List.of("tag1", "tag2");
         try {
-            client.createUserProvidedServiceInstance(buildUserProvidedService(serviceName), USER_SERVICE_CREDENTIALS, SYSLOG_DRAIN_URL);
+            client.createUserProvidedServiceInstance(buildUserProvidedService(serviceName));
 
             client.updateServiceParameters(serviceName, updatedServiceCredentials);
 
@@ -575,6 +577,9 @@ class ServicesCloudControllerClientIntegrationTest extends CloudControllerClient
         return ImmutableCloudServiceInstance.builder()
                                             .name(serviceName)
                                             .type(ServiceInstanceType.USER_PROVIDED)
+                                            .credentials(USER_SERVICE_CREDENTIALS)
+                                            .syslogDrainUrl(SYSLOG_DRAIN_URL)
+                                            .tags(SERVICE_TAGS)
                                             .build();
     }
 

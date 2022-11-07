@@ -136,6 +136,11 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
+    public void createUserProvidedServiceInstance(CloudServiceInstance serviceInstance) {
+        handleExceptions(() -> delegate.createUserProvidedServiceInstance(serviceInstance));
+    }
+
+    @Override
     public void createUserProvidedServiceInstance(CloudServiceInstance serviceInstance, Map<String, Object> credentials) {
         handleExceptions(() -> delegate.createUserProvidedServiceInstance(serviceInstance, credentials));
     }

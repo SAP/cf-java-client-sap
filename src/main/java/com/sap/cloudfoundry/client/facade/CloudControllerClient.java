@@ -85,7 +85,8 @@ public interface CloudControllerClient {
      * @param memory memory to use in MB
      * @param routes list of route summary info for the app
      */
-    void createApplication(String applicationName, Staging staging, Integer disk, Integer memory, Metadata metadata, Set<CloudRoute> routes);
+    void createApplication(String applicationName, Staging staging, Integer disk, Integer memory, Metadata metadata,
+                           Set<CloudRoute> routes);
 
     /**
      * Create a service instance.
@@ -142,6 +143,13 @@ public interface CloudControllerClient {
      * @param syslogDrainUrl for a logging service instance
      */
     void createUserProvidedServiceInstance(CloudServiceInstance serviceInstance, Map<String, Object> credentials, String syslogDrainUrl);
+
+    /**
+     * Create a user-provided service instance.
+     *
+     * @param serviceInstance cloud service instance info
+     */
+    void createUserProvidedServiceInstance(CloudServiceInstance serviceInstance);
 
     /**
      * Delete all applications.
