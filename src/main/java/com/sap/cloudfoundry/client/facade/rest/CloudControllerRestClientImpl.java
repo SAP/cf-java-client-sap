@@ -588,29 +588,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public void createUserProvidedServiceInstance(CloudServiceInstance serviceInstance, Map<String, Object> credentials) {
-        createUserProvidedServiceInstance(serviceInstance, credentials, "");
-    }
-
-    @Override
-    public void createUserProvidedServiceInstance(CloudServiceInstance serviceInstance, Map<String, Object> credentials,
-                                                  String syslogDrainUrl) {
-        assertSpaceProvided("create service instance");
-        Assert.notNull(serviceInstance, "Service instance must not be null.");
-        delegate.serviceInstancesV3()
-                .create(CreateServiceInstanceRequest.builder()
-                                                    .name(serviceInstance.getName())
-                                                    .type(ServiceInstanceType.USER_PROVIDED)
-                                                    .credentials(credentials)
-                                                    .syslogDrainUrl(syslogDrainUrl)
-                                                    .relationships(ServiceInstanceRelationships.builder()
-                                                                                               .space(buildToOneRelationship(getTargetSpaceGuid().toString()))
-                                                                                               .build())
-                                                    .build())
-                .block();
-    }
-
-    @Override
     public void deleteAllApplications() {
         List<UUID> applicationIds = getApplicationIds();
         for (UUID applicationGuid : applicationIds) {
