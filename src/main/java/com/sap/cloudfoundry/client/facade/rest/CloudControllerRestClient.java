@@ -53,7 +53,8 @@ public interface CloudControllerRestClient {
 
     void bindServiceInstance(String applicationName, String serviceInstanceName, Map<String, Object> parameters);
 
-    void createApplication(String applicationName, Staging staging, Integer disk, Integer memory, Metadata metadata, Set<CloudRoute> routes);
+    void createApplication(String applicationName, Staging staging, Integer disk, Integer memory, Metadata metadata,
+                           Set<CloudRoute> routes);
 
     void createServiceInstance(CloudServiceInstance serviceInstance);
 
@@ -64,6 +65,8 @@ public interface CloudControllerRestClient {
     void createServiceKey(CloudServiceKey keyModel, String serviceInstanceName);
 
     void createServiceKey(String serviceInstanceName, String serviceKeyName, Map<String, Object> parameters);
+
+    void createUserProvidedServiceInstance(CloudServiceInstance serviceInstance);
 
     void createUserProvidedServiceInstance(CloudServiceInstance serviceInstance, Map<String, Object> credentials);
 

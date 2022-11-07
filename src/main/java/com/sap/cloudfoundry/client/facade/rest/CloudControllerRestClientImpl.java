@@ -19,6 +19,9 @@ import java.util.function.IntFunction;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
 import org.cloudfoundry.AbstractCloudFoundryException;
 import org.cloudfoundry.client.CloudFoundryClient;
 import org.cloudfoundry.client.v3.BuildpackData;
@@ -229,9 +232,6 @@ import com.sap.cloudfoundry.client.facade.domain.UserRole;
 import com.sap.cloudfoundry.client.facade.oauth2.OAuth2AccessTokenWithAdditionalInfo;
 import com.sap.cloudfoundry.client.facade.oauth2.OAuthClient;
 import com.sap.cloudfoundry.client.facade.util.UriUtil;
-
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 /**
  * Abstract implementation of the CloudControllerClient intended to serve as the base.
@@ -565,6 +565,25 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                 .map(response -> response.getJobId()
                                          .get())
                 .flatMap(jobId -> JobUtils.waitForCompletion(delegate, Duration.ofMinutes(5), jobId))
+                .block();
+    }
+
+    @Override
+    public void createUserProvidedServiceInstance(CloudServiceInstance serviceInstance) {
+        assertSpaceProvided("create service instance");
+        Assert.notNull(serviceInstance, "Service instance must not be null.");
+        String syslogDrainUrl = StringUtils.hasText(serviceInstance.getSyslogDrainUrl()) ? serviceInstance.getSyslogDrainUrl() : "";
+        delegate.serviceInstancesV3()
+                .create(CreateServiceInstanceRequest.builder()
+                                                    .name(serviceInstance.getName())
+                                                    .type(ServiceInstanceType.USER_PROVIDED)
+                                                    .credentials(serviceInstance.getCredentials())
+                                                    .syslogDrainUrl(syslogDrainUrl)
+                                                    .tags(serviceInstance.getTags())
+                                                    .relationships(ServiceInstanceRelationships.builder()
+                                                                                               .space(buildToOneRelationship(getTargetSpaceGuid().toString()))
+                                                                                               .build())
+                                                    .build())
                 .block();
     }
 
