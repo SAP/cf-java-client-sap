@@ -68,10 +68,6 @@ public interface CloudControllerRestClient {
 
     void createUserProvidedServiceInstance(CloudServiceInstance serviceInstance);
 
-    void createUserProvidedServiceInstance(CloudServiceInstance serviceInstance, Map<String, Object> credentials);
-
-    void createUserProvidedServiceInstance(CloudServiceInstance serviceInstance, Map<String, Object> credentials, String syslogDrainUrl);
-
     void deleteAllApplications();
 
     void deleteAllServiceInstances();

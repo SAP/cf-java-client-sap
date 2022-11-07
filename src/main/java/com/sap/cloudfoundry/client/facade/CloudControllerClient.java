@@ -131,23 +131,6 @@ public interface CloudControllerClient {
      * Create a user-provided service instance.
      *
      * @param serviceInstance cloud service instance info
-     * @param credentials the user-provided service instance credentials
-     */
-    void createUserProvidedServiceInstance(CloudServiceInstance serviceInstance, Map<String, Object> credentials);
-
-    /**
-     * Create a user-provided service instance for logging.
-     *
-     * @param serviceInstance cloud service instance info
-     * @param credentials the user-provided service instance credentials
-     * @param syslogDrainUrl for a logging service instance
-     */
-    void createUserProvidedServiceInstance(CloudServiceInstance serviceInstance, Map<String, Object> credentials, String syslogDrainUrl);
-
-    /**
-     * Create a user-provided service instance.
-     *
-     * @param serviceInstance cloud service instance info
      */
     void createUserProvidedServiceInstance(CloudServiceInstance serviceInstance);
 

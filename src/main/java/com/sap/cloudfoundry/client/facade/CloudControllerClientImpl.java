@@ -141,17 +141,6 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public void createUserProvidedServiceInstance(CloudServiceInstance serviceInstance, Map<String, Object> credentials) {
-        handleExceptions(() -> delegate.createUserProvidedServiceInstance(serviceInstance, credentials));
-    }
-
-    @Override
-    public void createUserProvidedServiceInstance(CloudServiceInstance serviceInstance, Map<String, Object> credentials,
-                                                  String syslogDrainUrl) {
-        handleExceptions(() -> delegate.createUserProvidedServiceInstance(serviceInstance, credentials, syslogDrainUrl));
-    }
-
-    @Override
     public void deleteAllApplications() {
         handleExceptions(() -> delegate.deleteAllApplications());
     }
