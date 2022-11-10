@@ -151,7 +151,6 @@ import org.cloudfoundry.client.v3.tasks.ListTasksRequest;
 import org.cloudfoundry.client.v3.tasks.Task;
 import org.cloudfoundry.doppler.DopplerClient;
 import org.cloudfoundry.doppler.RecentLogsRequest;
-import org.cloudfoundry.util.JobUtils;
 import org.cloudfoundry.util.PaginationUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -227,6 +226,7 @@ import com.sap.cloudfoundry.client.facade.domain.Upload;
 import com.sap.cloudfoundry.client.facade.domain.UserRole;
 import com.sap.cloudfoundry.client.facade.oauth2.OAuth2AccessTokenWithAdditionalInfo;
 import com.sap.cloudfoundry.client.facade.oauth2.OAuthClient;
+import com.sap.cloudfoundry.client.facade.util.JobV3Util;
 import com.sap.cloudfoundry.client.facade.util.UriUtil;
 
 import reactor.core.publisher.Flux;
@@ -241,6 +241,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     private static final Logger LOGGER = LoggerFactory.getLogger(CloudControllerRestClientImpl.class);
     private static final long PACKAGE_UPLOAD_JOB_POLLING_PERIOD = TimeUnit.SECONDS.toMillis(5);
     private static final Duration DELETE_JOB_TIMEOUT = Duration.ofMinutes(5);
+    private static final Duration BINDING_OPERATIONS_TIMEOUT = Duration.ofMinutes(10);
     private static final int MAX_CHAR_LENGTH_FOR_PARAMS_IN_REQUEST = 4000;
     private static final List<String> CHARS_TO_ENCODE = List.of(",");
 
@@ -337,7 +338,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                             .isPresent())
                 .map(response -> response.getJobId()
                                          .get())
-                .flatMap(jobId -> JobUtils.waitForCompletion(delegate, Duration.ofMinutes(5), jobId))
+                .flatMap(jobId -> JobV3Util.waitForCompletion(delegate, BINDING_OPERATIONS_TIMEOUT, jobId))
                 .block();
     }
 
@@ -562,7 +563,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                 .create(createBindingRequest.build())
                 .map(response -> response.getJobId()
                                          .get())
-                .flatMap(jobId -> JobUtils.waitForCompletion(delegate, Duration.ofMinutes(5), jobId))
+                .flatMap(jobId -> JobV3Util.waitForCompletion(delegate, BINDING_OPERATIONS_TIMEOUT, jobId))
                 .block();
     }
 
@@ -620,7 +621,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                 .delete(DeleteApplicationRequest.builder()
                                                 .applicationId(applicationGuid.toString())
                                                 .build())
-                .flatMap(jobId -> JobUtils.waitForCompletion(delegate, DELETE_JOB_TIMEOUT, jobId))
+                .flatMap(jobId -> JobV3Util.waitForCompletion(delegate, DELETE_JOB_TIMEOUT, jobId))
                 .block();
     }
 
@@ -644,7 +645,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                 .deleteUnmappedRoutes(DeleteUnmappedRoutesRequest.builder()
                                                                  .spaceId(getTargetSpaceGuid().toString())
                                                                  .build())
-                .flatMap(jobId -> JobUtils.waitForCompletion(delegate, DELETE_JOB_TIMEOUT, jobId))
+                .flatMap(jobId -> JobV3Util.waitForCompletion(delegate, DELETE_JOB_TIMEOUT, jobId))
                 .block();
     }
 
@@ -2042,7 +2043,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                 .delete(DeleteDomainRequest.builder()
                                            .domainId(guid.toString())
                                            .build())
-                .flatMap(jobId -> JobUtils.waitForCompletion(delegate, DELETE_JOB_TIMEOUT, jobId))
+                .flatMap(jobId -> JobV3Util.waitForCompletion(delegate, DELETE_JOB_TIMEOUT, jobId))
                 .block();
     }
 
@@ -2051,7 +2052,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                 .delete(DeleteRouteRequest.builder()
                                           .routeId(guid.toString())
                                           .build())
-                .flatMap(jobId -> JobUtils.waitForCompletion(delegate, DELETE_JOB_TIMEOUT, jobId))
+                .flatMap(jobId -> JobV3Util.waitForCompletion(delegate, DELETE_JOB_TIMEOUT, jobId))
                 .block();
     }
 
@@ -2080,7 +2081,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                    .serviceBindingId(guid.toString())
                                                    .build())
                 .filter(Objects::nonNull)
-                .flatMap(jobId -> JobUtils.waitForCompletion(delegate, DELETE_JOB_TIMEOUT, jobId))
+                .flatMap(jobId -> JobV3Util.waitForCompletion(delegate, BINDING_OPERATIONS_TIMEOUT, jobId))
                 .block();
     }
 
