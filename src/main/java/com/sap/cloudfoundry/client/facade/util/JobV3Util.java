@@ -39,7 +39,8 @@ public class JobV3Util {
 
     private static Mono<Void> getError(Job job) {
         List<Error> errors = job.getErrors();
-        return Mono.error(new ClientV3Exception(null, errors));
+        // Status code must be set, otherwise it will throw NPE during getStatusCode() invocation
+        return Mono.error(new ClientV3Exception(200, errors));
     }
 
 }
