@@ -1066,9 +1066,16 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                 .block();
     }
 
-    private CloudServiceInstance getServiceInstanceWithoutAuxiliaryContent(String serviceInstanceName) {
-        var serviceInstance = fetch(() -> getServiceInstanceResourceByName(serviceInstanceName), ImmutableRawCloudServiceInstance::of);
-        return getServiceInstanceIfRequired(serviceInstanceName, serviceInstance, true);
+    @Override
+    public CloudServiceInstance getServiceInstanceWithoutAuxiliaryContent(String serviceInstanceName) {
+        return getServiceInstanceWithoutAuxiliaryContent(serviceInstanceName, true);
+    }
+
+    @Override
+    public CloudServiceInstance getServiceInstanceWithoutAuxiliaryContent(String serviceInstanceName, boolean required) {
+        CloudServiceInstance serviceInstance = fetch(() -> getServiceInstanceResourceByName(serviceInstanceName),
+                                                     ImmutableRawCloudServiceInstance::of);
+        return getServiceInstanceIfRequired(serviceInstanceName, serviceInstance, required);
     }
 
     @Override

@@ -148,6 +148,10 @@ public interface CloudControllerRestClient {
 
     CloudServiceInstance getServiceInstance(String serviceInstanceName, boolean required);
 
+    CloudServiceInstance getServiceInstanceWithoutAuxiliaryContent(String serviceInstanceName);
+
+    CloudServiceInstance getServiceInstanceWithoutAuxiliaryContent(String serviceInstanceName, boolean required);
+
     List<CloudServiceBinding> getServiceAppBindings(UUID serviceInstanceGuid);
 
     CloudServiceBinding getServiceBindingForApplication(UUID applicationId, UUID serviceInstanceGuid);
