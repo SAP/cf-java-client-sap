@@ -361,6 +361,16 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
+    public CloudServiceInstance getServiceInstanceWithoutAuxiliaryContent(String serviceInstanceName) {
+        return handleExceptions(() -> delegate.getServiceInstanceWithoutAuxiliaryContent(serviceInstanceName));
+    }
+
+    @Override
+    public CloudServiceInstance getServiceInstanceWithoutAuxiliaryContent(String serviceInstanceName, boolean required) {
+        return handleExceptions(() -> delegate.getServiceInstanceWithoutAuxiliaryContent(serviceInstanceName, required));
+    }
+
+    @Override
     public List<CloudServiceBinding> getServiceAppBindings(UUID serviceInstanceGuid) {
         return handleExceptions(() -> delegate.getServiceAppBindings(serviceInstanceGuid));
     }

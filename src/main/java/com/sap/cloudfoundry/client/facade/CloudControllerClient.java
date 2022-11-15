@@ -416,10 +416,27 @@ public interface CloudControllerClient {
      * Get a service instance.
      *
      * @param serviceInstanceName name of the service instance
-     * @param required if true, and organization is not found, throw an exception
+     * @param required if true, and service instance is not found, throw an exception
      * @return the service instance info
      */
     CloudServiceInstance getServiceInstance(String serviceInstanceName, boolean required);
+
+    /**
+     * Get a service instance.
+     *
+     * @param serviceInstanceName name of the service instance
+     * @return the service instance info
+     */
+    CloudServiceInstance getServiceInstanceWithoutAuxiliaryContent(String serviceInstanceName);
+
+    /**
+     * Get a service instance.
+     *
+     * @param serviceInstanceName name of the service instance
+     * @param required if true, and service instance is not found, throw an exception
+     * @return the service instance info
+     */
+    CloudServiceInstance getServiceInstanceWithoutAuxiliaryContent(String serviceInstanceName, boolean required);
 
     /**
      * Get the bindings for a particular service instance.
