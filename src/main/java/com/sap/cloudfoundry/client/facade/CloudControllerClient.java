@@ -441,13 +441,28 @@ public interface CloudControllerClient {
     /**
      * Get the bindings for a particular service instance.
      *
-     *
      * @param serviceInstanceGuid the GUID of the service instance
      * @return the bindings
      */
     List<CloudServiceBinding> getServiceAppBindings(UUID serviceInstanceGuid);
 
+    /**
+     * Get the binding between an application and a service instance.
+     *
+     * @param applicationId the GUID of the application
+     * @param serviceInstanceGuid the GUID of the service instance
+     * @return the binding
+     */
     CloudServiceBinding getServiceBindingForApplication(UUID applicationId, UUID serviceInstanceGuid);
+
+    /**
+     * Get the binding between an application and a service instance.
+     *
+     * @param applicationName the name of the application
+     * @param serviceInstanceName the name of the service instance
+     * @return the binding
+     */
+    CloudServiceBinding getServiceBindingForApplication(String applicationName, String serviceInstanceName);
 
     /**
      * Get all service instance parameters.

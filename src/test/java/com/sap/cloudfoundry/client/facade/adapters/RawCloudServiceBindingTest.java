@@ -2,7 +2,6 @@ package com.sap.cloudfoundry.client.facade.adapters;
 
 import java.util.UUID;
 
-import org.cloudfoundry.client.v3.servicebindings.ServiceBinding;
 import org.cloudfoundry.client.v3.servicebindings.ServiceBindingRelationships;
 import org.cloudfoundry.client.v3.servicebindings.ServiceBindingResource;
 import org.cloudfoundry.client.v3.servicebindings.ServiceBindingType;
@@ -37,7 +36,7 @@ class RawCloudServiceBindingTest {
                                               .build();
     }
 
-    private static ServiceBinding buildTestResource() {
+    private static ServiceBindingResource buildTestResource() {
         return ServiceBindingResource.builder()
                                      .id(RawCloudEntityTest.GUID_STRING)
                                      .createdAt(RawCloudEntityTest.CREATED_AT_STRING)

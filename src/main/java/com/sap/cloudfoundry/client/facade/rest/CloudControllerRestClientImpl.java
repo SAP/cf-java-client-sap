@@ -112,6 +112,7 @@ import org.cloudfoundry.client.v3.servicebindings.GetServiceBindingParametersRes
 import org.cloudfoundry.client.v3.servicebindings.ListServiceBindingsRequest;
 import org.cloudfoundry.client.v3.servicebindings.ServiceBinding;
 import org.cloudfoundry.client.v3.servicebindings.ServiceBindingRelationships;
+import org.cloudfoundry.client.v3.servicebindings.ServiceBindingResource;
 import org.cloudfoundry.client.v3.servicebindings.ServiceBindingType;
 import org.cloudfoundry.client.v3.servicebrokers.BasicAuthentication;
 import org.cloudfoundry.client.v3.servicebrokers.CreateServiceBrokerRequest;
@@ -242,7 +243,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     private static final Logger LOGGER = LoggerFactory.getLogger(CloudControllerRestClientImpl.class);
     private static final long PACKAGE_UPLOAD_JOB_POLLING_PERIOD = TimeUnit.SECONDS.toMillis(5);
     private static final Duration DELETE_JOB_TIMEOUT = Duration.ofMinutes(5);
-    private static final Duration BINDING_OPERATIONS_TIMEOUT = Duration.ofMinutes(10);
+    private static final Duration BINDING_OPERATIONS_TIMEOUT = Duration.ofMinutes(1);
     private static final int MAX_CHAR_LENGTH_FOR_PARAMS_IN_REQUEST = 4000;
     private static final List<String> CHARS_TO_ENCODE = List.of(",");
 
@@ -929,6 +930,12 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     @Override
     public CloudServiceBinding getServiceBindingForApplication(UUID applicationId, UUID serviceInstanceGuid) {
         return fetch(() -> getServiceBindingResourceByApplicationGuidAndServiceInstanceGuid(applicationId, serviceInstanceGuid),
+                     ImmutableRawCloudServiceBinding::of);
+    }
+
+    @Override
+    public CloudServiceBinding getServiceBindingForApplication(String applicationName, String serviceInstanceName) {
+        return fetch(() -> getServiceBindingByApplicationNameAndServiceInstanceName(applicationName, serviceInstanceName),
                      ImmutableRawCloudServiceBinding::of);
     }
 
@@ -1738,7 +1745,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return getGuids(bindings);
     }
 
-    private Flux<? extends ServiceBinding> getServiceBindingResourcesByServiceInstanceGuid(UUID serviceInstanceGuid) {
+    private Flux<? extends ServiceBindingResource> getServiceBindingResourcesByServiceInstanceGuid(UUID serviceInstanceGuid) {
         IntFunction<ListServiceBindingsRequest> pageRequestSupplier = page -> ListServiceBindingsRequest.builder()
                                                                                                         .serviceInstanceId(serviceInstanceGuid.toString())
                                                                                                         .type(ServiceBindingType.APPLICATION)
@@ -1748,8 +1755,8 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                         .list(pageRequestSupplier.apply(page)));
     }
 
-    private Mono<? extends ServiceBinding> getServiceBindingResourceByApplicationGuidAndServiceInstanceGuid(UUID applicationGuid,
-                                                                                                            UUID serviceInstanceGuid) {
+    private Mono<? extends ServiceBindingResource>
+            getServiceBindingResourceByApplicationGuidAndServiceInstanceGuid(UUID applicationGuid, UUID serviceInstanceGuid) {
         IntFunction<ListServiceBindingsRequest> pageRequestSupplier = page -> ListServiceBindingsRequest.builder()
                                                                                                         .applicationId(applicationGuid.toString())
                                                                                                         .serviceInstanceId(serviceInstanceGuid.toString())
@@ -1758,7 +1765,16 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return getApplicationServiceBindingResources(pageRequestSupplier).singleOrEmpty();
     }
 
-    private Flux<? extends ServiceBinding> getServiceBindingResourcesByApplicationGuid(UUID applicationGuid) {
+    private Mono<? extends ServiceBindingResource> getServiceBindingByApplicationNameAndServiceInstanceName(String applicationName,
+                                                                                                            String serviceInstanceName) {
+        IntFunction<ListServiceBindingsRequest> pageRequestSupplier = page -> ListServiceBindingsRequest.builder()
+                                                                                                        .appName(applicationName)
+                                                                                                        .serviceInstanceName(serviceInstanceName)
+                                                                                                        .build();
+        return getApplicationServiceBindingResources(pageRequestSupplier).singleOrEmpty();
+    }
+
+    private Flux<? extends ServiceBindingResource> getServiceBindingResourcesByApplicationGuid(UUID applicationGuid) {
         IntFunction<ListServiceBindingsRequest> pageRequestSupplier = page -> ListServiceBindingsRequest.builder()
                                                                                                         .applicationId(applicationGuid.toString())
                                                                                                         .page(page)
@@ -1766,7 +1782,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return getApplicationServiceBindingResources(pageRequestSupplier);
     }
 
-    private Flux<? extends ServiceBinding>
+    private Flux<? extends ServiceBindingResource>
             getApplicationServiceBindingResources(IntFunction<ListServiceBindingsRequest> pageRequestSupplier) {
         return PaginationUtils.requestClientV3Resources(page -> delegate.serviceBindingsV3()
                                                                         .list(pageRequestSupplier.apply(page)));
