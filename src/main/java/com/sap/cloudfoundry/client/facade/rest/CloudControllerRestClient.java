@@ -4,6 +4,7 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -49,9 +50,9 @@ public interface CloudControllerRestClient {
 
     void addRoute(String host, String domainName, String path);
 
-    void bindServiceInstance(String applicationName, String serviceInstanceName);
+    Optional<String> bindServiceInstance(String applicationName, String serviceInstanceName);
 
-    void bindServiceInstance(String applicationName, String serviceInstanceName, Map<String, Object> parameters);
+    Optional<String> bindServiceInstance(String applicationName, String serviceInstanceName, Map<String, Object> parameters);
 
     void createApplication(String applicationName, Staging staging, Integer disk, Integer memory, Metadata metadata,
                            Set<CloudRoute> routes);
@@ -86,9 +87,9 @@ public interface CloudControllerRestClient {
 
     String deleteServiceBroker(String name);
 
-    void deleteServiceBinding(String serviceInstanceName, String serviceKeyName);
+    Optional<String> deleteServiceBinding(String serviceInstanceName, String serviceKeyName);
 
-    void deleteServiceBinding(UUID bindingGuid);
+    Optional<String> deleteServiceBinding(UUID bindingGuid);
 
     CloudApplication getApplication(String applicationName);
 
@@ -212,9 +213,9 @@ public interface CloudControllerRestClient {
 
     void stopApplication(String applicationName);
 
-    void unbindServiceInstance(String applicationName, String serviceInstanceName);
+    Optional<String> unbindServiceInstance(String applicationName, String serviceInstanceName);
 
-    void unbindServiceInstance(UUID applicationGuid, UUID serviceInstanceGuid);
+    Optional<String> unbindServiceInstance(UUID applicationGuid, UUID serviceInstanceGuid);
 
     void updateApplicationDiskQuota(String applicationName, int disk);
 
