@@ -4,6 +4,7 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -62,8 +63,9 @@ public interface CloudControllerClient {
      *
      * @param applicationName the application name
      * @param serviceInstanceName the service instance name
+     * @return job id for async polling if present
      */
-    void bindServiceInstance(String applicationName, String serviceInstanceName);
+    Optional<String> bindServiceInstance(String applicationName, String serviceInstanceName);
 
     /**
      * Associate (provision) a service with an application.
@@ -72,9 +74,10 @@ public interface CloudControllerClient {
      * @param serviceInstanceName the service instance name
      * @param parameters the binding parameters
      * @param updateServicesCallback callback used for error handling
+     * @return job id for async polling if present
      */
-    void bindServiceInstance(String applicationName, String serviceInstanceName, Map<String, Object> parameters,
-                             ApplicationServicesUpdateCallback updateServicesCallback);
+    Optional<String> bindServiceInstance(String applicationName, String serviceInstanceName, Map<String, Object> parameters,
+                                         ApplicationServicesUpdateCallback updateServicesCallback);
 
     /**
      * Create application.
@@ -197,15 +200,17 @@ public interface CloudControllerClient {
      * 
      * @param serviceInstanceName name of service instance
      * @param serviceKeyName name of service key
+     * @return job id for async polling if present
      */
-    void deleteServiceBinding(String serviceInstanceName, String serviceKeyName);
+    Optional<String> deleteServiceBinding(String serviceInstanceName, String serviceKeyName);
 
     /**
      * Delete a service binding.
      * 
      * @param bindingGuid The GUID of the binding
+     * @return job id for async polling if present
      */
-    void deleteServiceBinding(UUID bindingGuid);
+    Optional<String> deleteServiceBinding(UUID bindingGuid);
 
     /**
      * Get cloud application with the specified name.
@@ -655,25 +660,28 @@ public interface CloudControllerClient {
      * @param applicationName the application name
      * @param serviceInstanceName the service instance name
      * @param applicationServicesUpdateCallback callback used for error handling
+     * @return job id for async polling if present
      */
-    void unbindServiceInstance(String applicationName, String serviceInstanceName,
-                               ApplicationServicesUpdateCallback applicationServicesUpdateCallback);
+    Optional<String> unbindServiceInstance(String applicationName, String serviceInstanceName,
+                                           ApplicationServicesUpdateCallback applicationServicesUpdateCallback);
 
     /**
      * Un-associate (unprovision) a service from an application.
      *
      * @param applicationName the application name
      * @param serviceInstanceName the service instance name
+     * @return job id for async polling if present
      */
-    void unbindServiceInstance(String applicationName, String serviceInstanceName);
+    Optional<String> unbindServiceInstance(String applicationName, String serviceInstanceName);
 
     /**
      * Un-associate (unprovision) a service from an application.
      *
      * @param applicationGuid the application guid
      * @param serviceInstanceGuid the service instance guid
+     * @return job id for async polling if present
      */
-    void unbindServiceInstance(UUID applicationGuid, UUID serviceInstanceGuid);
+    Optional<String> unbindServiceInstance(UUID applicationGuid, UUID serviceInstanceGuid);
 
     /**
      * Update application disk quota.

@@ -1,10 +1,10 @@
 package com.sap.cloudfoundry.client.facade;
 
-import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Supplier;
@@ -90,18 +90,19 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public void bindServiceInstance(String applicationName, String serviceInstanceName) {
-        handleExceptions(() -> delegate.bindServiceInstance(applicationName, serviceInstanceName));
+    public Optional<String> bindServiceInstance(String applicationName, String serviceInstanceName) {
+        return handleExceptions(() -> delegate.bindServiceInstance(applicationName, serviceInstanceName));
     }
 
     @Override
-    public void bindServiceInstance(String applicationName, String serviceInstanceName, Map<String, Object> parameters,
-                                    ApplicationServicesUpdateCallback updateServicesCallback) {
+    public Optional<String> bindServiceInstance(String applicationName, String serviceInstanceName, Map<String, Object> parameters,
+                                                ApplicationServicesUpdateCallback updateServicesCallback) {
         try {
-            handleExceptions(() -> delegate.bindServiceInstance(applicationName, serviceInstanceName, parameters));
+            return handleExceptions(() -> delegate.bindServiceInstance(applicationName, serviceInstanceName, parameters));
         } catch (CloudOperationException e) {
             updateServicesCallback.onError(e, applicationName, serviceInstanceName);
         }
+        return Optional.empty();
     }
 
     @Override
@@ -186,13 +187,13 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public void deleteServiceBinding(String serviceInstanceName, String serviceKeyName) {
-        handleExceptions(() -> delegate.deleteServiceBinding(serviceInstanceName, serviceKeyName));
+    public Optional<String> deleteServiceBinding(String serviceInstanceName, String serviceKeyName) {
+        return handleExceptions(() -> delegate.deleteServiceBinding(serviceInstanceName, serviceKeyName));
     }
 
     @Override
-    public void deleteServiceBinding(UUID bindingGuid) {
-        handleExceptions(() -> delegate.deleteServiceBinding(bindingGuid));
+    public Optional<String> deleteServiceBinding(UUID bindingGuid) {
+        return handleExceptions(() -> delegate.deleteServiceBinding(bindingGuid));
     }
 
     @Override
@@ -531,23 +532,24 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public void unbindServiceInstance(String applicationName, String serviceInstanceName,
-                                      ApplicationServicesUpdateCallback applicationServicesUpdateCallback) {
+    public Optional<String> unbindServiceInstance(String applicationName, String serviceInstanceName,
+                                                  ApplicationServicesUpdateCallback applicationServicesUpdateCallback) {
         try {
-            handleExceptions(() -> delegate.unbindServiceInstance(applicationName, serviceInstanceName));
+            return handleExceptions(() -> delegate.unbindServiceInstance(applicationName, serviceInstanceName));
         } catch (CloudOperationException e) {
             applicationServicesUpdateCallback.onError(e, applicationName, serviceInstanceName);
         }
+        return Optional.empty();
     }
 
     @Override
-    public void unbindServiceInstance(String applicationName, String serviceInstanceName) {
-        handleExceptions(() -> delegate.unbindServiceInstance(applicationName, serviceInstanceName));
+    public Optional<String> unbindServiceInstance(String applicationName, String serviceInstanceName) {
+        return handleExceptions(() -> delegate.unbindServiceInstance(applicationName, serviceInstanceName));
     }
 
     @Override
-    public void unbindServiceInstance(UUID applicationGuid, UUID serviceInstanceGuid) {
-        handleExceptions(() -> delegate.unbindServiceInstance(applicationGuid, serviceInstanceGuid));
+    public Optional<String> unbindServiceInstance(UUID applicationGuid, UUID serviceInstanceGuid) {
+        return handleExceptions(() -> delegate.unbindServiceInstance(applicationGuid, serviceInstanceGuid));
     }
 
     @Override
@@ -730,27 +732,9 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         }
     }
 
-    private void handleUploadExceptions(UploadRunnable runnable) throws IOException {
-        try {
-            runnable.run();
-        } catch (AbstractCloudFoundryException e) {
-            throw convertV3ClientException(e);
-        }
-    }
-
     private CloudOperationException convertV3ClientException(AbstractCloudFoundryException e) {
         HttpStatus httpStatus = HttpStatus.valueOf(e.getStatusCode());
         return new CloudOperationException(httpStatus, httpStatus.getReasonPhrase(), e.getMessage(), e);
-    }
-
-    /**
-     * Necessary, because upload methods can throw IOExceptions and the standard Runnable interface cannot.
-     */
-    @FunctionalInterface
-    private interface UploadRunnable {
-
-        void run() throws IOException;
-
     }
 
 }
