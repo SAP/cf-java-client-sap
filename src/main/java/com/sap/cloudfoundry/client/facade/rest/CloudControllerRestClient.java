@@ -63,9 +63,9 @@ public interface CloudControllerRestClient {
 
     CloudServiceKey createAndFetchServiceKey(CloudServiceKey keyModel, String serviceInstanceName);
 
-    void createServiceKey(CloudServiceKey keyModel, String serviceInstanceName);
+    Optional<String> createServiceKey(CloudServiceKey keyModel, String serviceInstanceName);
 
-    void createServiceKey(String serviceInstanceName, String serviceKeyName, Map<String, Object> parameters);
+    Optional<String> createServiceKey(String serviceInstanceName, String serviceKeyName, Map<String, Object> parameters);
 
     void createUserProvidedServiceInstance(CloudServiceInstance serviceInstance);
 
@@ -153,11 +153,13 @@ public interface CloudControllerRestClient {
 
     CloudServiceInstance getServiceInstanceWithoutAuxiliaryContent(String serviceInstanceName, boolean required);
 
+    CloudServiceBinding getServiceBinding(UUID serviceBindingGuid);
+
     List<CloudServiceBinding> getServiceAppBindings(UUID serviceInstanceGuid);
 
-    CloudServiceBinding getServiceBindingForApplication(UUID applicationId, UUID serviceInstanceGuid);
+    List<CloudServiceBinding> getAppBindings(UUID applicationGuid);
 
-    CloudServiceBinding getServiceBindingForApplication(String applicationName, String serviceInstanceName);
+    CloudServiceBinding getServiceBindingForApplication(UUID applicationId, UUID serviceInstanceGuid);
 
     CloudServiceBroker getServiceBroker(String name);
 

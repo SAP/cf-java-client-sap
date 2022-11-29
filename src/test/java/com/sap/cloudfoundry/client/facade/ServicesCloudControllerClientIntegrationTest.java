@@ -17,6 +17,7 @@ import java.text.MessageFormat;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -226,7 +227,7 @@ class ServicesCloudControllerClientIntegrationTest extends CloudControllerClient
                                                .getLastOperation();
         while (!lastOperation.getState()
                              .equals(ServiceOperation.State.SUCCEEDED)) {
-            Thread.sleep(TimeUnit.SECONDS.toMillis(1));
+            sleep(TimeUnit.SECONDS, 1);
             lastOperation = client.getServiceInstance(serviceInstanceName)
                                   .getLastOperation();
             if (lastOperation.getState()
@@ -314,16 +315,17 @@ class ServicesCloudControllerClientIntegrationTest extends CloudControllerClient
         int times = 0;
         while (serviceInstance != null) {
             if (times++ > 30) {
-                throw new AssertionError("Timeout when waiting for service deletion...");
+                fail(MessageFormat.format("Timeout when waiting for service deletion, error \"{0}\"", serviceInstance.getLastOperation()
+                                                                                                                     .getDescription()));
             }
-            Thread.sleep(TimeUnit.SECONDS.toMillis(1));
+            sleep(TimeUnit.SECONDS, 1);
             serviceInstance = client.getServiceInstance(serviceName, false);
         }
     }
 
     @Test
     @DisplayName("Create space scoped service broker")
-    void createSpaceScopedServiceBroker() throws InterruptedException {
+    void createSpaceScopedServiceBroker() {
         if (!pushedServiceBroker) {
             return;
         }
@@ -353,7 +355,7 @@ class ServicesCloudControllerClientIntegrationTest extends CloudControllerClient
 
     @Test
     @DisplayName("Update space scoped service broker")
-    void updateSpaceScopedServiceBroker() throws InterruptedException {
+    void updateSpaceScopedServiceBroker() {
         if (!pushedServiceBroker) {
             return;
         }
@@ -398,7 +400,7 @@ class ServicesCloudControllerClientIntegrationTest extends CloudControllerClient
 
     @Test
     @DisplayName("Delete space scoped service broker")
-    void deleteSpaceScopedServiceBroker() throws InterruptedException {
+    void deleteSpaceScopedServiceBroker() {
         if (!pushedServiceBroker) {
             return;
         }
@@ -448,12 +450,41 @@ class ServicesCloudControllerClientIntegrationTest extends CloudControllerClient
             assertEquals(2, serviceKeys.size());
             assertEquals(Map.of("test-key", "test-value"), findServiceKeyByName("successful-key", serviceKeys).getCredentials());
             assertEquals(Collections.emptyMap(), findServiceKeyByName("failed-key", serviceKeys).getCredentials());
-            serviceKeys.forEach(serviceKey -> client.deleteServiceBinding(serviceKey.getGuid()));
+            deleteServiceKeys(serviceKeys);
         } catch (Exception e) {
             fail(e);
         } finally {
             client.deleteServiceInstance(testServiceInstanceName);
             verifyServiceIsOrBeingDeleted(testServiceInstanceName);
+        }
+    }
+
+    private void deleteServiceKeys(List<CloudServiceKey> serviceKeys) {
+        serviceKeys.parallelStream()
+                   .map(serviceKey -> client.deleteServiceBinding(serviceKey.getGuid()))
+                   .filter(Optional::isPresent)
+                   .map(Optional::get)
+                   .forEach(this::waitAsyncJobToComplete);
+    }
+
+    private void waitAsyncJobToComplete(String jobId) {
+        CloudAsyncJob asyncJob = client.getAsyncJob(jobId);
+        JobState state = asyncJob.getState();
+        while (state == JobState.PROCESSING || state == JobState.POLLING) {
+            asyncJob = client.getAsyncJob(jobId);
+            state = asyncJob.getState();
+            sleep(TimeUnit.SECONDS, 1);
+        }
+        if (state == JobState.FAILED) {
+            fail(MessageFormat.format("Error while polling service key job \"{0}\"", asyncJob.getErrors()));
+        }
+    }
+
+    private static void sleep(TimeUnit timeUnit, int value) {
+        try {
+            Thread.sleep(timeUnit.toMillis(value));
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -557,10 +588,10 @@ class ServicesCloudControllerClientIntegrationTest extends CloudControllerClient
         return MessageFormat.format("https://{0}.{1}/{2}", IntegrationTestConstants.SERVICE_BROKER_HOST, domain, serviceBrokerEndpoint);
     }
 
-    private static void pollServiceBrokerOperation(String jobId, String serviceBrokerName) throws InterruptedException {
+    private static void pollServiceBrokerOperation(String jobId, String serviceBrokerName) {
         CloudAsyncJob job = client.getAsyncJob(jobId);
         while (job.getState() != JobState.COMPLETE && !hasAsyncJobFailed(job)) {
-            Thread.sleep(TimeUnit.SECONDS.toMillis(1));
+            sleep(TimeUnit.SECONDS, 1);
             job = client.getAsyncJob(jobId);
         }
         if (hasAsyncJobFailed(job)) {

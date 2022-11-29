@@ -1,7 +1,9 @@
 package com.sap.cloudfoundry.client.facade.adapters;
 
+import java.util.Map;
+
 import org.cloudfoundry.AllowNulls;
-import org.cloudfoundry.client.v3.servicebindings.ServiceBinding;
+import org.cloudfoundry.client.v3.servicebindings.ServiceBindingResource;
 import org.immutables.value.Value;
 
 import com.sap.cloudfoundry.client.facade.Nullable;
@@ -9,13 +11,12 @@ import com.sap.cloudfoundry.client.facade.domain.CloudServiceInstance;
 import com.sap.cloudfoundry.client.facade.domain.CloudServiceKey;
 import com.sap.cloudfoundry.client.facade.domain.Derivable;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudServiceKey;
-
-import java.util.Map;
+import com.sap.cloudfoundry.client.facade.domain.ServiceCredentialBindingOperation;
 
 @Value.Immutable
 public abstract class RawCloudServiceKey extends RawCloudEntity<CloudServiceKey> {
 
-    public abstract ServiceBinding getServiceBinding();
+    public abstract ServiceBindingResource getServiceBindingResource();
 
     @Nullable
     @AllowNulls
@@ -25,13 +26,15 @@ public abstract class RawCloudServiceKey extends RawCloudEntity<CloudServiceKey>
 
     @Override
     public CloudServiceKey derive() {
-        ServiceBinding serviceBinding = getServiceBinding();
+        ServiceBindingResource serviceBindingResource = getServiceBindingResource();
+        Derivable<CloudServiceInstance> serviceInstance = getServiceInstance();
         return ImmutableCloudServiceKey.builder()
-                                       .metadata(parseResourceMetadata(serviceBinding))
-                                       .v3Metadata(serviceBinding.getMetadata())
-                                       .name(serviceBinding.getName())
+                                       .metadata(parseResourceMetadata(serviceBindingResource))
+                                       .v3Metadata(serviceBindingResource.getMetadata())
+                                       .name(serviceBindingResource.getName())
                                        .credentials(getCredentials())
-                                       .serviceInstance(getServiceInstance().derive())
+                                       .serviceInstance(serviceInstance.derive())
+                                       .serviceKeyOperation(ServiceCredentialBindingOperation.from(serviceBindingResource.getLastOperation()))
                                        .build();
     }
 

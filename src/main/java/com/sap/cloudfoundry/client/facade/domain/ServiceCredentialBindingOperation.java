@@ -2,8 +2,10 @@ package com.sap.cloudfoundry.client.facade.domain;
 
 import java.text.MessageFormat;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 
+import org.cloudfoundry.client.v3.LastOperation;
 import org.immutables.value.Value;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -11,9 +13,9 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.sap.cloudfoundry.client.facade.Nullable;
 
 @Value.Immutable
-@JsonSerialize(as = ImmutableServiceBindingOperation.class)
-@JsonDeserialize(as = ImmutableServiceBindingOperation.class)
-public abstract class ServiceBindingOperation {
+@JsonSerialize(as = ImmutableServiceCredentialBindingOperation.class)
+@JsonDeserialize(as = ImmutableServiceCredentialBindingOperation.class)
+public abstract class ServiceCredentialBindingOperation {
 
     public abstract Type getType();
 
@@ -27,6 +29,23 @@ public abstract class ServiceBindingOperation {
 
     @Nullable
     public abstract LocalDateTime getUpdatedAt();
+
+    public static ServiceCredentialBindingOperation from(LastOperation lastOperation) {
+        String lastOperationType = lastOperation.getType();
+        String lastOperationState = lastOperation.getState();
+        String lastOperationDescription = lastOperation.getDescription();
+        String lastOperationCreatedAt = lastOperation.getCreatedAt();
+        String lastOperationUpdatedAt = lastOperation.getUpdatedAt();
+        return ImmutableServiceCredentialBindingOperation.builder()
+                                                         .type(ServiceCredentialBindingOperation.Type.fromString(lastOperationType))
+                                                         .state(ServiceCredentialBindingOperation.State.fromString(lastOperationState))
+                                                         .description(lastOperationDescription)
+                                                         .createdAt(LocalDateTime.parse(lastOperationCreatedAt,
+                                                                                        DateTimeFormatter.ISO_DATE_TIME))
+                                                         .updatedAt(LocalDateTime.parse(lastOperationUpdatedAt,
+                                                                                        DateTimeFormatter.ISO_DATE_TIME))
+                                                         .build();
+    }
 
     public enum Type {
         CREATE, DELETE;
