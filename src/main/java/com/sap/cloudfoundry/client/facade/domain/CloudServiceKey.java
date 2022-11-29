@@ -21,6 +21,9 @@ public abstract class CloudServiceKey extends CloudEntity implements Derivable<C
     @Nullable
     public abstract CloudServiceInstance getServiceInstance();
 
+    @Nullable
+    public abstract ServiceCredentialBindingOperation getServiceKeyOperation();
+
     @Override
     public CloudServiceKey derive() {
         return this;

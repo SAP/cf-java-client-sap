@@ -18,7 +18,8 @@ public abstract class CloudServiceBinding extends CloudEntity implements Derivab
 
     public abstract UUID getServiceInstanceGuid();
 
-    public abstract ServiceBindingOperation getServiceBindingOperation();
+    @Nullable
+    public abstract ServiceCredentialBindingOperation getServiceBindingOperation();
 
     @Override
     public CloudServiceBinding derive() {

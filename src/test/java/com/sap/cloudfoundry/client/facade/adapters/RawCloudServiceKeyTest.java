@@ -1,8 +1,10 @@
 package com.sap.cloudfoundry.client.facade.adapters;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.cloudfoundry.client.v3.LastOperation;
 import org.cloudfoundry.client.v3.servicebindings.ServiceBindingRelationships;
 import org.cloudfoundry.client.v3.servicebindings.ServiceBindingResource;
 import org.cloudfoundry.client.v3.servicebindings.ServiceBindingType;
@@ -12,6 +14,7 @@ import com.sap.cloudfoundry.client.facade.domain.CloudServiceInstance;
 import com.sap.cloudfoundry.client.facade.domain.CloudServiceKey;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudServiceInstance;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudServiceKey;
+import com.sap.cloudfoundry.client.facade.domain.ServiceCredentialBindingOperation;
 
 class RawCloudServiceKeyTest {
 
@@ -21,6 +24,7 @@ class RawCloudServiceKeyTest {
     private static final CloudServiceInstance SERVICE_INSTANCE = ImmutableCloudServiceInstance.builder()
                                                                                               .name(SERVICE_NAME)
                                                                                               .build();
+    private static final LastOperation LAST_OPERATION = buildLastOperation();
 
     @Test
     void testDerive() {
@@ -34,12 +38,13 @@ class RawCloudServiceKeyTest {
                                        .name(NAME)
                                        .credentials(CREDENTIALS)
                                        .serviceInstance(SERVICE_INSTANCE)
+                                       .serviceKeyOperation(ServiceCredentialBindingOperation.from(LAST_OPERATION))
                                        .build();
     }
 
     private static RawCloudServiceKey buildRawServiceKey() {
         return ImmutableRawCloudServiceKey.builder()
-                                          .serviceBinding(buildTestResource())
+                                          .serviceBindingResource(buildTestResource())
                                           .serviceInstance(SERVICE_INSTANCE)
                                           .credentials(CREDENTIALS)
                                           .build();
@@ -53,6 +58,7 @@ class RawCloudServiceKeyTest {
                                      .metadata(RawCloudEntityTest.V3_METADATA)
                                      .name(NAME)
                                      .type(ServiceBindingType.KEY)
+                                     .lastOperation(LAST_OPERATION)
                                      .relationships(ServiceBindingRelationships.builder()
                                                                                .serviceInstance(RawCloudEntityTest.buildToOneRelationship(""))
                                                                                .build())
@@ -65,6 +71,18 @@ class RawCloudServiceKeyTest {
         parameters.put("baz", false);
         parameters.put("qux", 3.141);
         return parameters;
+    }
+
+    private static LastOperation buildLastOperation() {
+        return LastOperation.builder()
+                            .state(ServiceCredentialBindingOperation.State.SUCCEEDED.toString())
+                            .type(ServiceCredentialBindingOperation.Type.CREATE.toString())
+                            .createdAt(LocalDateTime.now()
+                                                    .toString())
+                            .updatedAt(LocalDateTime.now()
+                                                    .toString())
+                            .description("Service key created")
+                            .build();
     }
 
 }

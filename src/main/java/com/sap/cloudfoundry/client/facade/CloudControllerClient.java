@@ -118,8 +118,9 @@ public interface CloudControllerClient {
      * 
      * @param keyModel service-key cloud object
      * @param serviceInstanceName name of related service instance
+     * @return job id for async polling if present
      */
-    void createServiceKey(CloudServiceKey keyModel, String serviceInstanceName);
+    Optional<String> createServiceKey(CloudServiceKey keyModel, String serviceInstanceName);
 
     /**
      * Create a service key.
@@ -127,8 +128,9 @@ public interface CloudControllerClient {
      * @param serviceInstanceName name of service instance
      * @param serviceKeyName name of service-key
      * @param parameters parameters of service-key
+     * @return job id for async polling if present
      */
-    void createServiceKey(String serviceInstanceName, String serviceKeyName, Map<String, Object> parameters);
+    Optional<String> createServiceKey(String serviceInstanceName, String serviceKeyName, Map<String, Object> parameters);
 
     /**
      * Create a user-provided service instance.
@@ -196,6 +198,14 @@ public interface CloudControllerClient {
     String deleteServiceBroker(String name);
 
     /**
+     * Get a service binding
+     *
+     * @param serviceBindingId the id of the service binding
+     * @return the service binding
+     */
+    CloudServiceBinding getServiceBinding(UUID serviceBindingId);
+
+    /**
      * Delete a service binding.
      * 
      * @param serviceInstanceName name of service instance
@@ -207,6 +217,15 @@ public interface CloudControllerClient {
     /**
      * Delete a service binding.
      * 
+     * @param bindingGuid The GUID of the binding
+     * @param serviceBindingOperationCallback callback used for error handling
+     * @return job id for async polling if present
+     */
+    Optional<String> deleteServiceBinding(UUID bindingGuid, ServiceBindingOperationCallback serviceBindingOperationCallback);
+
+    /**
+     * Delete a service binding.
+     *
      * @param bindingGuid The GUID of the binding
      * @return job id for async polling if present
      */
@@ -328,7 +347,7 @@ public interface CloudControllerClient {
      * Get the organization with the specified name.
      *
      * @param organizationName name of organization
-     * @return
+     * @return the cloud organization
      */
     CloudOrganization getOrganization(String organizationName);
 
@@ -337,7 +356,7 @@ public interface CloudControllerClient {
      *
      * @param organizationName name of organization
      * @param required if true, and organization is not found, throw an exception
-     * @return
+     * @return the cloud organization
      */
     CloudOrganization getOrganization(String organizationName, boolean required);
 
@@ -403,11 +422,17 @@ public interface CloudControllerClient {
     /**
      * Get all service brokers.
      *
-     * @return
+     * @return the service brokers
      */
     List<CloudServiceBroker> getServiceBrokers();
 
-    UUID getRequiredServiceInstanceGuid(String name);
+    /**
+     * Get the GUID of a service instance.
+     * 
+     * @param serviceInstanceName the name of the service instance
+     * @return the service instance GUID
+     */
+    UUID getRequiredServiceInstanceGuid(String serviceInstanceName);
 
     /**
      * Get a service instance.
@@ -452,6 +477,14 @@ public interface CloudControllerClient {
     List<CloudServiceBinding> getServiceAppBindings(UUID serviceInstanceGuid);
 
     /**
+     * Get the bindings for a particular application.
+     *
+     * @param applicationGuid the GUID of the application
+     * @return the bindings
+     */
+    List<CloudServiceBinding> getAppBindings(UUID applicationGuid);
+
+    /**
      * Get the binding between an application and a service instance.
      *
      * @param applicationId the GUID of the application
@@ -459,15 +492,6 @@ public interface CloudControllerClient {
      * @return the binding
      */
     CloudServiceBinding getServiceBindingForApplication(UUID applicationId, UUID serviceInstanceGuid);
-
-    /**
-     * Get the binding between an application and a service instance.
-     *
-     * @param applicationName the name of the application
-     * @param serviceInstanceName the name of the service instance
-     * @return the binding
-     */
-    CloudServiceBinding getServiceBindingForApplication(String applicationName, String serviceInstanceName);
 
     /**
      * Get all service instance parameters.

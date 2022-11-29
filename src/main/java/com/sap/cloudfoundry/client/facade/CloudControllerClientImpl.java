@@ -127,13 +127,13 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public void createServiceKey(CloudServiceKey keyModel, String serviceInstanceName) {
-        handleExceptions(() -> delegate.createServiceKey(keyModel, serviceInstanceName));
+    public Optional<String> createServiceKey(CloudServiceKey keyModel, String serviceInstanceName) {
+        return handleExceptions(() -> delegate.createServiceKey(keyModel, serviceInstanceName));
     }
 
     @Override
-    public void createServiceKey(String serviceInstanceName, String serviceKeyName, Map<String, Object> parameters) {
-        handleExceptions(() -> delegate.createServiceKey(serviceInstanceName, serviceKeyName, parameters));
+    public Optional<String> createServiceKey(String serviceInstanceName, String serviceKeyName, Map<String, Object> parameters) {
+        return handleExceptions(() -> delegate.createServiceKey(serviceInstanceName, serviceKeyName, parameters));
     }
 
     @Override
@@ -187,8 +187,23 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
+    public CloudServiceBinding getServiceBinding(UUID serviceBindingId) {
+        return handleExceptions(() -> delegate.getServiceBinding(serviceBindingId));
+    }
+
+    @Override
     public Optional<String> deleteServiceBinding(String serviceInstanceName, String serviceKeyName) {
         return handleExceptions(() -> delegate.deleteServiceBinding(serviceInstanceName, serviceKeyName));
+    }
+
+    @Override
+    public Optional<String> deleteServiceBinding(UUID bindingGuid, ServiceBindingOperationCallback serviceBindingOperationCallback) {
+        try {
+            return handleExceptions(() -> delegate.deleteServiceBinding(bindingGuid));
+        } catch (CloudOperationException e) {
+            serviceBindingOperationCallback.onError(e, bindingGuid);
+        }
+        return Optional.empty();
     }
 
     @Override
@@ -377,13 +392,13 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public CloudServiceBinding getServiceBindingForApplication(UUID applicationId, UUID serviceInstanceGuid) {
-        return handleExceptions(() -> delegate.getServiceBindingForApplication(applicationId, serviceInstanceGuid));
+    public List<CloudServiceBinding> getAppBindings(UUID applicationGuid) {
+        return handleExceptions(() -> delegate.getAppBindings(applicationGuid));
     }
 
     @Override
-    public CloudServiceBinding getServiceBindingForApplication(String applicationName, String serviceInstanceName) {
-        return handleExceptions(() -> delegate.getServiceBindingForApplication(applicationName, serviceInstanceName));
+    public CloudServiceBinding getServiceBindingForApplication(UUID applicationId, UUID serviceInstanceGuid) {
+        return handleExceptions(() -> delegate.getServiceBindingForApplication(applicationId, serviceInstanceGuid));
     }
 
     @Override
