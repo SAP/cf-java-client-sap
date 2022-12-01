@@ -7,7 +7,9 @@ import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.HEALTH
 import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.HEALTH_CHECK_TIMEMOUT;
 import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.JAVA_BUILDPACK;
 import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.MEMORY_IN_MB;
+import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.NODEJS_BUILDPACK;
 import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.STATICFILE_APPLICATION_CONTENT;
+import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.STATICFILE_BUILDPACK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -79,13 +81,7 @@ class ApplicationsCloudControllerClientIntegrationTest extends CloudControllerCl
                                           .healthCheckHttpEndpoint(HEALTH_CHECK_ENDPOINT)
                                           .healthCheckTimeout(HEALTH_CHECK_TIMEMOUT)
                                           .build();
-        CloudRoute route = ImmutableCloudRoute.builder()
-                                              .host(APPLICATION_HOST)
-                                              .domain(ImmutableCloudDomain.builder()
-                                                                          .name(DEFAULT_DOMAIN)
-                                                                          .build())
-                                              .url(APPLICATION_HOST + "." + DEFAULT_DOMAIN)
-                                              .build();
+        CloudRoute route = getImmutableCloudRoute();
         try {
             verifyApplicationWillBeCreated(applicationName, staging, Set.of(route));
         } catch (Exception e) {
@@ -272,13 +268,7 @@ class ApplicationsCloudControllerClientIntegrationTest extends CloudControllerCl
             verifyApplicationWillBeCreated(applicationName, ImmutableStaging.builder()
                                                                             .dockerInfo(dockerInfo)
                                                                             .build(),
-                                           Set.of(ImmutableCloudRoute.builder()
-                                                                     .host(APPLICATION_HOST)
-                                                                     .domain(ImmutableCloudDomain.builder()
-                                                                                                 .name(DEFAULT_DOMAIN)
-                                                                                                 .build())
-                                                                     .url(APPLICATION_HOST + "." + DEFAULT_DOMAIN)
-                                                                     .build()));
+                                           Set.of(getImmutableCloudRoute()));
             UUID applicationGuid = client.getApplicationGuid(applicationName);
             CloudPackage dockerPackage = client.createDockerPackage(applicationGuid, dockerInfo);
             assertEquals(CloudPackage.Type.DOCKER, dockerPackage.getType());
@@ -324,13 +314,7 @@ class ApplicationsCloudControllerClientIntegrationTest extends CloudControllerCl
             verifyApplicationWillBeCreated(applicationName, ImmutableStaging.builder()
                                                                             .dockerInfo(dockerInfo)
                                                                             .build(),
-                                           Set.of(ImmutableCloudRoute.builder()
-                                                                     .host(APPLICATION_HOST)
-                                                                     .domain(ImmutableCloudDomain.builder()
-                                                                                                 .name(DEFAULT_DOMAIN)
-                                                                                                 .build())
-                                                                     .url(APPLICATION_HOST + "." + DEFAULT_DOMAIN)
-                                                                     .build()));
+                                           Set.of(getImmutableCloudRoute()));
             UUID applicationGuid = client.getApplicationGuid(applicationName);
             CloudPackage dockerPackage = client.createDockerPackage(applicationGuid, dockerInfo);
             List<CloudPackage> packagesForApplication = client.getPackagesForApplication(applicationGuid);
@@ -392,6 +376,23 @@ class ApplicationsCloudControllerClientIntegrationTest extends CloudControllerCl
         }
     }
 
+    @Test
+    @DisplayName("Create application with multiple buildpacks")
+    void createApplicationWithBuildpacks() {
+        String applicationName = "test-app-16";
+        List<String> buildpacks = List.of(JAVA_BUILDPACK, NODEJS_BUILDPACK, STATICFILE_BUILDPACK);
+        Staging staging = ImmutableStaging.builder()
+                                          .addAllBuildpacks(buildpacks)
+                                          .build();
+        try {
+            verifyApplicationWillBeCreated(applicationName, staging, Set.of(getImmutableCloudRoute()));
+        } catch (Exception e) {
+            fail(e);
+        } finally {
+            client.deleteApplication(applicationName);
+        }
+    }
+
     private void verifyApplicationWillBeCreated(String applicationName, Staging staging, Set<CloudRoute> routes) {
         client.createApplication(applicationName, staging, DISK_IN_MB, MEMORY_IN_MB, null, routes);
         assertApplicationExists(ImmutableCloudApplication.builder()
@@ -419,13 +420,17 @@ class ApplicationsCloudControllerClientIntegrationTest extends CloudControllerCl
     private void createAndVerifyDefaultApplication(String applicationName) {
         verifyApplicationWillBeCreated(applicationName, ImmutableStaging.builder()
                                                                         .build(),
-                                       Set.of(ImmutableCloudRoute.builder()
-                                                                 .host(APPLICATION_HOST)
-                                                                 .domain(ImmutableCloudDomain.builder()
-                                                                                             .name(DEFAULT_DOMAIN)
-                                                                                             .build())
-                                                                 .url(APPLICATION_HOST + "." + DEFAULT_DOMAIN)
-                                                                 .build()));
+                                       Set.of(getImmutableCloudRoute()));
+    }
+
+    private ImmutableCloudRoute getImmutableCloudRoute() {
+        return ImmutableCloudRoute.builder()
+                                  .host(APPLICATION_HOST)
+                                  .domain(ImmutableCloudDomain.builder()
+                                                              .name(DEFAULT_DOMAIN)
+                                                              .build())
+                                  .url(APPLICATION_HOST + "." + DEFAULT_DOMAIN)
+                                  .build();
     }
 
     private static Path getStaticfileApplicationContentPath() {

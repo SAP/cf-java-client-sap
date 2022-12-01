@@ -19,6 +19,9 @@ import java.util.function.IntFunction;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
 import org.cloudfoundry.AbstractCloudFoundryException;
 import org.cloudfoundry.client.CloudFoundryClient;
 import org.cloudfoundry.client.v3.BuildpackData;
@@ -230,9 +233,6 @@ import com.sap.cloudfoundry.client.facade.oauth2.OAuthClient;
 import com.sap.cloudfoundry.client.facade.util.JobV3Util;
 import com.sap.cloudfoundry.client.facade.util.UriUtil;
 
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-
 /**
  * Abstract implementation of the CloudControllerClient intended to serve as the base.
  *
@@ -374,10 +374,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     private BuildpackData createBuildpackData(Staging staging) {
         BuildpackData.Builder buildpackDataBuilder = BuildpackData.builder()
                                                                   .stack(staging.getStackName());
-        if (staging.getBuildpack() != null) {
-            buildpackDataBuilder.buildpack(staging.getBuildpack());
-        }
-        if (shouldUpdateWithV3Buildpacks(staging)) {
+        if (staging.getBuildpacks() != null) {
             buildpackDataBuilder.addAllBuildpacks(staging.getBuildpacks());
         }
         return buildpackDataBuilder.build();
@@ -467,11 +464,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                     .invocationTimeout(staging.getInvocationTimeout())
                                     .build())
                           .build();
-    }
-
-    private boolean shouldUpdateWithV3Buildpacks(Staging staging) {
-        return staging.getBuildpacks()
-                      .size() > 1;
     }
 
     @Override
