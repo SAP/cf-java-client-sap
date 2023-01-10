@@ -91,6 +91,8 @@ public interface CloudControllerRestClient {
 
     Optional<String> deleteServiceBinding(UUID bindingGuid);
 
+    void deleteServiceBindingSync(UUID bindingGuid);
+
     CloudApplication getApplication(String applicationName);
 
     CloudApplication getApplication(String applicationName, boolean required);
