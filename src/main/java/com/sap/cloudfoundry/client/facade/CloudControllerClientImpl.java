@@ -211,6 +211,12 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         return handleExceptions(() -> delegate.deleteServiceBinding(bindingGuid));
     }
 
+    // TODO: delete after 1 tact
+    @Override
+    public void deleteServiceBindingSync(UUID bindingGuid) {
+        handleExceptions(() -> delegate.deleteServiceBindingSync(bindingGuid));
+    }
+
     @Override
     public CloudApplication getApplication(String applicationName) {
         return handleExceptions(() -> delegate.getApplication(applicationName));

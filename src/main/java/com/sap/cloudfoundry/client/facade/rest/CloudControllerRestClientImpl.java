@@ -1345,6 +1345,11 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
+    public void deleteServiceBindingSync(UUID bindingGuid) {
+        doDeleteServiceBindingSync(bindingGuid);
+    }
+
+    @Override
     public Optional<String> unbindServiceInstance(UUID applicationGuid, UUID serviceInstanceGuid) {
         return doUnbindServiceInstance(applicationGuid, serviceInstanceGuid);
     }
@@ -2097,6 +2102,15 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                   .build())
                                .block();
         return Optional.ofNullable(jobId);
+    }
+
+    private void doDeleteServiceBindingSync(UUID guid) {
+        delegate.serviceBindingsV3()
+                .delete(DeleteServiceBindingRequest.builder()
+                                                   .serviceBindingId(guid.toString())
+                                                   .build())
+                .flatMap(jobId -> JobV3Util.waitForCompletion(delegate, BINDING_OPERATIONS_TIMEOUT, jobId))
+                .block();
     }
 
     private CloudDomain findDomainByName(String name, boolean required) {
