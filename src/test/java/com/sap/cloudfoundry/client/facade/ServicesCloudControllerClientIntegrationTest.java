@@ -80,7 +80,7 @@ class ServicesCloudControllerClientIntegrationTest extends CloudControllerClient
     }
 
     @AfterAll
-    static void tearDown() throws InterruptedException {
+    static void tearDown() {
         if (pushedServiceBroker) {
             String jobId = client.deleteServiceBroker(IntegrationTestConstants.SERVICE_BROKER_NAME);
             pollServiceBrokerOperation(jobId, IntegrationTestConstants.SERVICE_BROKER_NAME);
@@ -152,7 +152,7 @@ class ServicesCloudControllerClientIntegrationTest extends CloudControllerClient
     @ParameterizedTest
     @MethodSource
     @DisplayName("Create a managed service")
-    void createManagedService(String serviceName, String brokerName) throws InterruptedException {
+    void createManagedService(String serviceName, String brokerName) {
         if (!pushedServiceBroker) {
             return;
         }
@@ -178,7 +178,7 @@ class ServicesCloudControllerClientIntegrationTest extends CloudControllerClient
 
     @Test
     @DisplayName("Update managed service")
-    void updateManagedService() throws InterruptedException {
+    void updateManagedService() {
         if (!pushedServiceBroker) {
             return;
         }
@@ -221,7 +221,7 @@ class ServicesCloudControllerClientIntegrationTest extends CloudControllerClient
         }
     }
 
-    private void pollLastOperationServiceInstanceState(String serviceInstanceName) throws InterruptedException {
+    private void pollLastOperationServiceInstanceState(String serviceInstanceName) {
         int times = 0;
         ServiceOperation lastOperation = client.getServiceInstance(serviceInstanceName)
                                                .getLastOperation();
@@ -251,8 +251,7 @@ class ServicesCloudControllerClientIntegrationTest extends CloudControllerClient
     @ParameterizedTest
     @MethodSource
     @DisplayName("Get service instance")
-    void getServiceInstance(String serviceName, boolean required, Class<? extends Exception> expectedException, boolean expectedService)
-        throws InterruptedException {
+    void getServiceInstance(String serviceName, boolean required, Class<? extends Exception> expectedException, boolean expectedService) {
         if (!pushedServiceBroker) {
             return;
         }
@@ -310,7 +309,7 @@ class ServicesCloudControllerClientIntegrationTest extends CloudControllerClient
         }
     }
 
-    private void verifyServiceIsOrBeingDeleted(String serviceName) throws InterruptedException {
+    private void verifyServiceIsOrBeingDeleted(String serviceName) {
         CloudServiceInstance serviceInstance = client.getServiceInstance(serviceName, false);
         int times = 0;
         while (serviceInstance != null) {
@@ -425,7 +424,7 @@ class ServicesCloudControllerClientIntegrationTest extends CloudControllerClient
     }
 
     @Test
-    void testFetchingOfFailedServiceKey() throws InterruptedException {
+    void testFetchingOfFailedServiceKey() {
         if (!pushedServiceBroker) {
             return;
         }
@@ -438,7 +437,7 @@ class ServicesCloudControllerClientIntegrationTest extends CloudControllerClient
                                                                       .build());
             pollLastOperationServiceInstanceState(testServiceInstanceName);
             CloudServiceInstance serviceInstance = client.getServiceInstance(testServiceInstanceName);
-            client.createServiceKey(testServiceInstanceName, "successful-key", Map.of("test-key", "test-value"));
+            createServiceKeySync(testServiceInstanceName, "successful-key", Map.of("test-key", "test-value"));
             FailConfiguration failConfiguration = ImmutableFailConfiguration.builder()
                                                                             .operationType(FailConfiguration.OperationType.CREATE_SERVICE_KEY.toString())
                                                                             .addInstanceId(serviceInstance.getGuid())
@@ -450,10 +449,11 @@ class ServicesCloudControllerClientIntegrationTest extends CloudControllerClient
             assertEquals(2, serviceKeys.size());
             assertEquals(Map.of("test-key", "test-value"), findServiceKeyByName("successful-key", serviceKeys).getCredentials());
             assertEquals(Collections.emptyMap(), findServiceKeyByName("failed-key", serviceKeys).getCredentials());
-            deleteServiceKeys(serviceKeys);
         } catch (Exception e) {
             fail(e);
         } finally {
+            List<CloudServiceKey> serviceKeys = client.getServiceKeys(testServiceInstanceName);
+            deleteServiceKeys(serviceKeys);
             client.deleteServiceInstance(testServiceInstanceName);
             verifyServiceIsOrBeingDeleted(testServiceInstanceName);
         }
@@ -476,7 +476,7 @@ class ServicesCloudControllerClientIntegrationTest extends CloudControllerClient
             sleep(TimeUnit.SECONDS, 1);
         }
         if (state == JobState.FAILED) {
-            fail(MessageFormat.format("Error while polling service key job \"{0}\"", asyncJob.getErrors()));
+            throw new IllegalStateException(MessageFormat.format("Error while polling service key job \"{0}\"", asyncJob.getErrors()));
         }
     }
 
@@ -490,7 +490,7 @@ class ServicesCloudControllerClientIntegrationTest extends CloudControllerClient
 
     private void configureServiceBroker(List<FailConfiguration> failConfigurations) {
         ServiceBrokerConfiguration serviceBrokerConfiguration = ImmutableServiceBrokerConfiguration.builder()
-                                                                                                   .asyncDurationInMillis(100)
+                                                                                                   .asyncDurationForServiceCredentialBindingsInMillis(100)
                                                                                                    .failConfigurations(failConfigurations)
                                                                                                    .build();
         String serviceBrokerUrl = getServiceBrokerUrl(SERVICE_BROKER_ENDPOINT, client.getDefaultDomain()
@@ -507,10 +507,15 @@ class ServicesCloudControllerClientIntegrationTest extends CloudControllerClient
 
     private void createServiceKeySilently(String serviceInstanceName, String serviceKeyName, Map<String, Object> serviceKeyCredentials) {
         try {
-            client.createServiceKey(serviceInstanceName, serviceKeyName, serviceKeyCredentials);
-        } catch (CloudOperationException e) {
+            createServiceKeySync(serviceInstanceName, serviceKeyName, serviceKeyCredentials);
+        } catch (Exception e) {
             // Do nothing
         }
+    }
+
+    private void createServiceKeySync(String serviceInstanceName, String serviceKeyName, Map<String, Object> serviceKeyCredentials) {
+        Optional<String> jobId = client.createServiceKey(serviceInstanceName, serviceKeyName, serviceKeyCredentials);
+        jobId.ifPresent(this::waitAsyncJobToComplete);
     }
 
     private CloudServiceKey findServiceKeyByName(String keyName, List<CloudServiceKey> serviceKeys) {
@@ -568,7 +573,7 @@ class ServicesCloudControllerClientIntegrationTest extends CloudControllerClient
         return JsonUtil.convertToJson(entry.getValue(), true);
     }
 
-    private static void createServiceBroker(String serviceBrokerName, String serviceBrokerEndpoint) throws InterruptedException {
+    private static void createServiceBroker(String serviceBrokerName, String serviceBrokerEndpoint) {
         String defaultDomain = client.getDefaultDomain()
                                      .getName();
         String targetSpaceGuid = target.getMetadata()

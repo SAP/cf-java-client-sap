@@ -2,6 +2,7 @@ package com.sap.cloudfoundry.client.facade.broker;
 
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.immutables.value.Value;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -14,10 +15,20 @@ import com.sap.cloudfoundry.client.facade.Nullable;
 public interface ServiceBrokerConfiguration {
 
     @Nullable
+    @JsonProperty("asyncDuration")
     Integer getAsyncDurationInMillis();
 
     @Nullable
+    @JsonProperty("syncDuration")
     Integer getSyncDurationInMillis();
+
+    @Nullable
+    @JsonProperty("asyncDurationForServiceCredentialBindings")
+    Integer getAsyncDurationForServiceCredentialBindingsInMillis();
+
+    @Nullable
+    @JsonProperty("syncDurationForServiceCredentialBindings")
+    Integer getSyncDurationForServiceCredentialBindingsInMillis();
 
     List<FailConfiguration> getFailConfigurations();
 
