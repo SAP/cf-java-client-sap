@@ -3,11 +3,11 @@ package com.sap.cloudfoundry.client.facade.rest;
 import com.sap.cloudfoundry.client.facade.CloudCredentials;
 import com.sap.cloudfoundry.client.facade.adapters.CloudFoundryClientFactory;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableCloudFoundryClientFactory;
+import com.sap.cloudfoundry.client.facade.adapters.LogCacheClient;
 import com.sap.cloudfoundry.client.facade.domain.CloudSpace;
 import com.sap.cloudfoundry.client.facade.oauth2.OAuthClient;
 import com.sap.cloudfoundry.client.facade.util.RestUtil;
 import org.cloudfoundry.client.CloudFoundryClient;
-import org.cloudfoundry.doppler.DopplerClient;
 import org.cloudfoundry.reactor.ConnectionContext;
 import org.immutables.value.Value;
 import org.springframework.util.StringUtils;
@@ -75,13 +75,13 @@ public abstract class CloudControllerRestClientFactory {
                                                   Map<String, String> requestTags) {
         WebClient webClient = createWebClient(credentials, oAuthClient, exchangeFilters);
         CloudFoundryClient delegate = getCloudFoundryClientFactory().createClient(controllerUrl, oAuthClient, requestTags);
-        DopplerClient dopplerClient = getCloudFoundryClientFactory().createDopplerClient(controllerUrl, oAuthClient, requestTags);
+        LogCacheClient logCacheClient = getCloudFoundryClientFactory().createLogCacheClient(controllerUrl, oAuthClient, requestTags);
         return new CloudControllerRestClientImpl(controllerUrl,
                                                  credentials,
                                                  webClient,
                                                  oAuthClient,
                                                  delegate,
-                                                 dopplerClient,
+                                                 logCacheClient,
                                                  target);
     }
 

@@ -1,11 +1,10 @@
 package com.sap.cloudfoundry.client.facade.adapters;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
-import org.cloudfoundry.doppler.Envelope;
-import org.cloudfoundry.doppler.LogMessage;
-import org.cloudfoundry.doppler.MessageType;
 import org.immutables.value.Value;
 
 import com.sap.cloudfoundry.client.facade.domain.ApplicationLog;
@@ -16,28 +15,34 @@ import com.sap.cloudfoundry.client.facade.domain.ImmutableApplicationLog;
 public abstract class RawApplicationLog implements Derivable<ApplicationLog> {
 
     @Value.Parameter
-    public abstract Envelope getEnvelope();
+    public abstract ApplicationLogEntity getLog();
 
     @Override
     public ApplicationLog derive() {
-        Envelope envelope = getEnvelope();
-        LogMessage logMessage = envelope.getLogMessage();
+        ApplicationLogEntity log = getLog();
         return ImmutableApplicationLog.builder()
-                                      .applicationGuid(logMessage.getApplicationId())
-                                      .message(logMessage.getMessage())
-                                      .timestamp(fromLogTimestamp(logMessage))
-                                      .messageType(fromLogMessageType(logMessage))
-                                      .sourceId(logMessage.getSourceInstance())
-                                      .sourceName(logMessage.getSourceType())
+                                      .applicationGuid(log.getSourceId())
+                                      .message(decodeLogPayload(log.getLogBody()
+                                                                   .getMessage()))
+                                      .timestamp(fromLogTimestamp(log.getTimestamp()))
+                                      .messageType(fromLogMessageType(log.getLogBody()
+                                                                         .getMessageType()))
+                                      .sourceName(log.getTags()
+                                                     .get("source_type"))
                                       .build();
     }
 
-    private static Date fromLogTimestamp(LogMessage logMessage) {
-        return new Date(TimeUnit.NANOSECONDS.toMillis(logMessage.getTimestamp()));
+    private static String decodeLogPayload(String base64Encoded) {
+        var result = Base64.getDecoder()
+                           .decode(base64Encoded.getBytes(StandardCharsets.UTF_8));
+        return new String(result, StandardCharsets.UTF_8);
     }
 
-    private static ApplicationLog.MessageType fromLogMessageType(LogMessage logMessage) {
-        return logMessage.getMessageType() == MessageType.OUT ? ApplicationLog.MessageType.STDOUT :
-                ApplicationLog.MessageType.STDERR;
+    private static Date fromLogTimestamp(String timestamp) {
+        return new Date(TimeUnit.NANOSECONDS.toMillis(Long.parseLong(timestamp)));
+    }
+
+    private static ApplicationLog.MessageType fromLogMessageType(String messageType) {
+        return "OUT".equals(messageType) ? ApplicationLog.MessageType.STDOUT : ApplicationLog.MessageType.STDERR;
     }
 }
