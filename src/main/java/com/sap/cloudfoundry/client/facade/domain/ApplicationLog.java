@@ -19,8 +19,6 @@ public abstract class ApplicationLog implements Comparable<ApplicationLog> {
 
     public abstract MessageType getMessageType();
 
-    public abstract String getSourceId();
-
     public abstract String getSourceName();
 
     @Override

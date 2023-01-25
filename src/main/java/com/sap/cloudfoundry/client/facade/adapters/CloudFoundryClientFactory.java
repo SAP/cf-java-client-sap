@@ -8,11 +8,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 import org.cloudfoundry.client.CloudFoundryClient;
-import org.cloudfoundry.doppler.DopplerClient;
 import org.cloudfoundry.reactor.ConnectionContext;
 import org.cloudfoundry.reactor.DefaultConnectionContext;
 import org.cloudfoundry.reactor.client.ReactorCloudFoundryClient;
-import org.cloudfoundry.reactor.doppler.ReactorDopplerClient;
 import org.immutables.value.Value;
 
 import com.sap.cloudfoundry.client.facade.oauth2.OAuthClient;
@@ -42,12 +40,13 @@ public abstract class CloudFoundryClientFactory {
                                         .build();
     }
 
-    public DopplerClient createDopplerClient(URL controllerUrl, OAuthClient oAuthClient, Map<String, String> requestTags) {
-        return ReactorDopplerClient.builder()
-                                   .connectionContext(getOrCreateConnectionContext(controllerUrl.getHost()))
-                                   .tokenProvider(oAuthClient.getTokenProvider())
-                                   .requestTags(requestTags)
-                                   .build();
+    public LogCacheClient createLogCacheClient(URL controllerUrl, OAuthClient oAuthClient, Map<String, String> requestTags) {
+        String logCacheApi = controllerUrl.toString()
+                                          .replace("api", "log-cache");
+        return new LogCacheClient(getOrCreateConnectionContext(controllerUrl.getHost()),
+                                  logCacheApi,
+                                  oAuthClient.getTokenProvider(),
+                                  requestTags);
     }
 
     public ConnectionContext getOrCreateConnectionContext(String controllerApiHost) {

@@ -150,8 +150,6 @@ import org.cloudfoundry.client.v3.tasks.CreateTaskRequest;
 import org.cloudfoundry.client.v3.tasks.GetTaskRequest;
 import org.cloudfoundry.client.v3.tasks.ListTasksRequest;
 import org.cloudfoundry.client.v3.tasks.Task;
-import org.cloudfoundry.doppler.DopplerClient;
-import org.cloudfoundry.doppler.RecentLogsRequest;
 import org.cloudfoundry.util.PaginationUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -188,6 +186,7 @@ import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudTask;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawInstancesInfo;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawUserRole;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawV3CloudServiceInstance;
+import com.sap.cloudfoundry.client.facade.adapters.LogCacheClient;
 import com.sap.cloudfoundry.client.facade.domain.ApplicationLog;
 import com.sap.cloudfoundry.client.facade.domain.BitsData;
 import com.sap.cloudfoundry.client.facade.domain.CloudApplication;
@@ -253,7 +252,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     private CloudSpace target;
 
     private CloudFoundryClient delegate;
-    private DopplerClient dopplerClient;
+    private LogCacheClient logCacheClient;
 
     /**
      * Only for unit tests. This works around the fact that the initialize method is called within the constructor and hence can not be
@@ -268,7 +267,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     public CloudControllerRestClientImpl(URL controllerUrl, CloudCredentials credentials, WebClient webClient, OAuthClient oAuthClient,
-                                         CloudFoundryClient delegate, DopplerClient dopplerClient, CloudSpace target) {
+                                         CloudFoundryClient delegate, LogCacheClient logCacheClient, CloudSpace target) {
         Assert.notNull(controllerUrl, "CloudControllerUrl cannot be null");
         Assert.notNull(webClient, "WebClient cannot be null");
         Assert.notNull(oAuthClient, "OAuthClient cannot be null");
@@ -279,7 +278,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         this.oAuthClient = oAuthClient;
         this.target = target;
         this.delegate = delegate;
-        this.dopplerClient = dopplerClient;
+        this.logCacheClient = logCacheClient;
     }
 
     @Override
@@ -887,11 +886,8 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public List<ApplicationLog> getRecentLogs(UUID applicationGuid) {
-        RecentLogsRequest request = RecentLogsRequest.builder()
-                                                     .applicationId(applicationGuid.toString())
-                                                     .build();
-        return fetchFlux(() -> dopplerClient.recentLogs(request), ImmutableRawApplicationLog::of).collectSortedList()
-                                                                                                 .block();
+        return fetchFlux(() -> logCacheClient.getRecentLogs(applicationGuid), ImmutableRawApplicationLog::of).collectList()
+                                                                                                             .block();
     }
 
     @Override
