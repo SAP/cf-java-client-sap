@@ -232,9 +232,6 @@ public interface CloudControllerClient {
      */
     Optional<String> deleteServiceBinding(UUID bindingGuid);
 
-    // TODO: delete after 1 tact
-    void deleteServiceBindingSync(UUID bindingGuid);
-
     /**
      * Get cloud application with the specified name.
      *
