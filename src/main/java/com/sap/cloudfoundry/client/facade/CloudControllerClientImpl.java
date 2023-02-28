@@ -2,6 +2,7 @@ package com.sap.cloudfoundry.client.facade;
 
 import java.net.URL;
 import java.nio.file.Path;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -338,13 +339,13 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public List<ApplicationLog> getRecentLogs(String applicationName) {
-        return handleExceptions(() -> delegate.getRecentLogs(applicationName));
+    public List<ApplicationLog> getRecentLogs(String applicationName, LocalDateTime offset) {
+        return handleExceptions(() -> delegate.getRecentLogs(applicationName, offset));
     }
 
     @Override
-    public List<ApplicationLog> getRecentLogs(UUID applicationGuid) {
-        return handleExceptions(() -> delegate.getRecentLogs(applicationGuid));
+    public List<ApplicationLog> getRecentLogs(UUID applicationGuid, LocalDateTime offset) {
+        return handleExceptions(() -> delegate.getRecentLogs(applicationGuid, offset));
     }
 
     @Override

@@ -1,9 +1,11 @@
 package com.sap.cloudfoundry.client.facade.adapters;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Base64;
-import java.util.Date;
-import java.util.concurrent.TimeUnit;
 
 import org.immutables.value.Value;
 
@@ -24,7 +26,7 @@ public abstract class RawApplicationLog implements Derivable<ApplicationLog> {
                                       .applicationGuid(log.getSourceId())
                                       .message(decodeLogPayload(log.getLogBody()
                                                                    .getMessage()))
-                                      .timestamp(fromLogTimestamp(log.getTimestamp()))
+                                      .timestamp(fromLogTimestamp(log.getTimestampInNanoseconds()))
                                       .messageType(fromLogMessageType(log.getLogBody()
                                                                          .getMessageType()))
                                       .sourceName(log.getTags()
@@ -38,8 +40,10 @@ public abstract class RawApplicationLog implements Derivable<ApplicationLog> {
         return new String(result, StandardCharsets.UTF_8);
     }
 
-    private static Date fromLogTimestamp(String timestamp) {
-        return new Date(TimeUnit.NANOSECONDS.toMillis(Long.parseLong(timestamp)));
+    private static LocalDateTime fromLogTimestamp(long timestampNanos) {
+        Duration duration = Duration.ofNanos(timestampNanos);
+        Instant instant = Instant.ofEpochSecond(duration.getSeconds(), duration.getNano());
+        return LocalDateTime.ofInstant(instant, ZoneId.of("UTC"));
     }
 
     private static ApplicationLog.MessageType fromLogMessageType(String messageType) {
