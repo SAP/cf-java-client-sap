@@ -1,9 +1,11 @@
 package com.sap.cloudfoundry.client.facade.adapters;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Base64;
-import java.util.Date;
-import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.Test;
 
@@ -29,7 +31,7 @@ class RawApplicationLogTest {
         return ImmutableApplicationLog.builder()
                                       .applicationGuid(APPLICATION_GUID)
                                       .message(LOG_MESSAGE_TEXT)
-                                      .timestamp(new Date(TimeUnit.NANOSECONDS.toMillis(TIMESTAMP)))
+                                      .timestamp(LocalDateTime.ofInstant(Instant.ofEpochMilli(TIMESTAMP), ZoneId.of("UTC")))
                                       .messageType(ApplicationLog.MessageType.STDOUT)
                                       .sourceName(SOURCE_TYPE)
                                       .build();
@@ -41,11 +43,12 @@ class RawApplicationLogTest {
                                                                            .putTag("source_type", SOURCE_TYPE)
                                                                            .sourceId(APPLICATION_GUID)
                                                                            .instanceId(INDEX)
-                                                                           .timestamp(Long.toString(TIMESTAMP))
+                                                                           .timestampInNanoseconds(Duration.ofMillis(TIMESTAMP)
+                                                                                                           .toNanos())
                                                                            .logBody(ImmutableLogBody.builder()
-                                                                                   .message(encodeBase64(LOG_MESSAGE_TEXT))
-                                                                                   .messageType(LOG_MESSAGE_TYPE)
-                                                                                   .build())
+                                                                                                    .message(encodeBase64(LOG_MESSAGE_TEXT))
+                                                                                                    .messageType(LOG_MESSAGE_TYPE)
+                                                                                                    .build())
                                                                            .build())
                                          .build();
     }

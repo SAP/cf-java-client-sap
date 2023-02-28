@@ -2,6 +2,7 @@ package com.sap.cloudfoundry.client.facade;
 
 import java.net.URL;
 import java.nio.file.Path;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -385,7 +386,7 @@ public interface CloudControllerClient {
      * @param applicationName the name of the application
      * @return the list of recent log entries
      */
-    List<ApplicationLog> getRecentLogs(String applicationName);
+    List<ApplicationLog> getRecentLogs(String applicationName, LocalDateTime offset);
 
     /**
      * Get recent log entries.
@@ -395,7 +396,7 @@ public interface CloudControllerClient {
      * @param applicationGuid the guid of the application
      * @return the list of recent log entries
      */
-    List<ApplicationLog> getRecentLogs(UUID applicationGuid);
+    List<ApplicationLog> getRecentLogs(UUID applicationGuid, LocalDateTime offset);
 
     /**
      * Get the info for all routes for a domain.

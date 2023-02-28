@@ -1,6 +1,6 @@
 package com.sap.cloudfoundry.client.facade.domain;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 
 import org.immutables.value.Value;
 
@@ -15,7 +15,7 @@ public abstract class ApplicationLog implements Comparable<ApplicationLog> {
 
     public abstract String getMessage();
 
-    public abstract Date getTimestamp();
+    public abstract LocalDateTime getTimestamp();
 
     public abstract MessageType getMessageType();
 
@@ -28,7 +28,7 @@ public abstract class ApplicationLog implements Comparable<ApplicationLog> {
 
     @Override
     public String toString() {
-        return String.format("%s [%s] %s (%s, %s)", getApplicationGuid(), getTimestamp(), getMessage(), getMessageType(),
-                getSourceName());
+        return String.format("%s [%s] %s (%s, %s)", getApplicationGuid(), getTimestamp(), getMessage(),
+                             getMessageType(), getSourceName());
     }
 }

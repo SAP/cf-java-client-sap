@@ -4,6 +4,7 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.text.MessageFormat;
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -879,15 +880,15 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public List<ApplicationLog> getRecentLogs(String applicationName) {
+    public List<ApplicationLog> getRecentLogs(String applicationName, LocalDateTime offset) {
         UUID appGuid = getRequiredApplicationGuid(applicationName);
-        return getRecentLogs(appGuid);
+        return getRecentLogs(appGuid, offset);
     }
 
     @Override
-    public List<ApplicationLog> getRecentLogs(UUID applicationGuid) {
-        return fetchFlux(() -> logCacheClient.getRecentLogs(applicationGuid), ImmutableRawApplicationLog::of).collectList()
-                                                                                                             .block();
+    public List<ApplicationLog> getRecentLogs(UUID applicationGuid, LocalDateTime offset) {
+        return fetchFlux(() -> logCacheClient.getRecentLogs(applicationGuid, offset), ImmutableRawApplicationLog::of).collectSortedList()
+                                                                                                                     .block();
     }
 
     @Override

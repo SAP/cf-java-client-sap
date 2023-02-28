@@ -2,6 +2,7 @@ package com.sap.cloudfoundry.client.facade.rest;
 
 import java.net.URL;
 import java.nio.file.Path;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -139,9 +140,9 @@ public interface CloudControllerRestClient {
 
     List<CloudDomain> getPrivateDomains();
 
-    List<ApplicationLog> getRecentLogs(String applicationName);
+    List<ApplicationLog> getRecentLogs(String applicationName, LocalDateTime offset);
 
-    List<ApplicationLog> getRecentLogs(UUID applicationGuid);
+    List<ApplicationLog> getRecentLogs(UUID applicationGuid, LocalDateTime offset);
 
     List<CloudRoute> getRoutes(String domainName);
 
