@@ -43,10 +43,7 @@ public abstract class CloudFoundryClientFactory {
     public LogCacheClient createLogCacheClient(URL controllerUrl, OAuthClient oAuthClient, Map<String, String> requestTags) {
         String logCacheApi = controllerUrl.toString()
                                           .replace("api", "log-cache");
-        return new LogCacheClient(getOrCreateConnectionContext(controllerUrl.getHost()),
-                                  logCacheApi,
-                                  oAuthClient.getTokenProvider(),
-                                  requestTags);
+        return new LogCacheClient(logCacheApi, oAuthClient, requestTags);
     }
 
     public ConnectionContext getOrCreateConnectionContext(String controllerApiHost) {
