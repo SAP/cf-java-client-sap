@@ -19,6 +19,7 @@ open module com.sap.cloudfoundry.client.facade {
     requires reactor.netty.http;
     requires org.apache.commons.logging;
     requires org.reactivestreams;
+    requires java.net.http;
 
     requires static java.compiler;
     requires static org.immutables.value;
