@@ -150,6 +150,8 @@ public interface CloudControllerRestClient {
 
     CloudServiceInstance getServiceInstance(String serviceInstanceName, boolean required);
 
+    String getServiceInstanceName(UUID serviceInstanceGuid);
+
     CloudServiceInstance getServiceInstanceWithoutAuxiliaryContent(String serviceInstanceName);
 
     CloudServiceInstance getServiceInstanceWithoutAuxiliaryContent(String serviceInstanceName, boolean required);

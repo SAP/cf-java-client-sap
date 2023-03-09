@@ -453,6 +453,14 @@ public interface CloudControllerClient {
     CloudServiceInstance getServiceInstance(String serviceInstanceName, boolean required);
 
     /**
+     * Get a service instance name.
+     *
+     * @param serviceInstanceGuid GUID of the service instance
+     * @return the service instance name
+     */
+    String getServiceInstanceName(UUID serviceInstanceGuid);
+
+    /**
      * Get a service instance.
      *
      * @param serviceInstanceName name of the service instance
