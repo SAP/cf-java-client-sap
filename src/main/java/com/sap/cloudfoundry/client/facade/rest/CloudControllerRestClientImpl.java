@@ -121,9 +121,11 @@ import org.cloudfoundry.client.v3.serviceinstances.CreateServiceInstanceRequest;
 import org.cloudfoundry.client.v3.serviceinstances.DeleteServiceInstanceRequest;
 import org.cloudfoundry.client.v3.serviceinstances.GetManagedServiceParametersRequest;
 import org.cloudfoundry.client.v3.serviceinstances.GetManagedServiceParametersResponse;
+import org.cloudfoundry.client.v3.serviceinstances.GetServiceInstanceRequest;
 import org.cloudfoundry.client.v3.serviceinstances.GetUserProvidedCredentialsRequest;
 import org.cloudfoundry.client.v3.serviceinstances.GetUserProvidedCredentialsResponse;
 import org.cloudfoundry.client.v3.serviceinstances.ListServiceInstancesRequest;
+import org.cloudfoundry.client.v3.serviceinstances.ServiceInstance;
 import org.cloudfoundry.client.v3.serviceinstances.ServiceInstanceRelationships;
 import org.cloudfoundry.client.v3.serviceinstances.ServiceInstanceResource;
 import org.cloudfoundry.client.v3.serviceinstances.ServiceInstanceType;
@@ -1086,6 +1088,12 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
+    public String getServiceInstanceName(UUID serviceInstanceGuid) {
+        return getServiceInstanceByGuid(serviceInstanceGuid).block()
+                                                            .getName();
+    }
+
+    @Override
     public CloudServiceInstance getServiceInstanceWithoutAuxiliaryContent(String serviceInstanceName) {
         return getServiceInstanceWithoutAuxiliaryContent(serviceInstanceName, true);
     }
@@ -1724,6 +1732,13 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                                                           .page(page)
                                                                                                           .build();
         return getServiceInstanceResources(pageRequestSupplier);
+    }
+
+    private Mono<? extends ServiceInstance> getServiceInstanceByGuid(UUID serviceInstanceGuid) {
+        return delegate.serviceInstancesV3()
+                       .get(GetServiceInstanceRequest.builder()
+                                                     .serviceInstanceId(serviceInstanceGuid.toString())
+                                                     .build());
     }
 
     private Mono<ServiceInstanceResource> getServiceInstanceResourceByName(String name) {

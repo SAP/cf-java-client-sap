@@ -383,6 +383,11 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
+    public String getServiceInstanceName(UUID serviceInstanceGuid) {
+        return handleExceptions(() -> delegate.getServiceInstanceName(serviceInstanceGuid));
+    }
+
+    @Override
     public CloudServiceInstance getServiceInstanceWithoutAuxiliaryContent(String serviceInstanceName) {
         return handleExceptions(() -> delegate.getServiceInstanceWithoutAuxiliaryContent(serviceInstanceName));
     }
