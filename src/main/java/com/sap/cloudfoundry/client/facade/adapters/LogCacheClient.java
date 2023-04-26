@@ -13,6 +13,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.Executors;
 
 import com.sap.cloudfoundry.client.facade.CloudException;
 import com.sap.cloudfoundry.client.facade.CloudOperationException;
@@ -32,25 +33,29 @@ public class LogCacheClient {
 
     private static final ObjectMapper mapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
                                                                  .configure(DeserializationFeature.UNWRAP_ROOT_VALUE, true);
-    private final HttpClient client;
     private final String logCacheApi;
     private final OAuthClient oAuthClient;
     private final Map<String, String> requestTags;
 
     public LogCacheClient(String logCacheApi, OAuthClient oAuthClient, Map<String, String> requestTags) {
-        this.client = HttpClient.newBuilder()
-                                .followRedirects(HttpClient.Redirect.NORMAL)
-                                .connectTimeout(Duration.ofMinutes(30))
-                                .build();
         this.logCacheApi = logCacheApi;
         this.oAuthClient = oAuthClient;
         this.requestTags = requestTags;
     }
 
     public Flux<ApplicationLogEntity> getRecentLogs(UUID applicationGuid, LocalDateTime offset) {
+        //We create a new client every time to not keep a live reference to the object for the lifetime of the
+        // LogCacheClient. A SelectorManager thread is spawned for each HttpClient and if the client is a class field
+        // it was observed that the references are kept for the lifetime of the JVM and the threads exceeded 2.1K.
+        // (2.1K SelectorManager threads -> 2.1K HttpClients)
+        var client = HttpClient.newBuilder()
+                               .executor(Executors.newSingleThreadExecutor())
+                               .followRedirects(HttpClient.Redirect.NORMAL)
+                               .connectTimeout(Duration.ofMinutes(30))
+                               .build();
         HttpRequest request = buildGetLogsRequest(applicationGuid, offset);
 
-        HttpResponse<InputStream> response = sendRequest(request);
+        HttpResponse<InputStream> response = sendRequest(client, request);
 
         if (response.statusCode() / 100 != 2) {
             var status = HttpStatus.valueOf(response.statusCode());
@@ -83,7 +88,7 @@ public class LogCacheClient {
                                    .toUri();
     }
 
-    private HttpResponse<InputStream> sendRequest(HttpRequest request) {
+    private HttpResponse<InputStream> sendRequest(HttpClient client, HttpRequest request) {
         try {
             return client.send(request, BodyHandlers.ofInputStream());
         } catch (IOException | InterruptedException e) {
