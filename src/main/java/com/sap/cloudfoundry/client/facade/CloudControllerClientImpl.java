@@ -589,11 +589,6 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public void updateApplicationMetadata(UUID guid, Metadata metadata) {
-        handleExceptions(() -> delegate.updateApplicationMetadata(guid, metadata));
-    }
-
-    @Override
     public List<CloudServiceInstance> getServiceInstancesWithoutAuxiliaryContentByNames(List<String> names) {
         return handleExceptions(() -> delegate.getServiceInstancesWithoutAuxiliaryContentByNames(names));
     }
@@ -614,8 +609,18 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
+    public void updateApplicationMetadata(UUID guid, Metadata metadata) {
+        handleExceptions(() -> delegate.updateApplicationMetadata(guid, metadata));
+    }
+
+    @Override
     public void updateServiceInstanceMetadata(UUID guid, Metadata metadata) {
         handleExceptions(() -> delegate.updateServiceInstanceMetadata(guid, metadata));
+    }
+
+    @Override
+    public void updateServiceBindingMetadata(UUID guid, Metadata metadata) {
+        handleExceptions(() -> delegate.updateServiceBindingMetadata(guid, metadata));
     }
 
     @Override
