@@ -290,6 +290,8 @@ public interface CloudControllerRestClient {
 
     void updateServiceInstanceMetadata(UUID guid, Metadata metadata);
 
+    void updateServiceBindingMetadata(UUID guid, Metadata metadata);
+
     DropletInfo getCurrentDropletForApplication(UUID applicationGuid);
 
     CloudPackage getPackage(UUID packageGuid);

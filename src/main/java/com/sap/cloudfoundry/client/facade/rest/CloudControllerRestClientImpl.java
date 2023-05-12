@@ -111,6 +111,7 @@ import org.cloudfoundry.client.v3.servicebindings.ListServiceBindingsRequest;
 import org.cloudfoundry.client.v3.servicebindings.ServiceBindingRelationships;
 import org.cloudfoundry.client.v3.servicebindings.ServiceBindingResource;
 import org.cloudfoundry.client.v3.servicebindings.ServiceBindingType;
+import org.cloudfoundry.client.v3.servicebindings.UpdateServiceBindingRequest;
 import org.cloudfoundry.client.v3.servicebrokers.BasicAuthentication;
 import org.cloudfoundry.client.v3.servicebrokers.CreateServiceBrokerRequest;
 import org.cloudfoundry.client.v3.servicebrokers.DeleteServiceBrokerRequest;
@@ -1483,6 +1484,16 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         delegate.serviceInstancesV3()
                 .update(UpdateServiceInstanceRequest.builder()
                                                     .serviceInstanceId(guid.toString())
+                                                    .metadata(metadata)
+                                                    .build())
+                .block();
+    }
+
+    @Override
+    public void updateServiceBindingMetadata(UUID guid, org.cloudfoundry.client.v3.Metadata metadata) {
+        delegate.serviceBindingsV3()
+                .update(UpdateServiceBindingRequest.builder()
+                                                    .serviceBindingId(guid.toString())
                                                     .metadata(metadata)
                                                     .build())
                 .block();

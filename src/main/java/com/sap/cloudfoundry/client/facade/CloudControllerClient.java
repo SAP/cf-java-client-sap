@@ -839,13 +839,15 @@ public interface CloudControllerClient {
 
     void updateApplicationMetadata(UUID guid, Metadata metadata);
 
+    void updateServiceInstanceMetadata(UUID guid, Metadata metadata);
+
+    void updateServiceBindingMetadata(UUID guid, Metadata metadata);
+
     List<CloudServiceInstance> getServiceInstancesWithoutAuxiliaryContentByNames(List<String> names);
 
     List<CloudServiceInstance> getServiceInstancesByMetadataLabelSelector(String labelSelector);
 
     List<CloudServiceInstance> getServiceInstancesWithoutAuxiliaryContentByMetadataLabelSelector(String labelSelector);
-
-    void updateServiceInstanceMetadata(UUID guid, Metadata metadata);
 
     DropletInfo getCurrentDropletForApplication(UUID applicationGuid);
 
