@@ -729,7 +729,7 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public List<UserRole> getUserRolesBySpaceAndUser(UUID spaceGuid, UUID userGuid) {
+    public Set<UserRole> getUserRolesBySpaceAndUser(UUID spaceGuid, UUID userGuid) {
         return handleExceptions(() -> delegate.getUserRolesBySpaceAndUser(spaceGuid, userGuid));
     }
 

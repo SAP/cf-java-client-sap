@@ -855,7 +855,7 @@ public interface CloudControllerClient {
 
     List<CloudPackage> getPackagesForApplication(UUID applicationGuid);
 
-    List<UserRole> getUserRolesBySpaceAndUser(UUID spaceGuid, UUID userGuid);
+    Set<UserRole> getUserRolesBySpaceAndUser(UUID spaceGuid, UUID userGuid);
 
     CloudPackage createDockerPackage(UUID applicationGuid, DockerInfo dockerInfo);
 
