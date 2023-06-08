@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -1632,8 +1633,10 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public List<UserRole> getUserRolesBySpaceAndUser(UUID spaceGuid, UUID userGuid) {
-        return fetchList(() -> getRoles(spaceGuid, userGuid), ImmutableRawUserRole::of);
+    public Set<UserRole> getUserRolesBySpaceAndUser(UUID spaceGuid, UUID userGuid) {
+        Supplier<Set<UserRole>> setFactory = () -> EnumSet.noneOf(UserRole.class);
+        return fetchFlux(() -> getRoles(spaceGuid, userGuid), ImmutableRawUserRole::of).collect(Collectors.toCollection(setFactory))
+                                                                                       .block();
     }
 
     public CloudPackage createDockerPackage(UUID applicationGuid, DockerInfo dockerInfo) {
