@@ -1,8 +1,6 @@
 package com.sap.cloudfoundry.client.facade;
 
-import java.net.URL;
 import java.nio.file.Path;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -11,13 +9,11 @@ import java.util.UUID;
 
 import org.cloudfoundry.client.v3.Metadata;
 
-import com.sap.cloudfoundry.client.facade.domain.ApplicationLog;
 import com.sap.cloudfoundry.client.facade.domain.CloudApplication;
 import com.sap.cloudfoundry.client.facade.domain.CloudAsyncJob;
 import com.sap.cloudfoundry.client.facade.domain.CloudBuild;
 import com.sap.cloudfoundry.client.facade.domain.CloudDomain;
 import com.sap.cloudfoundry.client.facade.domain.CloudEvent;
-import com.sap.cloudfoundry.client.facade.domain.CloudOrganization;
 import com.sap.cloudfoundry.client.facade.domain.CloudPackage;
 import com.sap.cloudfoundry.client.facade.domain.CloudProcess;
 import com.sap.cloudfoundry.client.facade.domain.CloudRoute;
@@ -36,13 +32,14 @@ import com.sap.cloudfoundry.client.facade.domain.ServicePlanVisibility;
 import com.sap.cloudfoundry.client.facade.domain.Staging;
 import com.sap.cloudfoundry.client.facade.domain.Upload;
 import com.sap.cloudfoundry.client.facade.domain.UserRole;
-import com.sap.cloudfoundry.client.facade.oauth2.OAuth2AccessTokenWithAdditionalInfo;
 
 /**
  * The interface defining operations making up the Cloud Foundry Java client's API.
  *
  */
 public interface CloudControllerClient {
+
+    CloudSpace getTarget();
 
     /**
      * Add a private domain in the current organization.
@@ -139,16 +136,6 @@ public interface CloudControllerClient {
      * @param serviceInstance cloud service instance info
      */
     void createUserProvidedServiceInstance(CloudServiceInstance serviceInstance);
-
-    /**
-     * Delete all applications.
-     */
-    void deleteAllApplications();
-
-    /**
-     * Delete all service instances.
-     */
-    void deleteAllServiceInstances();
 
     /**
      * Delete application.
@@ -310,13 +297,6 @@ public interface CloudControllerClient {
     List<CloudApplication> getApplications();
 
     /**
-     * Get the URL used for the cloud controller.
-     *
-     * @return the cloud controller URL
-     */
-    URL getCloudControllerUrl();
-
-    /**
      * Gets the default domain for the current org, which is the first shared domain.
      *
      * @return the default domain
@@ -345,55 +325,11 @@ public interface CloudControllerClient {
     List<CloudEvent> getEvents();
 
     /**
-     * Get the organization with the specified name.
-     *
-     * @param organizationName name of organization
-     * @return the cloud organization
-     */
-    CloudOrganization getOrganization(String organizationName);
-
-    /**
-     * Get the organization with the specified name.
-     *
-     * @param organizationName name of organization
-     * @param required if true, and organization is not found, throw an exception
-     * @return the cloud organization
-     */
-    CloudOrganization getOrganization(String organizationName, boolean required);
-
-    /**
-     * Get all organizations for the current cloud. This method has poor performance when there are a lot of organizations.
-     *
-     * @return list of organizations
-     */
-    List<CloudOrganization> getOrganizations();
-
-    /**
      * Get list of all private domains.
      *
      * @return list of private domains
      */
     List<CloudDomain> getPrivateDomains();
-
-    /**
-     * Stream recent log entries.
-     *
-     * Stream logs that were recently produced for an app.
-     *
-     * @param applicationName the name of the application
-     * @return the list of recent log entries
-     */
-    List<ApplicationLog> getRecentLogs(String applicationName, LocalDateTime offset);
-
-    /**
-     * Get recent log entries.
-     *
-     * Get logs that were recently produced for an app.
-     *
-     * @param applicationGuid the guid of the application
-     * @return the list of recent log entries
-     */
-    List<ApplicationLog> getRecentLogs(UUID applicationGuid, LocalDateTime offset);
 
     /**
      * Get the info for all routes for a domain.
@@ -563,63 +499,11 @@ public interface CloudControllerClient {
     List<CloudServiceOffering> getServiceOfferings();
 
     /**
-     * Get all service instances in the currently targeted space. This method has EXTREMELY poor performance for spaces with a lot of
-     * service instances.
-     *
-     * @return list of service instances
-     */
-    List<CloudServiceInstance> getServiceInstances();
-
-    /**
      * Get list of all shared domains.
      *
      * @return list of shared domains
      */
     List<CloudDomain> getSharedDomains();
-
-    /**
-     * Get space name with the specified GUID.
-     * 
-     */
-    CloudSpace getSpace(UUID spaceGuid);
-
-    /**
-     * Get space name with the specified name.
-     * 
-     */
-    CloudSpace getSpace(String organizationName, String spaceName);
-
-    /**
-     * Get space name with the specified name.
-     * 
-     */
-    CloudSpace getSpace(String organizationName, String spaceName, boolean required);
-
-    /**
-     * Get space name with the specified name.
-     * 
-     */
-    CloudSpace getSpace(String spaceName);
-
-    /**
-     * Get space name with the specified name.
-     * 
-     */
-    CloudSpace getSpace(String spaceName, boolean required);
-
-    /**
-     * Get all spaces for the current cloud. This method has EXTREMELY poor performance when there are a lot of spaces.
-     *
-     * @return list of spaces
-     */
-    List<CloudSpace> getSpaces();
-
-    /**
-     * Get list of CloudSpaces for organization.
-     *
-     * @return List of CloudSpace objects containing the space info
-     */
-    List<CloudSpace> getSpaces(String organizationName);
 
     /**
      * Get a stack by name.
@@ -644,18 +528,6 @@ public interface CloudControllerClient {
      * @return the list of available stacks
      */
     List<CloudStack> getStacks();
-
-    /**
-     * Login using the credentials already set for the client.
-     *
-     * @return authentication token
-     */
-    OAuth2AccessTokenWithAdditionalInfo login();
-
-    /**
-     * Logout closing the current session.
-     */
-    void logout();
 
     /**
      * Rename an application.

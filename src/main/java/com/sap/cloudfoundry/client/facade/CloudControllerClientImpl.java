@@ -2,7 +2,6 @@ package com.sap.cloudfoundry.client.facade;
 
 import java.net.URL;
 import java.nio.file.Path;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -15,13 +14,11 @@ import org.cloudfoundry.client.v3.Metadata;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.Assert;
 
-import com.sap.cloudfoundry.client.facade.domain.ApplicationLog;
 import com.sap.cloudfoundry.client.facade.domain.CloudApplication;
 import com.sap.cloudfoundry.client.facade.domain.CloudAsyncJob;
 import com.sap.cloudfoundry.client.facade.domain.CloudBuild;
 import com.sap.cloudfoundry.client.facade.domain.CloudDomain;
 import com.sap.cloudfoundry.client.facade.domain.CloudEvent;
-import com.sap.cloudfoundry.client.facade.domain.CloudOrganization;
 import com.sap.cloudfoundry.client.facade.domain.CloudPackage;
 import com.sap.cloudfoundry.client.facade.domain.CloudProcess;
 import com.sap.cloudfoundry.client.facade.domain.CloudRoute;
@@ -40,7 +37,6 @@ import com.sap.cloudfoundry.client.facade.domain.ServicePlanVisibility;
 import com.sap.cloudfoundry.client.facade.domain.Staging;
 import com.sap.cloudfoundry.client.facade.domain.Upload;
 import com.sap.cloudfoundry.client.facade.domain.UserRole;
-import com.sap.cloudfoundry.client.facade.oauth2.OAuth2AccessTokenWithAdditionalInfo;
 import com.sap.cloudfoundry.client.facade.rest.CloudControllerRestClient;
 import com.sap.cloudfoundry.client.facade.rest.CloudControllerRestClientFactory;
 import com.sap.cloudfoundry.client.facade.rest.ImmutableCloudControllerRestClientFactory;
@@ -56,13 +52,8 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     /**
      * Construct client without a default organization and space.
      */
-
     public CloudControllerClientImpl(URL controllerUrl, CloudCredentials credentials) {
         this(controllerUrl, credentials, null, false);
-    }
-
-    public CloudControllerClientImpl(URL controllerUrl, CloudCredentials credentials, boolean trustSelfSignedCerts) {
-        this(controllerUrl, credentials, null, trustSelfSignedCerts);
     }
 
     public CloudControllerClientImpl(URL controllerUrl, CloudCredentials credentials, CloudSpace target, boolean trustSelfSignedCerts) {
@@ -78,6 +69,11 @@ public class CloudControllerClientImpl implements CloudControllerClient {
      */
     public CloudControllerClientImpl(CloudControllerRestClient delegate) {
         this.delegate = delegate;
+    }
+
+    @Override
+    public CloudSpace getTarget() {
+        return delegate.getTarget();
     }
 
     @Override
@@ -140,16 +136,6 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     @Override
     public void createUserProvidedServiceInstance(CloudServiceInstance serviceInstance) {
         handleExceptions(() -> delegate.createUserProvidedServiceInstance(serviceInstance));
-    }
-
-    @Override
-    public void deleteAllApplications() {
-        handleExceptions(() -> delegate.deleteAllApplications());
-    }
-
-    @Override
-    public void deleteAllServiceInstances() {
-        handleExceptions(() -> delegate.deleteAllServiceInstances());
     }
 
     @Override
@@ -288,11 +274,6 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public URL getCloudControllerUrl() {
-        return delegate.getControllerUrl();
-    }
-
-    @Override
     public CloudDomain getDefaultDomain() {
         return handleExceptions(() -> delegate.getDefaultDomain());
     }
@@ -313,33 +294,8 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public CloudOrganization getOrganization(String organizationName) {
-        return handleExceptions(() -> delegate.getOrganization(organizationName));
-    }
-
-    @Override
-    public CloudOrganization getOrganization(String organizationName, boolean required) {
-        return handleExceptions(() -> delegate.getOrganization(organizationName, required));
-    }
-
-    @Override
-    public List<CloudOrganization> getOrganizations() {
-        return handleExceptions(() -> delegate.getOrganizations());
-    }
-
-    @Override
     public List<CloudDomain> getPrivateDomains() {
         return handleExceptions(() -> delegate.getPrivateDomains());
-    }
-
-    @Override
-    public List<ApplicationLog> getRecentLogs(String applicationName, LocalDateTime offset) {
-        return handleExceptions(() -> delegate.getRecentLogs(applicationName, offset));
-    }
-
-    @Override
-    public List<ApplicationLog> getRecentLogs(UUID applicationGuid, LocalDateTime offset) {
-        return handleExceptions(() -> delegate.getRecentLogs(applicationGuid, offset));
     }
 
     @Override
@@ -453,11 +409,6 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public List<CloudServiceInstance> getServiceInstances() {
-        return handleExceptions(() -> delegate.getServiceInstances());
-    }
-
-    @Override
     public List<CloudServiceInstance> getServiceInstancesByMetadataLabelSelector(String labelSelector) {
         return handleExceptions(() -> delegate.getServiceInstancesByMetadataLabelSelector(labelSelector));
     }
@@ -473,41 +424,6 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public CloudSpace getSpace(UUID spaceGuid) {
-        return handleExceptions(() -> delegate.getSpace(spaceGuid));
-    }
-
-    @Override
-    public CloudSpace getSpace(String organizationName, String spaceName) {
-        return handleExceptions(() -> delegate.getSpace(organizationName, spaceName));
-    }
-
-    @Override
-    public CloudSpace getSpace(String organizationName, String spaceName, boolean required) {
-        return handleExceptions(() -> delegate.getSpace(organizationName, spaceName, required));
-    }
-
-    @Override
-    public CloudSpace getSpace(String spaceName) {
-        return handleExceptions(() -> delegate.getSpace(spaceName));
-    }
-
-    @Override
-    public CloudSpace getSpace(String spaceName, boolean required) {
-        return handleExceptions(() -> delegate.getSpace(spaceName, required));
-    }
-
-    @Override
-    public List<CloudSpace> getSpaces() {
-        return handleExceptions(() -> delegate.getSpaces());
-    }
-
-    @Override
-    public List<CloudSpace> getSpaces(String organizationName) {
-        return handleExceptions(() -> delegate.getSpaces(organizationName));
-    }
-
-    @Override
     public CloudStack getStack(String name) {
         return handleExceptions(() -> delegate.getStack(name));
     }
@@ -520,16 +436,6 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     @Override
     public List<CloudStack> getStacks() {
         return handleExceptions(() -> delegate.getStacks());
-    }
-
-    @Override
-    public OAuth2AccessTokenWithAdditionalInfo login() {
-        return handleExceptions(() -> delegate.login());
-    }
-
-    @Override
-    public void logout() {
-        handleExceptions(() -> delegate.logout());
     }
 
     @Override

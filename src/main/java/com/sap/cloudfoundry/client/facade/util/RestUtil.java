@@ -27,7 +27,7 @@ import reactor.netty.http.client.HttpClient;
  */
 public class RestUtil {
 
-    private static final int MAX_IN_MEMORY_SIZE = 1 * 1024 * 1024; // 1MB
+    private static final int MAX_IN_MEMORY_SIZE = 1024 * 1024; // 1MB
 
     public OAuthClient createOAuthClient(URL controllerUrl, ConnectionContext connectionContext, String origin,
                                          boolean shouldTrustSelfSignedCertificates) {

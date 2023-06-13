@@ -20,7 +20,7 @@ import com.sap.cloudfoundry.client.facade.domain.CloudServiceInstance;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudMetadata;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudServiceInstance;
 
-class RawV3CloudServiceInstanceTest {
+class RawCloudServiceInstanceTest {
 
     private static final String SERVICE_INSTANCE_ID = "7cb26016-342d-11ed-a261-0242ac120002";
     private static final String SERVICE_INSTANCE_NAME = "v3-service-instance";
