@@ -1,8 +1,6 @@
 package com.sap.cloudfoundry.client.facade.rest;
 
-import java.net.URL;
 import java.nio.file.Path;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -10,16 +8,13 @@ import java.util.Set;
 import java.util.UUID;
 
 import org.cloudfoundry.client.v3.Metadata;
-import org.springframework.web.reactive.function.client.WebClient;
 
 import com.sap.cloudfoundry.client.facade.UploadStatusCallback;
-import com.sap.cloudfoundry.client.facade.domain.ApplicationLog;
 import com.sap.cloudfoundry.client.facade.domain.CloudApplication;
 import com.sap.cloudfoundry.client.facade.domain.CloudAsyncJob;
 import com.sap.cloudfoundry.client.facade.domain.CloudBuild;
 import com.sap.cloudfoundry.client.facade.domain.CloudDomain;
 import com.sap.cloudfoundry.client.facade.domain.CloudEvent;
-import com.sap.cloudfoundry.client.facade.domain.CloudOrganization;
 import com.sap.cloudfoundry.client.facade.domain.CloudPackage;
 import com.sap.cloudfoundry.client.facade.domain.CloudProcess;
 import com.sap.cloudfoundry.client.facade.domain.CloudRoute;
@@ -38,14 +33,14 @@ import com.sap.cloudfoundry.client.facade.domain.ServicePlanVisibility;
 import com.sap.cloudfoundry.client.facade.domain.Staging;
 import com.sap.cloudfoundry.client.facade.domain.Upload;
 import com.sap.cloudfoundry.client.facade.domain.UserRole;
-import com.sap.cloudfoundry.client.facade.oauth2.OAuth2AccessTokenWithAdditionalInfo;
-import com.sap.cloudfoundry.client.facade.oauth2.OAuthClient;
 
 /**
  * Interface defining operations available for the cloud controller REST client implementations
  *
  */
 public interface CloudControllerRestClient {
+
+    CloudSpace getTarget();
 
     void addDomain(String domainName);
 
@@ -69,10 +64,6 @@ public interface CloudControllerRestClient {
     Optional<String> createServiceKey(String serviceInstanceName, String serviceKeyName, Map<String, Object> parameters);
 
     void createUserProvidedServiceInstance(CloudServiceInstance serviceInstance);
-
-    void deleteAllApplications();
-
-    void deleteAllServiceInstances();
 
     void deleteApplication(String applicationName);
 
@@ -120,8 +111,6 @@ public interface CloudControllerRestClient {
 
     List<CloudApplication> getApplications();
 
-    URL getControllerUrl();
-
     CloudDomain getDefaultDomain();
 
     List<CloudDomain> getDomains();
@@ -130,17 +119,7 @@ public interface CloudControllerRestClient {
 
     List<CloudEvent> getEvents();
 
-    CloudOrganization getOrganization(String organizationName);
-
-    CloudOrganization getOrganization(String organizationName, boolean required);
-
-    List<CloudOrganization> getOrganizations();
-
     List<CloudDomain> getPrivateDomains();
-
-    List<ApplicationLog> getRecentLogs(String applicationName, LocalDateTime offset);
-
-    List<ApplicationLog> getRecentLogs(UUID applicationGuid, LocalDateTime offset);
 
     List<CloudRoute> getRoutes(String domainName);
 
@@ -182,33 +161,13 @@ public interface CloudControllerRestClient {
 
     List<CloudServiceOffering> getServiceOfferings();
 
-    List<CloudServiceInstance> getServiceInstances();
-
     List<CloudDomain> getSharedDomains();
-
-    CloudSpace getSpace(UUID spaceGuid);
-
-    CloudSpace getSpace(String organizationName, String spaceName);
-
-    CloudSpace getSpace(String organizationName, String spaceName, boolean required);
-
-    CloudSpace getSpace(String spaceName);
-
-    CloudSpace getSpace(String spaceName, boolean required);
-
-    List<CloudSpace> getSpaces();
-
-    List<CloudSpace> getSpaces(String organizationName);
 
     CloudStack getStack(String name);
 
     CloudStack getStack(String name, boolean required);
 
     List<CloudStack> getStacks();
-
-    OAuth2AccessTokenWithAdditionalInfo login();
-
-    void logout();
 
     void rename(String applicationName, String newName);
 
@@ -265,10 +224,6 @@ public interface CloudControllerRestClient {
     void bindDropletToApp(UUID dropletGuid, UUID applicationGuid);
 
     List<CloudBuild> getBuildsForApplication(UUID applicationGuid);
-
-    WebClient getWebClient();
-
-    OAuthClient getOAuthClient();
 
     Map<String, Object> getServiceInstanceParameters(UUID guid);
 

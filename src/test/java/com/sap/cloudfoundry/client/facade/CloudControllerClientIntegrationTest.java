@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -13,17 +14,20 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
 
+import com.sap.cloudfoundry.client.facade.adapters.ImmutableCloudFoundryClientFactory;
 import com.sap.cloudfoundry.client.facade.domain.CloudSpace;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableLifecycle;
 import com.sap.cloudfoundry.client.facade.domain.Lifecycle;
 import com.sap.cloudfoundry.client.facade.domain.LifecycleType;
 import com.sap.cloudfoundry.client.facade.domain.Staging;
+import com.sap.cloudfoundry.client.facade.rest.CloudSpaceClient;
+import com.sap.cloudfoundry.client.facade.util.RestUtil;
 
 abstract class CloudControllerClientIntegrationTest {
 
     private static final String DEFAULT_CLIENT_ID = "cf";
     private static final String DEFAULT_CLIENT_SECRET = "";
-    private static final String DEFAULT_STACK = "cflinuxfs3";
+    private static final String DEFAULT_STACK = "cflinuxfs4";
 
     protected static CloudControllerClient client;
     protected static CloudSpace target;
@@ -34,8 +38,12 @@ abstract class CloudControllerClientIntegrationTest {
         CloudCredentials credentials = getCloudCredentials();
         URL apiUrl = URI.create(ITVariable.CF_API.getValue())
                         .toURL();
-        CloudControllerClient clientWithoutTarget = new CloudControllerClientImpl(apiUrl, credentials);
-        target = clientWithoutTarget.getSpace(ITVariable.ORG.getValue(), ITVariable.SPACE.getValue());
+        var clientFactory = ImmutableCloudFoundryClientFactory.builder()
+                                                              .build();
+        var oauthClient = new RestUtil().createOAuthClientByControllerUrl(apiUrl, true);
+        oauthClient.init(credentials);
+        CloudSpaceClient spaceClient = clientFactory.createSpaceClient(apiUrl, oauthClient, Collections.emptyMap());
+        target = spaceClient.getSpace(ITVariable.ORG.getValue(), ITVariable.SPACE.getValue());
         client = new CloudControllerClientImpl(apiUrl, credentials, target, true);
     }
 

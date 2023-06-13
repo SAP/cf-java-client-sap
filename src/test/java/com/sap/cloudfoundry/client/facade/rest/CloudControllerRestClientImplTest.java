@@ -3,8 +3,6 @@ package com.sap.cloudfoundry.client.facade.rest;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.Collections;
 import java.util.stream.Stream;
 
@@ -18,7 +16,6 @@ import org.cloudfoundry.client.v3.serviceplans.GetServicePlanRequest;
 import org.cloudfoundry.client.v3.serviceplans.GetServicePlanResponse;
 import org.cloudfoundry.client.v3.serviceplans.ServicePlan;
 import org.cloudfoundry.client.v3.serviceplans.ServicePlansV3;
-import org.cloudfoundry.doppler.DopplerClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -28,41 +25,20 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.reactive.function.client.WebClient;
 
-import com.sap.cloudfoundry.client.facade.CloudCredentials;
 import com.sap.cloudfoundry.client.facade.CloudOperationException;
 import com.sap.cloudfoundry.client.facade.adapters.RawCloudServiceOfferingTest;
 import com.sap.cloudfoundry.client.facade.adapters.RawCloudServicePlanTest;
-import com.sap.cloudfoundry.client.facade.oauth2.OAuthClient;
 
 import reactor.core.publisher.Mono;
 
 class CloudControllerRestClientImplTest {
-
-    private static final CloudCredentials CREDENTIALS = new CloudCredentials("admin", "admin");
-    private static final URL CONTROLLER_URL = createUrl("https://localhost:8080");
 
     private static final String SERVICE_PLAN_GUID = "1803e5a7-40c7-438e-b2be-e2045c9b7cda";
     private static final String SERVICE_INSTANCE_GUID = "26949ebb-a624-35c0-000-1110a01f1880";
     private static final String SERVICE_OFFERING_GUID = "1803e5a7-40c7-438e-b2be-e2045c9b7cda";
     private static final String PLAN_NAME = "test-plan";
 
-    private static URL createUrl(String string) {
-        try {
-            return new URL(string);
-        } catch (MalformedURLException e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
-
-    @Mock
-    private OAuthClient oAuthClient;
-    @Mock
-    private WebClient webClient;
-    @Mock
-    private DopplerClient dopplerClient;
     @Mock
     private CloudFoundryClient delegate;
     private CloudControllerRestClientImpl controllerClient;
@@ -71,7 +47,7 @@ class CloudControllerRestClientImplTest {
     public void setUp() throws Exception {
         MockitoAnnotations.openMocks(this)
                           .close();
-        controllerClient = new CloudControllerRestClientImpl(CONTROLLER_URL, CREDENTIALS, webClient, oAuthClient, delegate);
+        controllerClient = new CloudControllerRestClientImpl(delegate);
     }
 
     @Test

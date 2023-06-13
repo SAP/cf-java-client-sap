@@ -1,10 +1,8 @@
 package com.sap.cloudfoundry.client.facade.rest;
 
-import java.net.URL;
 import java.nio.file.Path;
 import java.text.MessageFormat;
 import java.time.Duration;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -72,11 +70,7 @@ import org.cloudfoundry.client.v3.domains.DomainResource;
 import org.cloudfoundry.client.v3.domains.ListDomainsRequest;
 import org.cloudfoundry.client.v3.jobs.GetJobRequest;
 import org.cloudfoundry.client.v3.organizations.GetOrganizationDefaultDomainRequest;
-import org.cloudfoundry.client.v3.organizations.GetOrganizationRequest;
 import org.cloudfoundry.client.v3.organizations.ListOrganizationDomainsRequest;
-import org.cloudfoundry.client.v3.organizations.ListOrganizationsRequest;
-import org.cloudfoundry.client.v3.organizations.Organization;
-import org.cloudfoundry.client.v3.organizations.OrganizationResource;
 import org.cloudfoundry.client.v3.packages.CreatePackageRequest;
 import org.cloudfoundry.client.v3.packages.CreatePackageResponse;
 import org.cloudfoundry.client.v3.packages.GetPackageRequest;
@@ -144,10 +138,6 @@ import org.cloudfoundry.client.v3.serviceplans.ServicePlanResource;
 import org.cloudfoundry.client.v3.serviceplans.UpdateServicePlanVisibilityRequest;
 import org.cloudfoundry.client.v3.serviceplans.Visibility;
 import org.cloudfoundry.client.v3.spaces.DeleteUnmappedRoutesRequest;
-import org.cloudfoundry.client.v3.spaces.GetSpaceRequest;
-import org.cloudfoundry.client.v3.spaces.ListSpacesRequest;
-import org.cloudfoundry.client.v3.spaces.Space;
-import org.cloudfoundry.client.v3.spaces.SpaceResource;
 import org.cloudfoundry.client.v3.stacks.ListStacksRequest;
 import org.cloudfoundry.client.v3.stacks.Stack;
 import org.cloudfoundry.client.v3.tasks.CancelTaskRequest;
@@ -156,26 +146,20 @@ import org.cloudfoundry.client.v3.tasks.GetTaskRequest;
 import org.cloudfoundry.client.v3.tasks.ListTasksRequest;
 import org.cloudfoundry.client.v3.tasks.Task;
 import org.cloudfoundry.util.PaginationUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
-import org.springframework.web.reactive.function.client.WebClient;
 
-import com.sap.cloudfoundry.client.facade.CloudCredentials;
 import com.sap.cloudfoundry.client.facade.CloudOperationException;
 import com.sap.cloudfoundry.client.facade.Constants;
 import com.sap.cloudfoundry.client.facade.Messages;
 import com.sap.cloudfoundry.client.facade.UploadStatusCallback;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawApplicationLog;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudApplication;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudAsyncJob;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudBuild;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudDomain;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudEvent;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudOrganization;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudPackage;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudProcess;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudRoute;
@@ -185,14 +169,11 @@ import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudServiceInsta
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudServiceKey;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudServiceOffering;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudServicePlan;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudSpace;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudStack;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudTask;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawInstancesInfo;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawUserRole;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawV3CloudServiceInstance;
-import com.sap.cloudfoundry.client.facade.adapters.LogCacheClient;
-import com.sap.cloudfoundry.client.facade.domain.ApplicationLog;
 import com.sap.cloudfoundry.client.facade.domain.BitsData;
 import com.sap.cloudfoundry.client.facade.domain.CloudApplication;
 import com.sap.cloudfoundry.client.facade.domain.CloudAsyncJob;
@@ -201,7 +182,6 @@ import com.sap.cloudfoundry.client.facade.domain.CloudDomain;
 import com.sap.cloudfoundry.client.facade.domain.CloudEntity;
 import com.sap.cloudfoundry.client.facade.domain.CloudEvent;
 import com.sap.cloudfoundry.client.facade.domain.CloudMetadata;
-import com.sap.cloudfoundry.client.facade.domain.CloudOrganization;
 import com.sap.cloudfoundry.client.facade.domain.CloudPackage;
 import com.sap.cloudfoundry.client.facade.domain.CloudProcess;
 import com.sap.cloudfoundry.client.facade.domain.CloudRoute;
@@ -229,10 +209,7 @@ import com.sap.cloudfoundry.client.facade.domain.Staging;
 import com.sap.cloudfoundry.client.facade.domain.Status;
 import com.sap.cloudfoundry.client.facade.domain.Upload;
 import com.sap.cloudfoundry.client.facade.domain.UserRole;
-import com.sap.cloudfoundry.client.facade.oauth2.OAuth2AccessTokenWithAdditionalInfo;
-import com.sap.cloudfoundry.client.facade.oauth2.OAuthClient;
 import com.sap.cloudfoundry.client.facade.util.JobV3Util;
-import com.sap.cloudfoundry.client.facade.util.UriUtil;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -243,21 +220,13 @@ import reactor.core.publisher.Mono;
  */
 public class CloudControllerRestClientImpl implements CloudControllerRestClient {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(CloudControllerRestClientImpl.class);
     private static final long PACKAGE_UPLOAD_JOB_POLLING_PERIOD = TimeUnit.SECONDS.toMillis(5);
     private static final Duration DELETE_JOB_TIMEOUT = Duration.ofMinutes(5);
     private static final Duration BINDING_OPERATIONS_TIMEOUT = Duration.ofMinutes(10);
     private static final int MAX_CHAR_LENGTH_FOR_PARAMS_IN_REQUEST = 4000;
-    private static final List<String> CHARS_TO_ENCODE = List.of(",");
 
-    private CloudCredentials credentials;
-    private URL controllerUrl;
-    private OAuthClient oAuthClient;
-    private WebClient webClient;
-    private CloudSpace target;
-
+    private CloudSpace target; //optional, as some operations do not require a targeted space
     private CloudFoundryClient delegate;
-    private LogCacheClient logCacheClient;
 
     /**
      * Only for unit tests. This works around the fact that the initialize method is called within the constructor and hence can not be
@@ -266,39 +235,18 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     protected CloudControllerRestClientImpl() {
     }
 
-    public CloudControllerRestClientImpl(URL controllerUrl, CloudCredentials credentials, WebClient webClient, OAuthClient oAuthClient,
-                                         CloudFoundryClient delegate) {
-        this(controllerUrl, credentials, webClient, oAuthClient, delegate, null, null);
+    public CloudControllerRestClientImpl(CloudFoundryClient delegate) {
+        this(delegate, null);
     }
 
-    public CloudControllerRestClientImpl(URL controllerUrl, CloudCredentials credentials, WebClient webClient, OAuthClient oAuthClient,
-                                         CloudFoundryClient delegate, LogCacheClient logCacheClient, CloudSpace target) {
-        Assert.notNull(controllerUrl, "CloudControllerUrl cannot be null");
-        Assert.notNull(webClient, "WebClient cannot be null");
-        Assert.notNull(oAuthClient, "OAuthClient cannot be null");
-
-        this.controllerUrl = controllerUrl;
-        this.credentials = credentials;
-        this.webClient = webClient;
-        this.oAuthClient = oAuthClient;
+    public CloudControllerRestClientImpl(CloudFoundryClient delegate, CloudSpace target) {
         this.target = target;
         this.delegate = delegate;
-        this.logCacheClient = logCacheClient;
     }
 
     @Override
-    public WebClient getWebClient() {
-        return webClient;
-    }
-
-    @Override
-    public OAuthClient getOAuthClient() {
-        return oAuthClient;
-    }
-
-    @Override
-    public URL getControllerUrl() {
-        return controllerUrl;
+    public CloudSpace getTarget() {
+        return target;
     }
 
     @Override
@@ -470,8 +418,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         assertSpaceProvided("create service instance");
         Assert.notNull(serviceInstance, "Service instance must not be null.");
         CloudServicePlan servicePlan = findPlanForService(serviceInstance, serviceInstance.getPlan());
-        UUID servicePlanGuid = servicePlan.getMetadata()
-                                          .getGuid();
+        UUID servicePlanGuid = servicePlan.getGuid();
 
         delegate.serviceInstancesV3()
                 .create(CreateServiceInstanceRequest.builder()
@@ -594,22 +541,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                                                .build())
                                                     .build())
                 .block();
-    }
-
-    @Override
-    public void deleteAllApplications() {
-        List<UUID> applicationIds = getApplicationIds();
-        for (UUID applicationGuid : applicationIds) {
-            deleteApplication(applicationGuid);
-        }
-    }
-
-    @Override
-    public void deleteAllServiceInstances() {
-        List<UUID> serviceInstanceIds = getServiceInstancesIds();
-        for (UUID serviceInstanceId : serviceInstanceIds) {
-            doDeleteServiceInstance(serviceInstanceId);
-        }
     }
 
     @Override
@@ -798,17 +729,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                                                                          .build());
     }
 
-    private List<UUID> getApplicationIds() {
-        return getApplicationResources().map(this::getGuid)
-                                        .collectList()
-                                        .block();
-    }
-
-    private List<UUID> getServiceInstancesIds() {
-        Flux<ServiceInstanceResource> serviceInstanceResources = getServiceInstanceResources();
-        return getV3Guids(serviceInstanceResources);
-    }
-
     private Flux<? extends Application> getApplicationsByLabelSelector(String labelSelector) {
         IntFunction<ListApplicationsRequest> pageRequestSupplier = page -> ListApplicationsRequest.builder()
                                                                                                   .spaceId(getTargetSpaceGuid().toString())
@@ -855,44 +775,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     @Override
     public List<CloudEvent> getEvents() {
         return fetchList(this::getEventResources, ImmutableRawCloudEvent::of);
-    }
-
-    @Override
-    public CloudOrganization getOrganization(String organizationName) {
-        return getOrganization(organizationName, true);
-    }
-
-    /**
-     * Get organization by given name.
-     *
-     * @param organizationName
-     * @param required
-     * @return CloudOrganization instance
-     */
-    @Override
-    public CloudOrganization getOrganization(String organizationName, boolean required) {
-        CloudOrganization organization = findOrganization(organizationName);
-        if (organization == null && required) {
-            throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Organization " + organizationName + " not found.");
-        }
-        return organization;
-    }
-
-    @Override
-    public List<CloudOrganization> getOrganizations() {
-        return fetchList(this::getOrganizationResources, ImmutableRawCloudOrganization::of);
-    }
-
-    @Override
-    public List<ApplicationLog> getRecentLogs(String applicationName, LocalDateTime offset) {
-        UUID appGuid = getRequiredApplicationGuid(applicationName);
-        return getRecentLogs(appGuid, offset);
-    }
-
-    @Override
-    public List<ApplicationLog> getRecentLogs(UUID applicationGuid, LocalDateTime offset) {
-        return fetchFlux(() -> logCacheClient.getRecentLogs(applicationGuid, offset), ImmutableRawApplicationLog::of).collectSortedList()
-                                                                                                                     .block();
     }
 
     @Override
@@ -1151,11 +1033,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                 .block();
     }
 
-    @Override
-    public List<CloudServiceInstance> getServiceInstances() {
-        return fetchListWithAuxiliaryContent(this::getServiceInstanceResources, this::zipWithAuxiliaryServiceInstanceContent);
-    }
-
     private <T> List<List<T>> toBatches(Collection<T> largeList, int maxCharLength) {
         if (largeList.isEmpty()) {
             return Collections.emptyList();
@@ -1226,44 +1103,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public CloudSpace getSpace(UUID spaceGuid) {
-        return fetchWithAuxiliaryContent(() -> getSpaceResource(spaceGuid), this::zipWithAuxiliarySpaceContent);
-    }
-
-    @Override
-    public CloudSpace getSpace(String organizationName, String spaceName) {
-        return getSpace(organizationName, spaceName, true);
-    }
-
-    @Override
-    public CloudSpace getSpace(String organizationName, String spaceName, boolean required) {
-        UUID organizationGuid = getOrganizationGuid(organizationName, required);
-        return findSpaceByOrganizationGuidAndName(organizationGuid, spaceName, required);
-    }
-
-    @Override
-    public CloudSpace getSpace(String spaceName) {
-        return getSpace(spaceName, true);
-    }
-
-    @Override
-    public CloudSpace getSpace(String spaceName, boolean required) {
-        UUID organizationGuid = getTargetOrganizationGuid();
-        return findSpaceByOrganizationGuidAndName(organizationGuid, spaceName, required);
-    }
-
-    @Override
-    public List<CloudSpace> getSpaces() {
-        return fetchListWithAuxiliaryContent(this::getSpaceResources, this::zipWithAuxiliarySpaceContent);
-    }
-
-    @Override
-    public List<CloudSpace> getSpaces(String organizationName) {
-        UUID organizationGuid = getOrganizationGuid(organizationName, true);
-        return findSpacesByOrganizationGuid(organizationGuid);
-    }
-
-    @Override
     public CloudStack getStack(String name) {
         return getStack(name, true);
     }
@@ -1280,17 +1119,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     @Override
     public List<CloudStack> getStacks() {
         return fetchList(this::getStackResources, ImmutableRawCloudStack::of);
-    }
-
-    @Override
-    public OAuth2AccessTokenWithAdditionalInfo login() {
-        oAuthClient.init(credentials);
-        return oAuthClient.getToken();
-    }
-
-    @Override
-    public void logout() {
-        oAuthClient.clear();
     }
 
     @Override
@@ -1587,21 +1415,15 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public DropletInfo getCurrentDropletForApplication(UUID applicationGuid) {
-        GetApplicationCurrentDropletResponse getApplicationCurrentDropletResponse = delegate.applicationsV3()
-                                                                                            .getCurrentDroplet(GetApplicationCurrentDropletRequest.builder()
-                                                                                                                                                  .applicationId(applicationGuid.toString())
-                                                                                                                                                  .build())
-                                                                                            .block();
-        return tryParseDropletInfo(getApplicationCurrentDropletResponse);
-    }
-
-    private DropletInfo tryParseDropletInfo(GetApplicationCurrentDropletResponse getApplicationCurrentDropletResponse) {
-        try {
-            return parseDropletInfo(getApplicationCurrentDropletResponse);
-        } catch (Exception e) {
-            LOGGER.error(e.getMessage(), e);
-            throw new CloudOperationException(HttpStatus.NOT_FOUND);
+        GetApplicationCurrentDropletResponse dropletResponse = delegate.applicationsV3()
+                                                                       .getCurrentDroplet(GetApplicationCurrentDropletRequest.builder()
+                                                                                                                             .applicationId(applicationGuid.toString())
+                                                                                                                             .build())
+                                                                       .block();
+        if (dropletResponse == null) {
+            throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not found", "Application with guid " + applicationGuid + " does not have a droplet");
         }
+        return parseDropletInfo(dropletResponse);
     }
 
     private DropletInfo parseDropletInfo(GetApplicationCurrentDropletResponse getApplicationCurrentDropletResponse) {
@@ -1734,14 +1556,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     private CloudServiceInstance findServiceInstanceByName(String name) {
         return fetchWithAuxiliaryContent(() -> getServiceInstanceResourceByName(name), this::zipWithAuxiliaryServiceInstanceContent);
-    }
-
-    private Flux<ServiceInstanceResource> getServiceInstanceResources() {
-        IntFunction<ListServiceInstancesRequest> pageRequestSupplier = page -> ListServiceInstancesRequest.builder()
-                                                                                                          .spaceId(getTargetSpaceGuid().toString())
-                                                                                                          .page(page)
-                                                                                                          .build();
-        return getServiceInstanceResources(pageRequestSupplier);
     }
 
     private Mono<? extends ServiceInstance> getServiceInstanceByGuid(UUID serviceInstanceGuid) {
@@ -2197,112 +2011,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                         .list(pageRequestSupplier.apply(page)));
     }
 
-    private List<CloudSpace> findSpacesByOrganizationGuid(UUID organizationGuid) {
-        return fetchListWithAuxiliaryContent(() -> getSpaceResourcesByOrganizationGuid(organizationGuid),
-                                             this::zipWithAuxiliarySpaceContent);
-    }
-
-    private CloudSpace findSpaceByOrganizationGuidAndName(UUID organizationGuid, String spaceName, boolean required) {
-        CloudSpace space = findSpaceByOrganizationGuidAndName(organizationGuid, spaceName);
-        if (space == null && required) {
-            throw new CloudOperationException(HttpStatus.NOT_FOUND,
-                                              "Not Found",
-                                              "Space " + spaceName + " not found in organization with GUID " + organizationGuid + ".");
-        }
-        return space;
-    }
-
-    private CloudSpace findSpaceByOrganizationGuidAndName(UUID organizationGuid, String spaceName) {
-        return fetchWithAuxiliaryContent(() -> getSpaceResourceByOrganizationGuidAndName(organizationGuid, spaceName),
-                                         this::zipWithAuxiliarySpaceContent);
-    }
-
-    private Flux<SpaceResource> getSpaceResources() {
-        IntFunction<ListSpacesRequest> pageRequestSupplier = page -> ListSpacesRequest.builder()
-                                                                                      .page(page)
-                                                                                      .build();
-        return getSpaceResources(pageRequestSupplier);
-    }
-
-    private Mono<? extends Space> getSpaceResource(UUID guid) {
-        GetSpaceRequest request = GetSpaceRequest.builder()
-                                                 .spaceId(guid.toString())
-                                                 .build();
-        return delegate.spacesV3()
-                       .get(request);
-    }
-
-    private Flux<SpaceResource> getSpaceResourcesByOrganizationGuid(UUID organizationGuid) {
-        IntFunction<ListSpacesRequest> pageRequestSupplier = page -> ListSpacesRequest.builder()
-                                                                                      .organizationId(organizationGuid.toString())
-                                                                                      .page(page)
-                                                                                      .build();
-        return getSpaceResources(pageRequestSupplier);
-    }
-
-    private Mono<SpaceResource> getSpaceResourceByOrganizationGuidAndName(UUID organizationGuid, String name) {
-        IntFunction<ListSpacesRequest> pageRequestSupplier = page -> ListSpacesRequest.builder()
-                                                                                      .organizationId(organizationGuid.toString())
-                                                                                      .name(encodeAsQueryParam(name))
-                                                                                      .page(page)
-                                                                                      .build();
-        return PaginationUtils.requestClientV3Resources(page -> delegate.spacesV3()
-                                                                        .list(pageRequestSupplier.apply(page)))
-                              .singleOrEmpty();
-    }
-
-    private Flux<SpaceResource> getSpaceResources(IntFunction<ListSpacesRequest> requestForPage) {
-        return PaginationUtils.requestClientV3Resources(page -> delegate.spacesV3()
-                                                                        .list(requestForPage.apply(page)));
-    }
-
-    private Mono<Derivable<CloudSpace>> zipWithAuxiliarySpaceContent(Space space) {
-        UUID organizationGuid = UUID.fromString(space.getRelationships()
-                                                     .getOrganization()
-                                                     .getData()
-                                                     .getId());
-        return getOrganizationMono(organizationGuid).map(organization -> ImmutableRawCloudSpace.builder()
-                                                                                               .space(space)
-                                                                                               .organization(organization)
-                                                                                               .build());
-    }
-
-    private Mono<? extends Derivable<CloudOrganization>> getOrganizationMono(UUID guid) {
-        return fetchMono(() -> getOrganizationResource(guid), ImmutableRawCloudOrganization::of);
-    }
-
-    private CloudOrganization findOrganization(String name) {
-        return fetch(() -> getOrganizationResourceByName(name), ImmutableRawCloudOrganization::of);
-    }
-
-    private Flux<OrganizationResource> getOrganizationResources() {
-        IntFunction<ListOrganizationsRequest> pageRequestSupplier = page -> ListOrganizationsRequest.builder()
-                                                                                                    .page(page)
-                                                                                                    .build();
-        return getOrganizationResources(pageRequestSupplier);
-    }
-
-    private Mono<? extends Organization> getOrganizationResource(UUID guid) {
-        GetOrganizationRequest request = GetOrganizationRequest.builder()
-                                                               .organizationId(guid.toString())
-                                                               .build();
-        return delegate.organizationsV3()
-                       .get(request);
-    }
-
-    private Mono<OrganizationResource> getOrganizationResourceByName(String name) {
-        IntFunction<ListOrganizationsRequest> pageRequestSupplier = page -> ListOrganizationsRequest.builder()
-                                                                                                    .name(encodeAsQueryParam(name))
-                                                                                                    .page(page)
-                                                                                                    .build();
-        return getOrganizationResources(pageRequestSupplier).singleOrEmpty();
-    }
-
-    private Flux<OrganizationResource> getOrganizationResources(IntFunction<ListOrganizationsRequest> pageRequestSupplier) {
-        return PaginationUtils.requestClientV3Resources(page -> delegate.organizationsV3()
-                                                                        .list(pageRequestSupplier.apply(page)));
-    }
-
     private List<CloudRoute> findRoutes(CloudDomain domain) {
         return fetchList(() -> getRouteResourcesByDomainGuidAndSpaceGuid(domain.getGuid(), getTargetSpaceGuid()),
                          ImmutableRawCloudRoute::of);
@@ -2592,7 +2300,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     private UUID getRequiredApplicationGuid(String name) {
-        org.cloudfoundry.client.v3.Resource applicationResource = getApplicationByName(name).block();
+        Resource applicationResource = getApplicationByName(name).block();
         if (applicationResource == null) {
             throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Application " + name + " not found.");
         }
@@ -2612,13 +2320,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     private UUID getRequiredDomainGuid(String name) {
         return getGuid(findDomainByName(name, true));
-    }
-
-    private UUID getOrganizationGuid(String organizationName, boolean required) {
-        CloudOrganization organization = getOrganization(organizationName, required);
-        return organization != null ? organization.getMetadata()
-                                                  .getGuid()
-            : null;
     }
 
     private Map<String, UUID> getDomainsFromRoutes(Set<CloudRoute> routes) {
@@ -2645,18 +2346,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     private UUID getServiceBindingGuid(UUID applicationGuid, UUID serviceInstanceGuid) {
         return getServiceBindingResourceByApplicationGuidAndServiceInstanceGuid(applicationGuid, serviceInstanceGuid).map(this::getGuid)
                                                                                                                      .block();
-    }
-
-    private List<UUID> getGuids(Flux<? extends Resource> resources) {
-        return resources.map(this::getGuid)
-                        .collectList()
-                        .block();
-    }
-
-    private List<UUID> getV3Guids(Flux<? extends org.cloudfoundry.client.v3.Resource> resources) {
-        return resources.map(this::getGuid)
-                        .collectList()
-                        .block();
     }
 
     private void processAsyncUploadInBackground(CloudPackage cloudPackage, UploadStatusCallback callback) {
@@ -2724,9 +2413,9 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                        .orElse(null);
     }
 
-    private UUID getGuid(org.cloudfoundry.client.v3.Resource resource) {
+    private UUID getGuid(Resource resource) {
         return Optional.ofNullable(resource)
-                       .map(org.cloudfoundry.client.v3.Resource::getId)
+                       .map(Resource::getId)
                        .map(UUID::fromString)
                        .orElse(null);
     }
@@ -2745,10 +2434,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
             return e.getStatusCode() == HttpStatus.NOT_FOUND.value();
         }
         return false;
-    }
-
-    private String encodeAsQueryParam(String param) {
-        return UriUtil.encodeChars(param, CHARS_TO_ENCODE);
     }
 
     private <T, R, D extends Derivable<T>> Flux<T> fetchFluxWithAuxiliaryContent(Supplier<Flux<R>> resourceSupplier,

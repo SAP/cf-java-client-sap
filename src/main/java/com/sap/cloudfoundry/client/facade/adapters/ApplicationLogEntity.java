@@ -6,6 +6,7 @@ import org.immutables.value.Value;
 
 import java.util.Map;
 
+//TODO this won't be needed if we use the ReactorLogCacheClient
 @Value.Immutable
 @Value.Enclosing
 @JsonDeserialize(as = ImmutableApplicationLogEntity.class)

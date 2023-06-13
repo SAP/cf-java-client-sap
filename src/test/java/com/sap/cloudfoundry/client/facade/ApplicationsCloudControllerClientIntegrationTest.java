@@ -59,7 +59,10 @@ class ApplicationsCloudControllerClientIntegrationTest extends CloudControllerCl
 
     @BeforeAll
     static void deleteExistingApps() {
-        client.deleteAllApplications();
+        var allApps = client.getApplications();
+        for (var app : allApps) {
+            client.deleteApplication(app.getName());
+        }
     }
 
     @AfterAll

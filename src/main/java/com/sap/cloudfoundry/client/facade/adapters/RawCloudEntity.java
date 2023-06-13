@@ -25,7 +25,7 @@ public abstract class RawCloudEntity<T> implements Derivable<T> {
         // Recommended by Sonar.
     }
 
-    protected static CloudMetadata parseResourceMetadata(Resource resource) {
+    public static CloudMetadata parseResourceMetadata(Resource resource) {
         return ImmutableCloudMetadata.builder()
                                      .guid(parseNullableGuid(resource.getId()))
                                      .createdAt(parseNullableDate(resource.getCreatedAt()))
