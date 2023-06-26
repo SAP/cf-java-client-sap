@@ -8,17 +8,18 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.nio.charset.StandardCharsets;
+import java.text.MessageFormat;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.Base64;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Executors;
-import java.util.stream.Collectors;
 
 import com.sap.cloudfoundry.client.facade.CloudException;
 import com.sap.cloudfoundry.client.facade.CloudOperationException;
@@ -26,91 +27,34 @@ import com.sap.cloudfoundry.client.facade.Messages;
 import com.sap.cloudfoundry.client.facade.domain.ApplicationLog;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableApplicationLog;
 import com.sap.cloudfoundry.client.facade.oauth2.OAuthClient;
+import com.sap.cloudfoundry.client.facade.util.CloudUtil;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.apache.commons.io.IOUtils;
-import org.cloudfoundry.logcache.v1.*;
-import org.cloudfoundry.reactor.logcache.v1.ReactorLogCacheClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.util.UriComponentsBuilder;
-import reactor.core.publisher.Mono;
-import reactor.util.retry.Retry;
-import reactor.util.retry.RetryBackoffSpec;
 
-//TODO run stress tests and observe direct memory with ReactorLogCacheClient
 public class LogCacheClient {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(LogCacheClient.class);
+    private static final int RETRIES = 3;
+    private static final Duration RETRY_INTERVAL = Duration.ofSeconds(3);
     private static final ObjectMapper mapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
                                                                  .configure(DeserializationFeature.UNWRAP_ROOT_VALUE, true);
+
     private final String logCacheApi;
     private final OAuthClient oAuthClient;
     private final Map<String, String> requestTags;
-
-//    private final org.cloudfoundry.logcache.v1.LogCacheClient delegate;
 
     public LogCacheClient(String logCacheApi, OAuthClient oAuthClient, Map<String, String> requestTags) {
         this.logCacheApi = logCacheApi;
         this.oAuthClient = oAuthClient;
         this.requestTags = requestTags;
-    }
-
-    private ApplicationLog mapToAppLog(Envelope envelope) {
-        var tags = envelope.getTags();
-        var log = envelope.getLog();
-        return ImmutableApplicationLog.builder()
-                                      .applicationGuid(envelope.getSourceId())
-                                      .message(log.getPayloadAsText())
-                                      .timestamp(fromLogTimestamp(envelope.getTimestamp()))
-                                      .messageType(fromLogMessageType0(log.getType()))
-                                      .sourceName(tags.get("source_type"))
-                                      .build();
-    }
-
-    private static LocalDateTime fromLogTimestamp(long timestampNanos) {
-        Duration duration = Duration.ofNanos(timestampNanos);
-        Instant instant = Instant.ofEpochSecond(duration.getSeconds(), duration.getNano());
-        return LocalDateTime.ofInstant(instant, ZoneId.of("UTC"));
-    }
-
-    private static ApplicationLog.MessageType fromLogMessageType0(LogType logType) {
-        return logType == LogType.OUT ? ApplicationLog.MessageType.STDOUT : ApplicationLog.MessageType.STDERR;
-    }
-
-    private Throwable throwOriginalError(RetryBackoffSpec retrySpec, Retry.RetrySignal signal) {
-        return signal.failure();
-    }
-
-    public List<ApplicationLog> getRecentLogs0(UUID appGuid, LocalDateTime offset) {
-        org.cloudfoundry.logcache.v1.LogCacheClient client = ReactorLogCacheClient.builder()
-                .requestTags(requestTags)
-                .tokenProvider(oAuthClient.getTokenProvider())
-                .root(Mono.just(logCacheApi))
-//                .connectionContext(<>)
-                .build();
-
-        var instant = offset.toInstant(ZoneOffset.UTC);
-        var secondsInNanos = Duration.ofSeconds(instant.getEpochSecond())
-                                     .toNanos();
-
-        var request = ReadRequest.builder()
-                                 .sourceId(appGuid.toString())
-                                 .envelopeType(EnvelopeType.LOG)
-                                 .startTime(secondsInNanos + instant.getNano() + 1)
-                                 .limit(1000)
-                                 .descending(true)
-                                 .build();
-
-        return client.read(request)
-                     .retryWhen(Retry.fixedDelay(3, Duration.ofSeconds(3))
-                                     .onRetryExhaustedThrow(this::throwOriginalError))
-                     .map(ReadResponse::getEnvelopes)
-                     .flatMapIterable(EnvelopeBatch::getBatch)
-                     .map(this::mapToAppLog)
-                     .collectSortedList()
-                     .block();
     }
 
     public List<ApplicationLog> getRecentLogs(UUID applicationGuid, LocalDateTime offset) {
@@ -121,22 +65,18 @@ public class LogCacheClient {
         var client = HttpClient.newBuilder()
                                .executor(Executors.newSingleThreadExecutor())
                                .followRedirects(HttpClient.Redirect.NORMAL)
-                               .connectTimeout(Duration.ofMinutes(30))
+                               .connectTimeout(Duration.ofMinutes(10))
                                .build();
         HttpRequest request = buildGetLogsRequest(applicationGuid, offset);
 
-        //TODO add resilience
-        HttpResponse<InputStream> response = sendRequest(client, request);
+        HttpResponse<InputStream> response = sendRequestWithRetry(client, request);
 
-        if (response.statusCode() / 100 != 2) {
-            var status = HttpStatus.valueOf(response.statusCode());
-            throw new CloudOperationException(status, status.getReasonPhrase(), parseBodyToString(response.body()));
-        }
         return parseBody(response.body()).getLogs()
                                          .stream()
                                          .map(this::mapToAppLog)
-                                         .sorted()
-                                         .collect(Collectors.toList());
+                                         //we use a linked list so that the log messages can be a LIFO sequence
+                                         //that way, we avoid unnecessary sorting and copying to and from another collection/array
+                                         .collect(LinkedList::new, LinkedList::addFirst, LinkedList::addAll);
     }
 
     private HttpRequest buildGetLogsRequest(UUID applicationGuid, LocalDateTime offset) {
@@ -163,9 +103,26 @@ public class LogCacheClient {
                                    .toUri();
     }
 
+    private HttpResponse<InputStream> sendRequestWithRetry(HttpClient client, HttpRequest request) {
+        for (int i = 1; i < RETRIES; i++) {
+            try {
+                return sendRequest(client, request);
+            } catch (CloudException e) {
+                LOGGER.warn(MessageFormat.format("Retrying operation that failed with message: {0}", e.getMessage()), e);
+                CloudUtil.sleep(RETRY_INTERVAL);
+            }
+        }
+        return sendRequest(client, request);
+    }
+
     private HttpResponse<InputStream> sendRequest(HttpClient client, HttpRequest request) {
         try {
-            return client.send(request, BodyHandlers.ofInputStream());
+            var response = client.send(request, BodyHandlers.ofInputStream());
+            if (response.statusCode() / 100 != 2) {
+                var status = HttpStatus.valueOf(response.statusCode());
+                throw new CloudOperationException(status, status.getReasonPhrase(), parseBodyToString(response.body()));
+            }
+            return response;
         } catch (IOException | InterruptedException e) {
             throw new CloudException(e.getMessage(), e);
         }
@@ -202,8 +159,14 @@ public class LogCacheClient {
 
     private static String decodeLogPayload(String base64Encoded) {
         var result = Base64.getDecoder()
-                .decode(base64Encoded.getBytes(StandardCharsets.UTF_8));
+                           .decode(base64Encoded.getBytes(StandardCharsets.UTF_8));
         return new String(result, StandardCharsets.UTF_8);
+    }
+
+    private static LocalDateTime fromLogTimestamp(long timestampNanos) {
+        Duration duration = Duration.ofNanos(timestampNanos);
+        Instant instant = Instant.ofEpochSecond(duration.getSeconds(), duration.getNano());
+        return LocalDateTime.ofInstant(instant, ZoneId.of("UTC"));
     }
 
     private static ApplicationLog.MessageType fromLogMessageType(String messageType) {
