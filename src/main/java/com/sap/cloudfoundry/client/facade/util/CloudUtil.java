@@ -2,6 +2,7 @@ package com.sap.cloudfoundry.client.facade.util;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.Duration;
 import java.util.Date;
 import java.util.Locale;
 
@@ -68,6 +69,15 @@ public class CloudUtil {
             // ignore
         }
         return defaultValue;
+    }
+
+    public static void sleep(Duration duration) {
+        try {
+            Thread.sleep(duration.toMillis());
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Interrupted!", e);
+        }
     }
 
 }

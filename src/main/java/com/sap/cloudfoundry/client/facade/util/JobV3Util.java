@@ -8,6 +8,8 @@ import java.util.Set;
 import org.cloudfoundry.client.CloudFoundryClient;
 import org.cloudfoundry.client.v3.ClientV3Exception;
 import org.cloudfoundry.client.v3.Error;
+import org.cloudfoundry.client.v3.jobs.GetJobRequest;
+import org.cloudfoundry.client.v3.jobs.GetJobResponse;
 import org.cloudfoundry.client.v3.jobs.Job;
 import org.cloudfoundry.client.v3.jobs.JobState;
 import org.cloudfoundry.util.DelayUtils;
@@ -30,11 +32,11 @@ public class JobV3Util {
                                                       .flatMap(JobV3Util::getError);
     }
 
-    private static Mono<org.cloudfoundry.client.v3.jobs.GetJobResponse> requestJobV3(CloudFoundryClient cloudFoundryClient, String jobId) {
+    private static Mono<GetJobResponse> requestJobV3(CloudFoundryClient cloudFoundryClient, String jobId) {
         return cloudFoundryClient.jobsV3()
-                                 .get(org.cloudfoundry.client.v3.jobs.GetJobRequest.builder()
-                                                                                   .jobId(jobId)
-                                                                                   .build());
+                                 .get(GetJobRequest.builder()
+                                                   .jobId(jobId)
+                                                   .build());
     }
 
     private static Mono<Void> getError(Job job) {
