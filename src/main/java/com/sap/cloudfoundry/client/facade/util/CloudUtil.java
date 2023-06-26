@@ -1,10 +1,17 @@
 package com.sap.cloudfoundry.client.facade.util;
 
+import java.text.MessageFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.util.Date;
 import java.util.Locale;
+import java.util.function.Supplier;
+
+import com.sap.cloudfoundry.client.facade.Messages;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Some helper utilities used by the Cloud Foundry Java client.
@@ -15,6 +22,9 @@ public class CloudUtil {
     private static final Double DEFAULT_DOUBLE = 0.0;
     private static final Integer DEFAULT_INTEGER = 0;
     private static final Long DEFAULT_LONG = 0L;
+    private static final int RETRIES = 3;
+    private static final Duration RETRY_INTERVAL = Duration.ofSeconds(3);
+    private static final Logger LOGGER = LoggerFactory.getLogger(CloudUtil.class);
 
     private CloudUtil() {
     }
@@ -69,6 +79,18 @@ public class CloudUtil {
             // ignore
         }
         return defaultValue;
+    }
+
+    public static <T> T executeWithRetry(Supplier<T> operation) {
+        for (int i = 1; i < RETRIES; i++) {
+            try {
+                return operation.get();
+            } catch (Exception e) {
+                LOGGER.warn(MessageFormat.format(Messages.RETRYING_OPERATION, e.getMessage()), e);
+                sleep(RETRY_INTERVAL);
+            }
+        }
+        return operation.get();
     }
 
     public static void sleep(Duration duration) {

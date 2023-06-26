@@ -3,12 +3,10 @@ package com.sap.cloudfoundry.client.facade.adapters;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.nio.charset.StandardCharsets;
-import java.text.MessageFormat;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -19,7 +17,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.Executors;
 
 import com.sap.cloudfoundry.client.facade.CloudException;
 import com.sap.cloudfoundry.client.facade.CloudOperationException;
@@ -33,17 +30,12 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.apache.commons.io.IOUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.util.UriComponentsBuilder;
 
 public class LogCacheClient {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(LogCacheClient.class);
-    private static final int RETRIES = 3;
-    private static final Duration RETRY_INTERVAL = Duration.ofSeconds(3);
     private static final ObjectMapper mapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
                                                                  .configure(DeserializationFeature.UNWRAP_ROOT_VALUE, true);
 
@@ -58,18 +50,8 @@ public class LogCacheClient {
     }
 
     public List<ApplicationLog> getRecentLogs(UUID applicationGuid, LocalDateTime offset) {
-        //We create a new client every time to not keep a live reference to the object for the lifetime of the
-        // LogCacheClient. A SelectorManager thread is spawned for each HttpClient and if the client is a class field
-        // it was observed that the references are kept for the lifetime of the JVM and the threads exceeded 2.1K.
-        // (2.1K SelectorManager threads -> 2.1K HttpClients)
-        var client = HttpClient.newBuilder()
-                               .executor(Executors.newSingleThreadExecutor())
-                               .followRedirects(HttpClient.Redirect.NORMAL)
-                               .connectTimeout(Duration.ofMinutes(10))
-                               .build();
         HttpRequest request = buildGetLogsRequest(applicationGuid, offset);
-
-        HttpResponse<InputStream> response = sendRequestWithRetry(client, request);
+        HttpResponse<InputStream> response = CloudUtil.executeWithRetry(() -> sendRequest(request));
 
         return parseBody(response.body()).getLogs()
                                          .stream()
@@ -103,21 +85,9 @@ public class LogCacheClient {
                                    .toUri();
     }
 
-    private HttpResponse<InputStream> sendRequestWithRetry(HttpClient client, HttpRequest request) {
-        for (int i = 1; i < RETRIES; i++) {
-            try {
-                return sendRequest(client, request);
-            } catch (CloudException e) {
-                LOGGER.warn(MessageFormat.format("Retrying operation that failed with message: {0}", e.getMessage()), e);
-                CloudUtil.sleep(RETRY_INTERVAL);
-            }
-        }
-        return sendRequest(client, request);
-    }
-
-    private HttpResponse<InputStream> sendRequest(HttpClient client, HttpRequest request) {
+    private HttpResponse<InputStream> sendRequest(HttpRequest request) {
         try {
-            var response = client.send(request, BodyHandlers.ofInputStream());
+            var response = CloudFoundryClientFactory.HTTP_CLIENT.send(request, BodyHandlers.ofInputStream());
             if (response.statusCode() / 100 != 2) {
                 var status = HttpStatus.valueOf(response.statusCode());
                 throw new CloudOperationException(status, status.getReasonPhrase(), parseBodyToString(response.body()));
