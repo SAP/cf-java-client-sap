@@ -6,6 +6,10 @@ public final class Messages {
 
     }
 
+    // WARN messages
+    public static final String RETRYING_OPERATION = "Retrying operation that failed with: {0}";
+    public static final String CALL_TO_0_FAILED_WITH_1 = "Calling {0} failed with: {1}";
+
     // ERROR messages
     public static final String UNKNOWN_PACKAGE_TYPE = "Unknown package type: %s";
     public static final String CANT_CREATE_SERVICE_KEY_FOR_USER_PROVIDED_SERVICE = "Service keys can't be created for user-provided service instance \"%s\"";
