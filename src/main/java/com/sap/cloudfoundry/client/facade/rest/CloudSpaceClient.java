@@ -18,13 +18,18 @@ import org.cloudfoundry.client.v3.spaces.ListSpacesRequest;
 import org.cloudfoundry.client.v3.spaces.Space;
 import org.cloudfoundry.client.v3.spaces.SpacesV3;
 import org.springframework.http.HttpStatus;
+import reactor.util.retry.Retry;
+import reactor.util.retry.RetryBackoffSpec;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
 
 public class CloudSpaceClient {
 
     private static final List<String> CHARS_TO_ENCODE = List.of(",");
+    private static final long RETRIES = 3;
+    private static final Duration RETRY_INTERVAL = Duration.ofSeconds(3);
 
     private final SpacesV3 spacesClient;
     private final OrganizationsV3 orgsClient;
@@ -38,6 +43,8 @@ public class CloudSpaceClient {
         Space space = spacesClient.get(GetSpaceRequest.builder()
                                                       .spaceId(spaceGuid.toString())
                                                       .build())
+                                  .retryWhen(Retry.fixedDelay(RETRIES, RETRY_INTERVAL)
+                                                  .onRetryExhaustedThrow(this::throwOriginalError))
                                   .onErrorMap(ClientV3Exception.class, this::convertV3ClientException)
                                   .block();
         if (space == null) {
@@ -51,6 +58,8 @@ public class CloudSpaceClient {
         Organization org = orgsClient.get(GetOrganizationRequest.builder()
                                                                 .organizationId(orgGuid)
                                                                 .build())
+                                     .retryWhen(Retry.fixedDelay(RETRIES, RETRY_INTERVAL)
+                                                     .onRetryExhaustedThrow(this::throwOriginalError))
                                      .onErrorMap(ClientV3Exception.class, this::convertV3ClientException)
                                      .block();
         if (org == null) {
@@ -63,6 +72,8 @@ public class CloudSpaceClient {
         var orgsResponse = orgsClient.list(ListOrganizationsRequest.builder()
                                                                    .name(encodeAsQueryParam(organizationName))
                                                                    .build())
+                                     .retryWhen(Retry.fixedDelay(RETRIES, RETRY_INTERVAL)
+                                                     .onRetryExhaustedThrow(this::throwOriginalError))
                                      .onErrorMap(ClientV3Exception.class, this::convertV3ClientException)
                                      .block();
         List<? extends Organization> orgs = orgsResponse.getResources();
@@ -76,6 +87,8 @@ public class CloudSpaceClient {
                                                                 .organizationId(org.getId())
                                                                 .name(encodeAsQueryParam(spaceName))
                                                                 .build())
+                                         .retryWhen(Retry.fixedDelay(RETRIES, RETRY_INTERVAL)
+                                                         .onRetryExhaustedThrow(this::throwOriginalError))
                                          .onErrorMap(ClientV3Exception.class, this::convertV3ClientException)
                                          .block();
         List<? extends Space> spaces = spacesResponse.getResources();
@@ -100,6 +113,10 @@ public class CloudSpaceClient {
                                                                           .name(org.getName())
                                                                           .build())
                                   .build();
+    }
+
+    private Throwable throwOriginalError(RetryBackoffSpec retrySpec, Retry.RetrySignal signal) {
+        return signal.failure();
     }
 
     private CloudOperationException convertV3ClientException(AbstractCloudFoundryException e) {
