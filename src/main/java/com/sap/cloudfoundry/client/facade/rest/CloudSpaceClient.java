@@ -2,8 +2,13 @@ package com.sap.cloudfoundry.client.facade.rest;
 
 import com.sap.cloudfoundry.client.facade.CloudOperationException;
 import com.sap.cloudfoundry.client.facade.adapters.RawCloudEntity;
-import com.sap.cloudfoundry.client.facade.domain.*;
+import com.sap.cloudfoundry.client.facade.domain.CloudSpace;
+import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudOrganization;
+import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudSpace;
 import com.sap.cloudfoundry.client.facade.util.UriUtil;
+
+import org.cloudfoundry.AbstractCloudFoundryException;
+import org.cloudfoundry.client.v3.ClientV3Exception;
 import org.cloudfoundry.client.v3.organizations.GetOrganizationRequest;
 import org.cloudfoundry.client.v3.organizations.ListOrganizationsRequest;
 import org.cloudfoundry.client.v3.organizations.Organization;
@@ -33,6 +38,7 @@ public class CloudSpaceClient {
         Space space = spacesClient.get(GetSpaceRequest.builder()
                                                       .spaceId(spaceGuid.toString())
                                                       .build())
+                                  .onErrorMap(ClientV3Exception.class, this::convertV3ClientException)
                                   .block();
         if (space == null) {
             throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Space with GUID " + spaceGuid + " not found.");
@@ -45,6 +51,7 @@ public class CloudSpaceClient {
         Organization org = orgsClient.get(GetOrganizationRequest.builder()
                                                                 .organizationId(orgGuid)
                                                                 .build())
+                                     .onErrorMap(ClientV3Exception.class, this::convertV3ClientException)
                                      .block();
         if (org == null) {
             throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found", "Organization with GUID " + orgGuid + " not found.");
@@ -56,6 +63,7 @@ public class CloudSpaceClient {
         var orgsResponse = orgsClient.list(ListOrganizationsRequest.builder()
                                                                    .name(encodeAsQueryParam(organizationName))
                                                                    .build())
+                                     .onErrorMap(ClientV3Exception.class, this::convertV3ClientException)
                                      .block();
         List<? extends Organization> orgs = orgsResponse.getResources();
         if (orgs.isEmpty()) {
@@ -68,6 +76,7 @@ public class CloudSpaceClient {
                                                                 .organizationId(org.getId())
                                                                 .name(encodeAsQueryParam(spaceName))
                                                                 .build())
+                                         .onErrorMap(ClientV3Exception.class, this::convertV3ClientException)
                                          .block();
         List<? extends Space> spaces = spacesResponse.getResources();
         if (spaces.isEmpty()) {
@@ -91,6 +100,11 @@ public class CloudSpaceClient {
                                                                           .name(org.getName())
                                                                           .build())
                                   .build();
+    }
+
+    private CloudOperationException convertV3ClientException(AbstractCloudFoundryException e) {
+        HttpStatus httpStatus = HttpStatus.valueOf(e.getStatusCode());
+        return new CloudOperationException(httpStatus, httpStatus.getReasonPhrase(), e.getMessage(), e);
     }
 
 }
