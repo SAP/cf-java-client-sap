@@ -1,5 +1,7 @@
 package com.sap.cloudfoundry.client.facade.adapters;
 
+import java.io.IOException;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -12,6 +14,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.function.Function;
 
+import com.sap.cloudfoundry.client.facade.CloudException;
 import com.sap.cloudfoundry.client.facade.Messages;
 import com.sap.cloudfoundry.client.facade.util.CloudUtil;
 import org.cloudfoundry.client.CloudFoundryClient;
@@ -65,14 +68,15 @@ public abstract class CloudFoundryClientFactory {
 
     public LogCacheClient createLogCacheClient(URL controllerUrl, OAuthClient oAuthClient, Map<String, String> requestTags) {
         String logCacheApi;
-        var links = CloudUtil.executeWithRetry(() -> callCfRoot(controllerUrl));
-        if (links.isEmpty()) {
-            logCacheApi = controllerUrl.toString()
-                                       .replace("api", "log-cache");
-        } else {
+        try {
+            var links = CloudUtil.executeWithRetry(() -> callCfRoot(controllerUrl));
             @SuppressWarnings("unchecked")
             var logCache = (Map<String, Object>) links.get("log_cache");
             logCacheApi = (String) logCache.get("href");
+        } catch (CloudException e) {
+            LOGGER.warn(MessageFormat.format(Messages.CALL_TO_0_FAILED_WITH_1, controllerUrl.toString(), e.getMessage()), e);
+            logCacheApi = controllerUrl.toString()
+                                       .replace("api", "log-cache");
         }
         return new LogCacheClient(logCacheApi, oAuthClient, requestTags);
     }
@@ -87,9 +91,8 @@ public abstract class CloudFoundryClientFactory {
                                      .timeout(Duration.ofMinutes(5))
                                      .build();
             response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
-        } catch (Exception e) {
-            LOGGER.warn(MessageFormat.format(Messages.CALL_TO_0_FAILED_WITH_1, controllerUrl.toString(), e.getMessage()), e);
-            return Map.of();
+        } catch (InterruptedException | URISyntaxException | IOException e) {
+            throw new CloudException(e.getMessage(), e);
         }
         var map = JsonUtil.convertJsonToMap(response.body());
         return (Map<String, Object>) map.get("links");
@@ -97,13 +100,14 @@ public abstract class CloudFoundryClientFactory {
 
     public CloudSpaceClient createSpaceClient(URL controllerUrl, OAuthClient oAuthClient, Map<String, String> requestTags) {
         String v3Api;
-        var links = CloudUtil.executeWithRetry(() -> callCfRoot(controllerUrl));
-        if (links.isEmpty()) {
-            v3Api = controllerUrl.toString() + "/v3";
-        } else {
+        try {
+            var links = CloudUtil.executeWithRetry(() -> callCfRoot(controllerUrl));
             @SuppressWarnings("unchecked")
             var ccv3 = (Map<String, Object>) links.get("cloud_controller_v3");
             v3Api = (String) ccv3.get("href");
+        } catch (CloudException e) {
+            LOGGER.warn(MessageFormat.format(Messages.CALL_TO_0_FAILED_WITH_1, controllerUrl.toString(), e.getMessage()), e);
+            v3Api = controllerUrl + "/v3";
         }
         var spacesV3 = createV3SpacesClient(controllerUrl, v3Api, oAuthClient, requestTags);
         var orgsV3 = createV3OrgsClient(controllerUrl, v3Api, oAuthClient, requestTags);
