@@ -24,8 +24,8 @@
         <spring-security.version>5.7.7</spring-security.version>
         <commons-io.version>2.11.0</commons-io.version>
         <immutables.version>2.8.8</immutables.version>
-        <cloudfoundry-client.version>5.9.0.RELEASE</cloudfoundry-client.version>
-        <reactor-netty.version>1.0.26</reactor-netty.version>
+        <cloudfoundry-client.version>5.10.0.RELEASE</cloudfoundry-client.version>
+        <reactor-netty.version>1.0.34</reactor-netty.version>
     </properties>
 
     <organization>
