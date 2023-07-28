@@ -27,7 +27,7 @@ abstract class CloudControllerClientIntegrationTest {
 
     private static final String DEFAULT_CLIENT_ID = "cf";
     private static final String DEFAULT_CLIENT_SECRET = "";
-    private static final String DEFAULT_STACK = "cflinuxfs4";
+    protected static final String DEFAULT_STACK = "cflinuxfs4";
 
     protected static CloudControllerClient client;
     protected static CloudSpace target;

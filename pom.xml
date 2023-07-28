@@ -26,6 +26,7 @@
         <immutables.version>2.8.8</immutables.version>
         <cloudfoundry-client.version>5.10.0.RELEASE</cloudfoundry-client.version>
         <reactor-netty.version>1.0.34</reactor-netty.version>
+        <micrometer.version>1.10.4</micrometer.version>
     </properties>
 
     <organization>
@@ -257,6 +258,13 @@
             <groupId>io.projectreactor.netty</groupId>
             <artifactId>reactor-netty</artifactId>
             <version>${reactor-netty.version}</version>
+        </dependency>
+        <!-- Required dependency due to enabled metrics of reactor-netty client -->
+        <!-- https://mvnrepository.com/artifact/io.micrometer/micrometer-registry-jmx -->
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-core</artifactId>
+            <version>${micrometer.version}</version>
         </dependency>
     </dependencies>
 

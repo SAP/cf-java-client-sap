@@ -27,14 +27,13 @@ import com.sap.cloudfoundry.client.facade.domain.Staging;
 
 class CloudStackIntegrationTest extends CloudControllerClientIntegrationTest {
 
-    private static final String DEFAULT_STACK_NAME = "cflinuxfs3";
     private static final String INCORRECT_STACK_NAME = "Non-existent-stack-name";
     private static final CloudRoute DEFAULT_ROUTE = ImmutableCloudRoute.builder()
                                                                        .host(APPLICATION_HOST)
                                                                        .domain(ImmutableCloudDomain.builder()
                                                                                                    .name(DEFAULT_DOMAIN)
                                                                                                    .build())
-                                                                       .url(APPLICATION_HOST+"."+DEFAULT_DOMAIN)
+                                                                       .url(APPLICATION_HOST + "." + DEFAULT_DOMAIN)
                                                                        .build();
 
     @BeforeAll
@@ -81,7 +80,7 @@ class CloudStackIntegrationTest extends CloudControllerClientIntegrationTest {
                           .getData()
                           .get("stack");
         assertNotNull(appStack);
-        assertEquals(DEFAULT_STACK_NAME, appStack);
+        assertEquals(DEFAULT_STACK, appStack);
     }
 
     @Test
