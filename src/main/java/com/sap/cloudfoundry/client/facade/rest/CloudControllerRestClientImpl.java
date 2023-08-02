@@ -209,6 +209,7 @@ import com.sap.cloudfoundry.client.facade.domain.Staging;
 import com.sap.cloudfoundry.client.facade.domain.Status;
 import com.sap.cloudfoundry.client.facade.domain.Upload;
 import com.sap.cloudfoundry.client.facade.domain.UserRole;
+import com.sap.cloudfoundry.client.facade.dto.ApplicationToCreateDto;
 import com.sap.cloudfoundry.client.facade.util.JobV3Util;
 
 import reactor.core.publisher.Flux;
@@ -225,7 +226,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     private static final Duration BINDING_OPERATIONS_TIMEOUT = Duration.ofMinutes(10);
     private static final int MAX_CHAR_LENGTH_FOR_PARAMS_IN_REQUEST = 4000;
 
-    private CloudSpace target; //optional, as some operations do not require a targeted space
+    private CloudSpace target; // optional, as some operations do not require a targeted space
     private CloudFoundryClient delegate;
 
     /**
@@ -291,31 +292,39 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public void createApplication(String name, Staging staging, Integer disk, Integer memory, Metadata metadata, Set<CloudRoute> routes) {
+    public void createApplication(ApplicationToCreateDto applicationToCreateDto) {
         assertSpaceProvided("create application");
-        CreateApplicationRequest applicationRequest = createApplicationRequestBuilder(name,
-                                                                                      metadata).lifecycle(buildApplicationLifecycle(staging))
-                                                                                               .build();
-        doCreateApplication(staging, disk, memory, routes, applicationRequest);
+        CreateApplicationRequest createApplicationRequest = CreateApplicationRequest.builder()
+                                                                                    .name(applicationToCreateDto.getName())
+                                                                                    .metadata(applicationToCreateDto.getMetadata())
+                                                                                    .lifecycle(buildApplicationLifecycle(applicationToCreateDto.getStaging()))
+                                                                                    .relationships(buildApplicationRelationships())
+                                                                                    .environmentVariables(applicationToCreateDto.getEnv())
+                                                                                    .build();
+        CreateApplicationResponse createApplicationResponse = delegate.applicationsV3()
+                                                                      .create(createApplicationRequest)
+                                                                      .block();
+        updateApplicationAttributes(applicationToCreateDto, createApplicationResponse.getId());
     }
 
     private Lifecycle buildApplicationLifecycle(Staging staging) {
         return staging.getDockerInfo() != null ? createDockerLifecycle() : createBuildpackLifecycle(staging);
     }
 
-    private void doCreateApplication(Staging staging, Integer disk, Integer memory, Set<CloudRoute> routes,
-                                     CreateApplicationRequest applicationRequest) {
-        CreateApplicationResponse createApplicationResponse = delegate.applicationsV3()
-                                                                      .create(applicationRequest)
-                                                                      .block();
-        updateApplicationAttributes(staging, disk, memory, routes, createApplicationResponse);
+    private Lifecycle createDockerLifecycle() {
+        return Lifecycle.builder()
+                        .type(LifecycleType.DOCKER)
+                        .data(DockerData.builder()
+                                        .build())
+                        .build();
     }
 
-    private CreateApplicationRequest.Builder createApplicationRequestBuilder(String name, Metadata metadata) {
-        return CreateApplicationRequest.builder()
-                                       .name(name)
-                                       .metadata(metadata)
-                                       .relationships(buildApplicationRelationships());
+    private Lifecycle createBuildpackLifecycle(Staging staging) {
+        BuildpackData buildpackData = createBuildpackData(staging);
+        return Lifecycle.builder()
+                        .type(LifecycleType.BUILDPACK)
+                        .data(buildpackData)
+                        .build();
     }
 
     private BuildpackData createBuildpackData(Staging staging) {
@@ -327,61 +336,35 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return buildpackDataBuilder.build();
     }
 
-    private void updateApplicationAttributes(Staging staging, Integer disk, Integer memory, Set<CloudRoute> routes,
-                                             CreateApplicationResponse createApplicationResponse) {
-        UUID createdApplicationGuid = UUID.fromString(createApplicationResponse.getId());
-        GetApplicationProcessResponse applicationProcess = getApplicationProcessResource(createdApplicationGuid);
-        updateApplicationProcess(createdApplicationGuid, staging, applicationProcess);
-        delegate.applicationsV3()
-                .scale(ScaleApplicationRequest.builder()
-                                              .applicationId(createdApplicationGuid.toString())
-                                              .type("web")
-                                              .memoryInMb(memory)
-                                              .diskInMb(disk)
-                                              .build())
-                .block();
-        if (!CollectionUtils.isEmpty(routes)) {
-            addRoutes(routes, createdApplicationGuid);
-        }
-    }
-
-    private Lifecycle createBuildpackLifecycle(Staging staging) {
-        BuildpackData buildpackData = createBuildpackData(staging);
-        return Lifecycle.builder()
-                        .type(LifecycleType.BUILDPACK)
-                        .data(buildpackData)
-                        .build();
-    }
-
-    private Lifecycle createDockerLifecycle() {
-        return Lifecycle.builder()
-                        .type(LifecycleType.DOCKER)
-                        .data(DockerData.builder()
-                                        .build())
-                        .build();
-    }
-
     private ApplicationRelationships buildApplicationRelationships() {
         return ApplicationRelationships.builder()
                                        .space(buildToOneRelationship(getTargetSpaceGuid()))
                                        .build();
     }
 
-    private GetApplicationProcessResponse getApplicationProcessResource(UUID applicationGuid) {
-        return delegate.applicationsV3()
-                       .getProcess(GetApplicationProcessRequest.builder()
-                                                               .type("web")
-                                                               .applicationId(applicationGuid.toString())
-                                                               .build())
-                       .block();
+    private void updateApplicationAttributes(ApplicationToCreateDto applicationToCreateDto, String applicationGuid) {
+        UUID createdApplicationGuid = UUID.fromString(applicationGuid);
+        updateApplicationProcess(createdApplicationGuid, applicationToCreateDto.getStaging());
+        delegate.applicationsV3()
+                .scale(ScaleApplicationRequest.builder()
+                                              .applicationId(createdApplicationGuid.toString())
+                                              .type("web")
+                                              .memoryInMb(applicationToCreateDto.getMemoryInMb())
+                                              .diskInMb(applicationToCreateDto.getDiskQuotaInMb())
+                                              .build())
+                .block();
+        if (!CollectionUtils.isEmpty(applicationToCreateDto.getRoutes())) {
+            addRoutes(applicationToCreateDto.getRoutes(), createdApplicationGuid);
+        }
     }
 
-    private void updateApplicationProcess(UUID applicationGuid, Staging staging, GetApplicationProcessResponse applicationProcess) {
+    private void updateApplicationProcess(UUID applicationGuid, Staging staging) {
         if (staging.isSshEnabled() != null) {
             updateSsh(applicationGuid, staging.isSshEnabled());
         }
+        GetApplicationProcessResponse getApplicationProcessResponse = getApplicationProcessResource(applicationGuid);
         UpdateProcessRequest.Builder updateProcessRequestBuilder = UpdateProcessRequest.builder()
-                                                                                       .processId(applicationProcess.getId())
+                                                                                       .processId(getApplicationProcessResponse.getId())
                                                                                        .command(staging.getCommand());
         if (staging.getHealthCheckType() != null) {
             updateProcessRequestBuilder.healthCheck(buildHealthCheck(staging));
@@ -401,6 +384,15 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                 .block();
     }
 
+    private GetApplicationProcessResponse getApplicationProcessResource(UUID applicationGuid) {
+        return delegate.applicationsV3()
+                       .getProcess(GetApplicationProcessRequest.builder()
+                                                               .type("web")
+                                                               .applicationId(applicationGuid.toString())
+                                                               .build())
+                       .block();
+    }
+
     private HealthCheck buildHealthCheck(Staging staging) {
         HealthCheckType healthCheckType = HealthCheckType.from(staging.getHealthCheckType());
         return HealthCheck.builder()
@@ -411,6 +403,17 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                     .invocationTimeout(staging.getInvocationTimeout())
                                     .build())
                           .build();
+    }
+
+    private void addRoutes(Set<CloudRoute> routes, UUID applicationGuid) {
+        Map<String, UUID> domains = getDomainsFromRoutes(routes);
+        for (CloudRoute route : routes) {
+            validateDomainForRoute(route, domains);
+            UUID domainGuid = domains.get(route.getDomain()
+                                               .getName());
+            UUID routeGuid = getOrAddRoute(domainGuid, route.getHost(), route.getPath());
+            bindRoute(routeGuid, applicationGuid);
+        }
     }
 
     @Override
@@ -1250,8 +1253,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                 .lifecycle(buildApplicationLifecycle(staging))
                                                 .build())
                 .block();
-        GetApplicationProcessResponse applicationProcess = getApplicationProcessResource(applicationGuid);
-        updateApplicationProcess(applicationGuid, staging, applicationProcess);
+        updateApplicationProcess(applicationGuid, staging);
     }
 
     @Override
@@ -1322,9 +1324,9 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     public void updateServiceBindingMetadata(UUID guid, org.cloudfoundry.client.v3.Metadata metadata) {
         delegate.serviceBindingsV3()
                 .update(UpdateServiceBindingRequest.builder()
-                                                    .serviceBindingId(guid.toString())
-                                                    .metadata(metadata)
-                                                    .build())
+                                                   .serviceBindingId(guid.toString())
+                                                   .metadata(metadata)
+                                                   .build())
                 .block();
     }
 
@@ -1421,7 +1423,9 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                                                                              .build())
                                                                        .block();
         if (dropletResponse == null) {
-            throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not found", "Application with guid " + applicationGuid + " does not have a droplet");
+            throw new CloudOperationException(HttpStatus.NOT_FOUND,
+                                              "Not found",
+                                              "Application with guid " + applicationGuid + " does not have a droplet");
         }
         return parseDropletInfo(dropletResponse);
     }
@@ -1807,19 +1811,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                     unbindRoute(route.getId(), destination.getDestinationId());
                 }
             }
-        }
-    }
-
-    private void addRoutes(Set<CloudRoute> routes, UUID applicationGuid) {
-        Map<String, UUID> domains = getDomainsFromRoutes(routes);
-        for (CloudRoute route : routes) {
-            validateDomainForRoute(route, domains);
-            UUID domainGuid = domains.get(route.getDomain()
-                                               .getName());
-
-            UUID routeGuid = getOrAddRoute(domainGuid, route.getHost(), route.getPath());
-
-            bindRoute(routeGuid, applicationGuid);
         }
     }
 

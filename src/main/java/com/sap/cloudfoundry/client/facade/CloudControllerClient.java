@@ -32,6 +32,7 @@ import com.sap.cloudfoundry.client.facade.domain.ServicePlanVisibility;
 import com.sap.cloudfoundry.client.facade.domain.Staging;
 import com.sap.cloudfoundry.client.facade.domain.Upload;
 import com.sap.cloudfoundry.client.facade.domain.UserRole;
+import com.sap.cloudfoundry.client.facade.dto.ApplicationToCreateDto;
 
 /**
  * The interface defining operations making up the Cloud Foundry Java client's API.
@@ -78,16 +79,11 @@ public interface CloudControllerClient {
                                          ApplicationServicesUpdateCallback updateServicesCallback);
 
     /**
-     * Create application.
+     * Create application
      *
-     * @param applicationName application name
-     * @param staging staging info
-     * @param disk disk quota to use in MB
-     * @param memory memory to use in MB
-     * @param routes list of route summary info for the app
+     * @param applicationToCreateDto the application's parameters used for its creation
      */
-    void createApplication(String applicationName, Staging staging, Integer disk, Integer memory, Metadata metadata,
-                           Set<CloudRoute> routes);
+    void createApplication(ApplicationToCreateDto applicationToCreateDto);
 
     /**
      * Create a service instance.

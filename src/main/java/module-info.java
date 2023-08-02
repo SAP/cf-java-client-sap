@@ -30,5 +30,6 @@ open module com.sap.cloudfoundry.client.facade {
     exports com.sap.cloudfoundry.client.facade.domain;
     exports com.sap.cloudfoundry.client.facade.adapters;
     exports com.sap.cloudfoundry.client.facade.util;
+    exports com.sap.cloudfoundry.client.facade.dto;
 
 }

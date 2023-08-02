@@ -24,6 +24,8 @@ import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudDomain;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudRoute;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableStaging;
 import com.sap.cloudfoundry.client.facade.domain.Staging;
+import com.sap.cloudfoundry.client.facade.dto.ApplicationToCreateDto;
+import com.sap.cloudfoundry.client.facade.dto.ImmutableApplicationToCreateDto;
 
 class CloudStackIntegrationTest extends CloudControllerClientIntegrationTest {
 
@@ -65,7 +67,14 @@ class CloudStackIntegrationTest extends CloudControllerClientIntegrationTest {
     }
 
     private void verifyExistenceOfDefaultStack(String applicationName, Staging staging, Set<CloudRoute> routes) {
-        client.createApplication(applicationName, staging, DISK_IN_MB, MEMORY_IN_MB, null, routes);
+        ApplicationToCreateDto applicationToCreateDto = ImmutableApplicationToCreateDto.builder()
+                                                                                       .name(applicationName)
+                                                                                       .staging(staging)
+                                                                                       .diskQuotaInMb(DISK_IN_MB)
+                                                                                       .memoryInMb(MEMORY_IN_MB)
+                                                                                       .routes(routes)
+                                                                                       .build();
+        client.createApplication(applicationToCreateDto);
         assertDefaultCloudStack(ImmutableCloudApplication.builder()
                                                          .name(applicationName)
                                                          .state(CloudApplication.State.STARTED)
@@ -98,7 +107,14 @@ class CloudStackIntegrationTest extends CloudControllerClientIntegrationTest {
     }
 
     private void verifyIncorrectStack(String applicationName, Staging staging, Set<CloudRoute> routes) {
-        client.createApplication(applicationName, staging, DISK_IN_MB, MEMORY_IN_MB, null, routes);
+        ApplicationToCreateDto applicationToCreateDto = ImmutableApplicationToCreateDto.builder()
+                                                                                       .name(applicationName)
+                                                                                       .staging(staging)
+                                                                                       .diskQuotaInMb(DISK_IN_MB)
+                                                                                       .memoryInMb(MEMORY_IN_MB)
+                                                                                       .routes(routes)
+                                                                                       .build();
+        client.createApplication(applicationToCreateDto);
         assertThrows(CloudOperationException.class, () -> client.getStack(INCORRECT_STACK_NAME, true));
     }
 
