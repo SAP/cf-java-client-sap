@@ -47,6 +47,8 @@ import com.sap.cloudfoundry.client.facade.domain.ImmutableStaging;
 import com.sap.cloudfoundry.client.facade.domain.InstancesInfo;
 import com.sap.cloudfoundry.client.facade.domain.Staging;
 import com.sap.cloudfoundry.client.facade.domain.Status;
+import com.sap.cloudfoundry.client.facade.dto.ApplicationToCreateDto;
+import com.sap.cloudfoundry.client.facade.dto.ImmutableApplicationToCreateDto;
 
 class ApplicationsCloudControllerClientIntegrationTest extends CloudControllerClientIntegrationTest {
 
@@ -397,7 +399,14 @@ class ApplicationsCloudControllerClientIntegrationTest extends CloudControllerCl
     }
 
     private void verifyApplicationWillBeCreated(String applicationName, Staging staging, Set<CloudRoute> routes) {
-        client.createApplication(applicationName, staging, DISK_IN_MB, MEMORY_IN_MB, null, routes);
+        ApplicationToCreateDto applicationToCreateDto = ImmutableApplicationToCreateDto.builder()
+                                                                                       .name(applicationName)
+                                                                                       .staging(staging)
+                                                                                       .diskQuotaInMb(DISK_IN_MB)
+                                                                                       .memoryInMb(MEMORY_IN_MB)
+                                                                                       .routes(routes)
+                                                                                       .build();
+        client.createApplication(applicationToCreateDto);
         assertApplicationExists(ImmutableCloudApplication.builder()
                                                          .name(applicationName)
                                                          .state(CloudApplication.State.STOPPED)

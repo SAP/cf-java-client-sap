@@ -9,6 +9,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.function.Supplier;
 
+import com.sap.cloudfoundry.client.facade.dto.ApplicationToCreateDto;
 import org.cloudfoundry.AbstractCloudFoundryException;
 import org.cloudfoundry.client.v3.Metadata;
 import org.springframework.http.HttpStatus;
@@ -103,9 +104,8 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public void createApplication(String applicationName, Staging staging, Integer disk, Integer memory, Metadata metadata,
-                                  Set<CloudRoute> routes) {
-        handleExceptions(() -> delegate.createApplication(applicationName, staging, disk, memory, metadata, routes));
+    public void createApplication(ApplicationToCreateDto applicationToCreateDto) {
+        handleExceptions(() -> delegate.createApplication(applicationToCreateDto));
     }
 
     @Override

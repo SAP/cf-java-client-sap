@@ -7,6 +7,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
+import com.sap.cloudfoundry.client.facade.dto.ApplicationToCreateDto;
 import org.cloudfoundry.client.v3.Metadata;
 
 import com.sap.cloudfoundry.client.facade.UploadStatusCallback;
@@ -50,8 +51,7 @@ public interface CloudControllerRestClient {
 
     Optional<String> bindServiceInstance(String applicationName, String serviceInstanceName, Map<String, Object> parameters);
 
-    void createApplication(String applicationName, Staging staging, Integer disk, Integer memory, Metadata metadata,
-                           Set<CloudRoute> routes);
+    void createApplication(ApplicationToCreateDto applicationToCreateDto);
 
     void createServiceInstance(CloudServiceInstance serviceInstance);
 
