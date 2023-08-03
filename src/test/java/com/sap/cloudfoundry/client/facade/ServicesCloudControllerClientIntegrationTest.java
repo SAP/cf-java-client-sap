@@ -551,7 +551,6 @@ class ServicesCloudControllerClientIntegrationTest extends CloudControllerClient
                                                            .url(APPLICATION_HOST + "." + defaultDomain)
                                                            .build());
         Map<String, String> appEnv = getServiceBrokerEnvConfiguration();
-        client.updateApplicationEnv(IntegrationTestConstants.SERVICE_BROKER_APP_NAME, appEnv);
         return ImmutableApplicationToCreateDto.builder()
                                               .name(IntegrationTestConstants.SERVICE_BROKER_APP_NAME)
                                               .staging(staging)
