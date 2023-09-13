@@ -1,11 +1,11 @@
-name: Java CI with Maven
+name: SAP Java Client Main
 
 on:
   push:
     branches: [ "master" ]
 
 jobs:
-  publish:
+  publish-maven-central:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
