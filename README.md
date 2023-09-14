@@ -1,4 +1,4 @@
-# Description [![Build Status](https://github.com/cloudfoundry/multiapps-controller/actions/workflows/main.yml/badge.svg?branch=master)](https://github.com/cloudfoundry/multiapps-controller/actions/workflows/main.yml/badge.svg?branch=master) [![REUSE status](https://api.reuse.software/badge/github.com/SAP/cf-java-client-sap)](https://api.reuse.software/info/github.com/SAP/cf-java-client-sap)
+# Description [![Build Status](https://github.com/SAP/cf-java-client-sap/actions/workflows/main.yml/badge.svg?branch=master)](https://github.com/SAP/cf-java-client-sap/actions/workflows/main.yml) [![REUSE status](https://api.reuse.software/badge/github.com/SAP/cf-java-client-sap)](https://api.reuse.software/info/github.com/SAP/cf-java-client-sap)
 
 This is a facade that hides the official Cloud Foundry Java client (https://github.com/cloudfoundry/cf-java-client) under a **synchronous** API similar to the one it had back in version 1.1.4.RELEASE (see https://github.com/cloudfoundry/cf-java-client/tree/v1.1.4.RELEASE).
 
