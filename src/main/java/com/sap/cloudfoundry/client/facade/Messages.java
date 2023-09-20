@@ -6,6 +6,14 @@ public final class Messages {
 
     }
 
+    // INFO messages
+    public static final String CALLING_CF_ROOT_0_TO_ACCESS_LOG_CACHE_URL = "Calling CF root: {0} to access log-cache URL";
+    public static final String CF_ROOT_REQUEST_FINISHED = "CF root request finished";
+    public static final String CALLING_LOG_CACHE_ENDPOINT_TO_GET_APP_LOGS = "Calling log-cache endpoint to get app logs";
+    public static final String APP_LOGS_WERE_FETCHED_SUCCESSFULLY = "App logs were fetched successfully";
+    public static final String STARTED_READING_LOG_RESPONSE_INPUT_STREAM = "Started reading log response input stream";
+    public static final String ENDED_READING_LOG_RESPONSE_INPUT_STREAM = "Ended reading log response input stream";
+
     // WARN messages
     public static final String RETRYING_OPERATION = "Retrying operation that failed with: {0}";
     public static final String CALL_TO_0_FAILED_WITH_1 = "Calling {0} failed with: {1}";

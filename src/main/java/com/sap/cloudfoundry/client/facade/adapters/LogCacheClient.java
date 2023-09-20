@@ -18,6 +18,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import org.apache.commons.io.IOUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.util.UriComponentsBuilder;
+
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sap.cloudfoundry.client.facade.CloudException;
 import com.sap.cloudfoundry.client.facade.CloudOperationException;
 import com.sap.cloudfoundry.client.facade.Messages;
@@ -26,18 +35,12 @@ import com.sap.cloudfoundry.client.facade.domain.ImmutableApplicationLog;
 import com.sap.cloudfoundry.client.facade.oauth2.OAuthClient;
 import com.sap.cloudfoundry.client.facade.util.CloudUtil;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import org.apache.commons.io.IOUtils;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.util.UriComponentsBuilder;
-
 public class LogCacheClient {
 
-    private static final ObjectMapper mapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+    private static final ObjectMapper MAPPER = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
                                                                  .configure(DeserializationFeature.UNWRAP_ROOT_VALUE, true);
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(LogCacheClient.class);
 
     private final String logCacheApi;
     private final OAuthClient oAuthClient;
@@ -50,15 +53,30 @@ public class LogCacheClient {
     }
 
     public List<ApplicationLog> getRecentLogs(UUID applicationGuid, LocalDateTime offset) {
-        HttpRequest request = buildGetLogsRequest(applicationGuid, offset);
-        HttpResponse<InputStream> response = CloudUtil.executeWithRetry(() -> sendRequest(request));
+        HttpResponse<InputStream> response = CloudUtil.executeWithRetry(() -> executeRequest(applicationGuid, offset));
 
         return parseBody(response.body()).getLogs()
                                          .stream()
                                          .map(this::mapToAppLog)
-                                         //we use a linked list so that the log messages can be a LIFO sequence
-                                         //that way, we avoid unnecessary sorting and copying to and from another collection/array
+                                         // we use a linked list so that the log messages can be a LIFO sequence
+                                         // that way, we avoid unnecessary sorting and copying to and from another collection/array
                                          .collect(LinkedList::new, LinkedList::addFirst, LinkedList::addAll);
+    }
+
+    private HttpResponse<InputStream> executeRequest(UUID applicationGuid, LocalDateTime offset) {
+        try {
+            HttpRequest request = buildGetLogsRequest(applicationGuid, offset);
+            LOGGER.info(Messages.CALLING_LOG_CACHE_ENDPOINT_TO_GET_APP_LOGS);
+            var response = CloudFoundryClientFactory.HTTP_CLIENT.send(request, BodyHandlers.ofInputStream());
+            if (response.statusCode() / 100 != 2) {
+                var status = HttpStatus.valueOf(response.statusCode());
+                throw new CloudOperationException(status, status.getReasonPhrase(), parseBodyToString(response.body()));
+            }
+            LOGGER.info(Messages.APP_LOGS_WERE_FETCHED_SUCCESSFULLY);
+            return response;
+        } catch (IOException | InterruptedException e) {
+            throw new CloudException(e.getMessage(), e);
+        }
     }
 
     private HttpRequest buildGetLogsRequest(UUID applicationGuid, LocalDateTime offset) {
@@ -85,19 +103,6 @@ public class LogCacheClient {
                                    .toUri();
     }
 
-    private HttpResponse<InputStream> sendRequest(HttpRequest request) {
-        try {
-            var response = CloudFoundryClientFactory.HTTP_CLIENT.send(request, BodyHandlers.ofInputStream());
-            if (response.statusCode() / 100 != 2) {
-                var status = HttpStatus.valueOf(response.statusCode());
-                throw new CloudOperationException(status, status.getReasonPhrase(), parseBodyToString(response.body()));
-            }
-            return response;
-        } catch (IOException | InterruptedException e) {
-            throw new CloudException(e.getMessage(), e);
-        }
-    }
-
     private String parseBodyToString(InputStream is) {
         try (InputStream wrapped = is) {
             return IOUtils.toString(wrapped, StandardCharsets.UTF_8);
@@ -107,8 +112,11 @@ public class LogCacheClient {
     }
 
     private ApplicationLogsResponse parseBody(InputStream is) {
+        LOGGER.info(Messages.STARTED_READING_LOG_RESPONSE_INPUT_STREAM);
         try (InputStream wrapped = is) {
-            return mapper.readValue(wrapped, ApplicationLogsResponse.class);
+            var appLogsResponse = MAPPER.readValue(wrapped, ApplicationLogsResponse.class);
+            LOGGER.info(Messages.ENDED_READING_LOG_RESPONSE_INPUT_STREAM);
+            return appLogsResponse;
         } catch (IOException e) {
             throw new CloudException(String.format(Messages.CANT_DESERIALIZE_APP_LOGS_RESPONSE, e.getMessage()), e);
         }
@@ -127,19 +135,19 @@ public class LogCacheClient {
                                       .build();
     }
 
-    private static String decodeLogPayload(String base64Encoded) {
+    private String decodeLogPayload(String base64Encoded) {
         var result = Base64.getDecoder()
                            .decode(base64Encoded.getBytes(StandardCharsets.UTF_8));
         return new String(result, StandardCharsets.UTF_8);
     }
 
-    private static LocalDateTime fromLogTimestamp(long timestampNanos) {
+    private LocalDateTime fromLogTimestamp(long timestampNanos) {
         Duration duration = Duration.ofNanos(timestampNanos);
         Instant instant = Instant.ofEpochSecond(duration.getSeconds(), duration.getNano());
         return LocalDateTime.ofInstant(instant, ZoneId.of("UTC"));
     }
 
-    private static ApplicationLog.MessageType fromLogMessageType(String messageType) {
+    private ApplicationLog.MessageType fromLogMessageType(String messageType) {
         return "OUT".equals(messageType) ? ApplicationLog.MessageType.STDOUT : ApplicationLog.MessageType.STDERR;
     }
 }
