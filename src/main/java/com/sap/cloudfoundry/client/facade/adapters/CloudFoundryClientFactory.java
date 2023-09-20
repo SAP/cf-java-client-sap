@@ -14,9 +14,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.function.Function;
 
-import com.sap.cloudfoundry.client.facade.CloudException;
-import com.sap.cloudfoundry.client.facade.Messages;
-import com.sap.cloudfoundry.client.facade.util.CloudUtil;
 import org.cloudfoundry.client.CloudFoundryClient;
 import org.cloudfoundry.client.v3.organizations.OrganizationsV3;
 import org.cloudfoundry.client.v3.spaces.SpacesV3;
@@ -25,12 +22,17 @@ import org.cloudfoundry.reactor.DefaultConnectionContext;
 import org.cloudfoundry.reactor.client.ReactorCloudFoundryClient;
 import org.cloudfoundry.reactor.client.v3.organizations.ReactorOrganizationsV3;
 import org.cloudfoundry.reactor.client.v3.spaces.ReactorSpacesV3;
+import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.immutables.value.Value;
+import org.springframework.http.HttpStatus;
 
-import com.sap.cloudfoundry.client.facade.rest.CloudSpaceClient;
+import com.sap.cloudfoundry.client.facade.CloudException;
+import com.sap.cloudfoundry.client.facade.CloudOperationException;
+import com.sap.cloudfoundry.client.facade.Messages;
 import com.sap.cloudfoundry.client.facade.oauth2.OAuthClient;
+import com.sap.cloudfoundry.client.facade.rest.CloudSpaceClient;
+import com.sap.cloudfoundry.client.facade.util.CloudUtil;
 import com.sap.cloudfoundry.client.facade.util.JsonUtil;
 
 import reactor.core.publisher.Mono;
@@ -69,7 +71,7 @@ public abstract class CloudFoundryClientFactory {
     public LogCacheClient createLogCacheClient(URL controllerUrl, OAuthClient oAuthClient, Map<String, String> requestTags) {
         String logCacheApi;
         try {
-            var links = CloudUtil.executeWithRetry(() -> callCfRoot(controllerUrl));
+            var links = CloudUtil.executeWithRetry(() -> callCfRoot(controllerUrl, requestTags));
             @SuppressWarnings("unchecked")
             var logCache = (Map<String, Object>) links.get("log_cache");
             logCacheApi = (String) logCache.get("href");
@@ -82,15 +84,17 @@ public abstract class CloudFoundryClientFactory {
     }
 
     @SuppressWarnings("unchecked")
-    private Map<String, Object> callCfRoot(URL controllerUrl) {
+    private Map<String, Object> callCfRoot(URL controllerUrl, Map<String, String> requestTags) {
         HttpResponse<String> response;
         try {
-            var request = HttpRequest.newBuilder()
-                                     .GET()
-                                     .uri(controllerUrl.toURI())
-                                     .timeout(Duration.ofMinutes(5))
-                                     .build();
+            HttpRequest request = buildCfRootRequest(controllerUrl, requestTags);
+            LOGGER.info(MessageFormat.format(Messages.CALLING_CF_ROOT_0_TO_ACCESS_LOG_CACHE_URL, controllerUrl));
             response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() / 100 != 2) {
+                var status = HttpStatus.valueOf(response.statusCode());
+                throw new CloudOperationException(status, status.getReasonPhrase(), response.body());
+            }
+            LOGGER.info(Messages.CF_ROOT_REQUEST_FINISHED);
         } catch (InterruptedException | URISyntaxException | IOException e) {
             throw new CloudException(e.getMessage(), e);
         }
@@ -98,10 +102,19 @@ public abstract class CloudFoundryClientFactory {
         return (Map<String, Object>) map.get("links");
     }
 
+    private HttpRequest buildCfRootRequest(URL controllerUrl, Map<String, String> requestTags) throws URISyntaxException {
+        var requestBuilder = HttpRequest.newBuilder()
+                                        .GET()
+                                        .uri(controllerUrl.toURI())
+                                        .timeout(Duration.ofMinutes(5));
+        requestTags.forEach(requestBuilder::header);
+        return requestBuilder.build();
+    }
+
     public CloudSpaceClient createSpaceClient(URL controllerUrl, OAuthClient oAuthClient, Map<String, String> requestTags) {
         String v3Api;
         try {
-            var links = CloudUtil.executeWithRetry(() -> callCfRoot(controllerUrl));
+            var links = CloudUtil.executeWithRetry(() -> callCfRoot(controllerUrl, requestTags));
             @SuppressWarnings("unchecked")
             var ccv3 = (Map<String, Object>) links.get("cloud_controller_v3");
             v3Api = (String) ccv3.get("href");
@@ -114,16 +127,18 @@ public abstract class CloudFoundryClientFactory {
         return new CloudSpaceClient(spacesV3, orgsV3);
     }
 
-    private SpacesV3 createV3SpacesClient(URL controllerUrl, String v3Api, OAuthClient oAuthClient,
-                                          Map<String, String> requestTags) {
-        return new ReactorSpacesV3(getOrCreateConnectionContext(controllerUrl.getHost()), Mono.just(v3Api),
-                                   oAuthClient.getTokenProvider(), requestTags);
+    private SpacesV3 createV3SpacesClient(URL controllerUrl, String v3Api, OAuthClient oAuthClient, Map<String, String> requestTags) {
+        return new ReactorSpacesV3(getOrCreateConnectionContext(controllerUrl.getHost()),
+                                   Mono.just(v3Api),
+                                   oAuthClient.getTokenProvider(),
+                                   requestTags);
     }
 
-    private OrganizationsV3 createV3OrgsClient(URL controllerUrl, String v3Api, OAuthClient oAuthClient,
-                                               Map<String, String> requestTags) {
-        return new ReactorOrganizationsV3(getOrCreateConnectionContext(controllerUrl.getHost()), Mono.just(v3Api),
-                                          oAuthClient.getTokenProvider(), requestTags);
+    private OrganizationsV3 createV3OrgsClient(URL controllerUrl, String v3Api, OAuthClient oAuthClient, Map<String, String> requestTags) {
+        return new ReactorOrganizationsV3(getOrCreateConnectionContext(controllerUrl.getHost()),
+                                          Mono.just(v3Api),
+                                          oAuthClient.getTokenProvider(),
+                                          requestTags);
     }
 
     public ConnectionContext getOrCreateConnectionContext(String controllerApiHost) {
