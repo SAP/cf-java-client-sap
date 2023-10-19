@@ -7,7 +7,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
-import com.sap.cloudfoundry.client.facade.dto.ApplicationToCreateDto;
 import org.cloudfoundry.client.v3.Metadata;
 
 import com.sap.cloudfoundry.client.facade.UploadStatusCallback;
@@ -34,6 +33,7 @@ import com.sap.cloudfoundry.client.facade.domain.ServicePlanVisibility;
 import com.sap.cloudfoundry.client.facade.domain.Staging;
 import com.sap.cloudfoundry.client.facade.domain.Upload;
 import com.sap.cloudfoundry.client.facade.domain.UserRole;
+import com.sap.cloudfoundry.client.facade.dto.ApplicationToCreateDto;
 
 /**
  * Interface defining operations available for the cloud controller REST client implementations
