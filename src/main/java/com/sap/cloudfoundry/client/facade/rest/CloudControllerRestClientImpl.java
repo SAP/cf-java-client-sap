@@ -9,6 +9,7 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -204,6 +205,7 @@ import com.sap.cloudfoundry.client.facade.domain.ImmutableErrorDetails;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableInstancesInfo;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableUpload;
 import com.sap.cloudfoundry.client.facade.domain.InstancesInfo;
+import com.sap.cloudfoundry.client.facade.domain.RouteDestination;
 import com.sap.cloudfoundry.client.facade.domain.ServicePlanVisibility;
 import com.sap.cloudfoundry.client.facade.domain.Staging;
 import com.sap.cloudfoundry.client.facade.domain.Status;
@@ -412,7 +414,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
             UUID domainGuid = domains.get(route.getDomain()
                                                .getName());
             UUID routeGuid = getOrAddRoute(domainGuid, route.getHost(), route.getPath());
-            bindRoute(routeGuid, applicationGuid);
+            bindRoute(routeGuid, applicationGuid, route.getRequestedProtocol());
         }
     }
 
@@ -703,7 +705,10 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     @Override
     public List<CloudRoute> getApplicationRoutes(UUID applicationGuid) {
-        return fetchList(() -> getRouteResourcesByAppGuid(applicationGuid), ImmutableRawCloudRoute::of);
+        return fetchList(() -> getRouteResourcesByAppGuid(applicationGuid), routeResource -> ImmutableRawCloudRoute.builder()
+                                                                                                                   .route(routeResource)
+                                                                                                                   .applicationGuid(applicationGuid)
+                                                                                                                   .build());
     }
 
     @Override
@@ -1261,33 +1266,56 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     @Override
     public void updateApplicationRoutes(String applicationName, Set<CloudRoute> updatedRoutes) {
         UUID applicationGuid = getApplicationGuid(applicationName);
-        List<RouteResource> appRoutes = getRouteResourcesByAppGuid(applicationGuid).collectList()
-                                                                                   .defaultIfEmpty(Collections.emptyList())
-                                                                                   .block();
-
-        List<RouteResource> outdatedRoutes = getOutdatedRoutes(appRoutes, updatedRoutes);
-        Set<CloudRoute> newRoutes = getNewRoutes(updatedRoutes, appRoutes);
-
+        List<CloudRoute> appRoutes = fetchList(() -> getRouteResourcesByAppGuid(applicationGuid), ImmutableRawCloudRoute::of);
+        Set<CloudRoute> outdatedRoutes = getOutdatedRoutes(applicationGuid, appRoutes, updatedRoutes);
+        Set<CloudRoute> newRoutes = getNewRoutes(applicationGuid, appRoutes, updatedRoutes);
         removeRoutes(outdatedRoutes, applicationGuid);
         addRoutes(newRoutes, applicationGuid);
     }
 
-    private List<RouteResource> getOutdatedRoutes(List<RouteResource> currentRoutes, Set<CloudRoute> updatedRoutes) {
-        Set<String> urls = updatedRoutes.stream()
-                                        .map(CloudRoute::getUrl)
-                                        .collect(Collectors.toSet());
+    private Set<CloudRoute> getOutdatedRoutes(UUID applicationGuid, List<CloudRoute> currentRoutes, Set<CloudRoute> updatedRoutes) {
         return currentRoutes.stream()
-                            .filter(routeResource -> !urls.contains(routeResource.getUrl()))
-                            .collect(Collectors.toList());
+                            .filter(currentRoute -> isRouteOutdated(applicationGuid, currentRoute, updatedRoutes))
+                            .collect(Collectors.toSet());
     }
 
-    private Set<CloudRoute> getNewRoutes(Set<CloudRoute> updatedRoutes, List<RouteResource> currentRoutes) {
-        Set<String> urls = currentRoutes.stream()
-                                        .map(RouteResource::getUrl)
-                                        .collect(Collectors.toSet());
+    private boolean isRouteOutdated(UUID applicationGuid, CloudRoute currentRoute, Set<CloudRoute> updatedRoutes) {
+        Optional<CloudRoute> updatedRoute = findRoute(currentRoute.getUrl(), updatedRoutes);
+        if (updatedRoute.isEmpty()) {
+            return true;
+        }
+        return isProtocolChanged(applicationGuid, currentRoute, updatedRoute.get());
+    }
+
+    private Optional<CloudRoute> findRoute(String url, Collection<CloudRoute> routes) {
+        return routes.stream()
+                     .filter(route -> Objects.equals(url, route.getUrl()))
+                     .findFirst();
+    }
+
+    private boolean isProtocolChanged(UUID applicationGuid, CloudRoute currentRoute, CloudRoute updatedRoute) {
+        if (updatedRoute.getRequestedProtocol() == null) {
+            return false;
+        }
+        return currentRoute.getDestinations()
+                           .stream()
+                           .filter(routeDestination -> Objects.equals(routeDestination.getApplicationGuid(), applicationGuid))
+                           .noneMatch(routeDestination -> Objects.equals(routeDestination.getProtocol(),
+                                                                         updatedRoute.getRequestedProtocol()));
+    }
+
+    private Set<CloudRoute> getNewRoutes(UUID applicationGuid, List<CloudRoute> currentRoutes, Set<CloudRoute> updatedRoutes) {
         return updatedRoutes.stream()
-                            .filter(route -> !urls.contains(route.getUrl()))
+                            .filter(updatedRoute -> isRouteUpdated(applicationGuid, updatedRoute, currentRoutes))
                             .collect(Collectors.toSet());
+    }
+
+    private boolean isRouteUpdated(UUID applicationGuid, CloudRoute updatedRoute, List<CloudRoute> currentRoutes) {
+        Optional<CloudRoute> currentRoute = findRoute(updatedRoute.getUrl(), currentRoutes);
+        if (currentRoute.isEmpty()) {
+            return true;
+        }
+        return isProtocolChanged(applicationGuid, currentRoute.get(), updatedRoute);
     }
 
     @Override
@@ -1804,13 +1832,12 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         Assert.notNull(target, "Unable to " + operation + " without specifying organization and space to use.");
     }
 
-    private void removeRoutes(List<RouteResource> routes, UUID applicationGuid) {
-        for (RouteResource route : routes) {
-            for (Destination destination : route.getDestinations()) {
-                if (destination.getApplication()
-                               .getApplicationId()
-                               .equals(applicationGuid.toString())) {
-                    unbindRoute(route.getId(), destination.getDestinationId());
+    private void removeRoutes(Set<CloudRoute> routes, UUID applicationGuid) {
+        for (CloudRoute route : routes) {
+            for (RouteDestination destination : route.getDestinations()) {
+                if (destination.getApplicationGuid()
+                               .equals(applicationGuid)) {
+                    unbindRoute(route.getGuid(), destination.getGuid());
                 }
             }
         }
@@ -1826,29 +1853,30 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         }
     }
 
-    private void unbindRoute(String routeGuid, String destinationGuid) {
+    private void unbindRoute(UUID routeGuid, UUID destinationGuid) {
         delegate.routesV3()
                 .removeDestinations(RemoveRouteDestinationsRequest.builder()
-                                                                  .routeId(routeGuid)
-                                                                  .destinationId(destinationGuid)
+                                                                  .routeId(routeGuid.toString())
+                                                                  .destinationId(destinationGuid.toString())
                                                                   .build())
                 .block();
     }
 
-    private void bindRoute(UUID routeGuid, UUID applicationGuid) {
+    private void bindRoute(UUID routeGuid, UUID applicationGuid, String protocol) {
         delegate.routesV3()
                 .insertDestinations(InsertRouteDestinationsRequest.builder()
                                                                   .routeId(routeGuid.toString())
-                                                                  .destination(createDestination(applicationGuid))
+                                                                  .destination(createDestination(applicationGuid, protocol))
                                                                   .build())
                 .block();
     }
 
-    private Destination createDestination(UUID applicationGuid) {
+    private Destination createDestination(UUID applicationGuid, String protocol) {
         return Destination.builder()
                           .application(org.cloudfoundry.client.v3.routes.Application.builder()
                                                                                     .applicationId(applicationGuid.toString())
                                                                                     .build())
+                          .protocol(protocol)
                           .build();
     }
 
