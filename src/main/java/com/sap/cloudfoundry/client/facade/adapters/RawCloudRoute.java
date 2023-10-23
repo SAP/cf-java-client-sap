@@ -1,14 +1,20 @@
 package com.sap.cloudfoundry.client.facade.adapters;
 
+import java.util.List;
+import java.util.Objects;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
 import org.cloudfoundry.client.v3.routes.Route;
 import org.immutables.value.Value;
 
+import com.sap.cloudfoundry.client.facade.Nullable;
 import com.sap.cloudfoundry.client.facade.domain.CloudRoute;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudDomain;
-import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudRoute;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudMetadata;
-
-import java.util.UUID;
+import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudRoute;
+import com.sap.cloudfoundry.client.facade.domain.ImmutableRouteDestination;
+import com.sap.cloudfoundry.client.facade.domain.RouteDestination;
 
 @Value.Immutable
 public abstract class RawCloudRoute extends RawCloudEntity<CloudRoute> {
@@ -16,9 +22,13 @@ public abstract class RawCloudRoute extends RawCloudEntity<CloudRoute> {
     @Value.Parameter
     public abstract Route getRoute();
 
+    @Nullable
+    public abstract UUID getApplicationGuid();
+
     @Override
     public CloudRoute derive() {
         Route route = getRoute();
+        List<RouteDestination> destinations = mapDestinations();
         String domainGuid = route.getRelationships()
                                  .getDomain()
                                  .getData()
@@ -35,6 +45,8 @@ public abstract class RawCloudRoute extends RawCloudEntity<CloudRoute> {
                                                               .build())
                                   .path(route.getPath())
                                   .url(route.getUrl())
+                                  .destinations(destinations)
+                                  .requestedProtocol(computeRequestedProtocol(destinations))
                                   .build();
     }
 
@@ -43,7 +55,8 @@ public abstract class RawCloudRoute extends RawCloudEntity<CloudRoute> {
         if (!route.getHost()
                   .isEmpty()) {
             domain = domain.substring(route.getHost()
-                                           .length() + 1);
+                                           .length()
+                + 1);
         }
         if (!route.getPath()
                   .isEmpty()) {
@@ -53,6 +66,34 @@ public abstract class RawCloudRoute extends RawCloudEntity<CloudRoute> {
             domain = domain.substring(0, domain.indexOf(':'));
         }
         return domain;
+    }
+
+    private List<RouteDestination> mapDestinations() {
+        return getRoute().getDestinations()
+                         .stream()
+                         .map(destination -> ImmutableRouteDestination.builder()
+                                                                      .metadata(ImmutableCloudMetadata.builder()
+                                                                                                      .guid(UUID.fromString(destination.getDestinationId()))
+                                                                                                      .build())
+                                                                      .applicationGuid(UUID.fromString(destination.getApplication()
+                                                                                                                  .getApplicationId()))
+                                                                      .port(destination.getPort())
+                                                                      .weight(destination.getWeight())
+                                                                      .protocol(destination.getProtocol())
+                                                                      .build())
+                         .collect(Collectors.toList());
+    }
+
+    private String computeRequestedProtocol(List<RouteDestination> destinations) {
+        UUID applicationGuid = getApplicationGuid();
+        if (applicationGuid == null) {
+            return null;
+        }
+        return destinations.stream()
+                           .filter(destination -> Objects.equals(destination.getApplicationGuid(), applicationGuid))
+                           .findFirst()
+                           .map(RouteDestination::getProtocol)
+                           .orElse(null);
     }
 
 }

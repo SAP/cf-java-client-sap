@@ -1,12 +1,13 @@
 package com.sap.cloudfoundry.client.facade.domain;
 
+import java.util.List;
+import java.util.Objects;
+
 import org.immutables.value.Value;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.sap.cloudfoundry.client.facade.Nullable;
-
-import java.util.Objects;
 
 @Value.Immutable
 @JsonSerialize(as = ImmutableCloudRoute.class)
@@ -28,6 +29,12 @@ public abstract class CloudRoute extends CloudEntity implements Derivable<CloudR
 
     @Nullable
     public abstract Integer getPort();
+
+    @Nullable
+    public abstract String getRequestedProtocol();
+
+    @Nullable
+    public abstract List<RouteDestination> getDestinations();
 
     public abstract String getUrl();
 
@@ -58,10 +65,12 @@ public abstract class CloudRoute extends CloudEntity implements Derivable<CloudR
         var thisDomain = getDomain().getName();
         var otherDomain = otherRoute.getDomain()
                                     .getName();
+        // @formatter:off
         return thisDomain.equals(otherDomain)
                 && areEmptyOrEqual(getHost(), otherRoute.getHost())
                 && areEmptyOrEqual(getPath(), otherRoute.getPath())
                 && Objects.equals(getPort(), otherRoute.getPort());
+        // @formatter:on
     }
 
     private static boolean areEmptyOrEqual(String lhs, String rhs) {
