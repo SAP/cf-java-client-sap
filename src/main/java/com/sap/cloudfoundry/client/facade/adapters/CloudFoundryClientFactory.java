@@ -1,13 +1,17 @@
 package com.sap.cloudfoundry.client.facade.adapters;
 
-import java.net.URI;
+import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.text.MessageFormat;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
 import java.util.function.Function;
 
 import org.cloudfoundry.client.CloudFoundryClient;
@@ -21,37 +25,30 @@ import org.cloudfoundry.reactor.client.v3.spaces.ReactorSpacesV3;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.client.reactive.ReactorClientHttpConnector;
-import org.springframework.http.codec.json.Jackson2JsonDecoder;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.web.reactive.function.client.ClientResponse;
-import org.springframework.web.reactive.function.client.ExchangeStrategies;
-import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.http.HttpStatus;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sap.cloudfoundry.client.facade.CloudException;
+import com.sap.cloudfoundry.client.facade.CloudOperationException;
 import com.sap.cloudfoundry.client.facade.Messages;
 import com.sap.cloudfoundry.client.facade.oauth2.OAuthClient;
 import com.sap.cloudfoundry.client.facade.rest.CloudSpaceClient;
 import com.sap.cloudfoundry.client.facade.util.CloudUtil;
 import com.sap.cloudfoundry.client.facade.util.JsonUtil;
 
-import io.netty.channel.ChannelOption;
 import reactor.core.publisher.Mono;
-import reactor.netty.http.client.HttpClient;
 
 @Value.Immutable
 public abstract class CloudFoundryClientFactory {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CloudFoundryClientFactory.class);
 
+    static final HttpClient HTTP_CLIENT = HttpClient.newBuilder()
+                                                    .executor(Executors.newSingleThreadExecutor())
+                                                    .followRedirects(HttpClient.Redirect.NORMAL)
+                                                    .connectTimeout(Duration.ofMinutes(10))
+                                                    .build();
+
     private final Map<String, ConnectionContext> connectionContextCache = new ConcurrentHashMap<>();
-
-    private static final ObjectMapper MAPPER = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-                                                                 .configure(DeserializationFeature.UNWRAP_ROOT_VALUE, true);
-
-    static final WebClient WEB_CLIENT = buildWebClient();
 
     public abstract Optional<Duration> getSslHandshakeTimeout();
 
@@ -88,38 +85,30 @@ public abstract class CloudFoundryClientFactory {
 
     @SuppressWarnings("unchecked")
     private Map<String, Object> callCfRoot(URL controllerUrl, Map<String, String> requestTags) {
-        LOGGER.info(MessageFormat.format(Messages.CALLING_CF_ROOT_0_TO_ACCESS_LOG_CACHE_URL, controllerUrl));
-        String response = WEB_CLIENT.get()
-                                    .uri(getControllerUri(controllerUrl))
-                                    .headers(httpHeaders -> httpHeaders.addAll(getAdditionalRequestHeaders(requestTags)))
-                                    .exchangeToMono(this::handleClientResponse)
-                                    .block();
-        LOGGER.info(Messages.CF_ROOT_REQUEST_FINISHED);
-        var map = JsonUtil.convertJsonToMap(response);
+        HttpResponse<String> response;
+        try {
+            HttpRequest request = buildCfRootRequest(controllerUrl, requestTags);
+            LOGGER.info(MessageFormat.format(Messages.CALLING_CF_ROOT_0_TO_ACCESS_LOG_CACHE_URL, controllerUrl));
+            response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() / 100 != 2) {
+                var status = HttpStatus.valueOf(response.statusCode());
+                throw new CloudOperationException(status, status.getReasonPhrase(), response.body());
+            }
+            LOGGER.info(Messages.CF_ROOT_REQUEST_FINISHED);
+        } catch (InterruptedException | URISyntaxException | IOException e) {
+            throw new CloudException(e.getMessage(), e);
+        }
+        var map = JsonUtil.convertJsonToMap(response.body());
         return (Map<String, Object>) map.get("links");
     }
 
-    private URI getControllerUri(URL controllerUrl) {
-        try {
-            return controllerUrl.toURI();
-        } catch (URISyntaxException e) {
-            throw new CloudException(e.getMessage(), e);
-        }
-    }
-
-    private LinkedMultiValueMap<String, String> getAdditionalRequestHeaders(Map<String, String> requestTags) {
-        LinkedMultiValueMap<String, String> additionalHeaders = new LinkedMultiValueMap<>();
-        requestTags.forEach(additionalHeaders::add);
-        return additionalHeaders;
-    }
-
-    private Mono<String> handleClientResponse(ClientResponse clientResponse) {
-        if (clientResponse.statusCode()
-                          .is2xxSuccessful()) {
-            return clientResponse.bodyToMono(String.class);
-        }
-        return clientResponse.createException()
-                             .flatMap(Mono::error);
+    private HttpRequest buildCfRootRequest(URL controllerUrl, Map<String, String> requestTags) throws URISyntaxException {
+        var requestBuilder = HttpRequest.newBuilder()
+                                        .GET()
+                                        .uri(controllerUrl.toURI())
+                                        .timeout(Duration.ofMinutes(5));
+        requestTags.forEach(requestBuilder::header);
+        return requestBuilder.build();
     }
 
     public CloudSpaceClient createSpaceClient(URL controllerUrl, OAuthClient oAuthClient, Map<String, String> requestTags) {
@@ -174,21 +163,6 @@ public abstract class CloudFoundryClientFactory {
         }
         clientWithOptions = clientWithOptions.metrics(true, Function.identity());
         return clientWithOptions;
-    }
-
-    private static WebClient buildWebClient() {
-        HttpClient httpClient = HttpClient.create()
-                                          .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, (int) Duration.ofMinutes(10)
-                                                                                                      .toMillis())
-                                          .responseTimeout(Duration.ofMinutes(5));
-        return WebClient.builder()
-                        .clientConnector(new ReactorClientHttpConnector(httpClient))
-                        .exchangeStrategies(ExchangeStrategies.builder()
-                                                              .codecs(configurer -> configurer.defaultCodecs()
-                                                                                              .jackson2JsonDecoder(new Jackson2JsonDecoder(MAPPER)))
-                                                              .build())
-                        .build();
-
     }
 
 }
