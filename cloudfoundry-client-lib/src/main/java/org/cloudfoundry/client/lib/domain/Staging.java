@@ -116,8 +116,8 @@ public class Staging {
             return this;
         }
         
-        // @param invocationTimout; default value will be 1 second only if health check type is HTTP
-        public StagingBuilder invocationTimout(Integer invocationTimeout) {
+        // @param invocationTimeout; default value will be 1 second only if health check type is HTTP
+        public StagingBuilder invocationTimeout(Integer invocationTimeout) {
             this.invocationTimeout = invocationTimeout;
             return this;
         }
