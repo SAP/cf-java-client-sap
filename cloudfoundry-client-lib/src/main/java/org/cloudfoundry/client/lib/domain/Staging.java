@@ -34,6 +34,8 @@ public class Staging {
     private String stack;
 
     private Integer healthCheckTimeout;
+    
+    private Integer invocationTimeout;
 
     private String healthCheckType;
 
@@ -56,6 +58,7 @@ public class Staging {
         this.stack = builder.stack;
         this.detectedBuildpack = builder.detectedBuildpack;
         this.healthCheckTimeout = builder.healthCheckTimeout;
+        this.invocationTimeout = builder.invocationTimeout;
         this.healthCheckType = builder.healthCheckType;
         this.healthCheckHttpEndpoint = builder.healthCheckHttpEndpoint;
         this.sshEnabled = builder.sshEnabled;
@@ -68,6 +71,7 @@ public class Staging {
         private String stack;
         private String detectedBuildpack;
         private Integer healthCheckTimeout;
+        private Integer invocationTimeout;
         private String healthCheckType;
         private String healthCheckHttpEndpoint;
         private Boolean sshEnabled;
@@ -109,6 +113,12 @@ public class Staging {
         // @param healthCheckType; may be null
         public StagingBuilder healthCheckType(String healthCheckType) {
             this.healthCheckType = healthCheckType;
+            return this;
+        }
+        
+        // @param invocationTimout; default value will be 1 second only if health check type is HTTP
+        public StagingBuilder invocationTimout(Integer invocationTimeout) {
+            this.invocationTimeout = invocationTimeout;
             return this;
         }
 
@@ -164,6 +174,13 @@ public class Staging {
     public Integer getHealthCheckTimeout() {
         return healthCheckTimeout;
     }
+    
+    /**
+     * @return the invocation timeout value measured in seconds
+     */
+    public Integer getInvocationTimeout() {
+        return invocationTimeout;
+    }
 
     /**
      * @return health check type
@@ -204,6 +221,6 @@ public class Staging {
     public String toString() {
         return "Staging [command=" + getCommand() + " buildpack=" + getBuildpackUrl() + " stack=" + getStack() + " healthCheckTimeout="
             + getHealthCheckTimeout() + " healthCheckType" + getHealthCheckType() + " healthCheckHttpEndpoint="
-            + getHealthCheckHttpEndpoint() + " sshEnabled=" + isSshEnabled() + "]";
+            + getHealthCheckHttpEndpoint() + " sshEnabled=" + isSshEnabled() + " invocationTimeout=" + getInvocationTimeout() + "]";
     }
 }
