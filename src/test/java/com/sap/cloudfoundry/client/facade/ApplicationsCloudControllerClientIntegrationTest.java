@@ -48,6 +48,7 @@ import com.sap.cloudfoundry.client.facade.domain.InstancesInfo;
 import com.sap.cloudfoundry.client.facade.domain.Staging;
 import com.sap.cloudfoundry.client.facade.domain.Status;
 import com.sap.cloudfoundry.client.facade.dto.ApplicationToCreateDto;
+import com.sap.cloudfoundry.client.facade.domain.CloudProcess;
 import com.sap.cloudfoundry.client.facade.dto.ImmutableApplicationToCreateDto;
 
 class ApplicationsCloudControllerClientIntegrationTest extends CloudControllerClientIntegrationTest {
@@ -141,6 +142,29 @@ class ApplicationsCloudControllerClientIntegrationTest extends CloudControllerCl
             UUID applicationGuid = client.getApplicationGuid(applicationName);
             Map<String, String> applicationEnvironment = client.getApplicationEnvironment(applicationGuid);
             assertEquals("bar", applicationEnvironment.get("foo"));
+        } catch (Exception e) {
+            fail(e);
+        } finally {
+            client.deleteApplication(applicationName);
+        }
+    }
+
+    @Test
+    @DisplayName("Create application, update its healthcheck type and verify it ")
+    void updateApplicationHealthcheckType() {
+        String applicationName = "test-application-16";
+        try {
+            createAndVerifyDefaultApplication(applicationName);
+            UUID applicationGuid = client.getApplicationGuid(applicationName);
+            delegate.applicationsV2()
+                    .update(org.cloudfoundry.client.v2.applications.UpdateApplicationRequest
+                            .builder()
+                            .applicationId(applicationGuid.toString())
+                            .healthCheckType(HealthCheckType.NONE.getValue())
+                            .build())
+                    .block();
+            CloudProcess cloudProcess = client.getApplicationProcess(applicationGuid);
+            assertEquals(com.sap.cloudfoundry.client.facade.domain.HealthCheckType.NONE, cloudProcess.getHealthCheckType());
         } catch (Exception e) {
             fail(e);
         } finally {

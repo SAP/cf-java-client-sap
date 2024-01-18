@@ -9,6 +9,9 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.sap.cloudfoundry.client.facade.rest.CloudControllerRestClient;
+import com.sap.cloudfoundry.client.facade.rest.CloudControllerRestClientFactory;
+import org.cloudfoundry.client.CloudFoundryClient;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,6 +33,7 @@ abstract class CloudControllerClientIntegrationTest {
     protected static final String DEFAULT_STACK = "cflinuxfs4";
 
     protected static CloudControllerClient client;
+    protected static CloudFoundryClient delegate;
     protected static CloudSpace target;
 
     @BeforeAll
@@ -45,6 +49,7 @@ abstract class CloudControllerClientIntegrationTest {
         CloudSpaceClient spaceClient = clientFactory.createSpaceClient(apiUrl, oauthClient, Collections.emptyMap());
         target = spaceClient.getSpace(ITVariable.ORG.getValue(), ITVariable.SPACE.getValue());
         client = new CloudControllerClientImpl(apiUrl, credentials, target, true);
+        delegate = clientFactory.createClient(apiUrl, oauthClient, Collections.emptyMap());
     }
 
     @BeforeEach
