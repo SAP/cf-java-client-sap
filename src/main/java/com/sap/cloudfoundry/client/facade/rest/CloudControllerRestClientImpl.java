@@ -57,6 +57,7 @@ import org.cloudfoundry.client.v3.applications.StopApplicationRequest;
 import org.cloudfoundry.client.v3.applications.UpdateApplicationEnvironmentVariablesRequest;
 import org.cloudfoundry.client.v3.applications.UpdateApplicationFeatureRequest;
 import org.cloudfoundry.client.v3.applications.UpdateApplicationRequest;
+import org.cloudfoundry.client.v3.applications.UpdateApplicationResponse;
 import org.cloudfoundry.client.v3.auditevents.AuditEventResource;
 import org.cloudfoundry.client.v3.auditevents.ListAuditEventsRequest;
 import org.cloudfoundry.client.v3.builds.Build;
@@ -922,10 +923,11 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                   .serviceBindingId(keyGuid)
                                                                   .build())
                        // CF V3 API returns 404 when fetching credentials of a service key which creation failed
-                       .onErrorResume(this::isNotFound, t -> Mono.just(GetServiceBindingDetailsResponse.builder()
-                                                                                                       .volumeMounts(Collections.emptyList())
-                                                                                                       .credentials(Collections.emptyMap())
-                                                                                                       .build()))
+                       .onErrorResume(t -> doesErrorMatchStatusCode(t, HttpStatus.NOT_FOUND),
+                                      t -> Mono.just(GetServiceBindingDetailsResponse.builder()
+                                                                                     .volumeMounts(Collections.emptyList())
+                                                                                     .credentials(Collections.emptyMap())
+                                                                                     .build()))
                        .map(GetServiceBindingDetailsResponse::getCredentials);
     }
 
@@ -1139,7 +1141,18 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                 .applicationId(applicationGuid.toString())
                                                 .name(newName)
                                                 .build())
+                .onErrorResume(t -> doesErrorMatchStatusCode(t, HttpStatus.SERVICE_UNAVAILABLE),
+                               exception -> fallbackApplicationRename(newName, applicationGuid, exception))
                 .block();
+    }
+
+    private Mono<? extends UpdateApplicationResponse> fallbackApplicationRename(String newName, UUID applicationGuid, Throwable exception) {
+        String existingApplicationName = getApplicationByGuid(applicationGuid).block()
+                                                                              .getName();
+        if (newName.equals(existingApplicationName)) {
+            return Mono.empty();
+        }
+        return Mono.error(exception);
     }
 
     @Override
@@ -2103,13 +2116,13 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                      .build();
         return delegate.serviceOfferingsV3()
                        .get(request)
-                       .onErrorMap(this::isForbidden,
+                       .onErrorMap(t -> doesErrorMatchStatusCode(t, HttpStatus.FORBIDDEN),
                                    t -> new CloudOperationException(HttpStatus.FORBIDDEN,
                                                                     HttpStatus.FORBIDDEN.getReasonPhrase(),
                                                                     MessageFormat.format(Messages.SERVICE_OFFERING_WITH_GUID_0_IS_NOT_AVAILABLE,
                                                                                          offeringId),
                                                                     t))
-                       .onErrorMap(this::isNotFound,
+                       .onErrorMap(t -> doesErrorMatchStatusCode(t, HttpStatus.NOT_FOUND),
                                    t -> new CloudOperationException(HttpStatus.NOT_FOUND,
                                                                     HttpStatus.NOT_FOUND.getReasonPhrase(),
                                                                     MessageFormat.format(Messages.SERVICE_OFFERING_WITH_GUID_0_NOT_FOUND,
@@ -2170,13 +2183,13 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
         return delegate.servicePlansV3()
                        .get(request)
-                       .onErrorMap(this::isForbidden,
+                       .onErrorMap(t -> doesErrorMatchStatusCode(t, HttpStatus.FORBIDDEN),
                                    t -> new CloudOperationException(HttpStatus.FORBIDDEN,
                                                                     HttpStatus.FORBIDDEN.getReasonPhrase(),
                                                                     MessageFormat.format(Messages.SERVICE_PLAN_WITH_GUID_0_NOT_AVAILABLE_FOR_SERVICE_INSTANCE_1,
                                                                                          servicePlanGuid, serviceInstanceName),
                                                                     t))
-                       .onErrorMap(this::isNotFound,
+                       .onErrorMap(t -> doesErrorMatchStatusCode(t, HttpStatus.NOT_FOUND),
                                    t -> new CloudOperationException(HttpStatus.NOT_FOUND,
                                                                     HttpStatus.NOT_FOUND.getReasonPhrase(),
                                                                     MessageFormat.format(Messages.NO_SERVICE_PLAN_FOUND, servicePlanGuid,
@@ -2441,18 +2454,10 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                        .orElse(null);
     }
 
-    private boolean isForbidden(Throwable t) {
+    private boolean doesErrorMatchStatusCode(Throwable t, HttpStatus status) {
         if (t instanceof AbstractCloudFoundryException) {
             AbstractCloudFoundryException e = (AbstractCloudFoundryException) t;
-            return e.getStatusCode() == HttpStatus.FORBIDDEN.value();
-        }
-        return false;
-    }
-
-    private boolean isNotFound(Throwable t) {
-        if (t instanceof AbstractCloudFoundryException) {
-            AbstractCloudFoundryException e = (AbstractCloudFoundryException) t;
-            return e.getStatusCode() == HttpStatus.NOT_FOUND.value();
+            return e.getStatusCode() == status.value();
         }
         return false;
     }
