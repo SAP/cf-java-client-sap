@@ -3,6 +3,7 @@ name: SAP Java Client Main
 on:
   push:
     branches: [ "master" ]
+  workflow_dispatch
 
 jobs:
   publish-maven-central:
