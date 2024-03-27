@@ -1,5 +1,8 @@
 package com.sap.cloudfoundry.client.facade.domain;
 
+import java.util.Arrays;
+import java.util.Objects;
+
 import org.immutables.value.Value;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -11,9 +14,6 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.sap.cloudfoundry.client.facade.Messages;
 import com.sap.cloudfoundry.client.facade.Nullable;
 
-import java.util.Arrays;
-import java.util.Objects;
-
 @Value.Immutable
 @JsonSerialize(as = ImmutableCloudPackage.class)
 @JsonDeserialize(as = ImmutableCloudPackage.class)
@@ -24,10 +24,8 @@ public abstract class CloudPackage extends CloudEntity implements Derivable<Clou
 
     @Nullable
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXTERNAL_PROPERTY, property = "type")
-    @JsonSubTypes({
-            @JsonSubTypes.Type(name = "bits", value = ImmutableBitsData.class),
-            @JsonSubTypes.Type(name = "docker", value = ImmutableDockerData.class)
-    })
+    @JsonSubTypes({ @JsonSubTypes.Type(name = "bits", value = BitsData.class),
+        @JsonSubTypes.Type(name = "docker", value = DockerData.class) })
     public abstract PackageData getData();
 
     @Nullable
@@ -58,6 +56,7 @@ public abstract class CloudPackage extends CloudEntity implements Derivable<Clou
         }
     }
 
-    public interface PackageData {}
+    public interface PackageData {
+    }
 
 }
