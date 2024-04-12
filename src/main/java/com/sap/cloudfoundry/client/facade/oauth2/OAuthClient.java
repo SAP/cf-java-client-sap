@@ -4,12 +4,17 @@ import java.net.URL;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.HashMap;
+import java.util.Map;
 
+import com.sap.cloudfoundry.client.facade.Constants;
+import com.sap.cloudfoundry.client.facade.util.JsonUtil;
 import org.cloudfoundry.reactor.TokenProvider;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
@@ -22,7 +27,6 @@ import reactor.util.retry.RetryBackoffSpec;
 
 /**
  * Client that can handle authentication against a UAA instance
- *
  */
 public class OAuthClient {
 
@@ -94,8 +98,18 @@ public class OAuthClient {
         formData.add("username", credentials.getEmail());
         formData.add("password", credentials.getPassword());
         formData.add("response_type", "token");
+        addLoginHintIfPresent(formData);
+
         Oauth2AccessTokenResponse oauth2AccessTokenResponse = fetchOauth2AccessToken(formData);
         return tokenFactory.createToken(oauth2AccessTokenResponse);
+    }
+
+    private void addLoginHintIfPresent(MultiValueMap<String, String> formData) {
+        if (StringUtils.hasLength(credentials.getOrigin())) {
+            Map<String, String> loginHintMap = new HashMap<>();
+            loginHintMap.put(Constants.ORIGIN_KEY, credentials.getOrigin());
+            formData.add("login_hint", JsonUtil.convertToJson(loginHintMap));
+        }
     }
 
     private Oauth2AccessTokenResponse fetchOauth2AccessToken(MultiValueMap<String, String> formData) {
