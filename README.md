@@ -7,7 +7,7 @@ This is a facade that hides the official Cloud Foundry Java client (https://gith
 The `cf-java-client` project is a Java language binding for interacting with a Cloud Foundry instance. It provides similar functionality to the Cloud Foundry command line client (https://github.com/cloudfoundry/cli), such as creating services and applications, binding services to applications or even registering service brokers. It communicates with the [Cloud Foundry Controller](https://docs.cloudfoundry.org/concepts/architecture/cloud-controller.html) by making HTTP requests to the controller's REST API, which is documented at https://apidocs.cloudfoundry.org/ (V2) and https://v3-apidocs.cloudfoundry.org/ (V3).
 
 # Requirements
-* Installed Java 11 
+* Installed Java 17 
 * Installer and configured [Apache Maven](http://maven.apache.org/)
 * Access to [SAP Business Technology Platform Cloud Foundry environment](https://sap.com/products/business-technology-platform.html) or other Cloud Foundry instance
 
@@ -79,7 +79,7 @@ public final class JavaSample {
 
 # Compiling and Packaging
 
-The project is built using Java 11 and [Apache Maven](http://maven.apache.org/) and you can use the following command to do so:
+The project is built using Java 17 and [Apache Maven](http://maven.apache.org/) and you can use the following command to do so:
 
 ```shell
 mvn clean install
