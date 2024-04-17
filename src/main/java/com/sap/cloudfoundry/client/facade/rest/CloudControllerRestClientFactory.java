@@ -68,11 +68,7 @@ public abstract class CloudControllerRestClientFactory {
     }
 
     private OAuthClient createOAuthClient(URL controllerUrl, String origin) {
-        if (!StringUtils.hasLength(origin)) {
-            return restUtil.createOAuthClientByControllerUrl(controllerUrl, shouldTrustSelfSignedCertificates());
-        }
-        ConnectionContext connectionContext = getCloudFoundryClientFactory().getOrCreateConnectionContext(controllerUrl.getHost());
-        return restUtil.createOAuthClient(controllerUrl, connectionContext, origin, shouldTrustSelfSignedCertificates());
+        return restUtil.createOAuthClientByControllerUrl(controllerUrl, shouldTrustSelfSignedCertificates());
     }
 
 }
