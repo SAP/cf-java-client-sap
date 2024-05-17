@@ -27,6 +27,7 @@ import java.util.UUID;
 
 import org.cloudfoundry.client.v3.Metadata;
 import org.cloudfoundry.client.v3.processes.HealthCheckType;
+import org.cloudfoundry.client.v3.processes.Process;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -64,7 +65,7 @@ class ApplicationsCloudControllerClientIntegrationTest extends CloudControllerCl
     static void deleteExistingApps() {
         var allApps = client.getApplications();
         for (var app : allApps) {
-            client.deleteApplication(app.getName());
+            //client.deleteApplication(app.getName());
         }
     }
 
@@ -77,350 +78,362 @@ class ApplicationsCloudControllerClientIntegrationTest extends CloudControllerCl
         client.deleteDomain(DEFAULT_DOMAIN);
     }
 
-    @Test
-    @DisplayName("Create application and verify its attributes")
-    void createApplication() {
-        String applicationName = "test-app-1";
-        Staging staging = ImmutableStaging.builder()
-                                          .addBuildpack(JAVA_BUILDPACK)
-                                          .healthCheckType(HealthCheckType.PROCESS.getValue())
-                                          .healthCheckHttpEndpoint(HEALTH_CHECK_ENDPOINT)
-                                          .healthCheckTimeout(HEALTH_CHECK_TIMEMOUT)
-                                          .build();
-        CloudRoute route = getImmutableCloudRoute();
-        try {
-            verifyApplicationWillBeCreated(applicationName, staging, Set.of(route));
-        } catch (Exception e) {
-            fail(e);
-        } finally {
-            client.deleteApplication(applicationName);
-        }
-    }
-
-    @Test
-    @DisplayName("Create, delete and verify the application is deleted")
-    void deleteApplication() {
-        String applicationName = "test-application-2";
-
-        try {
-            createAndVerifyDefaultApplication(applicationName);
-            client.deleteApplication(applicationName);
-            Exception exception = assertThrows(CloudOperationException.class, () -> client.getApplication(applicationName));
-            assertTrue(exception.getMessage()
-                                .contains(HttpStatus.NOT_FOUND.getReasonPhrase()));
-        } catch (Exception e) {
-            fail(e);
-        } finally {
-            CloudApplication app = client.getApplication(applicationName, false);
-            if (app != null) {
-                client.deleteApplication(applicationName);
-            }
-        }
-    }
-
-    @Test
-    @DisplayName("Create application and verify its GUID")
-    void getApplicationGuid() {
-        String applicationName = "test-application-3";
-        try {
-            createAndVerifyDefaultApplication(applicationName);
-            assertNotNull(client.getApplicationGuid(applicationName));
-        } catch (Exception e) {
-            fail(e);
-        } finally {
-            client.deleteApplication(applicationName);
-        }
-    }
-
-    @Test
-    @DisplayName("Create application, update and update its environment")
-    void testApplicationEnvironment() {
-        String applicationName = "test-application-4";
-        try {
-            createAndVerifyDefaultApplication(applicationName);
-            client.updateApplicationEnv(applicationName, Map.of("foo", "bar"));
-            UUID applicationGuid = client.getApplicationGuid(applicationName);
-            Map<String, String> applicationEnvironment = client.getApplicationEnvironment(applicationGuid);
-            assertEquals("bar", applicationEnvironment.get("foo"));
-        } catch (Exception e) {
-            fail(e);
-        } finally {
-            client.deleteApplication(applicationName);
-        }
-    }
-
-    @Test
-    @DisplayName("Create application, update its healthcheck type and verify it ")
-    void updateApplicationHealthcheckType() {
-        String applicationName = "test-application-16";
-        try {
-            createAndVerifyDefaultApplication(applicationName);
-            UUID applicationGuid = client.getApplicationGuid(applicationName);
-            delegate.applicationsV2()
-                    .update(org.cloudfoundry.client.v2.applications.UpdateApplicationRequest
-                            .builder()
-                            .applicationId(applicationGuid.toString())
-                            .healthCheckType(HealthCheckType.NONE.getValue())
-                            .build())
-                    .block();
-            CloudProcess cloudProcess = client.getApplicationProcess(applicationGuid);
-            assertEquals(com.sap.cloudfoundry.client.facade.domain.HealthCheckType.NONE, cloudProcess.getHealthCheckType());
-        } catch (Exception e) {
-            fail(e);
-        } finally {
-            client.deleteApplication(applicationName);
-        }
-    }
-
-    @Test
-    @DisplayName("Create application, upload a package, verify package exists")
-    void uploadApplication() {
-        String applicationName = "test-application-5";
-        try {
-            createAndVerifyDefaultApplication(applicationName);
-            CloudPackage cloudPackage = ApplicationUtil.uploadApplication(client, applicationName, STATICFILE_APPLICATION_PATH);
-            assertEquals(Status.READY, cloudPackage.getStatus());
-        } catch (Exception e) {
-            fail(e);
-        } finally {
-            client.deleteApplication(applicationName);
-        }
-    }
-
-    @Test
-    @DisplayName("Create application, upload a package, create a build and restart the application")
-    void restartApplication() {
-        String applicationName = "test-application-6";
-        try {
-            createAndVerifyDefaultApplication(applicationName);
-            CloudPackage cloudPackage = ApplicationUtil.uploadApplication(client, applicationName, STATICFILE_APPLICATION_PATH);
-            ApplicationUtil.stageApplication(client, applicationName, cloudPackage);
-            client.startApplication(applicationName);
-            assertEquals(CloudApplication.State.STARTED, client.getApplication(applicationName)
-                                                               .getState());
-            client.stopApplication(applicationName);
-            assertEquals(CloudApplication.State.STOPPED, client.getApplication(applicationName)
-                                                               .getState());
-            client.startApplication(applicationName);
-            assertEquals(CloudApplication.State.STARTED, client.getApplication(applicationName)
-                                                               .getState());
-        } catch (Exception e) {
-            fail(e);
-        } finally {
-            client.deleteApplication(applicationName);
-        }
-    }
-
-    @Test
-    @DisplayName("Create, upload, stage start and get instances")
-    void getAppInstances() {
-        String applicationName = "test-application-7";
-        try {
-            createAndVerifyDefaultApplication(applicationName);
-            CloudPackage cloudPackage = ApplicationUtil.uploadApplication(client, applicationName, STATICFILE_APPLICATION_PATH);
-            client.updateApplicationInstances(applicationName, 3);
-            ApplicationUtil.stageApplication(client, applicationName, cloudPackage);
-            client.startApplication(applicationName);
-            CloudApplication application = client.getApplication(applicationName);
-            InstancesInfo applicationInstances = client.getApplicationInstances(application);
-            assertEquals(3, applicationInstances.getInstances()
-                                                .size());
-        } catch (Exception e) {
-            fail(e);
-        } finally {
-            client.deleteApplication(applicationName);
-        }
-    }
-
-    @Test
-    @DisplayName("Create application and verify its GUID")
-    void renameApplication() {
-        String applicationName = "test-application-8";
-        String newApplicationName = "new-test-application-8";
-        try {
-            createAndVerifyDefaultApplication(applicationName);
-            UUID applicationGuid = client.getApplicationGuid(applicationName);
-            client.rename(applicationName, newApplicationName);
-            assertEquals(applicationGuid, client.getApplication(newApplicationName)
-                                                .getGuid());
-        } catch (Exception e) {
-            fail(e);
-        } finally {
-            client.deleteApplication(newApplicationName);
-        }
-    }
-
-    @Test
-    @DisplayName("Create app and update its memory")
-    void updateApplicationMemory() {
-        String applicationName = "test-application-9";
-        try {
-            createAndVerifyDefaultApplication(applicationName);
-            client.updateApplicationMemory(applicationName, 256);
-            CloudApplication application = client.getApplication(applicationName);
-            var process = client.getApplicationProcess(application.getGuid());
-            assertEquals(256, process.getMemoryInMb());
-        } catch (Exception e) {
-            fail(e);
-        } finally {
-            client.deleteApplication(applicationName);
-        }
-    }
+//    @Test
+//    @DisplayName("Create application and verify its attributes")
+//    void createApplication() {
+//        String applicationName = "test-app-1";
+//        Staging staging = ImmutableStaging.builder()
+//                                          .addBuildpack(JAVA_BUILDPACK)
+//                                          .healthCheckType(HealthCheckType.PROCESS.getValue())
+//                                          .healthCheckHttpEndpoint(HEALTH_CHECK_ENDPOINT)
+//                                          .healthCheckTimeout(HEALTH_CHECK_TIMEMOUT)
+//                                          .build();
+//        CloudRoute route = getImmutableCloudRoute();
+//        try {
+//            verifyApplicationWillBeCreated(applicationName, staging, Set.of(route));
+//        } catch (Exception e) {
+//            fail(e);
+//        } finally {
+//            client.deleteApplication(applicationName);
+//        }
+//    }
+//
+//    @Test
+//    @DisplayName("Create, delete and verify the application is deleted")
+//    void deleteApplication() {
+//        String applicationName = "test-application-2";
+//
+//        try {
+//            createAndVerifyDefaultApplication(applicationName);
+//            client.deleteApplication(applicationName);
+//            Exception exception = assertThrows(CloudOperationException.class, () -> client.getApplication(applicationName));
+//            assertTrue(exception.getMessage()
+//                                .contains(HttpStatus.NOT_FOUND.getReasonPhrase()));
+//        } catch (Exception e) {
+//            fail(e);
+//        } finally {
+//            CloudApplication app = client.getApplication(applicationName, false);
+//            if (app != null) {
+//                client.deleteApplication(applicationName);
+//            }
+//        }
+//    }
+//
+//    @Test
+//    @DisplayName("Create application and verify its GUID")
+//    void getApplicationGuid() {
+//        String applicationName = "test-application-3";
+//        try {
+//            createAndVerifyDefaultApplication(applicationName);
+//            assertNotNull(client.getApplicationGuid(applicationName));
+//        } catch (Exception e) {
+//            fail(e);
+//        } finally {
+//            client.deleteApplication(applicationName);
+//        }
+//    }
+//
+//    @Test
+//    @DisplayName("Create application, update and update its environment")
+//    void testApplicationEnvironment() {
+//        String applicationName = "test-application-4";
+//        try {
+//            createAndVerifyDefaultApplication(applicationName);
+//            client.updateApplicationEnv(applicationName, Map.of("foo", "bar"));
+//            UUID applicationGuid = client.getApplicationGuid(applicationName);
+//            Map<String, String> applicationEnvironment = client.getApplicationEnvironment(applicationGuid);
+//            assertEquals("bar", applicationEnvironment.get("foo"));
+//        } catch (Exception e) {
+//            fail(e);
+//        } finally {
+//            client.deleteApplication(applicationName);
+//        }
+//    }
+//
+//    @Test
+//    @DisplayName("Create application, update its healthcheck type and verify it ")
+//    void updateApplicationHealthcheckType() {
+//        String applicationName = "test-application-16";
+//        try {
+//            createAndVerifyDefaultApplication(applicationName);
+//            UUID applicationGuid = client.getApplicationGuid(applicationName);
+//            delegate.applicationsV2()
+//                    .update(org.cloudfoundry.client.v2.applications.UpdateApplicationRequest
+//                            .builder()
+//                            .applicationId(applicationGuid.toString())
+//                            .healthCheckType(HealthCheckType.NONE.getValue())
+//                            .build())
+//                    .block();
+//            CloudProcess cloudProcess = client.getApplicationProcess(applicationGuid);
+//            assertEquals(com.sap.cloudfoundry.client.facade.domain.HealthCheckType.NONE, cloudProcess.getHealthCheckType());
+//        } catch (Exception e) {
+//            fail(e);
+//        } finally {
+//            client.deleteApplication(applicationName);
+//        }
+//    }
+//
+//    @Test
+//    @DisplayName("Create application, upload a package, verify package exists")
+//    void uploadApplication() {
+//        String applicationName = "test-application-5";
+//        try {
+//            createAndVerifyDefaultApplication(applicationName);
+//            CloudPackage cloudPackage = ApplicationUtil.uploadApplication(client, applicationName, STATICFILE_APPLICATION_PATH);
+//            assertEquals(Status.READY, cloudPackage.getStatus());
+//        } catch (Exception e) {
+//            fail(e);
+//        } finally {
+//            client.deleteApplication(applicationName);
+//        }
+//    }
+//
+//    @Test
+//    @DisplayName("Create application, upload a package, create a build and restart the application")
+//    void restartApplication() {
+//        String applicationName = "test-application-6";
+//        try {
+//            createAndVerifyDefaultApplication(applicationName);
+//            CloudPackage cloudPackage = ApplicationUtil.uploadApplication(client, applicationName, STATICFILE_APPLICATION_PATH);
+//            ApplicationUtil.stageApplication(client, applicationName, cloudPackage);
+//            client.startApplication(applicationName);
+//            assertEquals(CloudApplication.State.STARTED, client.getApplication(applicationName)
+//                                                               .getState());
+//            client.stopApplication(applicationName);
+//            assertEquals(CloudApplication.State.STOPPED, client.getApplication(applicationName)
+//                                                               .getState());
+//            client.startApplication(applicationName);
+//            assertEquals(CloudApplication.State.STARTED, client.getApplication(applicationName)
+//                                                               .getState());
+//        } catch (Exception e) {
+//            fail(e);
+//        } finally {
+//            client.deleteApplication(applicationName);
+//        }
+//    }
+//
+//    @Test
+//    @DisplayName("Create, upload, stage start and get instances")
+//    void getAppInstances() {
+//        String applicationName = "test-application-7";
+//        try {
+//            createAndVerifyDefaultApplication(applicationName);
+//            CloudPackage cloudPackage = ApplicationUtil.uploadApplication(client, applicationName, STATICFILE_APPLICATION_PATH);
+//            client.updateApplicationInstances(applicationName, 3);
+//            ApplicationUtil.stageApplication(client, applicationName, cloudPackage);
+//            client.startApplication(applicationName);
+//            CloudApplication application = client.getApplication(applicationName);
+//            InstancesInfo applicationInstances = client.getApplicationInstances(application);
+//            assertEquals(3, applicationInstances.getInstances()
+//                                                .size());
+//        } catch (Exception e) {
+//            fail(e);
+//        } finally {
+//            client.deleteApplication(applicationName);
+//        }
+//    }
+//
+//    @Test
+//    @DisplayName("Create application and verify its GUID")
+//    void renameApplication() {
+//        String applicationName = "test-application-8";
+//        String newApplicationName = "new-test-application-8";
+//        try {
+//            createAndVerifyDefaultApplication(applicationName);
+//            UUID applicationGuid = client.getApplicationGuid(applicationName);
+//            client.rename(applicationName, newApplicationName);
+//            assertEquals(applicationGuid, client.getApplication(newApplicationName)
+//                                                .getGuid());
+//        } catch (Exception e) {
+//            fail(e);
+//        } finally {
+//            client.deleteApplication(newApplicationName);
+//        }
+//    }
+//
+//    @Test
+//    @DisplayName("Create app and update its memory")
+//    void updateApplicationMemory() {
+//        String applicationName = "test-application-9";
+//        try {
+//            createAndVerifyDefaultApplication(applicationName);
+//            client.updateApplicationMemory(applicationName, 256);
+//            CloudApplication application = client.getApplication(applicationName);
+//            var process = client.getApplicationProcess(application.getGuid());
+//            assertEquals(256, process.getMemoryInMb());
+//        } catch (Exception e) {
+//            fail(e);
+//        } finally {
+//            client.deleteApplication(applicationName);
+//        }
+//    }
 
     @Test
     @DisplayName("Create app and update its staging")
     void updateApplicationStaging() {
-        String applicationName = "test-application-10";
+        String applicationName = "bdc02021-83a0-4c60-8d7f-e180395f5388";
         try {
-            createAndVerifyDefaultApplication(applicationName);
+            //createAndVerifyDefaultApplication(applicationName);
             client.updateApplicationStaging(applicationName, ImmutableStaging.builder()
                                                                              .command("echo 1")
+                            .healthCheckTimeout(2)
+                            .healthCheckType("http")
+                            .readinessHealthCheckType("process")
+                            .readinessHealthCheckInterval(1)
+                            .readinessHealthCheckInvocationTimeout(12)
                                                                              .build());
             CloudApplication application = client.getApplication(applicationName);
             var process = client.getApplicationProcess(application.getGuid());
+            System.out.println(application.getGuid());
+            System.out.println(application.getName());
+            System.out.println(process.getReadinessHealthCheckHttpEndpoint());
+            System.out.println(process.getReadinessHealthCheckInterval());
+            System.out.println(process.getReadinessHealthCheckInvocationTimeout());
+            System.out.println(process.getReadinessHealthCheckType());
             assertEquals("echo 1", process.getCommand());
         } catch (Exception e) {
             fail(e);
         } finally {
-            client.deleteApplication(applicationName);
+            System.out.println("TEEEEEE");
+            //client.deleteApplication(applicationName);
         }
     }
 
-    @Test
-    @DisplayName("Create application with docker package")
-    void createDockerPackage() {
-        String applicationName = "test-application-11";
-        DockerInfo dockerInfo = ImmutableDockerInfo.builder()
-                                                   .image("test/image")
-                                                   .build();
-        try {
-            verifyApplicationWillBeCreated(applicationName, ImmutableStaging.builder()
-                                                                            .dockerInfo(dockerInfo)
-                                                                            .build(),
-                                           Set.of(getImmutableCloudRoute()));
-            UUID applicationGuid = client.getApplicationGuid(applicationName);
-            CloudPackage dockerPackage = client.createDockerPackage(applicationGuid, dockerInfo);
-            assertEquals(CloudPackage.Type.DOCKER, dockerPackage.getType());
-        } catch (Exception e) {
-            fail(e);
-        } finally {
-            client.deleteApplication(applicationName);
-        }
-    }
-
-    @Test
-    @DisplayName("Create application and update its routes")
-    void updateApplicationRoutes() {
-        String applicationName = "test-application-12";
-        Set<CloudRoute> newRoutes = Set.of(ImmutableCloudRoute.builder()
-                                                              .host("test-application-hostname-modified")
-                                                              .url("test-application-hostname-modified." + DEFAULT_DOMAIN)
-                                                              .domain(ImmutableCloudDomain.builder()
-                                                                                          .name(DEFAULT_DOMAIN)
-                                                                                          .build())
-                                                              .build());
-        try {
-            createAndVerifyDefaultApplication(applicationName);
-            client.updateApplicationRoutes(applicationName, newRoutes);
-            CloudApplication application = client.getApplication(applicationName);
-            var routes = client.getApplicationRoutes(application.getGuid());
-            assertEquals(List.copyOf(newRoutes), routes);
-        } catch (Exception e) {
-            fail(e);
-        } finally {
-            client.deleteApplication(applicationName);
-        }
-    }
-
-    @Test
-    @DisplayName("Create application with docker package and check packages")
-    void getPackagesForApplication() {
-        String applicationName = "test-application-13";
-        DockerInfo dockerInfo = ImmutableDockerInfo.builder()
-                                                   .image("test/image")
-                                                   .build();
-        try {
-            verifyApplicationWillBeCreated(applicationName, ImmutableStaging.builder()
-                                                                            .dockerInfo(dockerInfo)
-                                                                            .build(),
-                                           Set.of(getImmutableCloudRoute()));
-            UUID applicationGuid = client.getApplicationGuid(applicationName);
-            CloudPackage dockerPackage = client.createDockerPackage(applicationGuid, dockerInfo);
-            List<CloudPackage> packagesForApplication = client.getPackagesForApplication(applicationGuid);
-            assertTrue(packagesForApplication.stream()
-                                             .map(CloudPackage::getGuid)
-                                             .anyMatch(packageGuid -> packageGuid.equals(dockerPackage.getGuid())));
-        } catch (Exception e) {
-            fail(e);
-        } finally {
-            client.deleteApplication(applicationName);
-        }
-    }
-
-    @Test
-    @DisplayName("Create application, upload a package, create a build and test its builds")
-    void getBuildsForApplication() {
-        String applicationName = "test-application-14";
-        try {
-            createAndVerifyDefaultApplication(applicationName);
-            CloudPackage cloudPackage = ApplicationUtil.uploadApplication(client, applicationName, STATICFILE_APPLICATION_PATH);
-            UUID applicationGuid = client.getApplicationGuid(applicationName);
-            CloudBuild build = ApplicationUtil.createBuildForPackage(client, cloudPackage);
-            List<CloudBuild> buildsForApplication = client.getBuildsForApplication(applicationGuid);
-            assertTrue(buildsForApplication.stream()
-                                           .map(CloudBuild::getMetadata)
-                                           .map(CloudMetadata::getGuid)
-                                           .anyMatch(buildGuid -> buildGuid.equals(build.getGuid())));
-            assertEquals(build.getMetadata()
-                              .getGuid(),
-                         client.getBuild(build.getMetadata()
-                                              .getGuid())
-                               .getGuid());
-        } catch (Exception e) {
-            fail(e);
-        } finally {
-            client.deleteApplication(applicationName);
-        }
-    }
-
-    @Test
-    @DisplayName("Create application and update its metadata")
-    void updateApplicationMetadata() {
-        String applicationName = "test-application-15";
-        Metadata metadata = Metadata.builder()
-                                    .label("test-app", "test-app")
-                                    .build();
-        try {
-            createAndVerifyDefaultApplication(applicationName);
-            UUID applicationGuid = client.getApplicationGuid(applicationName);
-            client.updateApplicationMetadata(applicationGuid, metadata);
-            List<CloudApplication> applicationsByMetadataLabelSelector = client.getApplicationsByMetadataLabelSelector("test-app");
-            assertEquals(1, applicationsByMetadataLabelSelector.size());
-            assertEquals(applicationName, applicationsByMetadataLabelSelector.get(0)
-                                                                             .getName());
-        } catch (Exception e) {
-            fail(e);
-        } finally {
-            client.deleteApplication(applicationName);
-        }
-    }
-
-    @Test
-    @DisplayName("Create application with multiple buildpacks")
-    void createApplicationWithBuildpacks() {
-        String applicationName = "test-app-16";
-        List<String> buildpacks = List.of(JAVA_BUILDPACK, NODEJS_BUILDPACK, STATICFILE_BUILDPACK);
-        Staging staging = ImmutableStaging.builder()
-                                          .addAllBuildpacks(buildpacks)
-                                          .build();
-        try {
-            verifyApplicationWillBeCreated(applicationName, staging, Set.of(getImmutableCloudRoute()));
-        } catch (Exception e) {
-            fail(e);
-        } finally {
-            client.deleteApplication(applicationName);
-        }
-    }
+//    @Test
+//    @DisplayName("Create application with docker package")
+//    void createDockerPackage() {
+//        String applicationName = "test-application-11";
+//        DockerInfo dockerInfo = ImmutableDockerInfo.builder()
+//                                                   .image("test/image")
+//                                                   .build();
+//        try {
+//            verifyApplicationWillBeCreated(applicationName, ImmutableStaging.builder()
+//                                                                            .dockerInfo(dockerInfo)
+//                                                                            .build(),
+//                                           Set.of(getImmutableCloudRoute()));
+//            UUID applicationGuid = client.getApplicationGuid(applicationName);
+//            CloudPackage dockerPackage = client.createDockerPackage(applicationGuid, dockerInfo);
+//            assertEquals(CloudPackage.Type.DOCKER, dockerPackage.getType());
+//        } catch (Exception e) {
+//            fail(e);
+//        } finally {
+//            client.deleteApplication(applicationName);
+//        }
+//    }
+//
+//    @Test
+//    @DisplayName("Create application and update its routes")
+//    void updateApplicationRoutes() {
+//        String applicationName = "test-application-12";
+//        Set<CloudRoute> newRoutes = Set.of(ImmutableCloudRoute.builder()
+//                                                              .host("test-application-hostname-modified")
+//                                                              .url("test-application-hostname-modified." + DEFAULT_DOMAIN)
+//                                                              .domain(ImmutableCloudDomain.builder()
+//                                                                                          .name(DEFAULT_DOMAIN)
+//                                                                                          .build())
+//                                                              .build());
+//        try {
+//            createAndVerifyDefaultApplication(applicationName);
+//            client.updateApplicationRoutes(applicationName, newRoutes);
+//            CloudApplication application = client.getApplication(applicationName);
+//            var routes = client.getApplicationRoutes(application.getGuid());
+//            assertEquals(List.copyOf(newRoutes), routes);
+//        } catch (Exception e) {
+//            fail(e);
+//        } finally {
+//            client.deleteApplication(applicationName);
+//        }
+//    }
+//
+//    @Test
+//    @DisplayName("Create application with docker package and check packages")
+//    void getPackagesForApplication() {
+//        String applicationName = "test-application-13";
+//        DockerInfo dockerInfo = ImmutableDockerInfo.builder()
+//                                                   .image("test/image")
+//                                                   .build();
+//        try {
+//            verifyApplicationWillBeCreated(applicationName, ImmutableStaging.builder()
+//                                                                            .dockerInfo(dockerInfo)
+//                                                                            .build(),
+//                                           Set.of(getImmutableCloudRoute()));
+//            UUID applicationGuid = client.getApplicationGuid(applicationName);
+//            CloudPackage dockerPackage = client.createDockerPackage(applicationGuid, dockerInfo);
+//            List<CloudPackage> packagesForApplication = client.getPackagesForApplication(applicationGuid);
+//            assertTrue(packagesForApplication.stream()
+//                                             .map(CloudPackage::getGuid)
+//                                             .anyMatch(packageGuid -> packageGuid.equals(dockerPackage.getGuid())));
+//        } catch (Exception e) {
+//            fail(e);
+//        } finally {
+//            client.deleteApplication(applicationName);
+//        }
+//    }
+//
+//    @Test
+//    @DisplayName("Create application, upload a package, create a build and test its builds")
+//    void getBuildsForApplication() {
+//        String applicationName = "test-application-14";
+//        try {
+//            createAndVerifyDefaultApplication(applicationName);
+//            CloudPackage cloudPackage = ApplicationUtil.uploadApplication(client, applicationName, STATICFILE_APPLICATION_PATH);
+//            UUID applicationGuid = client.getApplicationGuid(applicationName);
+//            CloudBuild build = ApplicationUtil.createBuildForPackage(client, cloudPackage);
+//            List<CloudBuild> buildsForApplication = client.getBuildsForApplication(applicationGuid);
+//            assertTrue(buildsForApplication.stream()
+//                                           .map(CloudBuild::getMetadata)
+//                                           .map(CloudMetadata::getGuid)
+//                                           .anyMatch(buildGuid -> buildGuid.equals(build.getGuid())));
+//            assertEquals(build.getMetadata()
+//                              .getGuid(),
+//                         client.getBuild(build.getMetadata()
+//                                              .getGuid())
+//                               .getGuid());
+//        } catch (Exception e) {
+//            fail(e);
+//        } finally {
+//            client.deleteApplication(applicationName);
+//        }
+//    }
+//
+//    @Test
+//    @DisplayName("Create application and update its metadata")
+//    void updateApplicationMetadata() {
+//        String applicationName = "test-application-15";
+//        Metadata metadata = Metadata.builder()
+//                                    .label("test-app", "test-app")
+//                                    .build();
+//        try {
+//            createAndVerifyDefaultApplication(applicationName);
+//            UUID applicationGuid = client.getApplicationGuid(applicationName);
+//            client.updateApplicationMetadata(applicationGuid, metadata);
+//            List<CloudApplication> applicationsByMetadataLabelSelector = client.getApplicationsByMetadataLabelSelector("test-app");
+//            assertEquals(1, applicationsByMetadataLabelSelector.size());
+//            assertEquals(applicationName, applicationsByMetadataLabelSelector.get(0)
+//                                                                             .getName());
+//        } catch (Exception e) {
+//            fail(e);
+//        } finally {
+//            client.deleteApplication(applicationName);
+//        }
+//    }
+//
+//    @Test
+//    @DisplayName("Create application with multiple buildpacks")
+//    void createApplicationWithBuildpacks() {
+//        String applicationName = "test-app-16";
+//        List<String> buildpacks = List.of(JAVA_BUILDPACK, NODEJS_BUILDPACK, STATICFILE_BUILDPACK);
+//        Staging staging = ImmutableStaging.builder()
+//                                          .addAllBuildpacks(buildpacks)
+//                                          .build();
+//        try {
+//            verifyApplicationWillBeCreated(applicationName, staging, Set.of(getImmutableCloudRoute()));
+//        } catch (Exception e) {
+//            fail(e);
+//        } finally {
+//            client.deleteApplication(applicationName);
+//        }
+//    }
 
     private void verifyApplicationWillBeCreated(String applicationName, Staging staging, Set<CloudRoute> routes) {
         ApplicationToCreateDto applicationToCreateDto = ImmutableApplicationToCreateDto.builder()

@@ -84,6 +84,8 @@ import org.cloudfoundry.client.v3.packages.UploadPackageRequest;
 import org.cloudfoundry.client.v3.processes.Data;
 import org.cloudfoundry.client.v3.processes.HealthCheck;
 import org.cloudfoundry.client.v3.processes.HealthCheckType;
+import org.cloudfoundry.client.v3.processes.ReadinessHealthCheck;
+import org.cloudfoundry.client.v3.processes.ReadinessHealthCheckType;
 import org.cloudfoundry.client.v3.processes.UpdateProcessRequest;
 import org.cloudfoundry.client.v3.roles.ListRolesRequest;
 import org.cloudfoundry.client.v3.roles.RoleResource;
@@ -372,6 +374,11 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         if (staging.getHealthCheckType() != null) {
             updateProcessRequestBuilder.healthCheck(buildHealthCheck(staging));
         }
+
+        if (staging.getReadinessHealthCheckType() != null) {
+            updateProcessRequestBuilder.readinessHealthCheck(buildReadinessHealthCheck(staging));
+        }
+
         delegate.processes()
                 .update(updateProcessRequestBuilder.build())
                 .block();
@@ -406,6 +413,22 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                     .invocationTimeout(staging.getInvocationTimeout())
                                     .build())
                           .build();
+    }
+
+    private ReadinessHealthCheck buildReadinessHealthCheck(Staging staging) {
+        ReadinessHealthCheckType readinessHealthCheckType = ReadinessHealthCheckType.from(staging.getReadinessHealthCheckType());
+        Data.Builder dataBuilder = Data.builder();
+//        if (staging.getReadinessHealthCheckType() != null) {
+//            dataBuilder
+//        }
+        return ReadinessHealthCheck.builder()
+                .type(readinessHealthCheckType)
+                .data(Data.builder()
+                        .endpoint(staging.getReadinessHealthCheckHttpEndpoint())
+                        .interval(staging.getReadinessHealthCheckInterval())
+                        .invocationTimeout(staging.getReadinessHealthCheckInvocationTimeout())
+                        .build())
+                .build();
     }
 
     private void addRoutes(Set<CloudRoute> routes, UUID applicationGuid) {
