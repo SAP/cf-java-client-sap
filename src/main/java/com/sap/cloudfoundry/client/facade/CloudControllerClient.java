@@ -60,23 +60,25 @@ public interface CloudControllerClient {
     /**
      * Associate (provision) a service with an application.
      *
+     * @param bindingName the binding name
      * @param applicationName the application name
      * @param serviceInstanceName the service instance name
      * @return job id for async polling if present
      */
-    Optional<String> bindServiceInstance(String applicationName, String serviceInstanceName);
+    Optional<String> bindServiceInstance(String bindingName, String applicationName, String serviceInstanceName);
 
     /**
      * Associate (provision) a service with an application.
      *
+     * @param bindingName the binding name
      * @param applicationName the application name
      * @param serviceInstanceName the service instance name
      * @param parameters the binding parameters
      * @param updateServicesCallback callback used for error handling
      * @return job id for async polling if present
      */
-    Optional<String> bindServiceInstance(String applicationName, String serviceInstanceName, Map<String, Object> parameters,
-                                         ApplicationServicesUpdateCallback updateServicesCallback);
+    Optional<String> bindServiceInstance(String bindingName, String applicationName, String serviceInstanceName,
+                                         Map<String, Object> parameters, ApplicationServicesUpdateCallback updateServicesCallback);
 
     /**
      * Create application

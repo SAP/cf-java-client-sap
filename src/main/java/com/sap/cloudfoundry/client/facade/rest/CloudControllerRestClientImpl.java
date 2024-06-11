@@ -220,7 +220,6 @@ import reactor.core.publisher.Mono;
 
 /**
  * Abstract implementation of the CloudControllerClient intended to serve as the base.
- *
  */
 public class CloudControllerRestClientImpl implements CloudControllerRestClient {
 
@@ -270,16 +269,18 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public Optional<String> bindServiceInstance(String applicationName, String serviceInstanceName) {
-        return bindServiceInstance(applicationName, serviceInstanceName, null);
+    public Optional<String> bindServiceInstance(String bindingName, String applicationName, String serviceInstanceName) {
+        return bindServiceInstance(bindingName, applicationName, serviceInstanceName, null);
     }
 
     @Override
-    public Optional<String> bindServiceInstance(String applicationName, String serviceInstanceName, Map<String, Object> parameters) {
+    public Optional<String> bindServiceInstance(String bindingName, String applicationName, String serviceInstanceName,
+                                                Map<String, Object> parameters) {
         UUID applicationGuid = getRequiredApplicationGuid(applicationName);
         UUID serviceInstanceGuid = getRequiredServiceInstanceGuid(serviceInstanceName);
 
         var createBindingRequest = CreateServiceBindingRequest.builder()
+                                                              .name(bindingName)
                                                               .type(ServiceBindingType.APPLICATION)
                                                               .relationships(ServiceBindingRelationships.builder()
                                                                                                         .application(buildToOneRelationship(applicationGuid))

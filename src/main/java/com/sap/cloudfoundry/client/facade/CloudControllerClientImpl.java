@@ -88,15 +88,15 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public Optional<String> bindServiceInstance(String applicationName, String serviceInstanceName) {
-        return handleExceptions(() -> delegate.bindServiceInstance(applicationName, serviceInstanceName));
+    public Optional<String> bindServiceInstance(String bindingName, String applicationName, String serviceInstanceName) {
+        return handleExceptions(() -> delegate.bindServiceInstance(bindingName, applicationName, serviceInstanceName));
     }
 
     @Override
-    public Optional<String> bindServiceInstance(String applicationName, String serviceInstanceName, Map<String, Object> parameters,
-                                                ApplicationServicesUpdateCallback updateServicesCallback) {
+    public Optional<String> bindServiceInstance(String bindingName, String applicationName, String serviceInstanceName,
+                                                Map<String, Object> parameters, ApplicationServicesUpdateCallback updateServicesCallback) {
         try {
-            return handleExceptions(() -> delegate.bindServiceInstance(applicationName, serviceInstanceName, parameters));
+            return handleExceptions(() -> delegate.bindServiceInstance(bindingName, applicationName, serviceInstanceName, parameters));
         } catch (CloudOperationException e) {
             updateServicesCallback.onError(e, applicationName, serviceInstanceName);
         }

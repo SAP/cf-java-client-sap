@@ -47,9 +47,9 @@ public interface CloudControllerRestClient {
 
     void addRoute(String host, String domainName, String path);
 
-    Optional<String> bindServiceInstance(String applicationName, String serviceInstanceName);
+    Optional<String> bindServiceInstance(String bindingName, String applicationName, String serviceInstanceName);
 
-    Optional<String> bindServiceInstance(String applicationName, String serviceInstanceName, Map<String, Object> parameters);
+    Optional<String> bindServiceInstance(String bindingName, String applicationName, String serviceInstanceName, Map<String, Object> parameters);
 
     void createApplication(ApplicationToCreateDto applicationToCreateDto);
 
