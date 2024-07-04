@@ -11,8 +11,6 @@ public abstract class ApplicationLog implements Comparable<ApplicationLog> {
         STDOUT, STDERR
     }
 
-    public abstract String getApplicationGuid();
-
     public abstract String getMessage();
 
     public abstract LocalDateTime getTimestamp();
@@ -28,7 +26,6 @@ public abstract class ApplicationLog implements Comparable<ApplicationLog> {
 
     @Override
     public String toString() {
-        return String.format("%s [%s] %s (%s, %s)", getApplicationGuid(), getTimestamp(), getMessage(),
-                             getMessageType(), getSourceName());
+        return String.format("[%s] %s (%s, %s)", getTimestamp(), getMessage(), getMessageType(), getSourceName());
     }
 }
