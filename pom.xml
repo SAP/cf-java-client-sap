@@ -6,7 +6,7 @@
 
     <groupId>com.sap.cloud.lm.sl</groupId>
     <artifactId>cloudfoundry-client-facade</artifactId>
-    <version>2.45.0-SNAPSHOT</version>
+    <version>2.45.0</version>
 
     <name>Cloud Foundry Java Client Facade</name>
     <description>A facade of the official Cloud Foundry Java client</description>
