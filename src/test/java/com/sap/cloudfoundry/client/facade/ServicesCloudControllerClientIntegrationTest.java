@@ -79,8 +79,16 @@ class ServicesCloudControllerClientIntegrationTest extends CloudControllerClient
             fail(MessageFormat.format("Specified service broker path \"{0}\" not exists", brokerPathString));
         }
         pushServiceBrokerApplication(brokerPath);
-        createServiceBroker(IntegrationTestConstants.SERVICE_BROKER_NAME, SERVICE_BROKER_ENDPOINT);
-        pushedServiceBroker = true;
+        try {
+            createServiceBroker(IntegrationTestConstants.SERVICE_BROKER_NAME, SERVICE_BROKER_ENDPOINT);
+            pushedServiceBroker = true;
+        } catch (CloudOperationException e) {
+            if (e.getStatusCode() == HttpStatus.UNPROCESSABLE_ENTITY) {
+                //Ignore because service broker with this name exists
+            } else {
+                fail("Service broker creation failed!", e);
+            }
+        }
     }
 
     @AfterAll
