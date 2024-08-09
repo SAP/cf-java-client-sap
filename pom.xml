@@ -18,7 +18,7 @@
         <mockito.version>5.11.0</mockito.version>
         <jackson.version>2.17.0</jackson.version>
         <jackson.databind.version>2.17.0</jackson.databind.version>
-        <spring.version>5.3.34</spring.version>
+        <spring.version>6.1.14</spring.version>
         <spring-security.version>5.8.11</spring-security.version>
         <commons-io.version>2.17.0</commons-io.version>
         <immutables.version>2.10.1</immutables.version>
