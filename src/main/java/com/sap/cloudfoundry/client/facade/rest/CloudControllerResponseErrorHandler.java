@@ -1,31 +1,30 @@
 package com.sap.cloudfoundry.client.facade.rest;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sap.cloudfoundry.client.facade.CloudOperationException;
+import com.sap.cloudfoundry.client.facade.util.CloudUtil;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.web.client.DefaultResponseErrorHandler;
 import org.springframework.web.client.RestClientException;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.sap.cloudfoundry.client.facade.CloudOperationException;
-import com.sap.cloudfoundry.client.facade.util.CloudUtil;
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 public class CloudControllerResponseErrorHandler extends DefaultResponseErrorHandler {
 
     private static CloudOperationException getException(ClientHttpResponse response) throws IOException {
-        HttpStatus statusCode = response.getStatusCode();
+        HttpStatus statusCode = HttpStatus.valueOf(response.getStatusCode()
+                                                           .value());
         String statusText = response.getStatusText();
 
         ObjectMapper mapper = new ObjectMapper(); // can reuse, share globally
 
         if (response.getBody() != null) {
             try {
-                @SuppressWarnings("unchecked")
-                Map<String, Object> responseBody = mapper.readValue(response.getBody(), Map.class);
+                @SuppressWarnings("unchecked") Map<String, Object> responseBody = mapper.readValue(response.getBody(), Map.class);
                 String description = getTrimmedDescription(responseBody);
                 return new CloudOperationException(statusCode, statusText, description);
             } catch (IOException e) {
@@ -63,7 +62,8 @@ public class CloudControllerResponseErrorHandler extends DefaultResponseErrorHan
 
     @Override
     public void handleError(ClientHttpResponse response) throws IOException {
-        HttpStatus statusCode = response.getStatusCode();
+        HttpStatus statusCode = HttpStatus.valueOf(response.getStatusCode()
+                                                           .value());
         switch (statusCode.series()) {
             case CLIENT_ERROR:
             case SERVER_ERROR:
