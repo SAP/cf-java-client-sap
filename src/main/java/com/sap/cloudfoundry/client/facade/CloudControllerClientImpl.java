@@ -2,6 +2,7 @@ package com.sap.cloudfoundry.client.facade;
 
 import java.net.URL;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -9,7 +10,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.function.Supplier;
 
-import com.sap.cloudfoundry.client.facade.dto.ApplicationToCreateDto;
 import org.cloudfoundry.AbstractCloudFoundryException;
 import org.cloudfoundry.client.v3.Metadata;
 import org.springframework.http.HttpStatus;
@@ -38,6 +38,7 @@ import com.sap.cloudfoundry.client.facade.domain.ServicePlanVisibility;
 import com.sap.cloudfoundry.client.facade.domain.Staging;
 import com.sap.cloudfoundry.client.facade.domain.Upload;
 import com.sap.cloudfoundry.client.facade.domain.UserRole;
+import com.sap.cloudfoundry.client.facade.dto.ApplicationToCreateDto;
 import com.sap.cloudfoundry.client.facade.rest.CloudControllerRestClient;
 import com.sap.cloudfoundry.client.facade.rest.CloudControllerRestClientFactory;
 import com.sap.cloudfoundry.client.facade.rest.ImmutableCloudControllerRestClientFactory;
@@ -560,13 +561,18 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public CloudPackage asyncUploadApplication(String applicationName, Path file) {
-        return handleExceptions(() -> delegate.asyncUploadApplication(applicationName, file, null));
+    public CloudPackage asyncUploadApplicationWithExponentialBackoff(String applicationName, Path file, Duration uploadTimeout) {
+        return handleExceptions(() -> delegate.asyncUploadApplication(applicationName, file, null, uploadTimeout));
     }
 
     @Override
-    public CloudPackage asyncUploadApplication(String applicationName, Path file, UploadStatusCallback callback) {
-        return handleExceptions(() -> delegate.asyncUploadApplication(applicationName, file, callback));
+    public CloudPackage asyncUploadApplicationWithExponentialBackoff(String applicationName, Path file, UploadStatusCallback callback, Duration uploadTimeout) {
+        return handleExceptions(() -> delegate.asyncUploadApplication(applicationName, file, callback, uploadTimeout));
+    }
+
+    @Override
+    public CloudPackage asyncUploadApplicationWithExponentialBackoff(String applicationName, Path file, UploadStatusCallback callback) {
+        throw new UnsupportedOperationException("This method must not be used, as the timeout must be provided as a resilience");
     }
 
     @Override
