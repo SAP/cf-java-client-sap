@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import java.nio.file.Path;
 import java.text.MessageFormat;
+import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -19,7 +20,7 @@ public class ApplicationUtil {
 
     public static CloudPackage uploadApplication(CloudControllerClient client, String applicationName, Path pathToFile)
         throws InterruptedException {
-        CloudPackage cloudPackage = client.asyncUploadApplication(applicationName, pathToFile);
+        CloudPackage cloudPackage = client.asyncUploadApplication(applicationName, pathToFile, Duration.ofMinutes(4));
         while (cloudPackage.getStatus() != Status.READY && !hasUploadFailed(cloudPackage.getStatus())) {
             Thread.sleep(TimeUnit.SECONDS.toMillis(1));
             cloudPackage = client.getPackage(cloudPackage.getGuid());
