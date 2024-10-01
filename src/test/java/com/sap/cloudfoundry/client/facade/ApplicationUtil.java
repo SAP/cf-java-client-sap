@@ -22,7 +22,8 @@ public class ApplicationUtil {
 
     public static CloudPackage uploadApplication(CloudControllerClient client, String applicationName, Path pathToFile)
         throws InterruptedException {
-        CloudPackage cloudPackage = client.asyncUploadApplicationWithExponentialBackoff(applicationName, pathToFile, UPLOAD_TIMEOUT);
+        CloudPackage cloudPackage = client.asyncUploadApplicationWithExponentialBackoff(applicationName, pathToFile,
+                                                                                        UploadStatusCallback.NONE, UPLOAD_TIMEOUT);
         while (cloudPackage.getStatus() != Status.READY && !hasUploadFailed(cloudPackage.getStatus())) {
             Thread.sleep(TimeUnit.SECONDS.toMillis(1));
             cloudPackage = client.getPackage(cloudPackage.getGuid());
