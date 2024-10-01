@@ -661,12 +661,8 @@ public interface CloudControllerClient {
 
     void updateServiceSyslogDrainUrl(String serviceName, String syslogDrainUrl);
 
-    CloudPackage asyncUploadApplicationWithExponentialBackoff(String applicationName, Path file, Duration uploadTimeout);
-
     CloudPackage asyncUploadApplicationWithExponentialBackoff(String applicationName, Path file, UploadStatusCallback callback,
-                                                              Duration uploadTimeout);
-
-    CloudPackage asyncUploadApplicationWithExponentialBackoff(String applicationName, Path file, UploadStatusCallback callback);
+                                                              Duration overrideTimeout);
 
     Upload getUploadStatus(UUID packageGuid);
 

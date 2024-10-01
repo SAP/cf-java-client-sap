@@ -561,18 +561,9 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
-    public CloudPackage asyncUploadApplicationWithExponentialBackoff(String applicationName, Path file, Duration uploadTimeout) {
-        return handleExceptions(() -> delegate.asyncUploadApplication(applicationName, file, null, uploadTimeout));
-    }
-
-    @Override
-    public CloudPackage asyncUploadApplicationWithExponentialBackoff(String applicationName, Path file, UploadStatusCallback callback, Duration uploadTimeout) {
-        return handleExceptions(() -> delegate.asyncUploadApplication(applicationName, file, callback, uploadTimeout));
-    }
-
-    @Override
-    public CloudPackage asyncUploadApplicationWithExponentialBackoff(String applicationName, Path file, UploadStatusCallback callback) {
-        throw new UnsupportedOperationException("This method must not be used, as the timeout must be provided as a resilience");
+    public CloudPackage asyncUploadApplicationWithExponentialBackoff(String applicationName, Path file, UploadStatusCallback callback,
+                                                                     Duration overrideTimeout) {
+        return handleExceptions(() -> delegate.asyncUploadApplication(applicationName, file, callback, overrideTimeout));
     }
 
     @Override

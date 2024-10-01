@@ -2390,9 +2390,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     private void processAsyncUpload(CloudPackage cloudPackage, UploadStatusCallback callback) {
-        if (callback == null) {
-            callback = UploadStatusCallback.NONE;
-        }
         while (true) {
             Upload upload = getUploadStatus(cloudPackage.getGuid());
             Status uploadStatus = upload.getStatus();
