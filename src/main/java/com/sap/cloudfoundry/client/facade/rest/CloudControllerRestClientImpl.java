@@ -1406,8 +1406,8 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     @Override
-    public CloudPackage asyncUploadApplication(String applicationName, Path file, UploadStatusCallback callback) {
-        CloudPackage cloudPackage = startUpload(applicationName, file);
+    public CloudPackage asyncUploadApplication(String applicationName, Path file, UploadStatusCallback callback, Duration uploadTimeout) {
+        CloudPackage cloudPackage = startUpload(applicationName, file, uploadTimeout);
         processAsyncUploadInBackground(cloudPackage, callback);
         return cloudPackage;
     }
@@ -1754,7 +1754,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                        .cancel(request);
     }
 
-    private CloudPackage startUpload(String applicationName, Path file) {
+    private CloudPackage startUpload(String applicationName, Path file, Duration uploadTimeout) {
         Assert.notNull(applicationName, "AppName must not be null");
         Assert.notNull(file, "File must not be null");
 
@@ -1766,6 +1766,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                             .bits(file)
                                             .packageId(packageGuid.toString())
                                             .build())
+                .timeout(uploadTimeout)
                 .block();
 
         return getPackage(packageGuid);
@@ -2389,9 +2390,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     private void processAsyncUpload(CloudPackage cloudPackage, UploadStatusCallback callback) {
-        if (callback == null) {
-            callback = UploadStatusCallback.NONE;
-        }
         while (true) {
             Upload upload = getUploadStatus(cloudPackage.getGuid());
             Status uploadStatus = upload.getStatus();

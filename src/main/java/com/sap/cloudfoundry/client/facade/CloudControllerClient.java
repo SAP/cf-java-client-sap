@@ -1,6 +1,7 @@
 package com.sap.cloudfoundry.client.facade;
 
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -660,9 +661,8 @@ public interface CloudControllerClient {
 
     void updateServiceSyslogDrainUrl(String serviceName, String syslogDrainUrl);
 
-    CloudPackage asyncUploadApplication(String applicationName, Path file);
-
-    CloudPackage asyncUploadApplication(String applicationName, Path file, UploadStatusCallback callback);
+    CloudPackage asyncUploadApplicationWithExponentialBackoff(String applicationName, Path file, UploadStatusCallback callback,
+                                                              Duration overrideTimeout);
 
     Upload getUploadStatus(UUID packageGuid);
 

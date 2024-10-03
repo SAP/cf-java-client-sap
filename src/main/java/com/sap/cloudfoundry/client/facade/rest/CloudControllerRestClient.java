@@ -1,6 +1,7 @@
 package com.sap.cloudfoundry.client.facade.rest;
 
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -205,7 +206,7 @@ public interface CloudControllerRestClient {
 
     void updateServiceTags(String serviceName, List<String> tags);
 
-    CloudPackage asyncUploadApplication(String applicationName, Path file, UploadStatusCallback callback);
+    CloudPackage asyncUploadApplication(String applicationName, Path file, UploadStatusCallback callback, Duration uploadTimeout);
 
     Upload getUploadStatus(UUID packageGuid);
 
