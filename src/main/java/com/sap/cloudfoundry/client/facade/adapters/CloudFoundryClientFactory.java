@@ -12,7 +12,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
-import java.util.function.Function;
 
 import org.cloudfoundry.client.CloudFoundryClient;
 import org.cloudfoundry.client.v3.organizations.OrganizationsV3;
@@ -69,18 +68,7 @@ public abstract class CloudFoundryClientFactory {
     }
 
     public LogCacheClient createLogCacheClient(URL controllerUrl, OAuthClient oAuthClient, Map<String, String> requestTags) {
-        String logCacheApi;
-        try {
-            var links = CloudUtil.executeWithRetry(() -> callCfRoot(controllerUrl, requestTags));
-            @SuppressWarnings("unchecked")
-            var logCache = (Map<String, Object>) links.get("log_cache");
-            logCacheApi = (String) logCache.get("href");
-        } catch (CloudException e) {
-            LOGGER.warn(MessageFormat.format(Messages.CALL_TO_0_FAILED_WITH_1, controllerUrl.toString(), e.getMessage()), e);
-            logCacheApi = controllerUrl.toString()
-                                       .replace("api", "log-cache");
-        }
-        return new LogCacheClient(logCacheApi, oAuthClient, requestTags);
+        return new LogCacheClient(oAuthClient, requestTags, getOrCreateConnectionContext(controllerUrl.getHost()));
     }
 
     @SuppressWarnings("unchecked")
