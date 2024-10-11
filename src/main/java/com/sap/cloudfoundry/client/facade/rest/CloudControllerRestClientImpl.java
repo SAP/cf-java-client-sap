@@ -3,16 +3,7 @@ package com.sap.cloudfoundry.client.facade.rest;
 import java.nio.file.Path;
 import java.text.MessageFormat;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.IntFunction;
@@ -21,66 +12,24 @@ import java.util.stream.Collectors;
 
 import org.cloudfoundry.AbstractCloudFoundryException;
 import org.cloudfoundry.client.CloudFoundryClient;
-import org.cloudfoundry.client.v3.BuildpackData;
+import org.cloudfoundry.client.v3.*;
 import org.cloudfoundry.client.v3.DockerData;
 import org.cloudfoundry.client.v3.Lifecycle;
 import org.cloudfoundry.client.v3.LifecycleType;
-import org.cloudfoundry.client.v3.Metadata;
-import org.cloudfoundry.client.v3.Relationship;
-import org.cloudfoundry.client.v3.Resource;
-import org.cloudfoundry.client.v3.ToOneRelationship;
+import org.cloudfoundry.client.v3.applications.*;
 import org.cloudfoundry.client.v3.applications.Application;
-import org.cloudfoundry.client.v3.applications.ApplicationRelationships;
-import org.cloudfoundry.client.v3.applications.ApplicationState;
-import org.cloudfoundry.client.v3.applications.CreateApplicationRequest;
-import org.cloudfoundry.client.v3.applications.CreateApplicationResponse;
-import org.cloudfoundry.client.v3.applications.DeleteApplicationRequest;
-import org.cloudfoundry.client.v3.applications.GetApplicationCurrentDropletRequest;
-import org.cloudfoundry.client.v3.applications.GetApplicationCurrentDropletResponse;
-import org.cloudfoundry.client.v3.applications.GetApplicationEnvironmentVariablesRequest;
-import org.cloudfoundry.client.v3.applications.GetApplicationEnvironmentVariablesResponse;
-import org.cloudfoundry.client.v3.applications.GetApplicationProcessRequest;
-import org.cloudfoundry.client.v3.applications.GetApplicationProcessResponse;
-import org.cloudfoundry.client.v3.applications.GetApplicationProcessStatisticsRequest;
-import org.cloudfoundry.client.v3.applications.GetApplicationProcessStatisticsResponse;
-import org.cloudfoundry.client.v3.applications.GetApplicationRequest;
-import org.cloudfoundry.client.v3.applications.GetApplicationSshEnabledRequest;
-import org.cloudfoundry.client.v3.applications.GetApplicationSshEnabledResponse;
-import org.cloudfoundry.client.v3.applications.ListApplicationBuildsRequest;
-import org.cloudfoundry.client.v3.applications.ListApplicationPackagesRequest;
-import org.cloudfoundry.client.v3.applications.ListApplicationRoutesRequest;
-import org.cloudfoundry.client.v3.applications.ListApplicationsRequest;
-import org.cloudfoundry.client.v3.applications.ScaleApplicationRequest;
-import org.cloudfoundry.client.v3.applications.SetApplicationCurrentDropletRequest;
-import org.cloudfoundry.client.v3.applications.StartApplicationRequest;
-import org.cloudfoundry.client.v3.applications.StopApplicationRequest;
-import org.cloudfoundry.client.v3.applications.UpdateApplicationEnvironmentVariablesRequest;
-import org.cloudfoundry.client.v3.applications.UpdateApplicationFeatureRequest;
-import org.cloudfoundry.client.v3.applications.UpdateApplicationRequest;
-import org.cloudfoundry.client.v3.applications.UpdateApplicationResponse;
 import org.cloudfoundry.client.v3.auditevents.AuditEventResource;
 import org.cloudfoundry.client.v3.auditevents.ListAuditEventsRequest;
 import org.cloudfoundry.client.v3.builds.Build;
 import org.cloudfoundry.client.v3.builds.CreateBuildRequest;
 import org.cloudfoundry.client.v3.builds.GetBuildRequest;
 import org.cloudfoundry.client.v3.builds.ListBuildsRequest;
-import org.cloudfoundry.client.v3.domains.CreateDomainRequest;
-import org.cloudfoundry.client.v3.domains.DeleteDomainRequest;
-import org.cloudfoundry.client.v3.domains.Domain;
-import org.cloudfoundry.client.v3.domains.DomainRelationships;
-import org.cloudfoundry.client.v3.domains.DomainResource;
-import org.cloudfoundry.client.v3.domains.ListDomainsRequest;
+import org.cloudfoundry.client.v3.domains.*;
 import org.cloudfoundry.client.v3.jobs.GetJobRequest;
 import org.cloudfoundry.client.v3.organizations.GetOrganizationDefaultDomainRequest;
 import org.cloudfoundry.client.v3.organizations.ListOrganizationDomainsRequest;
-import org.cloudfoundry.client.v3.packages.CreatePackageRequest;
-import org.cloudfoundry.client.v3.packages.CreatePackageResponse;
-import org.cloudfoundry.client.v3.packages.GetPackageRequest;
+import org.cloudfoundry.client.v3.packages.*;
 import org.cloudfoundry.client.v3.packages.Package;
-import org.cloudfoundry.client.v3.packages.PackageRelationships;
-import org.cloudfoundry.client.v3.packages.PackageResource;
-import org.cloudfoundry.client.v3.packages.PackageType;
-import org.cloudfoundry.client.v3.packages.UploadPackageRequest;
 import org.cloudfoundry.client.v3.processes.Data;
 import org.cloudfoundry.client.v3.processes.HealthCheck;
 import org.cloudfoundry.client.v3.processes.HealthCheckType;
@@ -88,65 +37,19 @@ import org.cloudfoundry.client.v3.processes.UpdateProcessRequest;
 import org.cloudfoundry.client.v3.roles.ListRolesRequest;
 import org.cloudfoundry.client.v3.roles.RoleResource;
 import org.cloudfoundry.client.v3.roles.RoleType;
-import org.cloudfoundry.client.v3.routes.CreateRouteRequest;
-import org.cloudfoundry.client.v3.routes.CreateRouteResponse;
-import org.cloudfoundry.client.v3.routes.DeleteRouteRequest;
-import org.cloudfoundry.client.v3.routes.Destination;
-import org.cloudfoundry.client.v3.routes.InsertRouteDestinationsRequest;
-import org.cloudfoundry.client.v3.routes.ListRoutesRequest;
-import org.cloudfoundry.client.v3.routes.RemoveRouteDestinationsRequest;
-import org.cloudfoundry.client.v3.routes.RouteRelationships;
-import org.cloudfoundry.client.v3.routes.RouteResource;
-import org.cloudfoundry.client.v3.servicebindings.CreateServiceBindingRequest;
-import org.cloudfoundry.client.v3.servicebindings.CreateServiceBindingResponse;
-import org.cloudfoundry.client.v3.servicebindings.DeleteServiceBindingRequest;
-import org.cloudfoundry.client.v3.servicebindings.GetServiceBindingDetailsRequest;
-import org.cloudfoundry.client.v3.servicebindings.GetServiceBindingDetailsResponse;
-import org.cloudfoundry.client.v3.servicebindings.GetServiceBindingParametersRequest;
-import org.cloudfoundry.client.v3.servicebindings.GetServiceBindingParametersResponse;
-import org.cloudfoundry.client.v3.servicebindings.ListServiceBindingsRequest;
-import org.cloudfoundry.client.v3.servicebindings.ServiceBindingRelationships;
-import org.cloudfoundry.client.v3.servicebindings.ServiceBindingResource;
-import org.cloudfoundry.client.v3.servicebindings.ServiceBindingType;
-import org.cloudfoundry.client.v3.servicebindings.UpdateServiceBindingRequest;
-import org.cloudfoundry.client.v3.servicebrokers.BasicAuthentication;
-import org.cloudfoundry.client.v3.servicebrokers.CreateServiceBrokerRequest;
-import org.cloudfoundry.client.v3.servicebrokers.DeleteServiceBrokerRequest;
-import org.cloudfoundry.client.v3.servicebrokers.ListServiceBrokersRequest;
-import org.cloudfoundry.client.v3.servicebrokers.ServiceBrokerRelationships;
-import org.cloudfoundry.client.v3.servicebrokers.ServiceBrokerResource;
-import org.cloudfoundry.client.v3.servicebrokers.UpdateServiceBrokerRequest;
-import org.cloudfoundry.client.v3.serviceinstances.CreateServiceInstanceRequest;
-import org.cloudfoundry.client.v3.serviceinstances.DeleteServiceInstanceRequest;
-import org.cloudfoundry.client.v3.serviceinstances.GetManagedServiceParametersRequest;
-import org.cloudfoundry.client.v3.serviceinstances.GetManagedServiceParametersResponse;
-import org.cloudfoundry.client.v3.serviceinstances.GetServiceInstanceRequest;
-import org.cloudfoundry.client.v3.serviceinstances.GetUserProvidedCredentialsRequest;
-import org.cloudfoundry.client.v3.serviceinstances.GetUserProvidedCredentialsResponse;
-import org.cloudfoundry.client.v3.serviceinstances.ListServiceInstancesRequest;
-import org.cloudfoundry.client.v3.serviceinstances.ServiceInstance;
-import org.cloudfoundry.client.v3.serviceinstances.ServiceInstanceRelationships;
-import org.cloudfoundry.client.v3.serviceinstances.ServiceInstanceResource;
-import org.cloudfoundry.client.v3.serviceinstances.ServiceInstanceType;
-import org.cloudfoundry.client.v3.serviceinstances.UpdateServiceInstanceRequest;
+import org.cloudfoundry.client.v3.routes.*;
+import org.cloudfoundry.client.v3.servicebindings.*;
+import org.cloudfoundry.client.v3.servicebrokers.*;
+import org.cloudfoundry.client.v3.serviceinstances.*;
 import org.cloudfoundry.client.v3.serviceofferings.GetServiceOfferingRequest;
 import org.cloudfoundry.client.v3.serviceofferings.ListServiceOfferingsRequest;
 import org.cloudfoundry.client.v3.serviceofferings.ServiceOffering;
 import org.cloudfoundry.client.v3.serviceofferings.ServiceOfferingResource;
-import org.cloudfoundry.client.v3.serviceplans.GetServicePlanRequest;
-import org.cloudfoundry.client.v3.serviceplans.ListServicePlansRequest;
-import org.cloudfoundry.client.v3.serviceplans.ServicePlan;
-import org.cloudfoundry.client.v3.serviceplans.ServicePlanResource;
-import org.cloudfoundry.client.v3.serviceplans.UpdateServicePlanVisibilityRequest;
-import org.cloudfoundry.client.v3.serviceplans.Visibility;
+import org.cloudfoundry.client.v3.serviceplans.*;
 import org.cloudfoundry.client.v3.spaces.DeleteUnmappedRoutesRequest;
 import org.cloudfoundry.client.v3.stacks.ListStacksRequest;
 import org.cloudfoundry.client.v3.stacks.Stack;
-import org.cloudfoundry.client.v3.tasks.CancelTaskRequest;
-import org.cloudfoundry.client.v3.tasks.CreateTaskRequest;
-import org.cloudfoundry.client.v3.tasks.GetTaskRequest;
-import org.cloudfoundry.client.v3.tasks.ListTasksRequest;
-import org.cloudfoundry.client.v3.tasks.Task;
+import org.cloudfoundry.client.v3.tasks.*;
 import org.cloudfoundry.util.PaginationUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.Assert;
@@ -157,61 +60,9 @@ import com.sap.cloudfoundry.client.facade.CloudOperationException;
 import com.sap.cloudfoundry.client.facade.Constants;
 import com.sap.cloudfoundry.client.facade.Messages;
 import com.sap.cloudfoundry.client.facade.UploadStatusCallback;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudApplication;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudAsyncJob;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudBuild;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudDomain;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudEvent;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudPackage;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudProcess;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudRoute;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudServiceBinding;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudServiceBroker;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudServiceInstance;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudServiceKey;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudServiceOffering;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudServicePlan;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudStack;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudTask;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawInstancesInfo;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawUserRole;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawV3CloudServiceInstance;
+import com.sap.cloudfoundry.client.facade.adapters.*;
+import com.sap.cloudfoundry.client.facade.domain.*;
 import com.sap.cloudfoundry.client.facade.domain.BitsData;
-import com.sap.cloudfoundry.client.facade.domain.CloudApplication;
-import com.sap.cloudfoundry.client.facade.domain.CloudAsyncJob;
-import com.sap.cloudfoundry.client.facade.domain.CloudBuild;
-import com.sap.cloudfoundry.client.facade.domain.CloudDomain;
-import com.sap.cloudfoundry.client.facade.domain.CloudEntity;
-import com.sap.cloudfoundry.client.facade.domain.CloudEvent;
-import com.sap.cloudfoundry.client.facade.domain.CloudMetadata;
-import com.sap.cloudfoundry.client.facade.domain.CloudPackage;
-import com.sap.cloudfoundry.client.facade.domain.CloudProcess;
-import com.sap.cloudfoundry.client.facade.domain.CloudRoute;
-import com.sap.cloudfoundry.client.facade.domain.CloudServiceBinding;
-import com.sap.cloudfoundry.client.facade.domain.CloudServiceBroker;
-import com.sap.cloudfoundry.client.facade.domain.CloudServiceInstance;
-import com.sap.cloudfoundry.client.facade.domain.CloudServiceKey;
-import com.sap.cloudfoundry.client.facade.domain.CloudServiceOffering;
-import com.sap.cloudfoundry.client.facade.domain.CloudServicePlan;
-import com.sap.cloudfoundry.client.facade.domain.CloudSpace;
-import com.sap.cloudfoundry.client.facade.domain.CloudStack;
-import com.sap.cloudfoundry.client.facade.domain.CloudTask;
-import com.sap.cloudfoundry.client.facade.domain.Derivable;
-import com.sap.cloudfoundry.client.facade.domain.DockerCredentials;
-import com.sap.cloudfoundry.client.facade.domain.DockerInfo;
-import com.sap.cloudfoundry.client.facade.domain.DropletInfo;
-import com.sap.cloudfoundry.client.facade.domain.ErrorDetails;
-import com.sap.cloudfoundry.client.facade.domain.ImmutableDropletInfo;
-import com.sap.cloudfoundry.client.facade.domain.ImmutableErrorDetails;
-import com.sap.cloudfoundry.client.facade.domain.ImmutableInstancesInfo;
-import com.sap.cloudfoundry.client.facade.domain.ImmutableUpload;
-import com.sap.cloudfoundry.client.facade.domain.InstancesInfo;
-import com.sap.cloudfoundry.client.facade.domain.RouteDestination;
-import com.sap.cloudfoundry.client.facade.domain.ServicePlanVisibility;
-import com.sap.cloudfoundry.client.facade.domain.Staging;
-import com.sap.cloudfoundry.client.facade.domain.Status;
-import com.sap.cloudfoundry.client.facade.domain.Upload;
-import com.sap.cloudfoundry.client.facade.domain.UserRole;
 import com.sap.cloudfoundry.client.facade.dto.ApplicationToCreateDto;
 import com.sap.cloudfoundry.client.facade.util.JobV3Util;
 
@@ -312,7 +163,26 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     private Lifecycle buildApplicationLifecycle(Staging staging) {
-        return staging.getDockerInfo() != null ? createDockerLifecycle() : createBuildpackLifecycle(staging);
+        // Prioritize Docker lifecycle if DockerInfo is provided
+        if (staging.getDockerInfo() != null) {
+            return createDockerLifecycle();
+        }
+
+        // Determine lifecycle type, defaulting to BUILDPACK if lifecycleType is null
+        LifecycleType lifecycleType = staging.getLifecycleType() != null ? LifecycleType.valueOf(staging.getLifecycleType()
+                                                                                                        .name())
+            : LifecycleType.BUILDPACK;
+
+        return createLifecycleByType(staging, lifecycleType);
+    }
+
+    private Lifecycle createLifecycleByType(Staging staging, LifecycleType lifecycleType) {
+        validateLifecycleConfiguration(staging, lifecycleType);
+        BuildpackData buildpackData = createBuildpackData(staging);
+        return Lifecycle.builder()
+                        .type(lifecycleType)
+                        .data(buildpackData)
+                        .build();
     }
 
     private Lifecycle createDockerLifecycle() {
@@ -323,12 +193,10 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                         .build();
     }
 
-    private Lifecycle createBuildpackLifecycle(Staging staging) {
-        BuildpackData buildpackData = createBuildpackData(staging);
-        return Lifecycle.builder()
-                        .type(LifecycleType.BUILDPACK)
-                        .data(buildpackData)
-                        .build();
+    private void validateLifecycleConfiguration(Staging staging, LifecycleType lifecycleType) {
+        if (lifecycleType == LifecycleType.CNB && staging.getBuildpacks() == null) {
+            throw new IllegalArgumentException("Buildpacks are required for CNB lifecycle type.");
+        }
     }
 
     private BuildpackData createBuildpackData(Staging staging) {
