@@ -87,7 +87,6 @@ public class LogCacheClient {
 
     private ApplicationLog mapToAppLog(Envelope envelope) {
         return ImmutableApplicationLog.builder()
-                                      .applicationGuid(envelope.getSourceId())
                                       .message(decodeLogPayload(envelope.getLog()
                                                                         .getPayload()))
                                       .timestamp(fromLogTimestamp(envelope.getTimestamp()))
