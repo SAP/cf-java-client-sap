@@ -397,7 +397,7 @@ class ApplicationsCloudControllerClientIntegrationTest extends CloudControllerCl
     @Test
     @DisplayName("Create application with CNB lifecycle and verify attributes")
     void createCnbApplication() {
-        String applicationName = "test-cnb-app";
+        String applicationName = "test-app-17";
         Staging staging = ImmutableStaging.builder()
                                           .lifecycleType(LifecycleType.CNB)
                                           .addBuildpacks(JAVA_BUILDPACK, STATICFILE_BUILDPACK)
