@@ -3,6 +3,7 @@ package com.sap.cloudfoundry.client.facade.rest;
 import com.sap.cloudfoundry.client.facade.CloudCredentials;
 import com.sap.cloudfoundry.client.facade.adapters.CloudFoundryClientFactory;
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableCloudFoundryClientFactory;
+import com.sap.cloudfoundry.client.facade.adapters.ReadinessHealthCheckClient;
 import com.sap.cloudfoundry.client.facade.domain.CloudSpace;
 import com.sap.cloudfoundry.client.facade.oauth2.OAuthClient;
 import com.sap.cloudfoundry.client.facade.util.RestUtil;
@@ -64,7 +65,7 @@ public abstract class CloudControllerRestClientFactory {
                                                   OAuthClient oAuthClient, Map<String, String> requestTags) {
         oAuthClient.init(credentials);
         CloudFoundryClient delegate = getCloudFoundryClientFactory().createClient(controllerUrl, oAuthClient, requestTags);
-        return new CloudControllerRestClientImpl(delegate, target);
+        return new CloudControllerRestClientImpl(delegate, target, new ReadinessHealthCheckClient(oAuthClient, controllerUrl));
     }
 
     private OAuthClient createOAuthClient(URL controllerUrl, String origin) {
