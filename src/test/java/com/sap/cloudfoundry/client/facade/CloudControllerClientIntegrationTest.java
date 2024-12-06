@@ -9,8 +9,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.sap.cloudfoundry.client.facade.rest.CloudControllerRestClient;
-import com.sap.cloudfoundry.client.facade.rest.CloudControllerRestClientFactory;
 import org.cloudfoundry.client.CloudFoundryClient;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -18,11 +16,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
 
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableCloudFoundryClientFactory;
-import com.sap.cloudfoundry.client.facade.domain.CloudSpace;
-import com.sap.cloudfoundry.client.facade.domain.ImmutableLifecycle;
-import com.sap.cloudfoundry.client.facade.domain.Lifecycle;
-import com.sap.cloudfoundry.client.facade.domain.LifecycleType;
-import com.sap.cloudfoundry.client.facade.domain.Staging;
+import com.sap.cloudfoundry.client.facade.domain.*;
 import com.sap.cloudfoundry.client.facade.rest.CloudSpaceClient;
 import com.sap.cloudfoundry.client.facade.util.RestUtil;
 
@@ -70,11 +64,18 @@ abstract class CloudControllerClientIntegrationTest {
                                      .data(Map.of())
                                      .build();
         }
+
         var data = new HashMap<String, Object>();
         data.put("buildpacks", staging.getBuildpacks());
         data.put("stack", DEFAULT_STACK);
+
+        // Default to BUILDPACK if lifecycleType is null
+        LifecycleType lifecycleType = staging.getLifecycleType() != null
+                ? staging.getLifecycleType()
+                : LifecycleType.BUILDPACK;
+
         return ImmutableLifecycle.builder()
-                                 .type(LifecycleType.BUILDPACK)
+                                 .type(lifecycleType)
                                  .data(data)
                                  .build();
     }
