@@ -91,6 +91,9 @@ public interface Staging {
     @Nullable
     Integer getInvocationTimeout();
 
+    @Nullable
+    LifecycleType getLifecycleType();
+
     default String getBuildpack() {
         return getBuildpacks().isEmpty() ? null : getBuildpacks().get(0);
     }
