@@ -1,7 +1,20 @@
 package com.sap.cloudfoundry.client.facade;
 
-import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.*;
-import static org.junit.jupiter.api.Assertions.*;
+import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.APPLICATION_HOST;
+import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.DEFAULT_DOMAIN;
+import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.DISK_IN_MB;
+import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.HEALTH_CHECK_ENDPOINT;
+import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.HEALTH_CHECK_TIMEMOUT;
+import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.JAVA_BUILDPACK;
+import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.MEMORY_IN_MB;
+import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.NODEJS_BUILDPACK;
+import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.STATICFILE_APPLICATION_CONTENT;
+import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.STATICFILE_BUILDPACK;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -20,7 +33,22 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 
-import com.sap.cloudfoundry.client.facade.domain.*;
+import com.sap.cloudfoundry.client.facade.domain.CloudApplication;
+import com.sap.cloudfoundry.client.facade.domain.CloudBuild;
+import com.sap.cloudfoundry.client.facade.domain.CloudMetadata;
+import com.sap.cloudfoundry.client.facade.domain.CloudPackage;
+import com.sap.cloudfoundry.client.facade.domain.CloudProcess;
+import com.sap.cloudfoundry.client.facade.domain.CloudRoute;
+import com.sap.cloudfoundry.client.facade.domain.DockerInfo;
+import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudApplication;
+import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudDomain;
+import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudRoute;
+import com.sap.cloudfoundry.client.facade.domain.ImmutableDockerInfo;
+import com.sap.cloudfoundry.client.facade.domain.ImmutableStaging;
+import com.sap.cloudfoundry.client.facade.domain.InstancesInfo;
+import com.sap.cloudfoundry.client.facade.domain.LifecycleType;
+import com.sap.cloudfoundry.client.facade.domain.Staging;
+import com.sap.cloudfoundry.client.facade.domain.Status;
 import com.sap.cloudfoundry.client.facade.dto.ApplicationToCreateDto;
 import com.sap.cloudfoundry.client.facade.dto.ImmutableApplicationToCreateDto;
 

@@ -16,7 +16,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
 
 import com.sap.cloudfoundry.client.facade.adapters.ImmutableCloudFoundryClientFactory;
-import com.sap.cloudfoundry.client.facade.domain.*;
+import com.sap.cloudfoundry.client.facade.domain.CloudSpace;
+import com.sap.cloudfoundry.client.facade.domain.ImmutableLifecycle;
+import com.sap.cloudfoundry.client.facade.domain.Lifecycle;
+import com.sap.cloudfoundry.client.facade.domain.LifecycleType;
+import com.sap.cloudfoundry.client.facade.domain.Staging;
 import com.sap.cloudfoundry.client.facade.rest.CloudSpaceClient;
 import com.sap.cloudfoundry.client.facade.util.RestUtil;
 
