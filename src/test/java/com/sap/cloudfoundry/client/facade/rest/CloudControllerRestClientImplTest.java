@@ -300,7 +300,7 @@ class CloudControllerRestClientImplTest {
                                                                                .guid(spaceGuid)
                                                                                .build())
                                                .build();
-        this.controllerClient = new CloudControllerRestClientImpl(delegate, target, null);
+        this.controllerClient = new CloudControllerRestClientImpl(delegate, target);
     }
 
     private ClientV3Exception clientV3Exception(int statusCode) {
