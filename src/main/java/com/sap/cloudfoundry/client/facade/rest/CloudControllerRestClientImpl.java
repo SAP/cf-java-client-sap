@@ -312,7 +312,26 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     private Lifecycle buildApplicationLifecycle(Staging staging) {
-        return staging.getDockerInfo() != null ? createDockerLifecycle() : createBuildpackLifecycle(staging);
+        // Prioritize Docker lifecycle if DockerInfo is provided
+        if (staging.getDockerInfo() != null) {
+            return createDockerLifecycle();
+        }
+
+        // Determine lifecycle type, defaulting to BUILDPACK if lifecycleType is null
+        LifecycleType lifecycleType = staging.getLifecycleType() != null ? LifecycleType.valueOf(staging.getLifecycleType()
+                                                                                                        .name())
+            : LifecycleType.BUILDPACK;
+
+        return createLifecycleByType(staging, lifecycleType);
+    }
+
+    private Lifecycle createLifecycleByType(Staging staging, LifecycleType lifecycleType) {
+        validateLifecycleConfiguration(staging, lifecycleType);
+        BuildpackData buildpackData = createBuildpackData(staging);
+        return Lifecycle.builder()
+                        .type(lifecycleType)
+                        .data(buildpackData)
+                        .build();
     }
 
     private Lifecycle createDockerLifecycle() {
@@ -323,12 +342,10 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                         .build();
     }
 
-    private Lifecycle createBuildpackLifecycle(Staging staging) {
-        BuildpackData buildpackData = createBuildpackData(staging);
-        return Lifecycle.builder()
-                        .type(LifecycleType.BUILDPACK)
-                        .data(buildpackData)
-                        .build();
+    private void validateLifecycleConfiguration(Staging staging, LifecycleType lifecycleType) {
+        if (lifecycleType == LifecycleType.CNB && staging.getBuildpacks() == null) {
+            throw new IllegalArgumentException("Buildpacks are required for CNB lifecycle type.");
+        }
     }
 
     private BuildpackData createBuildpackData(Staging staging) {
