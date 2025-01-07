@@ -1,68 +1,24 @@
 package com.sap.cloudfoundry.client.facade.rest;
 
-import com.sap.cloudfoundry.client.facade.CloudOperationException;
-import com.sap.cloudfoundry.client.facade.Constants;
-import com.sap.cloudfoundry.client.facade.Messages;
-import com.sap.cloudfoundry.client.facade.UploadStatusCallback;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudApplication;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudAsyncJob;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudBuild;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudDomain;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudEvent;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudPackage;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudProcess;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudRoute;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudServiceBinding;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudServiceBroker;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudServiceInstance;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudServiceKey;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudServiceOffering;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudServicePlan;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudStack;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudTask;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawInstancesInfo;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawUserRole;
-import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawV3CloudServiceInstance;
-import com.sap.cloudfoundry.client.facade.adapters.ReadinessHealthCheckClient;
-import com.sap.cloudfoundry.client.facade.domain.BitsData;
-import com.sap.cloudfoundry.client.facade.domain.CloudApplication;
-import com.sap.cloudfoundry.client.facade.domain.CloudAsyncJob;
-import com.sap.cloudfoundry.client.facade.domain.CloudBuild;
-import com.sap.cloudfoundry.client.facade.domain.CloudDomain;
-import com.sap.cloudfoundry.client.facade.domain.CloudEntity;
-import com.sap.cloudfoundry.client.facade.domain.CloudEvent;
-import com.sap.cloudfoundry.client.facade.domain.CloudMetadata;
-import com.sap.cloudfoundry.client.facade.domain.CloudPackage;
-import com.sap.cloudfoundry.client.facade.domain.CloudProcess;
-import com.sap.cloudfoundry.client.facade.domain.CloudRoute;
-import com.sap.cloudfoundry.client.facade.domain.CloudServiceBinding;
-import com.sap.cloudfoundry.client.facade.domain.CloudServiceBroker;
-import com.sap.cloudfoundry.client.facade.domain.CloudServiceInstance;
-import com.sap.cloudfoundry.client.facade.domain.CloudServiceKey;
-import com.sap.cloudfoundry.client.facade.domain.CloudServiceOffering;
-import com.sap.cloudfoundry.client.facade.domain.CloudServicePlan;
-import com.sap.cloudfoundry.client.facade.domain.CloudSpace;
-import com.sap.cloudfoundry.client.facade.domain.CloudStack;
-import com.sap.cloudfoundry.client.facade.domain.CloudTask;
-import com.sap.cloudfoundry.client.facade.domain.Derivable;
-import com.sap.cloudfoundry.client.facade.domain.DockerCredentials;
-import com.sap.cloudfoundry.client.facade.domain.DockerInfo;
-import com.sap.cloudfoundry.client.facade.domain.DropletInfo;
-import com.sap.cloudfoundry.client.facade.domain.ErrorDetails;
-import com.sap.cloudfoundry.client.facade.domain.ImmutableDropletInfo;
-import com.sap.cloudfoundry.client.facade.domain.ImmutableErrorDetails;
-import com.sap.cloudfoundry.client.facade.domain.ImmutableInstancesInfo;
-import com.sap.cloudfoundry.client.facade.domain.ImmutableUpload;
-import com.sap.cloudfoundry.client.facade.domain.InstancesInfo;
-import com.sap.cloudfoundry.client.facade.domain.ReadinessHealthCheck;
-import com.sap.cloudfoundry.client.facade.domain.RouteDestination;
-import com.sap.cloudfoundry.client.facade.domain.ServicePlanVisibility;
-import com.sap.cloudfoundry.client.facade.domain.Staging;
-import com.sap.cloudfoundry.client.facade.domain.Status;
-import com.sap.cloudfoundry.client.facade.domain.Upload;
-import com.sap.cloudfoundry.client.facade.domain.UserRole;
-import com.sap.cloudfoundry.client.facade.dto.ApplicationToCreateDto;
-import com.sap.cloudfoundry.client.facade.util.JobV3Util;
+import java.nio.file.Path;
+import java.text.MessageFormat;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import java.util.function.IntFunction;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+
 import org.cloudfoundry.AbstractCloudFoundryException;
 import org.cloudfoundry.client.CloudFoundryClient;
 import org.cloudfoundry.client.v3.BuildpackData;
@@ -196,28 +152,71 @@ import org.springframework.http.HttpStatus;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
+
+import com.sap.cloudfoundry.client.facade.CloudOperationException;
+import com.sap.cloudfoundry.client.facade.Constants;
+import com.sap.cloudfoundry.client.facade.Messages;
+import com.sap.cloudfoundry.client.facade.UploadStatusCallback;
+import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudApplication;
+import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudAsyncJob;
+import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudBuild;
+import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudDomain;
+import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudEvent;
+import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudPackage;
+import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudProcess;
+import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudRoute;
+import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudServiceBinding;
+import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudServiceBroker;
+import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudServiceInstance;
+import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudServiceKey;
+import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudServiceOffering;
+import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudServicePlan;
+import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudStack;
+import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawCloudTask;
+import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawInstancesInfo;
+import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawUserRole;
+import com.sap.cloudfoundry.client.facade.adapters.ImmutableRawV3CloudServiceInstance;
+import com.sap.cloudfoundry.client.facade.domain.BitsData;
+import com.sap.cloudfoundry.client.facade.domain.CloudApplication;
+import com.sap.cloudfoundry.client.facade.domain.CloudAsyncJob;
+import com.sap.cloudfoundry.client.facade.domain.CloudBuild;
+import com.sap.cloudfoundry.client.facade.domain.CloudDomain;
+import com.sap.cloudfoundry.client.facade.domain.CloudEntity;
+import com.sap.cloudfoundry.client.facade.domain.CloudEvent;
+import com.sap.cloudfoundry.client.facade.domain.CloudMetadata;
+import com.sap.cloudfoundry.client.facade.domain.CloudPackage;
+import com.sap.cloudfoundry.client.facade.domain.CloudProcess;
+import com.sap.cloudfoundry.client.facade.domain.CloudRoute;
+import com.sap.cloudfoundry.client.facade.domain.CloudServiceBinding;
+import com.sap.cloudfoundry.client.facade.domain.CloudServiceBroker;
+import com.sap.cloudfoundry.client.facade.domain.CloudServiceInstance;
+import com.sap.cloudfoundry.client.facade.domain.CloudServiceKey;
+import com.sap.cloudfoundry.client.facade.domain.CloudServiceOffering;
+import com.sap.cloudfoundry.client.facade.domain.CloudServicePlan;
+import com.sap.cloudfoundry.client.facade.domain.CloudSpace;
+import com.sap.cloudfoundry.client.facade.domain.CloudStack;
+import com.sap.cloudfoundry.client.facade.domain.CloudTask;
+import com.sap.cloudfoundry.client.facade.domain.Derivable;
+import com.sap.cloudfoundry.client.facade.domain.DockerCredentials;
+import com.sap.cloudfoundry.client.facade.domain.DockerInfo;
+import com.sap.cloudfoundry.client.facade.domain.DropletInfo;
+import com.sap.cloudfoundry.client.facade.domain.ErrorDetails;
+import com.sap.cloudfoundry.client.facade.domain.ImmutableDropletInfo;
+import com.sap.cloudfoundry.client.facade.domain.ImmutableErrorDetails;
+import com.sap.cloudfoundry.client.facade.domain.ImmutableInstancesInfo;
+import com.sap.cloudfoundry.client.facade.domain.ImmutableUpload;
+import com.sap.cloudfoundry.client.facade.domain.InstancesInfo;
+import com.sap.cloudfoundry.client.facade.domain.RouteDestination;
+import com.sap.cloudfoundry.client.facade.domain.ServicePlanVisibility;
+import com.sap.cloudfoundry.client.facade.domain.Staging;
+import com.sap.cloudfoundry.client.facade.domain.Status;
+import com.sap.cloudfoundry.client.facade.domain.Upload;
+import com.sap.cloudfoundry.client.facade.domain.UserRole;
+import com.sap.cloudfoundry.client.facade.dto.ApplicationToCreateDto;
+import com.sap.cloudfoundry.client.facade.util.JobV3Util;
+
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-
-import java.nio.file.Path;
-import java.text.MessageFormat;
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
-import java.util.function.IntFunction;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 /**
  * Abstract implementation of the CloudControllerClient intended to serve as the base.
@@ -231,7 +230,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     private CloudSpace target; // optional, as some operations do not require a targeted space
     private CloudFoundryClient delegate;
-    private ReadinessHealthCheckClient readinessHealthCheckClient;
 
     /**
      * Only for unit tests. This works around the fact that the initialize method is called within the constructor and hence can not be
@@ -241,14 +239,12 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     public CloudControllerRestClientImpl(CloudFoundryClient delegate) {
-        this(delegate, null, null);
+        this(delegate, null);
     }
 
-    public CloudControllerRestClientImpl(CloudFoundryClient delegate, CloudSpace target,
-                                         ReadinessHealthCheckClient readinessHealthCheckClient) {
+    public CloudControllerRestClientImpl(CloudFoundryClient delegate, CloudSpace target) {
         this.target = target;
         this.delegate = delegate;
-        this.readinessHealthCheckClient = readinessHealthCheckClient;
     }
 
     @Override
@@ -287,11 +283,8 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                               .name(bindingName)
                                                               .type(ServiceBindingType.APPLICATION)
                                                               .relationships(ServiceBindingRelationships.builder()
-                                                                                                        .application(buildToOneRelationship(
-                                                                                                            applicationGuid))
-                                                                                                        .serviceInstance(
-                                                                                                            buildToOneRelationship(
-                                                                                                                serviceInstanceGuid))
+                                                                                                        .application(buildToOneRelationship(applicationGuid))
+                                                                                                        .serviceInstance(buildToOneRelationship(serviceInstanceGuid))
                                                                                                         .build());
         if (!CollectionUtils.isEmpty(parameters)) {
             createBindingRequest.parameters(parameters);
@@ -308,8 +301,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         CreateApplicationRequest createApplicationRequest = CreateApplicationRequest.builder()
                                                                                     .name(applicationToCreateDto.getName())
                                                                                     .metadata(applicationToCreateDto.getMetadata())
-                                                                                    .lifecycle(buildApplicationLifecycle(
-                                                                                        applicationToCreateDto.getStaging()))
+                                                                                    .lifecycle(buildApplicationLifecycle(applicationToCreateDto.getStaging()))
                                                                                     .relationships(buildApplicationRelationships())
                                                                                     .environmentVariables(applicationToCreateDto.getEnv())
                                                                                     .build();
@@ -317,14 +309,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                       .create(createApplicationRequest)
                                                                       .block();
         updateApplicationAttributes(applicationToCreateDto, createApplicationResponse.getId());
-        if (applicationToCreateDto.getStaging()
-                                  .getReadinessHealthCheckType() != null) {
-            GetApplicationProcessResponse getApplicationProcessResponse = getApplicationProcessResource(
-                UUID.fromString(createApplicationResponse.getId()));
-            readinessHealthCheckClient.updateApplicationReadinessHealthCheck(getApplicationProcessResponse.getId(),
-                                                                             buildReadinessHealthCheck(
-                                                                                 applicationToCreateDto.getStaging()));
-        }
     }
 
     private Lifecycle buildApplicationLifecycle(Staging staging) {
@@ -392,10 +376,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         delegate.processes()
                 .update(updateProcessRequestBuilder.build())
                 .block();
-        if (staging.getReadinessHealthCheckType() != null) {
-            readinessHealthCheckClient.updateApplicationReadinessHealthCheck(getApplicationProcessResponse.getId(),
-                                                                             buildReadinessHealthCheck(staging));
-        }
     }
 
     private void updateSsh(UUID applicationGuid, boolean isSshEnabled) {
@@ -415,25 +395,6 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                .applicationId(applicationGuid.toString())
                                                                .build())
                        .block();
-    }
-
-    private Map<String, ReadinessHealthCheck> buildReadinessHealthCheck(Staging staging) {
-        return Map.of("readiness_health_check",
-                      new ReadinessHealthCheck(staging.getReadinessHealthCheckType(), buildReadinessHealthCheckData(staging)));
-    }
-
-    private Map<String, Object> buildReadinessHealthCheckData(Staging staging) {
-        Map<String, Object> data = new HashMap<>();
-        if (staging.getReadinessHealthCheckTimeout() != null) {
-            data.put("invocation_timeout", staging.getReadinessHealthCheckTimeout());
-        }
-        if (staging.getReadinessHealthCheckHttpEndpoint() != null) {
-            data.put("endpoint", staging.getReadinessHealthCheckHttpEndpoint());
-        }
-        if (staging.getReadinessHealthCheckInterval() != null) {
-            data.put("interval", staging.getReadinessHealthCheckInterval());
-        }
-        return data;
     }
 
     private HealthCheck buildHealthCheck(Staging staging) {
@@ -472,10 +433,8 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                     .name(serviceInstance.getName())
                                                     .metadata(serviceInstance.getV3Metadata())
                                                     .relationships(ServiceInstanceRelationships.builder()
-                                                                                               .servicePlan(buildToOneRelationship(
-                                                                                                   servicePlanGuid.toString()))
-                                                                                               .space(buildToOneRelationship(
-                                                                                                   getTargetSpaceGuid().toString()))
+                                                                                               .servicePlan(buildToOneRelationship(servicePlanGuid.toString()))
+                                                                                               .space(buildToOneRelationship(getTargetSpaceGuid().toString()))
                                                                                                .build())
                                                     .tags(serviceInstance.getTags())
                                                     .parameters(serviceInstance.getCredentials())
@@ -491,8 +450,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                        .map(UUID::fromString)
                                                                        .map(this::buildToOneRelationship)
                                                                        .map(spaceRelationship -> ServiceBrokerRelationships.builder()
-                                                                                                                           .space(
-                                                                                                                               spaceRelationship)
+                                                                                                                           .space(spaceRelationship)
                                                                                                                            .build())
                                                                        .orElse(null);
 
@@ -514,9 +472,9 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         CloudServiceInstance serviceInstance = getServiceInstance(serviceInstanceName);
         doCreateServiceKeySync(keyModel.getName(), keyModel.getCredentials(), keyModel.getV3Metadata(), serviceInstance);
 
-        return fetchWithAuxiliaryContent(
-            () -> getServiceKeyResourceByNameAndServiceInstanceGuid(keyModel.getName(), getGuid(serviceInstance)),
-            fetchedKey -> zipWithAuxiliaryServiceKeyContent(fetchedKey, serviceInstance));
+        return fetchWithAuxiliaryContent(() -> getServiceKeyResourceByNameAndServiceInstanceGuid(keyModel.getName(),
+                                                                                                 getGuid(serviceInstance)),
+                                         fetchedKey -> zipWithAuxiliaryServiceKeyContent(fetchedKey, serviceInstance));
     }
 
     @Override
@@ -556,8 +514,8 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     private CreateServiceBindingRequest buildServiceCredentialBindingRequest(String name, Map<String, Object> parameters, Metadata metadata,
                                                                              CloudServiceInstance serviceInstance) {
         if (serviceInstance.getType() != ServiceInstanceType.MANAGED) {
-            throw new IllegalArgumentException(
-                String.format(Messages.CANT_CREATE_SERVICE_KEY_FOR_USER_PROVIDED_SERVICE, serviceInstance.getName()));
+            throw new IllegalArgumentException(String.format(Messages.CANT_CREATE_SERVICE_KEY_FOR_USER_PROVIDED_SERVICE,
+                                                             serviceInstance.getName()));
         }
         UUID serviceInstanceGuid = getGuid(serviceInstance);
 
@@ -566,9 +524,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                               .name(name)
                                                               .metadata(metadata)
                                                               .relationships(ServiceBindingRelationships.builder()
-                                                                                                        .serviceInstance(
-                                                                                                            buildToOneRelationship(
-                                                                                                                serviceInstanceGuid))
+                                                                                                        .serviceInstance(buildToOneRelationship(serviceInstanceGuid))
                                                                                                         .build());
         if (!CollectionUtils.isEmpty(parameters)) {
             createBindingRequest.parameters(parameters);
@@ -590,8 +546,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                     .syslogDrainUrl(syslogDrainUrl)
                                                     .tags(serviceInstance.getTags())
                                                     .relationships(ServiceInstanceRelationships.builder()
-                                                                                               .space(buildToOneRelationship(
-                                                                                                   getTargetSpaceGuid().toString()))
+                                                                                               .space(buildToOneRelationship(getTargetSpaceGuid().toString()))
                                                                                                .build())
                                                     .build())
                 .block();
@@ -641,7 +596,8 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         assertSpaceProvided("delete route for domain");
         UUID routeGuid = getRouteGuid(getRequiredDomainGuid(domainName), host, path);
         if (routeGuid == null) {
-            throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found",
+            throw new CloudOperationException(HttpStatus.NOT_FOUND,
+                                              "Not Found",
                                               "Host " + host + " not found for domain " + domainName + ".");
         }
         doDeleteRoute(routeGuid);
@@ -753,8 +709,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     public List<CloudRoute> getApplicationRoutes(UUID applicationGuid) {
         return fetchList(() -> getRouteResourcesByAppGuid(applicationGuid), routeResource -> ImmutableRawCloudRoute.builder()
                                                                                                                    .route(routeResource)
-                                                                                                                   .applicationGuid(
-                                                                                                                       applicationGuid)
+                                                                                                                   .applicationGuid(applicationGuid)
                                                                                                                    .build());
     }
 
@@ -781,8 +736,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     public List<CloudApplication> getApplicationsByMetadataLabelSelector(String labelSelector) {
         assertSpaceProvided("get applications");
         return fetchList(() -> getApplicationsByLabelSelector(labelSelector), application -> ImmutableRawCloudApplication.builder()
-                                                                                                                         .application(
-                                                                                                                             application)
+                                                                                                                         .application(application)
                                                                                                                          .space(target)
                                                                                                                          .build());
     }
@@ -944,10 +898,8 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     @Override
     public List<CloudServiceKey> getServiceKeys(CloudServiceInstance serviceInstance) {
         return fetchList(() -> getServiceKeyResource(serviceInstance), serviceKey -> ImmutableRawCloudServiceKey.builder()
-                                                                                                                .serviceInstance(
-                                                                                                                    serviceInstance)
-                                                                                                                .serviceBindingResource(
-                                                                                                                    serviceKey)
+                                                                                                                .serviceInstance(serviceInstance)
+                                                                                                                .serviceBindingResource(serviceKey)
                                                                                                                 .build());
     }
 
@@ -972,11 +924,11 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                   .serviceBindingId(keyGuid)
                                                                   .build())
                        // CF V3 API returns 404 when fetching credentials of a service key which creation failed
-                       .onErrorResume(t -> doesErrorMatchStatusCode(t, HttpStatus.NOT_FOUND), t -> Mono.just(
-                           GetServiceBindingDetailsResponse.builder()
-                                                           .volumeMounts(Collections.emptyList())
-                                                           .credentials(Collections.emptyMap())
-                                                           .build()))
+                       .onErrorResume(t -> doesErrorMatchStatusCode(t, HttpStatus.NOT_FOUND),
+                                      t -> Mono.just(GetServiceBindingDetailsResponse.builder()
+                                                                                     .volumeMounts(Collections.emptyList())
+                                                                                     .credentials(Collections.emptyMap())
+                                                                                     .build()))
                        .map(GetServiceBindingDetailsResponse::getCredentials);
     }
 
@@ -1027,8 +979,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                     .serviceInstanceId(service.getGuid()
                                                                               .toString())
                                                     .relationships(ServiceInstanceRelationships.builder()
-                                                                                               .servicePlan(
-                                                                                                   buildToOneRelationship(plan.getGuid()))
+                                                                                               .servicePlan(buildToOneRelationship(plan.getGuid()))
                                                                                                .build())
                                                     .build())
                 .block();
@@ -1123,8 +1074,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         String spaceGuid = getTargetSpaceGuid().toString();
         IntFunction<ListServiceInstancesRequest> pageRequestSupplier = page -> ListServiceInstancesRequest.builder()
                                                                                                           .spaceId(spaceGuid)
-                                                                                                          .addAllServiceInstanceNames(
-                                                                                                              serviceInstanceNames)
+                                                                                                          .addAllServiceInstanceNames(serviceInstanceNames)
                                                                                                           .page(page)
                                                                                                           .build();
         return PaginationUtils.requestClientV3Resources(page -> delegate.serviceInstancesV3()
@@ -1146,8 +1096,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     public List<CloudServiceInstance> getServiceInstancesByMetadataLabelSelector(String labelSelector) {
         IntFunction<ListServiceInstancesRequest> pageRequestSupplier = page -> ListServiceInstancesRequest.builder()
                                                                                                           .labelSelector(labelSelector)
-                                                                                                          .spaceId(
-                                                                                                              getTargetSpaceGuid().toString())
+                                                                                                          .spaceId(getTargetSpaceGuid().toString())
                                                                                                           .page(page)
                                                                                                           .build();
 
@@ -1159,8 +1108,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     public List<CloudServiceInstance> getServiceInstancesWithoutAuxiliaryContentByMetadataLabelSelector(String labelSelector) {
         IntFunction<ListServiceInstancesRequest> pageRequestSupplier = page -> ListServiceInstancesRequest.builder()
                                                                                                           .labelSelector(labelSelector)
-                                                                                                          .spaceId(
-                                                                                                              getTargetSpaceGuid().toString())
+                                                                                                          .spaceId(getTargetSpaceGuid().toString())
                                                                                                           .page(page)
                                                                                                           .build();
 
@@ -1366,8 +1314,8 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return currentRoute.getDestinations()
                            .stream()
                            .filter(routeDestination -> Objects.equals(routeDestination.getApplicationGuid(), applicationGuid))
-                           .noneMatch(
-                               routeDestination -> Objects.equals(routeDestination.getProtocol(), updatedRoute.getRequestedProtocol()));
+                           .noneMatch(routeDestination -> Objects.equals(routeDestination.getProtocol(),
+                                                                         updatedRoute.getRequestedProtocol()));
     }
 
     private Set<CloudRoute> getNewRoutes(UUID applicationGuid, List<CloudRoute> currentRoutes, Set<CloudRoute> updatedRoutes) {
@@ -1515,12 +1463,12 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     public DropletInfo getCurrentDropletForApplication(UUID applicationGuid) {
         GetApplicationCurrentDropletResponse dropletResponse = delegate.applicationsV3()
                                                                        .getCurrentDroplet(GetApplicationCurrentDropletRequest.builder()
-                                                                                                                             .applicationId(
-                                                                                                                                 applicationGuid.toString())
+                                                                                                                             .applicationId(applicationGuid.toString())
                                                                                                                              .build())
                                                                        .block();
         if (dropletResponse == null) {
-            throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not found",
+            throw new CloudOperationException(HttpStatus.NOT_FOUND,
+                                              "Not found",
                                               "Application with guid " + applicationGuid + " does not have a droplet");
         }
         return parseDropletInfo(dropletResponse);
@@ -1548,8 +1496,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     private Flux<? extends PackageResource> getPackages(String applicationGuid) {
         IntFunction<ListApplicationPackagesRequest> pageRequestSupplier = page -> ListApplicationPackagesRequest.builder()
                                                                                                                 .page(page)
-                                                                                                                .applicationId(
-                                                                                                                    applicationGuid)
+                                                                                                                .applicationId(applicationGuid)
                                                                                                                 .build();
         return PaginationUtils.requestClientV3Resources(page -> delegate.applicationsV3()
                                                                         .listPackages(pageRequestSupplier.apply(page)));
@@ -1564,8 +1511,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     public CloudPackage createDockerPackage(UUID applicationGuid, DockerInfo dockerInfo) {
         org.cloudfoundry.client.v3.packages.DockerData.Builder dockerDataBuilder = org.cloudfoundry.client.v3.packages.DockerData.builder()
-                                                                                                                                 .image(
-                                                                                                                                     dockerInfo.getImage());
+                                                                                                                                 .image(dockerInfo.getImage());
         if (dockerInfo.getCredentials() != null) {
             addNonNullDockerCredentials(dockerInfo.getCredentials(), dockerDataBuilder);
         }
@@ -1585,7 +1531,8 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return fetch(() -> delegate.jobsV3()
                                    .get(GetJobRequest.builder()
                                                      .jobId(jobId)
-                                                     .build()), ImmutableRawCloudAsyncJob::of);
+                                                     .build()),
+                     ImmutableRawCloudAsyncJob::of);
     }
 
     private void addNonNullDockerCredentials(DockerCredentials dockerCredentials,
@@ -1668,8 +1615,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     private Mono<ServiceInstanceResource> getServiceInstanceResourceByName(String name) {
         IntFunction<ListServiceInstancesRequest> pageRequestSupplier = page -> ListServiceInstancesRequest.builder()
-                                                                                                          .spaceId(
-                                                                                                              getTargetSpaceGuid().toString())
+                                                                                                          .spaceId(getTargetSpaceGuid().toString())
                                                                                                           .serviceInstanceName(name)
                                                                                                           .page(page)
                                                                                                           .build();
@@ -1690,20 +1636,16 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                         .getData()
                                                         .getId();
 
-        return getServicePlanResource(servicePlanGuid, serviceInstanceResource.getName()).zipWhen(servicePlan -> getServiceOffering(
-                                                                                             servicePlan.getRelationships()
-                                                                                                        .getServiceOffering()
-                                                                                                        .getData()
-                                                                                                        .getId()))
-                                                                                         .map(
-                                                                                             tuple -> ImmutableRawCloudServiceInstance.builder()
-                                                                                                                                      .resource(
-                                                                                                                                          serviceInstanceResource)
-                                                                                                                                      .servicePlan(
-                                                                                                                                          tuple.getT1())
-                                                                                                                                      .serviceOffering(
-                                                                                                                                          tuple.getT2())
-                                                                                                                                      .build());
+        return getServicePlanResource(servicePlanGuid,
+                                      serviceInstanceResource.getName()).zipWhen(servicePlan -> getServiceOffering(servicePlan.getRelationships()
+                                                                                                                              .getServiceOffering()
+                                                                                                                              .getData()
+                                                                                                                              .getId()))
+                                                                        .map(tuple -> ImmutableRawCloudServiceInstance.builder()
+                                                                                                                      .resource(serviceInstanceResource)
+                                                                                                                      .servicePlan(tuple.getT1())
+                                                                                                                      .serviceOffering(tuple.getT2())
+                                                                                                                      .build());
     }
 
     private boolean isUserProvided(ServiceInstanceResource serviceInstanceResource) {
@@ -1712,23 +1654,19 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     private Flux<? extends ServiceBindingResource> getServiceBindingResourcesByServiceInstanceGuid(UUID serviceInstanceGuid) {
         IntFunction<ListServiceBindingsRequest> pageRequestSupplier = page -> ListServiceBindingsRequest.builder()
-                                                                                                        .serviceInstanceId(
-                                                                                                            serviceInstanceGuid.toString())
-                                                                                                        .type(
-                                                                                                            ServiceBindingType.APPLICATION)
+                                                                                                        .serviceInstanceId(serviceInstanceGuid.toString())
+                                                                                                        .type(ServiceBindingType.APPLICATION)
                                                                                                         .page(page)
                                                                                                         .build();
         return PaginationUtils.requestClientV3Resources(page -> delegate.serviceBindingsV3()
                                                                         .list(pageRequestSupplier.apply(page)));
     }
 
-    private Mono<? extends ServiceBindingResource> getServiceBindingResourceByApplicationGuidAndServiceInstanceGuid(UUID applicationGuid,
-                                                                                                                    UUID serviceInstanceGuid) {
+    private Mono<? extends ServiceBindingResource>
+            getServiceBindingResourceByApplicationGuidAndServiceInstanceGuid(UUID applicationGuid, UUID serviceInstanceGuid) {
         IntFunction<ListServiceBindingsRequest> pageRequestSupplier = page -> ListServiceBindingsRequest.builder()
-                                                                                                        .applicationId(
-                                                                                                            applicationGuid.toString())
-                                                                                                        .serviceInstanceId(
-                                                                                                            serviceInstanceGuid.toString())
+                                                                                                        .applicationId(applicationGuid.toString())
+                                                                                                        .serviceInstanceId(serviceInstanceGuid.toString())
                                                                                                         .page(page)
                                                                                                         .build();
         return getApplicationServiceBindingResources(pageRequestSupplier).singleOrEmpty();
@@ -1736,15 +1674,14 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     private Flux<? extends ServiceBindingResource> getServiceBindingResourcesByApplicationGuid(UUID applicationGuid) {
         IntFunction<ListServiceBindingsRequest> pageRequestSupplier = page -> ListServiceBindingsRequest.builder()
-                                                                                                        .applicationId(
-                                                                                                            applicationGuid.toString())
+                                                                                                        .applicationId(applicationGuid.toString())
                                                                                                         .page(page)
                                                                                                         .build();
         return getApplicationServiceBindingResources(pageRequestSupplier);
     }
 
-    private Flux<? extends ServiceBindingResource> getApplicationServiceBindingResources(
-        IntFunction<ListServiceBindingsRequest> pageRequestSupplier) {
+    private Flux<? extends ServiceBindingResource>
+            getApplicationServiceBindingResources(IntFunction<ListServiceBindingsRequest> pageRequestSupplier) {
         return PaginationUtils.requestClientV3Resources(page -> delegate.serviceBindingsV3()
                                                                         .list(pageRequestSupplier.apply(page)));
     }
@@ -1890,8 +1827,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     private Flux<? extends Build> getBuildResourcesByApplicationGuid(UUID applicationGuid) {
         IntFunction<ListApplicationBuildsRequest> pageRequestSupplier = page -> ListApplicationBuildsRequest.builder()
-                                                                                                            .applicationId(
-                                                                                                                applicationGuid.toString())
+                                                                                                            .applicationId(applicationGuid.toString())
                                                                                                             .page(page)
                                                                                                             .build();
         return PaginationUtils.requestClientV3Resources(page -> delegate.applicationsV3()
@@ -1926,7 +1862,8 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         String domain = route.getDomain()
                              .getName();
         if (!StringUtils.hasLength(domain) || !existingDomains.containsKey(domain)) {
-            throw new CloudOperationException(HttpStatus.NOT_FOUND, HttpStatus.NOT_FOUND.getReasonPhrase(),
+            throw new CloudOperationException(HttpStatus.NOT_FOUND,
+                                              HttpStatus.NOT_FOUND.getReasonPhrase(),
                                               "Domain '" + domain + "' not found for URI " + route.getUrl());
         }
     }
@@ -1973,10 +1910,8 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                                                                          .host(host)
                                                                          .path(path)
                                                                          .relationships(RouteRelationships.builder()
-                                                                                                          .domain(buildToOneRelationship(
-                                                                                                              domainGuid))
-                                                                                                          .space(buildToOneRelationship(
-                                                                                                              getTargetSpaceGuid()))
+                                                                                                          .domain(buildToOneRelationship(domainGuid))
+                                                                                                          .space(buildToOneRelationship(getTargetSpaceGuid()))
                                                                                                           .build())
                                                                          .build())
                                                .block();
@@ -1988,8 +1923,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
                 .create(CreateDomainRequest.builder()
                                            .name(name)
                                            .relationships(DomainRelationships.builder()
-                                                                             .organization(
-                                                                                 buildToOneRelationship(getTargetOrganizationGuid()))
+                                                                             .organization(buildToOneRelationship(getTargetOrganizationGuid()))
                                                                              .build())
                                            .build())
                 .block();
@@ -2024,8 +1958,10 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     private Optional<String> doUnbindServiceInstance(UUID applicationGuid, UUID serviceInstanceGuid) {
         UUID serviceBindingGuid = getServiceBindingGuid(applicationGuid, serviceInstanceGuid);
         if (serviceBindingGuid == null) {
-            throw new CloudOperationException(HttpStatus.NOT_FOUND, "Not Found",
-                                              "Service binding between service with GUID " + serviceInstanceGuid + " and application with GUID " + applicationGuid + " not found.");
+            throw new CloudOperationException(HttpStatus.NOT_FOUND,
+                                              "Not Found",
+                                              "Service binding between service with GUID " + serviceInstanceGuid
+                                                  + " and application with GUID " + applicationGuid + " not found.");
         }
         return doDeleteServiceBinding(serviceBindingGuid);
     }
@@ -2087,8 +2023,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     private Flux<DomainResource> getDomainResourcesByOrganizationGuid(UUID organizationGuid) {
         IntFunction<ListOrganizationDomainsRequest> pageRequestSupplier = page -> ListOrganizationDomainsRequest.builder()
-                                                                                                                .organizationId(
-                                                                                                                    organizationGuid.toString())
+                                                                                                                .organizationId(organizationGuid.toString())
                                                                                                                 .page(page)
                                                                                                                 .build();
         return PaginationUtils.requestClientV3Resources(page -> delegate.organizationsV3()
@@ -2145,8 +2080,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     private Flux<RouteResource> getRouteResourcesByAppGuid(UUID applicationGuid) {
         IntFunction<ListApplicationRoutesRequest> pageSupplier = page -> ListApplicationRoutesRequest.builder()
-                                                                                                     .applicationId(
-                                                                                                         applicationGuid.toString())
+                                                                                                     .applicationId(applicationGuid.toString())
                                                                                                      .page(page)
                                                                                                      .build();
         return PaginationUtils.requestClientV3Resources(page -> delegate.applicationsV3()
@@ -2172,8 +2106,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     private Flux<? extends ServiceOfferingResource> getServiceResources() {
         IntFunction<ListServiceOfferingsRequest> pageRequestSupplier = page -> ListServiceOfferingsRequest.builder()
-                                                                                                          .spaceId(
-                                                                                                              getTargetSpaceGuid().toString())
+                                                                                                          .spaceId(getTargetSpaceGuid().toString())
                                                                                                           .page(page)
                                                                                                           .build();
         return getServiceResources(pageRequestSupplier);
@@ -2186,22 +2119,23 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return delegate.serviceOfferingsV3()
                        .get(request)
                        .onErrorMap(t -> doesErrorMatchStatusCode(t, HttpStatus.FORBIDDEN),
-                                   t -> new CloudOperationException(HttpStatus.FORBIDDEN, HttpStatus.FORBIDDEN.getReasonPhrase(),
-                                                                    MessageFormat.format(
-                                                                        Messages.SERVICE_OFFERING_WITH_GUID_0_IS_NOT_AVAILABLE, offeringId),
+                                   t -> new CloudOperationException(HttpStatus.FORBIDDEN,
+                                                                    HttpStatus.FORBIDDEN.getReasonPhrase(),
+                                                                    MessageFormat.format(Messages.SERVICE_OFFERING_WITH_GUID_0_IS_NOT_AVAILABLE,
+                                                                                         offeringId),
                                                                     t))
                        .onErrorMap(t -> doesErrorMatchStatusCode(t, HttpStatus.NOT_FOUND),
-                                   t -> new CloudOperationException(HttpStatus.NOT_FOUND, HttpStatus.NOT_FOUND.getReasonPhrase(),
+                                   t -> new CloudOperationException(HttpStatus.NOT_FOUND,
+                                                                    HttpStatus.NOT_FOUND.getReasonPhrase(),
                                                                     MessageFormat.format(Messages.SERVICE_OFFERING_WITH_GUID_0_NOT_FOUND,
-                                                                                         offeringId), t));
+                                                                                         offeringId),
+                                                                    t));
     }
 
     private Flux<? extends ServiceOfferingResource> getServiceResourcesByBrokerGuid(UUID brokerGuid) {
         IntFunction<ListServiceOfferingsRequest> pageRequestSupplier = page -> ListServiceOfferingsRequest.builder()
-                                                                                                          .serviceBrokerId(
-                                                                                                              brokerGuid.toString())
-                                                                                                          .spaceId(
-                                                                                                              getTargetSpaceGuid().toString())
+                                                                                                          .serviceBrokerId(brokerGuid.toString())
+                                                                                                          .spaceId(getTargetSpaceGuid().toString())
                                                                                                           .page(page)
                                                                                                           .build();
         return getServiceResources(pageRequestSupplier);
@@ -2210,8 +2144,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     private Flux<? extends ServiceOfferingResource> getServiceResourcesByLabel(String label) {
         IntFunction<ListServiceOfferingsRequest> pageRequestSupplier = page -> ListServiceOfferingsRequest.builder()
                                                                                                           .name(label)
-                                                                                                          .spaceId(
-                                                                                                              getTargetSpaceGuid().toString())
+                                                                                                          .spaceId(getTargetSpaceGuid().toString())
                                                                                                           .page(page)
                                                                                                           .build();
         return getServiceResources(pageRequestSupplier);
@@ -2221,8 +2154,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         IntFunction<ListServiceOfferingsRequest> pageRequestSupplier = page -> ListServiceOfferingsRequest.builder()
                                                                                                           .name(label)
                                                                                                           .serviceBrokerName(brokerName)
-                                                                                                          .spaceId(
-                                                                                                              getTargetSpaceGuid().toString())
+                                                                                                          .spaceId(getTargetSpaceGuid().toString())
                                                                                                           .page(page)
                                                                                                           .build();
         return getServiceResources(pageRequestSupplier);
@@ -2237,8 +2169,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         UUID serviceOfferingGuid = getGuid(serviceOffering);
         return getServicePlansFlux(serviceOfferingGuid).collectList()
                                                        .map(servicePlans -> ImmutableRawCloudServiceOffering.builder()
-                                                                                                            .serviceOffering(
-                                                                                                                serviceOffering)
+                                                                                                            .serviceOffering(serviceOffering)
                                                                                                             .servicePlans(servicePlans)
                                                                                                             .build());
     }
@@ -2255,20 +2186,22 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
         return delegate.servicePlansV3()
                        .get(request)
                        .onErrorMap(t -> doesErrorMatchStatusCode(t, HttpStatus.FORBIDDEN),
-                                   t -> new CloudOperationException(HttpStatus.FORBIDDEN, HttpStatus.FORBIDDEN.getReasonPhrase(),
-                                                                    MessageFormat.format(
-                                                                        Messages.SERVICE_PLAN_WITH_GUID_0_NOT_AVAILABLE_FOR_SERVICE_INSTANCE_1,
-                                                                        servicePlanGuid, serviceInstanceName), t))
+                                   t -> new CloudOperationException(HttpStatus.FORBIDDEN,
+                                                                    HttpStatus.FORBIDDEN.getReasonPhrase(),
+                                                                    MessageFormat.format(Messages.SERVICE_PLAN_WITH_GUID_0_NOT_AVAILABLE_FOR_SERVICE_INSTANCE_1,
+                                                                                         servicePlanGuid, serviceInstanceName),
+                                                                    t))
                        .onErrorMap(t -> doesErrorMatchStatusCode(t, HttpStatus.NOT_FOUND),
-                                   t -> new CloudOperationException(HttpStatus.NOT_FOUND, HttpStatus.NOT_FOUND.getReasonPhrase(),
+                                   t -> new CloudOperationException(HttpStatus.NOT_FOUND,
+                                                                    HttpStatus.NOT_FOUND.getReasonPhrase(),
                                                                     MessageFormat.format(Messages.NO_SERVICE_PLAN_FOUND, servicePlanGuid,
-                                                                                         serviceInstanceName), t));
+                                                                                         serviceInstanceName),
+                                                                    t));
     }
 
     private Flux<? extends ServicePlanResource> getServicePlanResourcesByServiceOfferingGuid(UUID serviceOfferingGuid) {
         IntFunction<ListServicePlansRequest> pageRequestSupplier = page -> ListServicePlansRequest.builder()
-                                                                                                  .serviceOfferingId(
-                                                                                                      serviceOfferingGuid.toString())
+                                                                                                  .serviceOfferingId(serviceOfferingGuid.toString())
                                                                                                   .page(page)
                                                                                                   .build();
         return PaginationUtils.requestClientV3Resources(page -> delegate.servicePlansV3()
@@ -2282,8 +2215,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     private Flux<? extends ServiceBindingResource> getServiceKeyResourcesByServiceInstanceGuid(UUID serviceInstanceGuid) {
         IntFunction<ListServiceBindingsRequest> pageRequestSupplier = page -> ListServiceBindingsRequest.builder()
-                                                                                                        .serviceInstanceId(
-                                                                                                            serviceInstanceGuid.toString())
+                                                                                                        .serviceInstanceId(serviceInstanceGuid.toString())
                                                                                                         .type(ServiceBindingType.KEY)
                                                                                                         .page(page)
                                                                                                         .build();
@@ -2413,8 +2345,7 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
 
     private Mono<ServiceInstanceResource> getServiceInstanceByName(String name) {
         IntFunction<ListServiceInstancesRequest> pageRequestSupplier = page -> ListServiceInstancesRequest.builder()
-                                                                                                          .spaceId(
-                                                                                                              getTargetSpaceGuid().toString())
+                                                                                                          .spaceId(getTargetSpaceGuid().toString())
                                                                                                           .serviceInstanceName(name)
                                                                                                           .page(page)
                                                                                                           .build();
@@ -2439,9 +2370,9 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     private UUID getRouteGuid(UUID domainGuid, String host, String path) {
-        List<RouteResource> routeEntitiesResource = getRouteResourcesByDomainGuidHostAndPath(domainGuid, host, path).collect(
-                                                                                                                        Collectors.toList())
-                                                                                                                    .block();
+        List<RouteResource> routeEntitiesResource = getRouteResourcesByDomainGuidHostAndPath(domainGuid, host,
+                                                                                             path).collect(Collectors.toList())
+                                                                                                  .block();
         if (CollectionUtils.isEmpty(routeEntitiesResource)) {
             return null;
         }

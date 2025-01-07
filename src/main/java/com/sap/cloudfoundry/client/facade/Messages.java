@@ -10,7 +10,6 @@ public final class Messages {
     public static final String CALLING_CF_ROOT_0_TO_ACCESS_LOG_CACHE_URL = "Calling CF root: {0} to access log-cache URL";
     public static final String CF_ROOT_REQUEST_FINISHED = "CF root request finished";
     public static final String TRYING_TO_GET_APP_LOGS = "Trying to get app logs";
-    public static final String TRYING_TO_UPDATE_APPLICATION_PROCESS_WITH_ID = "Trying to update application process with id: {0}";
     public static final String APP_LOGS_WERE_FETCHED_SUCCESSFULLY = "App logs were fetched successfully";
 
     // WARN messages
