@@ -3,13 +3,6 @@ package com.sap.cloudfoundry.client.facade.adapters;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.cloudfoundry.client.v3.BuildpackData;
-import org.cloudfoundry.client.v3.CnbData;
-import org.cloudfoundry.client.v3.LifecycleData;
-import org.cloudfoundry.client.v3.applications.Application;
-import org.cloudfoundry.client.v3.applications.ApplicationState;
-import org.immutables.value.Value;
-
 import com.sap.cloudfoundry.client.facade.domain.CloudApplication;
 import com.sap.cloudfoundry.client.facade.domain.CloudSpace;
 import com.sap.cloudfoundry.client.facade.domain.Derivable;
@@ -17,6 +10,12 @@ import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudApplication;
 import com.sap.cloudfoundry.client.facade.domain.ImmutableLifecycle;
 import com.sap.cloudfoundry.client.facade.domain.Lifecycle;
 import com.sap.cloudfoundry.client.facade.domain.LifecycleType;
+import org.cloudfoundry.client.v3.BuildpackData;
+import org.cloudfoundry.client.v3.CnbData;
+import org.cloudfoundry.client.v3.LifecycleData;
+import org.cloudfoundry.client.v3.applications.Application;
+import org.cloudfoundry.client.v3.applications.ApplicationState;
+import org.immutables.value.Value;
 
 @Value.Immutable
 public abstract class RawCloudApplication extends RawCloudEntity<CloudApplication> {
