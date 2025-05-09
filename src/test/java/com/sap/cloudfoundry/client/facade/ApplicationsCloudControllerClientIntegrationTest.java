@@ -1,5 +1,40 @@
 package com.sap.cloudfoundry.client.facade;
 
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+
+import com.sap.cloudfoundry.client.facade.domain.CloudApplication;
+import com.sap.cloudfoundry.client.facade.domain.CloudBuild;
+import com.sap.cloudfoundry.client.facade.domain.CloudMetadata;
+import com.sap.cloudfoundry.client.facade.domain.CloudPackage;
+import com.sap.cloudfoundry.client.facade.domain.CloudProcess;
+import com.sap.cloudfoundry.client.facade.domain.CloudRoute;
+import com.sap.cloudfoundry.client.facade.domain.DockerInfo;
+import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudApplication;
+import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudDomain;
+import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudRoute;
+import com.sap.cloudfoundry.client.facade.domain.ImmutableDockerInfo;
+import com.sap.cloudfoundry.client.facade.domain.ImmutableStaging;
+import com.sap.cloudfoundry.client.facade.domain.InstancesInfo;
+import com.sap.cloudfoundry.client.facade.domain.LifecycleType;
+import com.sap.cloudfoundry.client.facade.domain.Staging;
+import com.sap.cloudfoundry.client.facade.domain.Status;
+import com.sap.cloudfoundry.client.facade.dto.ApplicationToCreateDto;
+import com.sap.cloudfoundry.client.facade.dto.ImmutableApplicationToCreateDto;
+import org.cloudfoundry.client.v3.Metadata;
+import org.cloudfoundry.client.v3.processes.HealthCheckType;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpStatus;
+
 import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.APPLICATION_HOST;
 import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.DEFAULT_DOMAIN;
 import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.DISK_IN_MB;
@@ -15,41 +50,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
-
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-
-import org.cloudfoundry.client.v3.Metadata;
-import org.cloudfoundry.client.v3.processes.HealthCheckType;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.springframework.http.HttpStatus;
-
-import com.sap.cloudfoundry.client.facade.domain.CloudApplication;
-import com.sap.cloudfoundry.client.facade.domain.CloudBuild;
-import com.sap.cloudfoundry.client.facade.domain.CloudMetadata;
-import com.sap.cloudfoundry.client.facade.domain.CloudPackage;
-import com.sap.cloudfoundry.client.facade.domain.CloudRoute;
-import com.sap.cloudfoundry.client.facade.domain.DockerInfo;
-import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudApplication;
-import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudDomain;
-import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudRoute;
-import com.sap.cloudfoundry.client.facade.domain.ImmutableDockerInfo;
-import com.sap.cloudfoundry.client.facade.domain.ImmutableStaging;
-import com.sap.cloudfoundry.client.facade.domain.InstancesInfo;
-import com.sap.cloudfoundry.client.facade.domain.Staging;
-import com.sap.cloudfoundry.client.facade.domain.Status;
-import com.sap.cloudfoundry.client.facade.dto.ApplicationToCreateDto;
-import com.sap.cloudfoundry.client.facade.domain.CloudProcess;
-import com.sap.cloudfoundry.client.facade.dto.ImmutableApplicationToCreateDto;
 
 class ApplicationsCloudControllerClientIntegrationTest extends CloudControllerClientIntegrationTest {
 
@@ -157,11 +157,11 @@ class ApplicationsCloudControllerClientIntegrationTest extends CloudControllerCl
             createAndVerifyDefaultApplication(applicationName);
             UUID applicationGuid = client.getApplicationGuid(applicationName);
             delegate.applicationsV2()
-                    .update(org.cloudfoundry.client.v2.applications.UpdateApplicationRequest
-                            .builder()
-                            .applicationId(applicationGuid.toString())
-                            .healthCheckType(HealthCheckType.NONE.getValue())
-                            .build())
+                    .update(org.cloudfoundry.client.v2.applications.UpdateApplicationRequest.builder()
+                                                                                            .applicationId(applicationGuid.toString())
+                                                                                            .healthCheckType(
+                                                                                                HealthCheckType.NONE.getValue())
+                                                                                            .build())
                     .block();
             CloudProcess cloudProcess = client.getApplicationProcess(applicationGuid);
             assertEquals(com.sap.cloudfoundry.client.facade.domain.HealthCheckType.NONE, cloudProcess.getHealthCheckType());
@@ -415,6 +415,24 @@ class ApplicationsCloudControllerClientIntegrationTest extends CloudControllerCl
                                           .build();
         try {
             verifyApplicationWillBeCreated(applicationName, staging, Set.of(getImmutableCloudRoute()));
+        } catch (Exception e) {
+            fail(e);
+        } finally {
+            client.deleteApplication(applicationName);
+        }
+    }
+
+    @Test
+    @DisplayName("Create application with CNB lifecycle and verify attributes")
+    void createCnbApplication() {
+        String applicationName = "test-app-17";
+        Staging staging = ImmutableStaging.builder()
+                                          .lifecycleType(LifecycleType.CNB)
+                                          .addBuildpacks(JAVA_BUILDPACK, STATICFILE_BUILDPACK)
+                                          .build();
+        CloudRoute route = getImmutableCloudRoute();
+        try {
+            verifyApplicationWillBeCreated(applicationName, staging, Set.of(route));
         } catch (Exception e) {
             fail(e);
         } finally {
