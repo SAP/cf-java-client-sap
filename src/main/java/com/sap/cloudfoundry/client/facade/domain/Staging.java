@@ -1,12 +1,12 @@
 package com.sap.cloudfoundry.client.facade.domain;
 
+import java.util.List;
+
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.sap.cloudfoundry.client.facade.Nullable;
 import com.sap.cloudfoundry.client.facade.SkipNulls;
 import org.immutables.value.Value;
-
-import java.util.List;
 
 @Value.Immutable
 @JsonSerialize(as = ImmutableStaging.class)
@@ -26,7 +26,7 @@ public interface Staging {
 
     /**
      * @return Raw, free-form information regarding a detected buildpack, or null if no detected buildpack was resolved. For example, if the
-     *         application is stopped, the detected buildpack may be null.
+     * application is stopped, the detected buildpack may be null.
      */
     @Nullable
     String getDetectedBuildpack();

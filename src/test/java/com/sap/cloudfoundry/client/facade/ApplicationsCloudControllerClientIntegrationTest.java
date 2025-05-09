@@ -1,21 +1,5 @@
 package com.sap.cloudfoundry.client.facade;
 
-import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.APPLICATION_HOST;
-import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.DEFAULT_DOMAIN;
-import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.DISK_IN_MB;
-import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.HEALTH_CHECK_ENDPOINT;
-import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.HEALTH_CHECK_TIMEMOUT;
-import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.JAVA_BUILDPACK;
-import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.MEMORY_IN_MB;
-import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.NODEJS_BUILDPACK;
-import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.STATICFILE_APPLICATION_CONTENT;
-import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.STATICFILE_BUILDPACK;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
@@ -24,14 +8,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-
-import org.cloudfoundry.client.v3.Metadata;
-import org.cloudfoundry.client.v3.processes.HealthCheckType;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.springframework.http.HttpStatus;
 
 import com.sap.cloudfoundry.client.facade.domain.CloudApplication;
 import com.sap.cloudfoundry.client.facade.domain.CloudBuild;
@@ -51,6 +27,29 @@ import com.sap.cloudfoundry.client.facade.domain.Staging;
 import com.sap.cloudfoundry.client.facade.domain.Status;
 import com.sap.cloudfoundry.client.facade.dto.ApplicationToCreateDto;
 import com.sap.cloudfoundry.client.facade.dto.ImmutableApplicationToCreateDto;
+import org.cloudfoundry.client.v3.Metadata;
+import org.cloudfoundry.client.v3.processes.HealthCheckType;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpStatus;
+
+import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.APPLICATION_HOST;
+import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.DEFAULT_DOMAIN;
+import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.DISK_IN_MB;
+import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.HEALTH_CHECK_ENDPOINT;
+import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.HEALTH_CHECK_TIMEMOUT;
+import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.JAVA_BUILDPACK;
+import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.MEMORY_IN_MB;
+import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.NODEJS_BUILDPACK;
+import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.STATICFILE_APPLICATION_CONTENT;
+import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.STATICFILE_BUILDPACK;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 class ApplicationsCloudControllerClientIntegrationTest extends CloudControllerClientIntegrationTest {
 
@@ -160,7 +159,8 @@ class ApplicationsCloudControllerClientIntegrationTest extends CloudControllerCl
             delegate.applicationsV2()
                     .update(org.cloudfoundry.client.v2.applications.UpdateApplicationRequest.builder()
                                                                                             .applicationId(applicationGuid.toString())
-                                                                                            .healthCheckType(HealthCheckType.NONE.getValue())
+                                                                                            .healthCheckType(
+                                                                                                HealthCheckType.NONE.getValue())
                                                                                             .build())
                     .block();
             CloudProcess cloudProcess = client.getApplicationProcess(applicationGuid);
