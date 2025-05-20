@@ -19,7 +19,7 @@
         <jackson.version>2.19.0</jackson.version>
         <jackson.databind.version>2.19.0</jackson.databind.version>
         <spring.version>6.2.7</spring.version>
-        <spring-security.version>6.4.5</spring-security.version>
+        <spring-security.version>6.5.0</spring-security.version>
         <commons-io.version>2.19.0</commons-io.version>
         <immutables.version>2.10.1</immutables.version>
         <cloudfoundry-client.version>5.12.2.RELEASE</cloudfoundry-client.version>
