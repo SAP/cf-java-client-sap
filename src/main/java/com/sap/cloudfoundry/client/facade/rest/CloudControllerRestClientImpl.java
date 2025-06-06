@@ -345,8 +345,8 @@ public class CloudControllerRestClientImpl implements CloudControllerRestClient 
     }
 
     private void validateLifecycleConfiguration(Staging staging, LifecycleType lifecycleType) {
-        if (lifecycleType == LifecycleType.CNB && staging.getBuildpacks() == null) {
-            throw new IllegalArgumentException("Buildpacks are required for CNB lifecycle type.");
+        if (lifecycleType == LifecycleType.CNB && CollectionUtils.isEmpty(staging.getBuildpacks())) {
+            throw new IllegalArgumentException(Messages.BUILDPACKS_ARE_REQUIRED_FOR_CNB_LIFECYCLE_TYPE);
         }
     }
 
