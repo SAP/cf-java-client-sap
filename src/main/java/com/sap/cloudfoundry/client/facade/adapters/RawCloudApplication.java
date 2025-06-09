@@ -1,6 +1,6 @@
 package com.sap.cloudfoundry.client.facade.adapters;
 
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.Map;
 
 import com.sap.cloudfoundry.client.facade.domain.CloudApplication;
@@ -45,12 +45,7 @@ public abstract class RawCloudApplication extends RawCloudEntity<CloudApplicatio
     }
 
     private static Lifecycle parseLifecycle(org.cloudfoundry.client.v3.Lifecycle lifecycle) {
-        Map<String, Object> data = new HashMap<>();
-        org.cloudfoundry.client.v3.LifecycleType lifecycleType = lifecycle.getType();
-
-        if (isBuildpackOrCnb(lifecycleType)) {
-            addLifecycleData(data, lifecycle.getData());
-        }
+        Map<String, Object> data = extractLifecycleData(lifecycle.getData());
 
         return ImmutableLifecycle.builder()
                                  .type(LifecycleType.valueOf(lifecycle.getType()
@@ -60,18 +55,17 @@ public abstract class RawCloudApplication extends RawCloudEntity<CloudApplicatio
                                  .build();
     }
 
-    private static boolean isBuildpackOrCnb(org.cloudfoundry.client.v3.LifecycleType lifecycleType) {
-        return lifecycleType == org.cloudfoundry.client.v3.LifecycleType.BUILDPACK
-            || lifecycleType == org.cloudfoundry.client.v3.LifecycleType.CNB;
-    }
-
-    private static void addLifecycleData(Map<String, Object> data, LifecycleData lifecycleData) {
+    private static Map<String, Object> extractLifecycleData(LifecycleData lifecycleData) {
         if (lifecycleData instanceof BuildpackData buildpackData) {
-            data.put(BUILDPACKS, buildpackData.getBuildpacks());
-            data.put(STACK, buildpackData.getStack());
+            return Map.of(
+                BUILDPACKS, buildpackData.getBuildpacks(),
+                STACK, buildpackData.getStack());
         } else if (lifecycleData instanceof CnbData cnbData) {
-            data.put(BUILDPACKS, cnbData.getBuildpacks());
-            data.put(STACK, cnbData.getStack());
+            return Map.of(
+                BUILDPACKS, cnbData.getBuildpacks(),
+                STACK, cnbData.getStack());
+        } else {
+            return Collections.emptyMap();
         }
     }
 
