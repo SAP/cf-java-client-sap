@@ -25,4 +25,6 @@ public final class Messages {
     public static final String SERVICE_OFFERING_WITH_GUID_0_NOT_FOUND = "Service offering with guid \"{0}\" not found.";
     public static final String FAILED_TO_FETCH_APP_LOGS_FOR_APP = "Failed to fetch app logs for app: %s";
 
+    public static final String BUILDPACKS_ARE_REQUIRED_FOR_CNB_LIFECYCLE_TYPE = "Buildpacks are required for CNB lifecycle type.";
+
 }

@@ -3,6 +3,11 @@ package com.sap.cloudfoundry.client.facade.adapters;
 import java.util.List;
 import java.util.Map;
 
+import com.sap.cloudfoundry.client.facade.domain.CloudApplication;
+import com.sap.cloudfoundry.client.facade.domain.CloudSpace;
+import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudApplication;
+import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudSpace;
+import com.sap.cloudfoundry.client.facade.domain.ImmutableLifecycle;
 import org.cloudfoundry.client.v3.BuildpackData;
 import org.cloudfoundry.client.v3.DockerData;
 import org.cloudfoundry.client.v3.Lifecycle;
@@ -10,12 +15,6 @@ import org.cloudfoundry.client.v3.LifecycleType;
 import org.cloudfoundry.client.v3.applications.ApplicationResource;
 import org.cloudfoundry.client.v3.applications.ApplicationState;
 import org.junit.jupiter.api.Test;
-
-import com.sap.cloudfoundry.client.facade.domain.CloudApplication;
-import com.sap.cloudfoundry.client.facade.domain.CloudSpace;
-import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudApplication;
-import com.sap.cloudfoundry.client.facade.domain.ImmutableCloudSpace;
-import com.sap.cloudfoundry.client.facade.domain.ImmutableLifecycle;
 
 class RawCloudApplicationTest {
 
@@ -27,19 +26,24 @@ class RawCloudApplicationTest {
                                                                .name(SPACE_NAME)
                                                                .build();
     private static final String EXPECTED_BUILDPACK = "ruby_buildpack";
+    private static final String BUILDPACK_URL = "custom-buildpack-url";
+
     private static final String EXPECTED_STACK = "cflinuxfs3";
     private static final CloudApplication.State EXPECTED_STATE = CloudApplication.State.STARTED;
 
     @Test
     void testDeriveForBuildpackApp() {
-        RawCloudEntityTest.testDerive(buildApplication(buildBuildpackLifecycle()),
-                                      buildRawApplication(buildBuildpackLifecycleResource()));
+        RawCloudEntityTest.testDerive(buildApplication(buildBuildpackLifecycle()), buildRawApplication(buildBuildpackLifecycleResource()));
     }
 
     @Test
     void testDeriveForDockerApp() {
-        RawCloudEntityTest.testDerive(buildApplication(buildDockerLifecycle()),
-                                      buildRawApplication(buildDockerLifecycleResource()));
+        RawCloudEntityTest.testDerive(buildApplication(buildDockerLifecycle()), buildRawApplication(buildDockerLifecycleResource()));
+    }
+
+    @Test
+    void testDeriveForCnbApp() {
+        RawCloudEntityTest.testDerive(buildApplication(buildCnbLifecycle()), buildRawApplication(buildCnbLifecycleResource()));
     }
 
     private static CloudApplication buildApplication(com.sap.cloudfoundry.client.facade.domain.Lifecycle lifecycle) {
@@ -56,13 +60,15 @@ class RawCloudApplicationTest {
     private static com.sap.cloudfoundry.client.facade.domain.Lifecycle buildBuildpackLifecycle() {
         return ImmutableLifecycle.builder()
                                  .type(com.sap.cloudfoundry.client.facade.domain.LifecycleType.BUILDPACK)
-                                 .data(buildBuildpackLifecycleData())
+                                 .data(buildLifecycleData(EXPECTED_BUILDPACK))
                                  .build();
     }
 
-    private static Map<String, Object> buildBuildpackLifecycleData() {
-        return Map.of("buildpacks", List.of(EXPECTED_BUILDPACK),
-                      "stack", EXPECTED_STACK);
+    private com.sap.cloudfoundry.client.facade.domain.Lifecycle buildCnbLifecycle() {
+        return ImmutableLifecycle.builder()
+                                 .type(com.sap.cloudfoundry.client.facade.domain.LifecycleType.CNB)
+                                 .data(buildLifecycleData(BUILDPACK_URL))
+                                 .build();
     }
 
     private static com.sap.cloudfoundry.client.facade.domain.Lifecycle buildDockerLifecycle() {
@@ -70,6 +76,10 @@ class RawCloudApplicationTest {
                                  .type(com.sap.cloudfoundry.client.facade.domain.LifecycleType.DOCKER)
                                  .data(Map.of())
                                  .build();
+    }
+
+    private static Map<String, Object> buildLifecycleData(String buildpack) {
+        return Map.of("buildpacks", List.of(buildpack), "stack", EXPECTED_STACK);
     }
 
     private static RawCloudApplication buildRawApplication(Lifecycle lifecycle) {
@@ -96,6 +106,16 @@ class RawCloudApplicationTest {
                         .type(LifecycleType.BUILDPACK)
                         .data(BuildpackData.builder()
                                            .buildpack(BUILDPACK)
+                                           .stack(STACK_NAME)
+                                           .build())
+                        .build();
+    }
+
+    private Lifecycle buildCnbLifecycleResource() {
+        return Lifecycle.builder()
+                        .type(LifecycleType.CNB)
+                        .data(BuildpackData.builder()
+                                           .buildpack(BUILDPACK_URL)
                                            .stack(STACK_NAME)
                                            .build())
                         .build();
