@@ -8,9 +8,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
-import com.sap.cloudfoundry.client.facade.dto.ApplicationToCreateDto;
-import org.cloudfoundry.client.v3.Metadata;
-
 import com.sap.cloudfoundry.client.facade.UploadStatusCallback;
 import com.sap.cloudfoundry.client.facade.domain.CloudApplication;
 import com.sap.cloudfoundry.client.facade.domain.CloudAsyncJob;
@@ -35,10 +32,11 @@ import com.sap.cloudfoundry.client.facade.domain.ServicePlanVisibility;
 import com.sap.cloudfoundry.client.facade.domain.Staging;
 import com.sap.cloudfoundry.client.facade.domain.Upload;
 import com.sap.cloudfoundry.client.facade.domain.UserRole;
+import com.sap.cloudfoundry.client.facade.dto.ApplicationToCreateDto;
+import org.cloudfoundry.client.v3.Metadata;
 
 /**
  * Interface defining operations available for the cloud controller REST client implementations
- *
  */
 public interface CloudControllerRestClient {
 
@@ -50,7 +48,8 @@ public interface CloudControllerRestClient {
 
     Optional<String> bindServiceInstance(String bindingName, String applicationName, String serviceInstanceName);
 
-    Optional<String> bindServiceInstance(String bindingName, String applicationName, String serviceInstanceName, Map<String, Object> parameters);
+    Optional<String> bindServiceInstance(String bindingName, String applicationName, String serviceInstanceName,
+                                         Map<String, Object> parameters);
 
     void createApplication(ApplicationToCreateDto applicationToCreateDto);
 
@@ -109,6 +108,8 @@ public interface CloudControllerRestClient {
     List<CloudRoute> getApplicationRoutes(UUID applicationGuid);
 
     boolean getApplicationSshEnabled(UUID applicationGuid);
+
+    Map<String, Boolean> getApplicationFeatures(UUID applicationGuid);
 
     List<CloudApplication> getApplications();
 
