@@ -1,6 +1,7 @@
 package com.sap.cloudfoundry.client.facade.domain;
 
 import java.util.List;
+import java.util.Map;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -54,6 +55,9 @@ public interface Staging {
      */
     @Nullable
     Boolean isSshEnabled();
+
+    @SkipNulls
+    Map<String, Boolean> getAppFeatures();
 
     /**
      * @return the stack to use when staging the application, or null to use the default stack
