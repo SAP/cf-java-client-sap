@@ -41,8 +41,10 @@ import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.DISK_I
 import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.HEALTH_CHECK_ENDPOINT;
 import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.HEALTH_CHECK_TIMEMOUT;
 import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.JAVA_BUILDPACK;
+import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.JAVA_BUILDPACK_URL;
 import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.MEMORY_IN_MB;
 import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.NODEJS_BUILDPACK;
+import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.NODEJS_BUILDPACK_URL;
 import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.STATICFILE_APPLICATION_CONTENT;
 import static com.sap.cloudfoundry.client.facade.IntegrationTestConstants.STATICFILE_BUILDPACK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -233,7 +235,7 @@ class ApplicationsCloudControllerClientIntegrationTest extends CloudControllerCl
     }
 
     @Test
-    @DisplayName("Create application and verify its GUID")
+    @DisplayName("Create an application, rename it, and verify its GUID")
     void renameApplication() {
         String applicationName = "test-application-8";
         String newApplicationName = "new-test-application-8";
@@ -426,9 +428,11 @@ class ApplicationsCloudControllerClientIntegrationTest extends CloudControllerCl
     @DisplayName("Create application with CNB lifecycle and verify attributes")
     void createCnbApplication() {
         String applicationName = "test-app-17";
+        List<String> buildpacks = List.of(JAVA_BUILDPACK_URL, NODEJS_BUILDPACK_URL);
+
         Staging staging = ImmutableStaging.builder()
                                           .lifecycleType(LifecycleType.CNB)
-                                          .addBuildpacks(JAVA_BUILDPACK, STATICFILE_BUILDPACK)
+                                          .addAllBuildpacks(buildpacks)
                                           .build();
         CloudRoute route = getImmutableCloudRoute();
         try {
