@@ -15,6 +15,8 @@ public class IntegrationTestConstants {
     public static final String DEFAULT_DOMAIN = "deploy-service.custom.domain.for.integration.tests";
     public static final String APPLICATION_HOST = "test-application-hostname-ztana-test";
     public static final String STATICFILE_APPLICATION_CONTENT = "staticfile.zip";
+    public static final String JAVA_BUILDPACK_URL = "https://github.com/paketo-buildpacks/java";
+    public static final String NODEJS_BUILDPACK_URL = "https://github.com/paketo-buildpacks/nodejs";
 
     // Service broker constants
     public static final int SERVICE_BROKER_DISK_IN_MB = 256;
